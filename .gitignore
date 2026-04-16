@@ -1,53 +1,146 @@
-# Environment variables
+# ============================================
+# Environment & Configuration
+# ============================================
 .env
 .env.local
 .env.*.local
+.env.example.local
 
-# Composer
+# ============================================
+# Dependencies
+# ============================================
 vendor/
+node_modules/
 composer.lock
+package-lock.json
+yarn.lock
 
-# Logs
+# ============================================
+# Logs & Error Files
+# ============================================
 storage/logs/
 *.log
+*.err
+error_log
+error.log
 
-# Cache
-cache/
+# ============================================
+# Cache & Temporary Files
+# ============================================
+storage/cache/
+storage/cache/**
+storage/tmp/
 tmp/
 /tmp/
+cache/
+.cache/
+*.tmp
+*.temp
 
-# IDE
+# ============================================
+# IDE & Editor Files
+# ============================================
 .vscode/
 .idea/
+.idea/**
 *.sublime-project
 *.sublime-workspace
 *.swp
 *.swo
 *~
-
-# OS
 .DS_Store
 Thumbs.db
+.editorconfig
+*.iml
+.project
+.classpath
+.settings/
+*.iws
+*.ipr
 
-# Uploads
+# ============================================
+# Session & Temporary Data
+# ============================================
+session/
+sessions/
+/session/
+/sessions/
+
+# ============================================
+# User Uploads (Keep .gitkeep)
+# ============================================
 public/uploads/*
+public/tmp/*
 !public/uploads/.gitkeep
+!public/tmp/.gitkeep
 
-# Backups
+# ============================================
+# Backups & Database Dumps
+# ============================================
 *.bak
 *.backup
 *.old
+*.sql.bak
+*.database.backup
+db_backups/
+backups/
 
-# Node modules
-node_modules/
-
-# Public assets (if minified/bundled)
+# ============================================
+# Compiled & Minified Assets
+# ============================================
 public/css/min/
 public/js/min/
+public/assets/min/
+dist/
+build/
 
-# Session files
-session/
-sessions/
+# ============================================
+# Testing & Coverage
+# ============================================
+.phpunit.result.cache
+phpunit.xml
+.coverage/
+coverage/
+.nyc_output/
+
+# ============================================
+# OS Specific
+# ============================================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+desktop.ini
+$RECYCLE.BIN/
+.classpath
+.cproject
+
+# ============================================
+# npm/yarn
+# ============================================
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# ============================================
+# IntelliJ IDEA
+# ============================================
+*.iml
+*.iws
+*.ipr
+.idea/
+.idea/**
+
+# ============================================
+# System Files
+# ============================================
+Thumbs.db
+.vagrant/
+Vagrantfile
+Lockfile
+.lock
 
 # Temporary files
 temp/
