@@ -1,0 +1,118 @@
+/* Combined CSS */
+
+* {
+    font-family: "solaimanlipi", Arial;
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    -webkit-print-color-adjust: exact;
+}
+
+@page {
+    size: A4;
+    margin: 15mm 12mm 15mm 10mm;
+
+}
+
+body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+}
+
+table {
+    border-collapse: collapse;
+}
+.gov-info {
+    text-align: center;
+}
+
+.gov-title {
+    font-size: 13px;
+    color: red;
+}
+
+.union-name {
+    font-size: 25px;
+    font-weight: bold;
+    color: #3c01c5;
+}
+
+.union-address {
+    font-size: 16px;
+}
+
+.content-wrapper {
+    background-image: url('/assets/bg.png'); /* relative path */
+    background-size: cover;
+    background-repeat: no-repeat;
+    width: 210mm;
+    height: 100%;
+    position: relative;
+}
+
+.content {
+    margin: 40px;
+    position: relative;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.header-table td {
+    text-align: center;
+    vertical-align: middle;
+    padding: 14px;
+}
+
+.logo {
+    height: 80px;
+    width: 80px;
+}
+
+.citizen-info {
+    font-size: 16px;
+    width: 100%;
+}
+
+.citizen-info td {
+    padding: 5px 10px;
+    text-align: left;
+}
+
+.citizen-info td:first-child {
+    width: 30%;
+    font-weight: bold;
+}
+
+.citizen-info td:last-child {
+    width: 65%;
+    word-wrap: break-word;
+}
+
+.citizen-photo {
+    position: absolute;
+    top: 300px;
+    right: 20px;
+    z-index: 10;
+    padding: 3px;
+}
+
+.instructions {
+    border-collapse: collapse;
+    width: 98%;
+    margin-top: 70px;
+    margin-left: 15px;
+    margin-right: 15px;
+}
+
+.instructions tr,
+.instructions td {
+    padding: 8px;
+    font-size: 14px;
+    text-align: left;
+}
+

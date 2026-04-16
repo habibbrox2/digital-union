@@ -1,0 +1,262 @@
+{% extends "layout.twig" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block header_title %}{{ header_title }}{% endblock %}
+
+{% block content %}
+{% include 'components/sweetAlert.twig' %}
+{% if not is_logged_in %}
+    {% set redirect = "<script>window.location.href='/#';</script>" %}
+    {{ redirect|raw }}
+{% endif %}
+
+<div class="container mt-4">
+    <h3>{{ header_title }}</h3>
+    {% if status %}
+        <div class="alert alert-{{ status == 'success' ? 'success' : 'danger' }}">
+            {{ message }}
+        </div>
+    {% endif %}
+
+    <!-- ব্যবসার ধরণ যোগ করুন ফর্ম -->
+    <form method="post" action="/settings/business-types/add" class="mb-4">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+        <div class="row">
+            <div class="col-md-6">
+                <div class="form-group">
+                    <label for="business_name_bn">ব্যবসার নাম (বাংলা)</label>
+                    <input type="text" class="form-control" id="business_name_bn" name="business_name_bn" placeholder="ব্যবসার নাম লিখুন" required>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="form-group">
+                    <label for="business_name_en">ব্যবসার নাম (ইংরেজি)</label>
+                    <input type="text" class="form-control" id="business_name_en" name="business_name_en" placeholder="Business name in English">
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-4">
+                <div class="form-group">
+                    <label for="license_fee">লাইসেন্স ফি</label>
+                    <input type="number" class="form-control" id="license_fee" name="license_fee" placeholder="লাইসেন্স ফি লিখুন" required>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="form-group">
+                    <label for="vat_amount">ভ্যাট পরিমাণ</label>
+                    <input type="number" class="form-control" id="vat_amount" name="vat_amount" placeholder="ভ্যাট পরিমাণ লিখুন" required>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="form-group">
+                    <label for="occupation_tax">পেশা কর</label>
+                    <input type="number" class="form-control" id="occupation_tax" name="occupation_tax" placeholder="পেশা কর লিখুন" required>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-4">
+                <div class="form-group">
+                    <label for="income_tax">আয়কর/উৎসে কর</label>
+                    <input type="number" class="form-control" id="income_tax" name="income_tax" placeholder="আয়কর লিখুন">
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="form-group">
+                    <label for="signboard_tax">সাইনবোর্ড কর</label>
+                    <input type="number" class="form-control" id="signboard_tax" name="signboard_tax" placeholder="সাইনবোর্ড কর লিখুন">
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="form-group">
+                    <label for="surcharge">সারচার্জ</label>
+                    <input type="number" class="form-control" id="surcharge" name="surcharge" placeholder="সারচার্জ লিখুন">
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-12 text-center">
+                <button type="submit" class="btn btn-primary mt-3">ব্যবসার ধরণ যোগ করুন</button>
+            </div>
+        </div>
+    </form>
+
+ <!-- Search & Items per page -->
+    <div class="d-flex justify-content-between align-items-center mb-2">
+        <input type="text" id="searchInput" class="form-control w-50" placeholder="অনুসন্ধান করুন...">
+        <select id="itemsPerPage" class="form-control w-auto">
+            <option value="5">৫টি</option>
+            <option value="10" selected>১০টি</option>
+            <option value="20">২০টি</option>
+        </select>
+    </div>
+
+    <!-- Table -->
+    <div class="table-responsive">
+        <table class="table table-bordered" id="businessTable">
+            <thead>
+                <tr>
+                    <th data-sort="number">আইডি <i class="bi bi-arrow-down-up"></i></th>
+                    <th data-sort="string">ব্যবসার নাম (বাংলা) <i class="bi bi-arrow-down-up"></i></th>
+                    <th data-sort="string">ব্যবসার নাম (ইংরেজি) <i class="bi bi-arrow-down-up"></i></th>
+                    <th data-sort="number">লাইসেন্স ফি <i class="bi bi-arrow-down-up"></i></th>
+                    <th data-sort="number">ভ্যাট <i class="bi bi-arrow-down-up"></i></th>
+                    <th data-sort="number">পেশা কর <i class="bi bi-arrow-down-up"></i></th>
+                    <th data-sort="number">আয়কর <i class="bi bi-arrow-down-up"></i></th>
+                    <th data-sort="number">সাইনবোর্ড কর <i class="bi bi-arrow-down-up"></i></th>
+                    <th data-sort="number">সারচার্জ <i class="bi bi-arrow-down-up"></i></th>
+                    <th>অ্যাকশন</th>
+                </tr>
+            </thead>
+            <tbody id="businessTableBody">
+                {% for business in businessTypes %}
+                <tr>
+                    <td>{{ business.id }}</td>
+                    <td>{{ business.business_name_bn }}</td>
+                    <td>{{ business.business_name_en }}</td>
+                    <td>{{ business.license_fee }}</td>
+                    <td>{{ business.vat_amount }}</td>
+                    <td>{{ business.occupation_tax }}</td>
+                    <td>{{ business.income_tax }}</td>
+                    <td>{{ business.signboard_tax }}</td>
+                    <td>{{ business.surcharge }}</td>
+                    <td>
+                        <a href="/settings/business-types/edit/{{ business.id }}" class="btn btn-warning btn-sm">
+                            <i class="bi bi-pencil"></i> সম্পাদনা
+                        </a>
+                        <form method="post" action="/settings/business-types/delete" class="d-inline">
+                            <input type="hidden" name="id" value="{{ business.id }}">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                            <button type="submit" class="btn btn-danger btn-sm">
+                                <i class="bi bi-trash"></i> মুছুন
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination -->
+    <div class="d-flex justify-content-between align-items-center mt-2">
+        <button id="prevPage" class="btn btn-primary btn-sm">পূর্ববর্তী</button>
+        <div id="paginationInfo"></div>
+        <button id="nextPage" class="btn btn-primary btn-sm">পরবর্তী</button>
+    </div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    const table = document.getElementById("businessTable");
+    const tbody = document.getElementById("businessTableBody");
+    const rows = Array.from(tbody.querySelectorAll("tr"));
+    const searchInput = document.getElementById("searchInput");
+    const itemsPerPageSelect = document.getElementById("itemsPerPage");
+    const prevBtn = document.getElementById("prevPage");
+    const nextBtn = document.getElementById("nextPage");
+    const paginationInfo = document.getElementById("paginationInfo");
+
+    let currentPage = 1;
+    let itemsPerPage = parseInt(itemsPerPageSelect.value);
+
+    let filteredRows = [...rows]; // search & pagination জন্য
+
+    // ===== Sortable Table =====
+    table.querySelectorAll("th").forEach((th, index) => {
+        const type = th.dataset.sort;
+        if (!type) return;
+
+        th.style.cursor = "pointer";
+        let dir = "asc";
+
+        th.addEventListener("click", () => {
+            filteredRows.sort((a, b) => {
+                let aText = a.children[index].textContent.trim();
+                let bText = b.children[index].textContent.trim();
+
+                if (type === "number") {
+                    aText = parseFloat(aText) || 0;
+                    bText = parseFloat(bText) || 0;
+                    return dir === "asc" ? aText - bText : bText - aText;
+                } else {
+                    return dir === "asc"
+                        ? aText.localeCompare(bText)
+                        : bText.localeCompare(aText);
+                }
+            });
+            dir = dir === "asc" ? "desc" : "asc";
+            renderTable();
+        });
+    });
+
+    // ===== Search Filter =====
+    searchInput.addEventListener("input", () => {
+        const filter = searchInput.value.toLowerCase();
+        filteredRows = rows.filter(row =>
+            row.textContent.toLowerCase().includes(filter)
+        );
+        currentPage = 1;
+        renderTable();
+    });
+
+    // ===== Items per page =====
+    itemsPerPageSelect.addEventListener("change", () => {
+        itemsPerPage = parseInt(itemsPerPageSelect.value);
+        currentPage = 1;
+        renderTable();
+    });
+
+    // ===== Pagination buttons =====
+    prevBtn.addEventListener("click", () => {
+        if (currentPage > 1) {
+            currentPage--;
+            renderTable();
+        }
+    });
+
+    nextBtn.addEventListener("click", () => {
+        if (currentPage < Math.ceil(filteredRows.length / itemsPerPage)) {
+            currentPage++;
+            renderTable();
+        }
+    });
+
+    // ===== Render Table =====
+    function renderTable() {
+        tbody.innerHTML = "";
+        const start = (currentPage - 1) * itemsPerPage;
+        const end = start + itemsPerPage;
+        const pageRows = filteredRows.slice(start, end);
+
+        pageRows.forEach(row => tbody.appendChild(row));
+
+        paginationInfo.textContent = `পৃষ্ঠা ${currentPage} এর ${Math.ceil(
+            filteredRows.length / itemsPerPage
+        )}`;
+
+        // Disable buttons
+        prevBtn.disabled = currentPage === 1;
+        nextBtn.disabled = currentPage === Math.ceil(filteredRows.length / itemsPerPage);
+    }
+
+    renderTable();
+
+    // ===== Modern UI =====
+    table.classList.add("table-hover", "table-striped");
+    table.style.transition = "all 0.3s ease";
+});
+
+</script>
+{% endblock %}

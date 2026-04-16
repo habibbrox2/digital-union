@@ -1,0 +1,255 @@
+{% extends "layout.twig" %}
+
+{% block title %}Settings{% endblock %}
+{% block header_title %}Settings{% endblock %}
+
+{% block content %}
+{% include 'components/sweetAlert.twig' %}
+{% if not is_logged_in %}
+    {% set redirect = "<script>window.location.href='/#';</script>" %}
+    {{ redirect|raw }}
+{% endif %}
+
+
+
+{# ---------------- System Settings Form ---------------- #}
+<form id="systemSettingsForm" method="POST" enctype="multipart/form-data" class="needs-validation">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <div class="card mb-4 shadow-sm rounded">
+        <div class="card-header bg-primary text-white d-flex align-items-center">
+            <i class="bi bi-gear me-2"></i>
+            <h4 class="mb-0 text-light">System Settings</h4>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label for="system_name" class="form-label">System Name</label>
+                    <input type="text" name="settings[system_name]" id="system_name" 
+                           class="form-control" value="{{ system_settings.system_name }}">
+                </div>
+                <div class="col-md-6">
+                    <label for="contact_email" class="form-label">Contact Email</label>
+                    <input type="email" name="settings[contact_email]" id="contact_email" 
+                           class="form-control" value="{{ system_settings.contact_email }}">
+                </div>
+                <div class="col-md-6">
+                    <label for="contact_phone" class="form-label">Contact Phone</label>
+                    <input type="text" name="settings[contact_phone]" id="contact_phone" 
+                           class="form-control" value="{{ system_settings.contact_phone }}">
+                </div>
+                <div class="col-md-6">
+                    <label for="website_url" class="form-label">Website URL</label>
+                    <input type="text" name="settings[website_url]" id="website_url" 
+                           class="form-control" value="{{ system_settings.website_url }}">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Organization Logo</label>
+                    <input type="file" name="organization_logo" id="organization_logo" class="form-control mb-2">
+                    {% if system_settings.organization_logo %}
+                        <img src="{{ system_settings.organization_logo }}" alt="Current Logo" class="img-fluid border rounded" style="max-height:100px;">
+                    {% endif %}
+                </div>
+                <div class="col-md-6">
+                    <label for="maintenance_mode" class="form-label">Maintenance Mode</label>
+                    <select name="settings[maintenance_mode]" id="maintenance_mode" class="form-select">
+                        <option value="1" {% if system_settings.maintenance_mode == 1 %}selected{% endif %}>Enabled</option>
+                        <option value="0" {% if system_settings.maintenance_mode == 0 %}selected{% endif %}>Disabled</option>
+                    </select>
+                </div>
+                   <!-- ✅ New PDF Output Mode Setting -->
+                <div class="col-md-6">
+                    <label for="pdf_output_mode" class="form-label">PDF Output Mode</label>
+                    <select name="settings[pdf_output_mode]" id="pdf_output_mode" class="form-select">
+                        <option value="inline" {% if system_settings.pdf_output_mode == 'inline' %}selected{% endif %}>Inline (Preview in Browser)</option>
+                        <option value="download" {% if system_settings.pdf_output_mode == 'download' %}selected{% endif %}>Force Download</option>
+                    </select>
+                </div>
+            
+            </div>
+        </div>
+        <div class="card-footer text-center">
+            {% if user_role == 'administrator' %}
+                <button type="submit" class="btn btn-primary btn-hover">Save System Settings</button>
+            {% endif %}
+        </div>
+    </div>
+</form>
+
+{# ---------------- Union Selector ---------------- #}
+{% if user_role == 'administrator' %}
+
+
+
+<div class="mb-4 union-select-wrapper">
+    <label class="form-label fw-semibold">
+        🏛️ Select Union
+    </label>
+
+    <select id="unionSelect" class="form-select">
+        <option value="">— Select Union —</option>
+        {% for union in unions %}
+            <option value="{{ union.union_id }}">
+                {{ union.union_code }} • {{ union.union_name_en }} ({{ union.union_name_bn }})
+            </option>
+        {% endfor %}
+    </select>
+</div>
+
+{% endif %}
+
+{# ---------------- Union Settings Form ---------------- #}
+<form method="POST" enctype="multipart/form-data" id="unionFormContainer" style="display: none;">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <input type="hidden" name="union_id" id="union_id" value="">
+
+    <div class="card mb-4 shadow-sm rounded">
+        <div class="card-header bg-success text-white d-flex align-items-center">
+            <i class="bi bi-building me-2"></i>
+            <h4 class="mb-0 text-light">Union Parishad Settings</h4>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+
+                {# Division #}
+                <div class="col-md-4">
+                    <label for="division_id" class="form-label">Division / বিভাগ</label>
+                    <select id="division_id" name="settings[division_id]" class="form-select">
+                        <option value="">Select Division</option>
+                    </select>
+                    <input type="hidden" name="settings[division_name_en]" id="division_name_en" value="{{ union_settings.division_name_en }}">
+                    <input type="hidden" name="settings[division_name_bn]" id="division_name_bn" value="{{ union_settings.division_name_bn }}">
+                </div>
+
+                {# District #}
+                <div class="col-md-4">
+                    <label for="district_id" class="form-label">District / জেলা</label>
+                    <select id="district_id" name="settings[district_id]" class="form-select">
+                        <option value="">Select District</option>
+                    </select>
+                    <input type="hidden" name="settings[district_name_en]" id="district_name_en" value="{{ union_settings.district_name_en }}">
+                    <input type="hidden" name="settings[district_name_bn]" id="district_name_bn" value="{{ union_settings.district_name_bn }}">
+                </div>
+
+                {# Upazila #}
+                <div class="col-md-4">
+                    <label for="upazila_id" class="form-label">Upazila / উপজেলা</label>
+                    <select id="upazila_id" name="settings[upazila_id]" class="form-select">
+                        <option value="">Select Upazila</option>
+                    </select>
+                    <input type="hidden" name="settings[upazila_name_en]" id="upazila_name_en" value="{{ union_settings.upazila_name_en }}">
+                    <input type="hidden" name="settings[upazila_name_bn]" id="upazila_name_bn" value="{{ union_settings.upazila_name_bn }}">
+                </div>
+
+                {# Union Fields #}
+                <div class="col-md-3">
+                    <label for="union_name_en" class="form-label">Union Name (English)</label>
+                    <input type="text" name="settings[union_name_en]" id="union_name_en" class="form-control" value="{{ union_settings.union_name_en }}">
+                </div>
+                <div class="col-md-3">
+                    <label for="union_name_bn" class="form-label">ইউনিয়ন পরিষদের নাম (বাংলা)</label>
+                    <input type="text" name="settings[union_name_bn]" id="union_name_bn" class="form-control" value="{{ union_settings.union_name_bn }}">
+                </div>
+                <div class="col-md-3">
+                    <label for="ward_count" class="form-label">Total Wards</label>
+                    <input type="number" name="settings[ward_count]" id="ward_count" class="form-control" value="{{ union_settings.ward_count }}">
+                </div>
+                <div class="col-md-3">
+                    <label for="union_code" class="form-label">Union Code</label>
+                    <input type="text" name="settings[union_code]" id="union_code" class="form-control" value="{{ union_settings.union_code }}">
+                </div>
+                <div class="col-md-3">
+                    <label for="email" class="form-label">Union Email</label>
+                    <input type="email" name="settings[email]" id="email" class="form-control" value="{{ union_settings.email }}">
+                </div>
+                <div class="col-md-3">
+                    <label for="phone" class="form-label">Union Phone</label>
+                    <input type="text" name="settings[phone]" id="phone" class="form-control" value="{{ union_settings.phone }}">
+                </div>
+                <div class="col-md-3">
+                    <label for="website" class="form-label">Website</label>
+                    <input type="text" name="settings[website]" id="website" class="form-control" value="{{ union_settings.website }}">
+                </div>
+                <div class="col-md-3">
+                    <label for="postcode" class="form-label">Postcode</label>
+                    <input type="text" name="settings[postcode]" id="postcode" class="form-control" value="{{ union_settings.postcode }}">
+                </div>
+
+                {# Union Logo #}
+                <div class="col-md-6">
+                    <label class="form-label">Union Logo</label>
+                    <div class="d-flex align-items-center gap-3">
+                        <input type="file" name="union_logo" id="union_logo" class="form-control">
+                        {% if union_settings.logo_url %}
+                            <img src="{{ union_settings.logo_url }}" alt="Union Logo" class="img-fluid border rounded" style="max-height:100px;">
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="card-footer text-center">
+            <button type="submit" class="btn btn-success btn-hover">Save Union Settings</button>
+        </div>
+    </div>
+</form>
+
+<a href="{{ previous_url }}" class="btn btn-secondary mt-3">Back</a>
+
+
+
+{% include 'partials/system_settings_vjs.twig' %}
+
+{% endblock %}
+{% block styles %}
+<style>
+    /* Union Select – Premium UI */
+    .union-select-wrapper {
+        background: #ffffff;
+        border-radius: 12px;
+        padding: 14px;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.06);
+    }
+    
+    .union-select-wrapper label {
+        font-size: 0.9rem;
+        color: #495057;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+    
+    .union-select-wrapper select {
+        border-radius: 10px;
+        padding: 10px 14px;
+        border: 1px solid #dee2e6;
+        transition: all 0.25s ease;
+        font-size: 0.95rem;
+    }
+    
+    .union-select-wrapper select:focus {
+        border-color: #0d6efd;
+        box-shadow: 0 0 0 0.2rem rgba(13,110,253,.15);
+    }
+    
+    .union-select-wrapper option[value=""] {
+        color: #adb5bd;
+    }
+    #unionSelect {
+        border-radius: 12px;
+        padding: 12px 14px;
+        font-size: 15px;
+        font-weight: 500;
+    }
+    
+    /* Option text styling (limited support) */
+    #unionSelect option {
+        padding: 10px;
+        font-size: 14px;
+    }
+    
+    /* Placeholder style */
+    #unionSelect option[value=""] {
+        color: #adb5bd;
+        font-style: italic;
+    }
+</style>
+{% endblock %}

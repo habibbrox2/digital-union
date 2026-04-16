@@ -1,0 +1,306 @@
+{% extends "layout.twig" %}
+
+{% block title %}জন্ম নিবন্ধন তালিকা{% endblock %}
+
+{% block content %}
+{% include 'components/sweetAlert.twig' %}
+<div class="container my-5">
+    <h2 class="mb-4 text-center text-primary fw-bold">👶 জন্ম নিবন্ধন তালিকা</h2>
+
+    <div class="card shadow-lg rounded-4 border-0">
+        <div class="card-header bg-gradient text-white d-flex justify-content-between align-items-center py-3 rounded-top-4 flex-wrap">
+            <h5 class="mb-2 mb-md-0"><i class="bi bi-list-columns-reverse me-2"></i> রেজিস্টার তালিকা</h5>
+            <a href="/birth/form" class="btn btn-gradient btn-sm fw-bold d-flex align-items-center gap-1">
+                <i class="bi bi-plus-circle-fill"></i> নতুন এন্ট্রি
+            </a>
+        </div>
+
+        <div class="card-body p-0">
+
+            {# ================= Controls: Show Entries + Search ================= #}
+            <div class="d-flex justify-content-between align-items-center p-3 flex-wrap gap-2 bg-light border-bottom">
+                <div class="d-flex align-items-center flex-wrap gap-2">
+                    <span class="me-2 text-muted">Show</span>
+                    <select id="entriesSelect" class="form-select form-select-sm d-inline-block w-auto shadow-sm">
+                        <option value="5">5</option>
+                        <option value="10" selected>10</option>
+                        <option value="25">25</option>
+                        <option value="50">50</option>
+                        <option value="100">100</option>
+                    </select>
+                    <span class="ms-2 text-muted">entries</span>
+                </div>
+                <div class="flex-grow-1 flex-md-grow-0">
+                    <div class="input-group input-group-sm shadow-sm">
+                        <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-primary"></i></span>
+                        <input type="text" id="tableSearch" class="form-control border-start-0" placeholder="সার্চ করুন...">
+                    </div>
+                </div>
+            </div>
+
+            {# ================= Desktop Table ================= #}
+            <div class="table-responsive d-none d-md-block">
+                <table id="birthTable" class="table table-hover table-striped mb-0 align-middle">
+                    <thead class="table-dark text-center sticky-top">
+                        <tr>
+                            <th>সনদ নাম্বার</th>
+                            <th>নাম</th>
+                            <th>পিতা/মাতার নাম</th>
+                            <th>জন্ম তারিখ</th>
+                            <th>অফিসের নাম</th>
+                            <th>ঠিকানা</th>
+                            <th>অ্যাকশন</th>
+                        </tr>
+                    </thead>
+                    <tbody id="birthTableBody">
+                        <tr>
+                            <td colspan="9" class="text-center text-muted py-4">
+                                <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> ডেটা লোড হচ্ছে...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            {# ================= Mobile Cards ================= #}
+            <div id="birthCardContainer" class="d-md-none p-2"></div>
+
+            {# ================= Pagination ================= #}
+            <div class="d-flex justify-content-between align-items-center p-3 flex-wrap gap-2 border-top bg-light rounded-bottom-4">
+                <div id="tableInfo" class="text-muted small"></div>
+                <nav>
+                    <ul id="tablePagination" class="pagination pagination-sm mb-0"></ul>
+                </nav>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+{# ---------------- Delete Confirm Modal ---------------- #}
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-danger border-3 shadow-lg">
+      <div class="modal-header bg-danger text-white">
+        <h5 class="modal-title" id="deleteModalLabel">
+            <i class="bi bi-exclamation-triangle-fill me-1"></i> ডিলিট নিশ্চিত করুন
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body text-center">
+        <i class="bi bi-trash-fill display-4 mb-3" style="color:#ff4d4d;"></i>
+        <p class="fs-5 fw-semibold">আপনি কি নিশ্চিতভাবে এই রেকর্ডটি ডিলিট করতে চান?</p>
+        <small class="text-muted">এই পদক্ষেপটি পূর্বাবস্থায় ফেরানো যাবে না।</small>
+      </div>
+      <div class="modal-footer justify-content-center">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+            <i class="bi bi-x-circle me-1"></i> বাতিল
+        </button>
+        <a id="confirmDeleteBtn" href="#" class="btn btn-danger shadow-sm">
+            <i class="bi bi-trash-fill me-1"></i> ডিলিট করুন
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+{# ================= Modern JS ================= #}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const tbody = document.getElementById('birthTableBody');
+    const cardContainer = document.getElementById('birthCardContainer');
+    const entriesSelect = document.getElementById('entriesSelect');
+    const tableSearch = document.getElementById('tableSearch');
+    const paginationContainer = document.getElementById('tablePagination');
+    const tableInfo = document.getElementById('tableInfo');
+
+    let currentPage = 1;
+    let entries = Number(entriesSelect.value);
+    let allRows = [];
+
+    const enToBnDigits = { '0':'০','1':'১','2':'২','3':'৩','4':'৪','5':'৫','6':'৬','7':'৭','8':'৮','9':'৯' };
+    const formatDateToBnDDMMYYYY = dateString => {
+        const d = new Date(dateString);
+        const day = String(d.getDate()).padStart(2,'0');
+        const month = String(d.getMonth()+1).padStart(2,'0');
+        const year = String(d.getFullYear());
+        const bn = str => str.split('').map(ch => enToBnDigits[ch]||ch).join('');
+        return `${bn(day)}-${bn(month)}-${bn(year)}`;
+    };
+
+    const loadData = async () => {
+        tbody.innerHTML = `<tr><td colspan="9" class="text-center text-primary py-4">
+            <span class="spinner-border spinner-border-sm me-2" role="status"></span> ডেটা লোড হচ্ছে...
+        </td></tr>`;
+        cardContainer.innerHTML = `<div class="text-center text-primary py-4">
+            <span class="spinner-border spinner-border-sm me-2" role="status"></span> ডেটা লোড হচ্ছে...
+        </div>`;
+        try {
+            const res = await fetch('/api/births');
+            const data = await res.json();
+            allRows = data.map(b => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="text-center">${b.registration_number}</td>
+                    <td>${b.name_bn}</td>
+                    <td><span class="d-block text-primary">পিতা: ${b.father_name_bn}</span><span class="d-block text-success">মাতা: ${b.mother_name_bn}</span></td>
+                    <td class="text-center fw-semibold">${formatDateToBnDDMMYYYY(b.birth_date)}</td>
+                    <td>${b.office_name_en || b.office_name_bn || 'N/A'}</td>
+                    <td class="small"><span class="d-block text-info">জন্মস্থান: ${b.district_bn||'নাই'}, ${b.country_bn||'নাই'}</span><span class="d-block text-secondary">স্থায়ী ঠিকানা: ${b.permanent_address_bn||''}</span></td>
+                    <td class="text-center">
+                        <div class="d-flex flex-wrap gap-1 justify-content-center">
+                            <a href="/birth/pdf/${b.id}" class="btn btn-sm btn-info text-white" title="PDF"><i class="bi bi-file-earmark-pdf-fill"></i></a>
+                            <a href="/birth/edit/${b.id}" class="btn btn-sm btn-success" title="Edit"><i class="bi bi-pencil-square"></i></a>
+                            <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#deleteModal" data-id="${b.id}" title="Delete"><i class="bi bi-trash"></i></button>
+                        </div>
+                    </td>
+                `;
+                tr.dataset.id = b.id;
+                tr.dataset.registration_number = b.registration_number;
+                tr.dataset.name_bn = b.name_bn;
+                tr.dataset.father_name_bn = b.father_name_bn;
+                tr.dataset.mother_name_bn = b.mother_name_bn;
+                tr.dataset.birth_date = b.birth_date;
+                tr.dataset.office_name = b.office_name_en || b.office_name_bn || 'N/A';
+                tr.dataset.address = `${b.district_bn||'নাই'}, ${b.country_bn||'নাই'} - ${b.permanent_address_bn||''}`;
+                return tr;
+            });
+
+            if(!allRows.length){
+                tbody.innerHTML = `<tr><td colspan="9" class="text-center text-muted py-4"><i class="bi bi-info-circle me-1"></i> কোনো তথ্য নেই।</td></tr>`;
+                cardContainer.innerHTML = `<div class="text-center text-muted py-4"><i class="bi bi-info-circle me-1"></i> কোনো তথ্য নেই।</div>`;
+            }
+
+            renderTable();
+        } catch(err) {
+            tbody.innerHTML = `<tr><td colspan="9" class="text-center text-danger py-4"><i class="bi bi-x-octagon-fill me-1"></i> ডেটা লোড করতে সমস্যা হয়েছে।</td></tr>`;
+            cardContainer.innerHTML = `<div class="text-center text-danger py-4"><i class="bi bi-x-octagon-fill me-1"></i> ডেটা লোড করতে সমস্যা হয়েছে।</div>`;
+            console.error(err);
+        }
+    };
+
+    const renderTable = () => {
+        const query = tableSearch.value.toLowerCase();
+        const filtered = allRows.filter(r => 
+            r.dataset.name_bn.toLowerCase().includes(query) ||
+            r.dataset.father_name_bn.toLowerCase().includes(query) ||
+            r.dataset.mother_name_bn.toLowerCase().includes(query)
+        );
+
+        const start = (currentPage-1)*entries;
+        const end = start + entries;
+
+        // Desktop table
+        tbody.innerHTML = '';
+        filtered.slice(start, end).forEach(r => tbody.appendChild(r));
+
+        // Mobile cards
+        cardContainer.innerHTML = '';
+        filtered.slice(start, end).forEach(r => {
+            const card = document.createElement('div');
+            card.className = 'card mb-3 shadow-sm';
+            card.innerHTML = `
+                <div class="card-header bg-primary text-white fw-bold d-flex justify-content-between align-items-center">
+                    ${r.dataset.registration_number}
+                    <div class="d-flex gap-1">
+                        <a href="/birth/pdf/${r.dataset.id}" class="btn btn-sm btn-info text-white" title="PDF"><i class="bi bi-file-earmark-pdf-fill"></i></a>
+                        <a href="/birth/edit/${r.dataset.id}" class="btn btn-sm btn-success" title="Edit"><i class="bi bi-pencil-square"></i></a>
+                        <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#deleteModal" data-id="${r.dataset.id}"><i class="bi bi-trash"></i></button>
+                    </div>
+                </div>
+                <div class="card-body p-2">
+                    <p class="mb-1"><strong>নাম:</strong> ${r.dataset.name_bn}</p>
+                    <p class="mb-1"><strong>পিতা:</strong> ${r.dataset.father_name_bn}</p>
+                    <p class="mb-1"><strong>মাতা:</strong> ${r.dataset.mother_name_bn}</p>
+                    <p class="mb-1"><strong>জন্ম তারিখ:</strong> ${formatDateToBnDDMMYYYY(r.dataset.birth_date)}</p>
+                    <p class="mb-1"><strong>অফিস:</strong> ${r.dataset.office_name}</p>
+                    <p class="mb-0"><strong>ঠিকানা:</strong> ${r.dataset.address}</p>
+                </div>
+            `;
+            cardContainer.appendChild(card);
+        });
+
+        renderPagination(filtered);
+        updateInfo(filtered);
+    };
+
+    const renderPagination = (rows) => {
+        paginationContainer.innerHTML = '';
+        const pageCount = Math.ceil(rows.length/entries);
+        const createPageItem = (label, page, disabled=false, active=false) => {
+            const li = document.createElement('li');
+            li.className = `page-item ${disabled?'disabled':''} ${active?'active':''}`;
+            li.innerHTML = `<a class="page-link" href="#">${label}</a>`;
+            if(!disabled) li.addEventListener('click', e => { e.preventDefault(); currentPage=page; renderTable(); });
+            return li;
+        };
+
+        paginationContainer.appendChild(createPageItem('«', currentPage-1, currentPage===1));
+        for(let i=1;i<=pageCount;i++) paginationContainer.appendChild(createPageItem(i, i, false, i===currentPage));
+        paginationContainer.appendChild(createPageItem('»', currentPage+1, currentPage===pageCount));
+    };
+
+    const updateInfo = (rows) => {
+        const start = rows.length? (currentPage-1)*entries+1 : 0;
+        const end = Math.min(currentPage*entries, rows.length);
+        tableInfo.textContent = `Showing ${start} to ${end} of ${rows.length} entries`;
+    };
+
+    entriesSelect.addEventListener('change', () => { entries = Number(entriesSelect.value); currentPage=1; renderTable(); });
+    tableSearch.addEventListener('input', () => { currentPage=1; renderTable(); });
+
+    // Delete Modal
+    const deleteModal = document.getElementById('deleteModal');
+    const confirmBtn = document.getElementById('confirmDeleteBtn');
+    deleteModal.addEventListener('show.bs.modal', e => {
+        confirmBtn.href = '/birth/delete/' + e.relatedTarget.getAttribute('data-id');
+    });
+
+    loadData();
+});
+</script>
+
+{# ================= Modern CSS ================= #}
+<style>
+
+.card.rounded-4 { border-radius: 1.5rem !important; }
+.card-header.bg-gradient { background: linear-gradient(90deg, #6a11cb, #2575fc); }
+
+.table-hover tbody tr:hover { background-color: #d6e0ff !important; }
+.table-striped tbody tr:nth-of-type(odd) { background-color: #f7f9ff; }
+
+#birthTable thead th {
+    border-bottom: none;
+    letter-spacing: 0.05rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.85rem;
+    background-color: #3b82f6;
+    color: #fff;
+}
+
+#birthTable tbody tr td { font-size: 0.9rem; padding: 12px 10px; vertical-align: middle; }
+
+.form-control, .form-select { border-radius: 0.5rem; }
+
+.btn-gradient {
+    background: linear-gradient(90deg, #6a11cb, #2575fc);
+    color: #fff;
+    transition: all 0.2s ease;
+}
+.btn-gradient:hover { background: linear-gradient(90deg, #2575fc, #6a11cb); color: #fff; }
+
+.pagination .page-item .page-link {
+    padding: 0.3rem 0.75rem; margin: 0 0.2rem; border-radius: 0.4rem; transition: background 0.2s ease;
+}
+.pagination .page-item.active .page-link { background-color: #6a11cb; border-color: #6a11cb; color: #fff; }
+.pagination .page-item.active .page-link:hover { background-color: #4b0ca3; border-color: #4b0ca3; }
+.pagination .page-link { color: #6a11cb; }
+.pagination .page-link:hover { background-color: #e0e7ff; }
+
+@media (max-width: 768px) {
+    #birthTable { display: none; }
+    .card { font-size: 0.9rem; }
+}
+</style>
+{% endblock %}

@@ -1,0 +1,55 @@
+{# components/macros.twig #}
+
+{% macro display_info_block(data) %}
+    <dl class="uk-description-list uk-description-list-divider">
+    {% for label, value in data %}
+        <dt>{{ label }}</dt>
+        <dd>{{ value is not empty ? value : 'N/A' }}</dd>
+    {% endfor %}
+    </dl>
+{% endmacro %}
+
+{% macro display_status_badge(status) %}
+    {% set classes = {
+        'Approved': 'uk-label uk-label-success',
+        'Pending': 'uk-label uk-label-warning',
+        'Rejected': 'uk-label uk-label-danger'
+    } %}
+    {% set icons = {
+        'Approved': 'check-circle',
+        'Pending': 'clock',
+        'Rejected': 'close'
+    } %}
+    <span class="{{ classes[status] | default('uk-label') }}">
+        <span uk-icon=\"icon: {{ icons[status] | default('info') }}\"></span>
+        {{ status }}
+    </span>
+{% endmacro %}
+
+{% macro display_documents_table(documents) %}
+    {% if documents is empty %}
+        <p>No documents uploaded.</p>
+    {% else %}
+        <table class="uk-table uk-table-divider uk-table-responsive uk-table-small">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Document Name</th>
+                    <th>Download</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for doc_path in documents %}
+                    <tr>
+                        <td>{{ loop.index }}</td>
+                        <td>{{ doc_path | split('/') | last }}</td>
+                        <td>
+                            <a href="{{ doc_path }}" target="_blank" class="uk-button uk-button-small uk-button-primary">View</a>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% endif %}
+{% endmacro %}
+

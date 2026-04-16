@@ -1,0 +1,344 @@
+{% extends "layout.twig" %}
+
+{% block title %}{{ 'নতুন ব্যবহারকারী যোগ করুন' }}{% endblock %}
+
+{% block header_title %}{{ header_title|default('নতুন ব্যবহারকারী যোগ করুন') }}{% endblock %}
+
+{% block content %}
+{% include 'components/sweetAlert.twig' %}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="card-title">{{ 'নতুন ব্যবহারকারী যোগ করুন' }}</h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST" enctype="multipart/form-data" id="addUserForm">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                        
+                        <div class="row">
+                            <!-- Profile Picture -->
+                            <div class="col-md-12 mb-3">
+                                <label class="form-label">{{ 'প্রোফাইল ছবি' }}</label>
+                                <div class="d-flex align-items-center gap-3">
+                                    <div class="rounded-circle bg-secondary d-flex align-items-center justify-content-center" style="width: 80px; height: 80px;">
+                                        <i class="bi bi-person fs-1 text-white"></i>
+                                    </div>
+                                    <div>
+                                        <input type="file" class="form-control" name="profile_picture" accept="image/*">
+                                        <small class="text-muted">{{ 'JPG, PNG বা GIF (সর্বোচ্চ 5MB)' }}</small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Username -->
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">{{ 'ব্যবহারকারীনাম' }} <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" name="username" required 
+                                       placeholder="unique_username" minlength="3" maxlength="50"
+                                       pattern="^[a-zA-Z0-9_]+$">
+                                <small class="text-muted">{{ '৩-৫০ অক্ষর (শুধুমাত্র ইংরেজি অক্ষর, সংখ্যা ও আন্ডারস্কোর)' }}</small>
+                            </div>
+
+                            <!-- Email -->
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">{{ 'ইমেইল' }} <span class="text-danger">*</span></label>
+                                <input type="email" class="form-control" name="email" required 
+                                       placeholder="user@example.com">
+                            </div>
+
+                            <!-- Name Bangla -->
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">{{ 'নাম (বাংলা)' }} <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" name="name_bn" required 
+                                       placeholder="উদা: আব্দুল করিম" maxlength="100">
+                            </div>
+
+                            <!-- Name English -->
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">{{ 'নাম (ইংরেজি)' }} <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" name="name_en" required 
+                                       placeholder="Ex: Abdul Karim" maxlength="100">
+                            </div>
+
+                            <!-- Phone -->
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">{{ 'ফোন নম্বর' }}</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">+88</span>
+                                    <input type="tel" class="form-control" name="phone" 
+                                           placeholder="017XXXXXXXX" pattern="01[3-9][0-9]{8}">
+                                </div>
+                                <small class="text-muted">{{ '১১ ডিজিটের সঠিক মোবাইল নম্বর' }}</small>
+                            </div>
+
+                            <!-- Role -->
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">{{ 'ভূমিকা' }} <span class="text-danger">*</span></label>
+                                <select class="form-select" name="role_id" id="roleSelect" required>
+                                    <option value="">{{ 'নির্বাচন করুন' }}</option>
+                                    <option value="1">{{ 'প্রশাসক' }}</option>
+                                    <option value="2">{{ 'সচিব' }}</option>
+                                    <option value="3">{{ 'অফিসার' }}</option>
+                                    <option value="4">{{ 'সদস্য' }}</option>
+                                </select>
+                            </div>
+
+                            <!-- Password -->
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">{{ 'পাসওয়ার্ড' }} <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <input type="password" class="form-control" name="password" id="password" 
+                                           required minlength="8" placeholder="••••••••">
+                                    <button class="btn btn-outline-secondary toggle-password" type="button">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
+                                </div>
+                                <small class="text-muted">{{ 'কমপক্ষে ৮ অক্ষর' }}</small>
+                            </div>
+
+                            <!-- Confirm Password -->
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">{{ 'পাসওয়ার্ড নিশ্চিত করুন' }} <span class="text-danger">*</span></label>
+                                <input type="password" class="form-control" name="confirm_password" id="confirmPassword"
+                                       required minlength="8" placeholder="••••••••">
+                            </div>
+
+                            <!-- Union -->
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">{{ 'ইউনিয়ন' }}</label>
+                                <select class="form-select" name="union_id" id="unionSelect">
+                                    <option value="">{{ 'কোন ইউনিয়ন নেই' }}</option>
+                                    {% for union in unions %}
+                                    <option value="{{ union.union_id }}">{{ union.union_name_bn }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <!-- Ward No (conditionally shown) -->
+                            <div class="col-md-6 mb-3" id="wardField" style="display: none;">
+                                <label class="form-label">{{ 'ওয়ার্ড নং' }} <span class="text-danger" id="wardRequired">*</span></label>
+                                <select class="form-select" name="ward_no" id="wardSelect">
+                                    <option value="">{{ 'ওয়ার্ড নির্বাচন করুন' }}</option>
+                                    {% for i in 1..9 %}
+                                    <option value="{{ i }}">{{ i }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <!-- Address -->
+                            <div class="col-md-12 mb-3">
+                                <label class="form-label">{{ 'ঠিকানা' }}</label>
+                                <textarea class="form-control" name="address" rows="2" maxlength="500" placeholder="বিস্তারিত ঠিকানা লিখুন..."></textarea>
+                            </div>
+
+                            <!-- Status -->
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">{{ 'অবস্থা' }}</label>
+                                <select class="form-select" name="is_active">
+                                    <option value="1" selected>{{ 'সক্রিয়' }}</option>
+                                    <option value="0">{{ 'নিষ্ক্রিয়' }}</option>
+                                </select>
+                            </div>
+
+                            <!-- Language -->
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">{{ 'ভাষা পছন্দ' }}</label>
+                                <select class="form-select" name="language">
+                                    <option value="bn" selected>{{ 'বাংলা' }}</option>
+                                    <option value="en">{{ 'ইংরেজি' }}</option>
+                                </select>
+                            </div>
+
+                            <!-- Timezone -->
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">{{ 'সময় অঞ্চল' }}</label>
+                                <select class="form-select" name="timezone">
+                                    <option value="Asia/Dhaka" selected>Asia/Dhaka (UTC+6)</option>
+                                    <option value="Asia/Kolkata">Asia/Kolkata (UTC+5:30)</option>
+                                    <option value="UTC">UTC</option>
+                                </select>
+                            </div>
+
+                            <!-- Notification Settings -->
+                            <div class="col-md-12 mb-3">
+                                <label class="form-label">{{ 'বিজ্ঞপ্তি সেটিংস' }}</label>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="email_notifications" id="emailNotif" checked>
+                                    <label class="form-check-label" for="emailNotif">
+                                        {{ 'ইমেইল বিজ্ঞপ্তি' }}
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="sms_notifications" id="smsNotif" checked>
+                                    <label class="form-check-label" for="smsNotif">
+                                        {{ 'এসএমএস বিজ্ঞপ্তি' }}
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-save"></i> {{ 'ব্যবহারকারী তৈরি করুন' }}
+                            </button>
+                            <a href="/users" class="btn btn-secondary">
+                                <i class="bi bi-x-circle"></i> {{ 'বাতিল' }}
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const roleSelect = document.getElementById('roleSelect');
+    const wardField = document.getElementById('wardField');
+    const wardSelect = document.getElementById('wardSelect');
+    const wardRequired = document.getElementById('wardRequired');
+    const addUserForm = document.getElementById('addUserForm');
+
+    // Toggle Password Visibility
+    document.querySelectorAll('.toggle-password').forEach(button => {
+        button.addEventListener('click', function() {
+            const input = this.parentElement.querySelector('input');
+            const icon = this.querySelector('i');
+            if (input.type === "password") {
+                input.type = "text";
+                icon.classList.replace('bi-eye', 'bi-eye-slash');
+            } else {
+                input.type = "password";
+                icon.classList.replace('bi-eye-slash', 'bi-eye');
+            }
+        });
+    });
+
+    // Toggle Ward Field based on Role
+    function toggleWardField() {
+        const selectedRole = roleSelect.value;
+        
+        if (selectedRole == '4') { // সদস্য
+            wardField.style.display = 'block';
+            wardSelect.required = true;
+            wardRequired.style.display = 'inline';
+        } else {
+            wardField.style.display = 'none';
+            wardSelect.required = false;
+            wardSelect.value = '';
+            wardRequired.style.display = 'none';
+        }
+    }
+
+    // Listen for role changes
+    roleSelect.addEventListener('change', toggleWardField);
+
+    // =====================
+    // Add User Form AJAX Submit
+    // =====================
+    addUserForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const password = document.getElementById('password').value;
+        const confirmPassword = document.getElementById('confirmPassword').value;
+
+        // Validate ward field for role 4
+        if (roleSelect.value == '4' && !wardSelect.value) {
+            Swal.fire({
+                icon: 'error',
+                title: 'ত্রুটি',
+                text: 'সদস্য ভূমিকার জন্য ওয়ার্ড নং বাধ্যতামূলক',
+                confirmButtonText: 'ঠিক আছে'
+            });
+            wardSelect.focus();
+            return;
+        }
+
+        // Validate passwords match
+        if (password !== confirmPassword) {
+            Swal.fire({
+                icon: 'error',
+                title: 'ত্রুটি',
+                text: 'পাসওয়ার্ড এবং নিশ্চিত পাসওয়ার্ড মিলছে না',
+                confirmButtonText: 'ঠিক আছে'
+            });
+            return;
+        }
+
+        // Password length validation
+        if (password.length < 8) {
+            Swal.fire({
+                icon: 'error',
+                title: 'ত্রুটি',
+                text: 'পাসওয়ার্ড কমপক্ষে ৮ অক্ষরের হতে হবে',
+                confirmButtonText: 'ঠিক আছে'
+            });
+            return;
+        }
+
+        // Prepare form data
+        const formData = new FormData(addUserForm);
+
+        // Show loading
+        Swal.fire({
+            title: 'প্রক্রিয়াকরণ...',
+            text: 'নতুন ব্যবহারকারী তৈরি করা হচ্ছে',
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+
+        try {
+            const response = await fetch('/users/add', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            });
+
+            const result = await response.json();
+
+            if (response.ok && result.success) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'সফল!',
+                    text: result.message || 'ব্যবহারকারী সফলভাবে তৈরি হয়েছে',
+                    confirmButtonText: 'ঠিক আছে',
+                    timer: 2000
+                }).then(() => {
+                    // Redirect to users list
+                    if (result.redirect) {
+                        window.location.href = result.redirect;
+                    } else {
+                        window.location.href = '/users';
+                    }
+                });
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'ত্রুটি!',
+                    text: result.message || 'ব্যবহারকারী তৈরি করতে ব্যর্থ হয়েছে',
+                    confirmButtonText: 'ঠিক আছে'
+                });
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            Swal.fire({
+                icon: 'error',
+                title: 'ত্রুটি!',
+                text: 'সার্ভারের সাথে সংযোগ করতে ব্যর্থ হয়েছে',
+                confirmButtonText: 'ঠিক আছে'
+            });
+        }
+    });
+});
+</script>
+
+{% endblock %}

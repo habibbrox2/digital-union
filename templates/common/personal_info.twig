@@ -1,0 +1,129 @@
+
+{# common/personal_info.twig #}
+<div class="row">
+    <div class="col-md-6">
+            <label for="name_en" class="form-label">নাম (ইংরেজিতে)</label>
+            <input type="text" name="name_en" id="name_en" class="form-control" placeholder="Enter your name in English" value="{{ reuse_data.name_en|default('') }}">
+    </div>
+    <div class="col-md-6">
+            <label for="name_bn" class="form-label">নাম (বাংলায়) <span class="text-danger">*</span></label>
+            <input type="text" name="name_bn" id="name_bn" class="form-control" placeholder="আপনার নাম বাংলায় লিখুন" required value="{{ reuse_data.name_bn|default('') }}">
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <label for="nid" class="form-label">ন্যাশনাল আইডি</label>
+    <input type="text" name="nid" id="nid" class="form-control" placeholder="1616623458679011" value="{{ reuse_data.nid|default('') }}">
+    </div>
+    <div class="col-md-6">
+        <label for="birth_id" class="form-label">জন্ম নিবন্ধন নং</label>
+    <input type="text" name="birth_id" id="birth_id" class="form-control" placeholder="1919623458679011" value="{{ reuse_data.birth_id|default('') }}">
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <label for="passport_no" class="form-label">পাসপোর্ট নং</label>
+    <input type="text" name="passport_no" id="passport_no" class="form-control" placeholder="1616623458679011" value="{{ reuse_data.passport_no|default('') }}">
+    </div>
+    <div class="col-md-6">
+        <label for="birth_date" class="form-label">জন্ম তারিখ <span class="text-danger">*</span></label>
+    <input type="text" name="birth_date" id="birth_date" class="form-control datepicker" placeholder="দিন-মাস-বছর" required value="{{ reuse_data.birth_date ? reuse_data.birth_date|date('d-m-Y') : '' }}">
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <label for="father_name_en" class="form-label">পিতার নাম (ইংরেজিতে)</label>
+    <input type="text" name="father_name_en" id="father_name_en" class="form-control" placeholder="Enter father's name in English" value="{{ reuse_data.father_name_en|default('') }}">
+    </div>
+    <div class="col-md-6">
+        <label for="father_name_bn" class="form-label">পিতার নাম (বাংলায়) <span class="text-danger">*</span></label>
+    <input type="text" name="father_name_bn" id="father_name_bn" class="form-control" placeholder="পিতার নাম বাংলায় লিখুন" value="{{ reuse_data.father_name_bn|default('') }}">
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <label for="mother_name_en" class="form-label">মাতার নাম (ইংরেজিতে)</label>
+    <input type="text" name="mother_name_en" id="mother_name_en" class="form-control" placeholder="Enter mother's name in English" value="{{ reuse_data.mother_name_en|default('') }}">
+    </div>
+    <div class="col-md-6">
+        <label for="mother_name_bn" class="form-label">মাতার নাম (বাংলায়) <span class="text-danger">*</span></label>
+    <input type="text" name="mother_name_bn" id="mother_name_bn" class="form-control" placeholder="মাতার নাম বাংলায় লিখুন" value="{{ reuse_data.mother_name_bn|default('') }}">
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <label for="occupation" class="form-label">পেশা</label>
+    <input type="text" name="occupation" id="occupation" class="form-control" placeholder="পেশা দিন" value="{{ reuse_data.occupation|default('') }}">
+    </div>
+    <div class="col-md-6">
+        <label for="educational_qualification" class="form-label">শিক্ষাগত যোগ্যতা</label>
+    <input type="text" name="educational_qualification" id="educational_qualification" class="form-control" placeholder="শিক্ষাগত যোগ্যতা দিন" value="{{ reuse_data.educational_qualification|default('') }}">
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <label for="resident" class="form-label">বাসিন্দা <span class="text-danger">*</span></label>
+        <select name="resident" id="resident" class="form-control" required>
+            <option value="">চিহ্নিত করুন</option>
+            <option value="temporary" {% if reuse_data.resident == 'temporary' %}selected{% endif %}>অস্থায়ী</option>
+            <option value="permanent" {% if reuse_data.resident == 'permanent' %}selected{% endif %}>স্থায়ী</option>
+        </select>
+    </div>
+    <div class="col-md-6">
+        <label for="religion" class="form-label">ধর্ম <span class="text-danger">*</span></label>
+        <select name="religion" id="religion" class="form-control">
+            <option value="">চিহ্নিত করুন</option>
+            <option value="Islam" {% if reuse_data.religion is defined and (reuse_data.religion|lower == 'islam' or reuse_data.religion|lower == 'ইসলাম') %}selected{% endif %}>ইসলাম</option>
+            <option value="Hinduism" {% if reuse_data.religion is defined and (reuse_data.religion|lower == 'hinduism' or reuse_data.religion|lower == 'হিন্দু') %}selected{% endif %}>হিন্দু</option>
+            <option value="Buddhism" {% if reuse_data.religion is defined and (reuse_data.religion|lower == 'buddhism' or reuse_data.religion|lower == 'বৌদ্ধ') %}selected{% endif %}>বৌদ্ধ ধর্ম</option>
+            <option value="Christianity" {% if reuse_data.religion is defined and (reuse_data.religion|lower == 'christianity' or reuse_data.religion|lower == 'খ্রিস্ট') %}selected{% endif %}>খ্রিস্ট ধর্ম</option>
+            <option value="Other" {% if reuse_data.religion is defined and (reuse_data.religion|lower == 'other' or reuse_data.religion|lower == 'অন্যান্য') %}selected{% endif %}>অন্যান্য</option>
+        </select>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <label for="gender" class="form-label">লিঙ্গ <span class="text-danger">*</span></label>
+        <select name="gender" id="gender" class="form-control" required>
+            <option value="">-- লিঙ্গ নির্বাচন করুন --</option>
+            <option value="male" {% if reuse_data.gender == 'male' %}selected{% endif %}>পুরুষ</option>
+            <option value="female" {% if reuse_data.gender == 'female' %}selected{% endif %}>মহিলা</option>
+            <option value="other" {% if reuse_data.gender == 'other' %}selected{% endif %}>অন্যান্য</option>
+        </select>
+    </div>
+    <div class="col-md-6">
+        <label for="marital_status" class="form-label">বৈবাহিক অবস্থা <span class="text-danger">*</span></label>
+        <select name="marital_status" id="marital_status" class="form-control">
+            <option value="">-- বৈবাহিক অবস্থা নির্বাচন করুন --</option>
+            <option value="single" {% if reuse_data.marital_status == 'single' %}selected{% endif %}>অবিবাহিত</option>
+            <option value="married" {% if reuse_data.marital_status == 'married' %}selected{% endif %}>বিবাহিত</option>
+            <option value="divorced" {% if reuse_data.marital_status == 'divorced' %}selected{% endif %}>তালাকপ্রাপ্ত</option>
+            <option value="widowed" {% if reuse_data.marital_status == 'widowed' %}selected{% endif %}>বিধবা/বিপত্নীক</option>
+            <option value="other" {% if reuse_data.marital_status == 'other' %}selected{% endif %}>অন্যান্য</option>
+        </select>
+    </div>
+
+</div>
+
+<div class="row" id="spouse_name">
+    <div class="col-md-6">
+        <div class="mb-3">
+            <label for="spouse_name_en" class="form-label">স্বামী/স্ত্রীর নাম (ইংরেজিতে)</label>
+            <input type="text" name="spouse_name_en" id="spouse_name_en" class="form-control" placeholder="Enter spouse's name in English" value="{{ reuse_data.spouse_name_en|default('') }}">
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="mb-3">
+            <label for="spouse_name_bn" class="form-label">স্বামী/স্ত্রীর নাম (বাংলায়)</label>
+            <input type="text" name="spouse_name_bn" id="spouse_name_bn" class="form-control" placeholder="স্বামী/স্ত্রীর নাম বাংলায় লিখুন" value="{{ reuse_data.spouse_name_bn|default('') }}">
+        </div>
+    </div>
+</div>
+

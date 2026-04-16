@@ -1,0 +1,271 @@
+{% extends "layout.twig" %}
+
+{% block title %}অনুমতি নির্ধারণ{% endblock %}
+{% block header_title %}ভূমিকায় অনুমতি নির্ধারণ করুন{% endblock %}
+
+{% block content %}
+{% include 'components/sweetAlert.twig' %}
+
+<style>
+/* Ensure permission checkboxes are visible despite any global overrides */
+.form-check-input.permission-checkbox {
+    width: 1.25rem !important;
+    height: 1.25rem !important;
+    margin-top: 0.125rem !important;
+    vertical-align: middle !important;
+    -webkit-appearance: checkbox !important;
+    appearance: checkbox !important;
+    opacity: 1 !important;
+    position: relative !important;
+}
+.permission-item .revoke-link { margin-left: 0.5rem; }
+.permission-name { display: inline-block; }
+</style>
+
+<div class="container-fluid py-5">
+    <div class="permissions-wrapper">
+        
+        <!-- Header Section -->
+        <div class="permissions-header mb-5">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h2 class="fw-bold text-gradient mb-2">
+                        <i class="fas fa-lock-open text-primary me-2"></i>অনুমতি ব্যবস্থাপনা
+                    </h2>
+                    <p class="text-muted fs-6">প্রতিটি ভূমিকার জন্য অনুমতি নির্ধারণ করুন এবং পরিচালনা করুন</p>
+                </div>
+                <div class="col-md-4 text-end">
+                    <span class="badge bg-info fs-6 px-3 py-2">
+                        <i class="fas fa-list me-1"></i>{{ roles|length }} ভূমিকা
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Roles Grid -->
+        {% if roles|length > 0 %}
+            <div class="row g-4">
+                {% for role in roles %}
+                    <div class="col-12 col-lg-6">
+                        <div class="role-card card border-0 shadow-lg h-100 overflow-hidden transition-all" 
+                             style="--role-color: {% if role.role_id == 1 %}#dc3545{% elseif role.role_id == 2 %}#007bff{% elseif role.role_id == 3 %}#28a745{% else %}#6c757d{% endif %}">
+                            
+                            <!-- Card Header -->
+                            <div class="card-header border-0 p-0">
+                                <div class="role-header-gradient p-4">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div>
+                                            <div class="d-flex align-items-center gap-2 mb-2">
+                                                <div class="role-icon">
+                                                    {% if role.role_id == 1 %}
+                                                        <i class="fas fa-crown text-danger"></i>
+                                                    {% elseif role.role_id == 2 %}
+                                                        <i class="fas fa-user-shield text-primary"></i>
+                                                    {% elseif role.role_id == 3 %}
+                                                        <i class="fas fa-user-tie text-success"></i>
+                                                    {% else %}
+                                                        <i class="fas fa-user text-secondary"></i>
+                                                    {% endif %}
+                                                </div>
+                                                <h4 class="mb-0 fw-bold text-dark">{{ role.role_name }}</h4>
+                                            </div>
+                                            {% if role.description %}
+                                                <p class="text-muted small mb-0">{{ role.description }}</p>
+                                            {% endif %}
+                                        </div>
+                                        <span class="badge bg-light text-dark fw-bold">ID: {{ role.role_id }}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Card Body -->
+                            <div class="card-body p-0 d-flex flex-column">
+                                <form class="role-permissions-form d-flex flex-column h-100" data-role-id="{{ role.role_id }}">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+                                    <!-- Permissions List -->
+                                    <div class="permissions-scroll flex-grow-1 px-3 pt-3">
+                                        <div class="permissions-list">
+                                            {% set rolePerms = assigned_role_permissions[role.role_id]|default({}) %}
+                                            {% set permsByModule = {} %}
+                                            
+                                            {% for permission in permissions %}
+                                                {% set module = permission.module %}
+                                                {% if not permsByModule[module] %}
+                                                    {% set permsByModule = permsByModule|merge({(module): []}) %}
+                                                {% endif %}
+                                                {% set permsByModule = permsByModule|merge({(module): permsByModule[module]|merge([permission])}) %}
+                                            {% endfor %}
+
+                                            {% for module, perms in permsByModule %}
+                                                <div class="module-group mb-4">
+                                                    <div class="module-header mb-2">
+                                                        <small class="text-uppercase fw-bold text-secondary">
+                                                            <i class="fas fa-folder-open me-1"></i>{{ module|title }}
+                                                        </small>
+                                                    </div>
+                                                    <div class="module-permissions">
+                                                        {% for permission in perms %}
+                                                            <div class="permission-item d-flex align-items-start justify-content-between">
+                                                                <div class="form-check form-check-custom">
+                                                                    <input class="form-check-input permission-checkbox" 
+                                                                           type="checkbox" 
+                                                                           id="role_{{ role.role_id }}_perm_{{ permission.id }}" 
+                                                                           name="role_permissions[]" 
+                                                                           value="{{ permission.id }}" 
+                                                                           {% if rolePerms[permission.id]|default(false) %}checked{% endif %}
+                                                                            ">
+                                                                    <label class="form-check-label" for="role_{{ role.role_id }}_perm_{{ permission.id }}">
+                                                                        <span class="permission-name">{{ permission.name }}</span>
+                                                                        {% if permission.description %}
+                                                                            <small class="d-block text-muted">{{ permission.description }}</small>
+                                                                        {% endif %}
+                                                                    </label>
+                                                                </div>
+                                                                <div class="ms-2 d-flex align-items-center">
+                                                                    <a href="/permissions/revoke/{{ role.role_id }}/{{ permission.id }}" 
+                                                                       class="btn btn-sm btn-outline-danger revoke-link" 
+                                                                       title="{{ 'Revoke'|trans }}">
+                                                                        <i class="fas fa-ban"></i>
+                                                                    </a>
+                                                                </div>
+                                                            </div>
+                                                        {% endfor %}
+                                                    </div>
+                                                </div>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+
+                                    <!-- Form Footer -->
+                                    <div class="p-3 border-top bg-light mt-3">
+                                        <div class="d-flex gap-2">
+                                            <button type="submit" class="btn btn-success flex-grow-1 fw-bold rounded-2">
+                                                <i class="fas fa-check-circle me-1"></i>সংরক্ষণ করুন
+                                            </button>
+                                            <button type="reset" class="btn btn-outline-secondary rounded-2">
+                                                <i class="fas fa-undo me-1"></i>রিসেট
+                                            </button>
+                                        </div>
+                                        <small class="text-muted d-block mt-2">
+                                            <i class="fas fa-info-circle me-1"></i>
+                                            নির্বাচিত: <span class="permission-count fw-bold">0</span>
+                                        </small>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+
+        {% else %}
+            <div class="alert alert-warning alert-dismissible fade show shadow-sm rounded-3" role="alert">
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-exclamation-triangle text-warning me-3 fs-5"></i>
+                    <div>
+                        <strong>কোনো ভূমিকা পাওয়া যায়নি।</strong>
+                        <p class="mb-0 text-muted">অনুমতি নির্ধারণের জন্য কমপক্ষে একটি ভূমিকা প্রয়োজন।</p>
+                    </div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        {% endif %}
+
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // SweetAlert utility
+    const SweetAlertUtil = {
+        success: (title, message) => Swal.fire({
+            icon: 'success',
+            title: title,
+            text: message,
+            toast: false,
+            confirmButtonColor: '#28a745'
+        }),
+        error: (title, message) => Swal.fire({
+            icon: 'error',
+            title: title,
+            text: message,
+            confirmButtonColor: '#dc3545'
+        }),
+        toast: (message, icon = 'success') => Swal.fire({
+            toast: true,
+            position: 'top-end',
+            icon: icon,
+            title: message,
+            timer: 3000,
+            timerProgressBar: true,
+            showConfirmButton: false
+        })
+    };
+
+    // Update permission count
+    function updatePermissionCount(form) {
+        const count = form.querySelectorAll('.permission-checkbox:checked').length;
+        const countSpan = form.querySelector('.permission-count');
+        if (countSpan) {
+            countSpan.textContent = count;
+        }
+    }
+
+    // Form submission with AJAX
+    document.querySelectorAll('.role-permissions-form').forEach(form => {
+        // Initial count
+        updatePermissionCount(form);
+
+        // Update count on checkbox change
+        form.querySelectorAll('.permission-checkbox').forEach(checkbox => {
+            checkbox.addEventListener('change', () => updatePermissionCount(form));
+        });
+
+        // Form submission
+        form.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const roleId = form.dataset.roleId;
+            const formData = new FormData(form);
+            const submitBtn = form.querySelector('button[type="submit"]');
+            
+            // Disable button during submit
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>প্রক্রিয়াকরণ...';
+
+            try {
+                const response = await fetch(`/permissions/assign/${roleId}`, {
+                    method: 'POST',
+                    headers: {'X-CSRF-TOKEN': formData.get('csrf_token')},
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    SweetAlertUtil.toast('অনুমতি সফলভাবে সংরক্ষিত হয়েছে!', 'success');
+                } else {
+                    SweetAlertUtil.error('ত্রুটি', result.message || 'অনুমতি সংরক্ষণ করতে ব্যর্থ হয়েছে');
+                }
+            } catch (error) {
+                SweetAlertUtil.error('ত্রুটি', 'কোনো কিছু ভুল হয়েছে, পুনরায় চেষ্টা করুন');
+            } finally {
+                // Re-enable button
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fas fa-check-circle me-1"></i>সংরক্ষণ করুন';
+            }
+        });
+
+        // Reset button functionality
+        form.querySelector('button[type="reset"]').addEventListener('click', function() {
+            setTimeout(() => updatePermissionCount(form), 0);
+        });
+    });
+
+});
+</script>
+{% endblock %}

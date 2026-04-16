@@ -1,0 +1,190 @@
+<style type="text/css">
+    body {
+        font-family: 'bangla', sans-serif !important;
+        font-size: 14px;
+    }
+
+    @media print {
+        * {
+            -webkit-print-color-adjust: exact;
+        }
+    }
+
+    @page {
+        header: page-header;
+        footer: page-footer;
+        margin: 20px 0px;
+        padding: 0px;
+
+    }
+</style>
+
+<section>
+    <div class="container">
+        <div class="card" style="margin:20px 0px; padding: 10px 0px 20px 0px">
+
+            <table border="0px" width="98%" align="center" style="border-collapse:collapse; margin:2px auto; padding-top: 50px">
+                <tr>
+                    <td style="width:1.5in; text-align:center;"></td>
+
+                    <td style="text-align:center;">
+                        <font style="font-size:25px; font-weight:bold; color:blue;">{{ union.union_name_bn }}</font>
+                        <br />
+                        <font style="font-size:16px; font-weight:bold;">
+                            {{ union.upazila_name_bn }}, {{ union.district_name_bn }}-{{ union.postcode|bn }}<br>
+                            মোবাইলঃ {{ union.phone | bn }}, ই-মেইলঃ {{ union.email }} <br>
+                            ওয়েব সাইট : {{ union.website }}
+                        </font>
+                    </td>
+
+                    <td style="width:1.2in; text-align:left;"></td>
+                </tr>
+            </table>
+
+            <table border="0px" width="98%" style="border-collapse:collapse;margin:2px auto;" cellspacing="0" cellpadding="0">
+                <tr>
+                    <td style="text-align:center;font-size:25px;font-weight:bold;" height="38">
+                        <font style="">
+                            <u>ওয়ারিশ সনদপত্র</u>
+                        </font>
+                    </td>
+                </tr>
+            </table>
+
+            <table border='1' align="left" style="width:100%; margin-left:48px;border-color:lightgray;border-collapse:collapse;margin-top:10px;float: left;" cellpadding="0" cellspacing="0">
+                <tr>
+                    <td style="width:100px; text-align:center;font-weight:700;font-size:17px; ">সনদ নং :</td>
+                    
+                    {% set sonod_number_bn = citizen.sonod_number | bn_number %}
+                    {% for digit in sonod_number_bn | split('') %}
+                        <td style="text-align:center; font-weight:bold; font-size:20px; padding: 5px;">{{ digit }}</td>
+                    {% endfor %}
+                    
+                    <td style="border: none;">
+                        <font style="font-size: 18px">&nbsp;&nbsp;&nbsp; তারিখঃ {{ citizen.issue_date|date('d-m-Y')|bn }}</font>
+                    </td>
+                </tr>
+            </table>
+
+            <table class="jolchap" align="center" border="0" width='99%' cellspacing="0" cellspacing='0' style="border-collapse:collapse;margin:0 auto;table-layout:fixed;">
+                <tr height="55px" style="">
+                    <td colspan="2" style="font-size:18px; text-indent:50px;padding-left: 50px; padding-top: 15px; padding-bottom: 10px;">এই মর্মে প্রত্যয়ন পত্র প্রদান করা যাইতেছে যে,</td>
+                </tr>
+            </table>
+
+            <table border="0px" width="99%" align="center" style="border-collapse:collapse; margin:1px auto;" cellspacing="0" cellpadding="0">
+                <tr>
+                    <td align="left" style="font-size:16px;text-indent:55px; font-color:black; width: 150px; padding-left: 50px">নাম </td>
+                    <td colspan="3" style=""><font style="font-size:15px;font-weight:bold; ">:  {{ citizen.name_bn }}</font></td>
+                </tr>
+                <tr>
+                    <td align="left" style="font-size:16px;text-indent:55px; font-color:black; width: 150px; padding-left: 50px">পিতা </td>
+                    <td style="width:260px;"><font style="font-size:15px;font-weight:bold; ">: {{ citizen.father_name_bn }}</font></td>
+                        {% if citizen.mother_name_bn %}
+
+                            <td style="font-size:15px; text-align:left;">মাতা</td>
+                            <td>
+                                <font style="font-size:15px;font-weight:bold;">: {{ citizen.mother_name_bn }}</font>
+                            </td>
+
+                        {% endif %}
+                        {% if citizen.spouse_name_bn %}
+
+                            <td style="font-size:15px; text-align:left;">
+                                {% if citizen.gender|lower == 'male' %}
+                                    স্ত্রী
+                                {% elseif citizen.gender|lower == 'female' %}
+                                    স্বামী
+                                {% else %}
+                                    স্বামী/স্ত্রী
+                                {% endif %}
+                            </td>
+                            <td>
+                                <font style="font-size:15px;font-weight:bold;">: {{ citizen.spouse_name_bn }}</font>
+                            </td>
+                       
+                        {% endif %}
+ </tr>
+                <tr>
+                    <td valign="top" style="font-size: 16px; padding-left: 50px;">স্থায়ী ঠিকানা</td>
+                    <td colspan="5">
+                        <p style="font-size:16px;">
+                            : গ্রাম/মহল্লা : {{ citizen.permanent_village_bn }}, রোড/ব্লক/সেক্টর : {{ citizen.permanent_rbs_bn }},
+                            পোষ্ট অফিস : {{ citizen.permanent_postoffice_bn }}, ওয়ার্ড নং : {{ citizen.permanent_ward_no|bn }},
+                            উপজেলা : {{ citizen.permanent_upazila_bn }},
+                            জেলা : {{ citizen.permanent_district_bn }}
+                        </p>
+                    </td>
+                </tr>
+                <tr>
+                    <td valign="top" style="font-size: 16px; padding-left: 50px;">বর্তমান ঠিকানা</td>
+                    <td colspan="5">
+                        <p style="font-size:16px;">
+                           : গ্রাম/মহল্লা : {{ citizen.present_village_bn }}, রোড/ব্লক/সেক্টর : {{ citizen.present_rbs_bn }},
+                           পোষ্ট অফিস : {{ citizen.present_postoffice_bn }}, ওয়ার্ড নং : {{ citizen.present_ward_no|bn }},
+                           উপজেলা : {{ citizen.present_upazila_bn }},
+                           জেলা : {{ citizen.present_district_bn }}
+                        </p>
+                    </td>
+                </tr>
+            </table>
+
+            <table border="0px" width="99%" align="center" style="border-collapse:collapse;margin:4px auto; " cellspacing="0" cellpadding="0">
+                <tr>
+                    <td style="padding-left: 50px; height: 25px;">
+                        <font style="font-size:16px; padding-left:30px;">
+                         অত্র ইউনিয়নের স্থায়ী অধিবাসী ছিলেন। তিনি {{ (citizen.extra.death_date ?? (citizen.birth_date ?? '')) | date('d-m-Y') | bn }}
+
+ 			তারিখে মৃত্যুবরণ করেন। মৃত্যুকালে তিনি নিম্নলিখিত ওয়ারিশগনকে রাখিয়া মৃত্যু বরণ করেন।</font>
+                    </td>
+                </tr>
+            </table>
+
+            <table border="1" align="center" width="93%" align="center" style="border-collapse:collapse; " cellspacing="0" cellpadding="0">
+                <tr height="20px">
+                    <th style="width:5%;font-size:14px;">ক্রঃ নং</th>
+                    <th style="width:20%;font-size:14px;">নাম</th>
+                    <th style="width:10%;font-size:14px;">সম্পর্ক</th>
+                    <th style="width:8%;font-size:14px;">বয়স/জন্ম তারিখ</th>
+                    <th style="width:15%;font-size:14px;">NID/Birth</th>
+                    <th style="width:11%; font-size:12px;">বৈবাহিক অবস্থা</th>
+                    <th style="width:8%; font-size:12px;">জীবিত/মৃত</th>
+                </tr>
+                
+                {% for member in citizen.warish_members %}
+                <tr height=''>
+                    <td style="text-align:center;font-size:13px;">{{ loop.index|bn }}</td>
+                    <td style="text-align:center;font-size:14px;">{{ member.name_bn }}</td>
+                    <td style="text-align:center;font-size:14px;">{{ member.relation_bn }}</td>
+                    <td style="text-align:center;font-size:14px;">{{ member.birth_date|bn }}</td>
+                    <td style="text-align:center;font-size:14px;">{{ member.nid|bn }}</td>
+                    <td style="text-align:center;font-size:14px;">{{ member.marital_status }}</td>
+                    <td style="text-align:center;font-size:14px;">
+                        {% if member.is_dead == "1" %}
+                            মৃত
+                        {% else %}
+                            জীবিত
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+                
+                 <tr>
+                    <td colspan="7" style="text-align:center; font-size:14px; padding: 5px;"> মোট ওয়ারিশ সংখ্যা {{ citizen.warish_members|length|bn }} জন</td>
+                </tr>
+            </table>
+
+             <table width="93%" align="center">
+                 <tr>
+                    <td style="font-size:16px; text-indent: 20px; line-height: 1.8; padding-top: 10px;">
+                        অত্র ইউনিয়নের ওয়ার্ড সদস্য জনাব "{{ approval.verifier_name }}" এর প্রদত্ত তথ্যের ভিত্তিতে এই সনদ প্রদান করা হলো। এখানে উল্লেখ্য যে, আবেদন পত্রে আবেদনকারী কর্তৃক ওয়ারিশান সংক্রান্ত কোন ভুল তথ্য প্রদান করা হলে ওয়ারিশ সনদটি বাতিল বলে গণ্য হবে।
+                    </td>
+                </tr>
+                <tr>
+                    <td style="font-size:16px; padding-top: 15px;">আবেদনকারী: {{ citizen.applicant_name }} <span style="margin-left: 50px;">পিতা/স্বামী: {{ citizen.extra.applicant_name_father_bn }}</span></td>
+                </tr>
+             </table>
+
+        </div>
+    </div>
+</section>

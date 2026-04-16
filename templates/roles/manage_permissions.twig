@@ -1,0 +1,203 @@
+{# templates/roles/manage_permissions.twig #}
+{% extends 'layout.twig' %}
+
+{% block title %}Manage Permissions for {{ role.role_name }}{% endblock %}
+
+{% block content %}
+{% include 'components/sweetAlert.twig' %}
+<div class="container-fluid">
+  <!-- Page Header -->
+  <div class="page-header mb-4 mt-4">
+    <div class="row align-items-center">
+      <div class="col-md-6">
+        <h1 class="page-title mb-0">
+          <i class="fas fa-lock"></i> Assign Permissions
+        </h1>
+        <p class="text-muted small mt-2">Role: <strong>{{ role.role_name }}</strong></p>
+      </div>
+      <div class="col-md-6 text-end">
+        <a href="/roles" class="btn btn-secondary btn-lg">
+          <i class="fas fa-arrow-left"></i> Back to Roles
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-lg-12">
+      <div class="card shadow-sm border-0">
+        <div class="card-header bg-light border-bottom">
+          <div class="d-flex align-items-center justify-content-between">
+            <h5 class="mb-0">
+              <i class="fas fa-key"></i> Select Permissions for <strong>{{ role.role_name }}</strong>
+            </h5>
+            <div>
+              <small class="badge bg-primary">Loading permissions...</small>
+            </div>
+          </div>
+        </div>
+        <div class="card-body">
+          <!-- Permissions Loader -->
+          <div id="permissions-loader" class="text-center py-5">
+            <div class="spinner-border text-primary" role="status">
+              <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-3 text-muted">Loading available permissions...</p>
+          </div>
+
+          <!-- Permissions Table (hidden until loaded) -->
+          <div id="permissions-container" style="display: none;">
+            <div class="mb-3">
+              <input type="text" id="permission-search" class="form-control" placeholder="Search permissions by name...">
+            </div>
+
+            <form id="permissions-form" method="POST" action="/roles/{{ role.role_id }}/permissions">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+              <input type="hidden" name="permissions_json" id="permissions_json">
+
+              <div class="table-responsive">
+                <table class="table table-hover" id="permissions-table">
+                  <thead class="table-light">
+                    <tr>
+                      <th style="width: 5%">
+                        <input type="checkbox" id="select-all" class="form-check-input">
+                      </th>
+                      <th style="width: 20%">Permission Name</th>
+                      <th style="width: 15%">Module</th>
+                      <th style="width: 60%">Description</th>
+                    </tr>
+                  </thead>
+                  <tbody id="permissions-body">
+                  </tbody>
+                </table>
+              </div>
+
+              <div class="d-flex gap-2 mt-4">
+                <button type="submit" class="btn btn-success btn-lg">
+                  <i class="fas fa-save"></i> Save Permissions
+                </button>
+                <a href="/roles" class="btn btn-secondary btn-lg">
+                  <i class="fas fa-times"></i> Cancel
+                </a>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const roleId = {{ role.role_id }};
+  const loader = document.getElementById('permissions-loader');
+  const container = document.getElementById('permissions-container');
+  const table = document.getElementById('permissions-table');
+  const tbody = document.getElementById('permissions-body');
+  const form = document.getElementById('permissions-form');
+  const searchInput = document.getElementById('permission-search');
+  const selectAllCheckbox = document.getElementById('select-all');
+  const permissionsJsonInput = document.getElementById('permissions_json');
+
+  let allPermissions = [];
+
+  // Load permissions
+  fetch(`/api/roles/${roleId}/permissions`)
+    .then(response => response.json())
+    .then(data => {
+      allPermissions = data;
+      renderPermissions(data);
+      loader.style.display = 'none';
+      container.style.display = 'block';
+    })
+    .catch(error => {
+      loader.innerHTML = '<div class="alert alert-danger">Failed to load permissions</div>';
+      console.error('Error loading permissions:', error);
+    });
+
+  function renderPermissions(permissions) {
+    tbody.innerHTML = '';
+    
+    permissions.forEach((perm, index) => {
+      const tr = document.createElement('tr');
+      tr.className = 'permission-row';
+      tr.innerHTML = `
+        <td>
+          <input type="checkbox" class="form-check-input permission-checkbox" 
+                 value="${perm.id}" data-perm-id="${perm.id}"
+                 ${perm.assigned ? 'checked' : ''}>
+        </td>
+        <td class="fw-bold text-primary">${perm.name}</td>
+        <td><span class="badge bg-secondary">${perm.module}</span></td>
+        <td><small class="text-muted">${perm.description || '(no description)'}</small></td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    updateSelectAllState();
+  }
+
+  function updateSelectAllState() {
+    const checkboxes = document.querySelectorAll('.permission-checkbox');
+    const checkedCount = document.querySelectorAll('.permission-checkbox:checked').length;
+    selectAllCheckbox.checked = checkedCount === checkboxes.length && checkboxes.length > 0;
+    selectAllCheckbox.indeterminate = checkedCount > 0 && checkedCount < checkboxes.length;
+  }
+
+  // Select All
+  selectAllCheckbox.addEventListener('change', function() {
+    const checkboxes = document.querySelectorAll('.permission-checkbox');
+    checkboxes.forEach(cb => cb.checked = this.checked);
+  });
+
+  // Individual checkboxes
+  tbody.addEventListener('change', function(e) {
+    if (e.target.classList.contains('permission-checkbox')) {
+      updateSelectAllState();
+    }
+  });
+
+  // Search
+  searchInput.addEventListener('input', function(e) {
+    const query = e.target.value.toLowerCase();
+    const rows = document.querySelectorAll('.permission-row');
+    
+    rows.forEach(row => {
+      const text = row.textContent.toLowerCase();
+      row.style.display = text.includes(query) ? '' : 'none';
+    });
+  });
+
+  // Form submission
+  form.addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const checkedBoxes = document.querySelectorAll('.permission-checkbox:checked');
+    const selectedIds = Array.from(checkedBoxes).map(cb => parseInt(cb.value));
+    
+    permissionsJsonInput.value = JSON.stringify(selectedIds);
+    form.submit();
+  });
+});
+</script>
+
+<style>
+.page-header {
+  border-bottom: 2px solid #f0f0f0;
+  padding-bottom: 1.5rem;
+}
+
+.page-title {
+  font-size: 2rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.spinner-border {
+  width: 3rem;
+  height: 3rem;
+}
+</style>
+{% endblock %}
+       

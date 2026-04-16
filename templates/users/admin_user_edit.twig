@@ -1,0 +1,490 @@
+{% extends "layout.twig" %}
+
+{% block title %}{{ 'ব্যবহারকারী সম্পাদনা' }}{% endblock %}
+
+{% block header_title %}{{ header_title|default('ব্যবহারকারী সম্পাদনা') }}{% endblock %}
+
+{% block content %}
+{% include 'components/sweetAlert.twig' %}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="card-title">{{ 'ব্যবহারকারী সম্পাদনা করুন' }}</h4>
+                </div>
+                <div class="card-body">
+                    {% if error %}
+                    <div class="alert alert-danger">
+                        {{ error }}
+                    </div>
+                    {% endif %}
+                    
+                    <div class="alert alert-info">
+                        <strong>{{ 'ব্যবহারকারী আইডি:' }}</strong> `{{ userData.user_id }}` | 
+                        <strong>{{ 'যোগদান:' }}</strong> {{ userData.created_at|date('d-m-Y H:i') }}
+                    </div>
+
+                    <form method="POST" enctype="multipart/form-data" id="editUserForm">
+                        <div class="row">
+                            <!-- Profile Picture -->
+                            <div class="col-md-12 mb-3">
+                                <label class="form-label">{{ 'প্রোফাইল ছবি' }}</label>
+                                <div class="d-flex align-items-center gap-3">
+                                    {% if userData.profile_picture_url %}
+                                    <img src="{{ userData.profile_picture_url }}" alt="Profile" class="rounded-circle" style="width: 80px; height: 80px; object-fit: cover;">
+                                    {% else %}
+                                    <div class="rounded-circle bg-secondary d-flex align-items-center justify-content-center" style="width: 80px; height: 80px;">
+                                        <i class="bi bi-person fs-1 text-white"></i>
+                                    </div>
+                                    {% endif %}
+                                    <div>
+                                        <input type="file" class="form-control" name="profile_picture" accept="image/*">
+                                        <small class="text-muted">{{ 'JPG, PNG বা GIF (সর্বোচ্চ 5MB)' }}</small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Username -->
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">{{ 'ব্যবহারকারীনাম' }}</label>
+                                <input type="text" class="form-control" name="username" id="username" value="{{ userData.username }}">
+
+                            </div>
+
+                            <!-- Email -->
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">{{ 'ইমেইল' }}</label>
+                                <div class="input-group">
+                                    <input type="email" class="form-control" name="email" value="{{ userData.email }}" required>
+                                    {% if userData.email_verified_at %}
+                                    <span class="input-group-text bg-success text-white">
+                                        <i class="bi bi-check-circle"></i> {{ 'যাচাইকৃত' }}
+                                    </span>
+                                    {% else %}
+                                    <span class="input-group-text bg-warning text-dark">
+                                        <i class="bi bi-exclamation-circle"></i> {{ 'যাচাইকৃত নয়' }}
+                                    </span>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <!-- Name Bangla -->
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">{{ 'নাম (বাংলা)' }}</label>
+                                <input type="text" class="form-control" name="name_bn" value="{{ userData.name_bn }}" required>
+                            </div>
+
+                            <!-- Name English -->
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">{{ 'নাম (ইংরেজি)' }}</label>
+                                <input type="text" class="form-control" name="name_en" value="{{ userData.name_en }}" required>
+                            </div>
+
+                            <!-- Phone -->
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">{{ 'ফোন নম্বর' }}</label>
+                                <div class="input-group">
+                                    <input type="tel" class="form-control" name="phone" value="{{ userData.phone }}">
+                                    {% if userData.phone_verified_at %}
+                                    <span class="input-group-text bg-success text-white">
+                                        <i class="bi bi-check-circle"></i> {{ 'যাচাইকৃত' }}
+                                    </span>
+                                    {% else %}
+                                    <span class="input-group-text bg-warning text-dark">
+                                        <i class="bi bi-exclamation-circle"></i> {{ 'যাচাইকৃত নয়' }}
+                                    </span>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <!-- Role -->
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">{{ 'ভূমিকা' }}</label>
+                                <select class="form-select" name="role_id" id="roleSelect" required>
+                                    <option value="1" {% if userData.role_id == 1 %}selected{% endif %}>{{ 'প্রশাসক' }}</option>
+                                    <option value="2" {% if userData.role_id == 2 %}selected{% endif %}>{{ 'সচিব' }}</option>
+                                    <option value="3" {% if userData.role_id == 3 %}selected{% endif %}>{{ 'চেয়ারম্যান' }}</option>
+                                    <option value="4" {% if userData.role_id == 4 %}selected{% endif %}>{{ 'সদস্য' }}</option>
+                                </select>
+                            </div>
+
+                            <!-- Union -->
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">{{ 'ইউনিয়ন' }}</label>
+                                <select class="form-select" name="union_id" id="unionSelect">
+                                    <option value="">{{ 'কোন ইউনিয়ন নেই' }}</option>
+                                    {% for union in unions %}
+                                    <option value="{{ union.union_id }}" {% if userData.union_id == union.union_id %}selected{% endif %}>
+                                        {{ union.union_name_bn }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <!-- Ward No (conditionally shown) -->
+                            <div class="col-md-6 mb-3" id="wardField" style="display: {% if userData.role_id == 4 %}block{% else %}none{% endif %};">
+                                <label class="form-label">{{ 'ওয়ার্ড নং' }} <span class="text-danger" id="wardRequired">*</span></label>
+                                <select class="form-select" name="ward_no" id="wardSelect">
+                                    <option value="">{{ 'ওয়ার্ড নির্বাচন করুন' }}</option>
+                                    {% for i in 1..9 %}
+                                    <option value="{{ i }}" {% if userData.ward_no == i %}selected{% endif %}>{{ i }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <!-- Address -->
+                            <div class="col-md-12 mb-3">
+                                <label class="form-label">{{ 'ঠিকানা' }}</label>
+                                <textarea class="form-control" name="address" rows="2">{{ userData.address ?? '' }}</textarea>
+                            </div>
+
+                            <!-- Status -->
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">{{ 'অবস্থা' }}</label>
+                                <select class="form-select" name="is_active">
+                                    <option value="1" {% if userData.is_active == 1 %}selected{% endif %}>{{ 'সক্রিয়' }}</option>
+                                    <option value="0" {% if userData.is_active == 0 %}selected{% endif %}>{{ 'নিষ্ক্রিয়' }}</option>
+                                </select>
+                            </div>
+
+                            <!-- Language -->
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">{{ 'ভাষা পছন্দ' }}</label>
+                                <select class="form-select" name="language">
+                                    <option value="bn" {% if userData.language == 'bn' %}selected{% endif %}>{{ 'বাংলা' }}</option>
+                                    <option value="en" {% if userData.language == 'en' %}selected{% endif %}>{{ 'ইংরেজি' }}</option>
+                                </select>
+                            </div>
+
+                            <!-- Timezone -->
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">{{ 'সময় অঞ্চল' }}</label>
+                                <select class="form-select" name="timezone">
+                                    <option value="Asia/Dhaka" selected>Asia/Dhaka (UTC+6)</option>
+                                    <option value="Asia/Kolkata">Asia/Kolkata (UTC+5:30)</option>
+                                    <option value="UTC">UTC</option>
+                                </select>
+                            </div>
+
+                            <!-- Notification Settings -->
+                            <div class="col-md-12 mb-3">
+                                <label class="form-label">{{ 'বিজ্ঞপ্তি সেটিংস' }}</label>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="email_notifications" id="emailNotif" 
+                                           {% if userData.email_notifications %}checked{% endif %}>
+                                    <label class="form-check-label" for="emailNotif">
+                                        {{ 'ইমেইল বিজ্ঞপ্তি' }}
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="sms_notifications" id="smsNotif" 
+                                           {% if userData.sms_notifications %}checked{% endif %}>
+                                    <label class="form-check-label" for="smsNotif">
+                                        {{ 'এসএমএস বিজ্ঞপ্তি' }}
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-save"></i> {{ 'পরিবর্তন সংরক্ষণ' }}
+                            </button>
+                            <a href="/users" class="btn btn-secondary">
+                                <i class="bi bi-x-circle"></i> {{ 'বাতিল' }}
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Password Reset Card -->
+            <div class="card mt-3">
+                <div class="card-header bg-warning">
+                    <h4 class="card-title">{{ 'পাসওয়ার্ড রিসেট (Admin)' }}</h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST" id="passwordResetForm" action="/users/{{ userData.user_id }}/reset-password">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">{{ 'নতুন পাসওয়ার্ড' }}</label>
+                                <input type="password" class="form-control" name="new_password" id="newPassword" minlength="8">
+                                <small class="text-muted">{{ 'রেখে দিন খালি থাকলে পরিবর্তন হবে না' }}</small>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">{{ 'পাসওয়ার্ড নিশ্চিত করুন' }}</label>
+                                <input type="password" class="form-control" name="confirm_password" id="confirmPassword" minlength="8">
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-warning">
+                            <i class="bi bi-key"></i> {{ 'পাসওয়ার্ড রিসেট' }}
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Account Activity Card -->
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h4 class="card-title">{{ 'অ্যাকাউন্ট কার্যকলাপ' }}</h4>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>{{ 'শেষ লগইন:' }}</strong> 
+                                {% if userData.last_login %}
+                                    {{ userData.last_login|date('d-m-Y H:i') }}
+                                {% else %}
+                                    {{ 'কখনও নয়' }}
+                                {% endif %}
+                            </p>
+                            <p><strong>{{ 'শেষ লগইন IP:' }}</strong> `{{ userData.ip_address ?? '-' }}`</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>{{ 'শেষ পাসওয়ার্ড পরিবর্তন:' }}</strong> 
+                                {% if userData.last_password_change %}
+                                    {{ userData.last_password_change|date('d-m-Y') }}
+                                {% else %}
+                                    {{ 'কখনও' }}
+                                {% endif %}
+                            </p>
+                            <p><strong>{{ 'লগইন প্রচেষ্টা:' }}</strong> {{ userData.login_attempts ?? '0' }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const roleSelect = document.getElementById('roleSelect');
+    const wardField = document.getElementById('wardField');
+    const wardSelect = document.getElementById('wardSelect');
+    const wardRequired = document.getElementById('wardRequired');
+    const editUserForm = document.getElementById('editUserForm');
+    const passwordResetForm = document.getElementById('passwordResetForm');
+
+    function toggleWardField() {
+        const selectedRole = roleSelect.value;
+        
+        if (selectedRole == '4') { // সদস্য
+            wardField.style.display = 'block';
+            wardSelect.required = true;
+            wardRequired.style.display = 'inline';
+        } else {
+            wardField.style.display = 'none';
+            wardSelect.required = false;
+            wardSelect.value = '';
+            wardRequired.style.display = 'none';
+        }
+    }
+
+    // Initial load - show ward field if role is 4
+    toggleWardField();
+
+    // Listen for role changes
+    roleSelect.addEventListener('change', toggleWardField);
+
+    // =====================
+    // User Edit Form AJAX Submit
+    // =====================
+    editUserForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        // Validate ward field for role 4
+        if (roleSelect.value == '4' && !wardSelect.value) {
+            Swal.fire({
+                icon: 'error',
+                title: 'ত্রুটি',
+                text: 'সদস্য ভূমিকার জন্য ওয়ার্ড নং বাধ্যতামূলক',
+                confirmButtonText: 'ঠিক আছে'
+            });
+            wardSelect.focus();
+            return;
+        }
+
+        // Prepare form data
+        const formData = new FormData(editUserForm);
+
+        // Show loading
+        Swal.fire({
+            title: 'প্রক্রিয়াকরণ...',
+            text: 'অনুগ্রহ করে অপেক্ষা করুন',
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+
+        try {
+            const response = await fetch(window.location.href, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            });
+
+            const result = await response.json();
+
+            if (response.ok && result.success) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'সফল!',
+                    text: result.message || 'ব্যবহারকারী সফলভাবে আপডেট হয়েছে',
+                    confirmButtonText: 'ঠিক আছে',
+                    timer: 2000
+                }).then(() => {
+                    // Optionally redirect or reload
+                    if (result.redirect) {
+                        window.location.href = result.redirect;
+                    } else {
+                        window.location.reload();
+                    }
+                });
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'ত্রুটি!',
+                    text: result.message || 'কিছু ভুল হয়েছে। আবার চেষ্টা করুন।',
+                    confirmButtonText: 'ঠিক আছে'
+                });
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            Swal.fire({
+                icon: 'error',
+                title: 'ত্রুটি!',
+                text: 'সার্ভারের সাথে সংযোগ করতে ব্যর্থ হয়েছে',
+                confirmButtonText: 'ঠিক আছে'
+            });
+        }
+    });
+
+    // =====================
+    // Password Reset Form AJAX Submit
+    // =====================
+    passwordResetForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const newPassword = document.getElementById('newPassword').value.trim();
+        const confirmPassword = document.getElementById('confirmPassword').value.trim();
+
+        // Validate passwords
+        if (newPassword && newPassword !== confirmPassword) {
+            Swal.fire({
+                icon: 'error',
+                title: 'ত্রুটি',
+                text: 'পাসওয়ার্ড এবং নিশ্চিত পাসওয়ার্ড মিলছে না',
+                confirmButtonText: 'ঠিক আছে'
+            });
+            return;
+        }
+
+        // If both fields are empty, ask for confirmation
+        if (!newPassword && !confirmPassword) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'সতর্কতা',
+                text: 'আপনি কোন পাসওয়ার্ড প্রবেশ করাননি',
+                confirmButtonText: 'ঠিক আছে'
+            });
+            return;
+        }
+
+        // Password length validation
+        if (newPassword && newPassword.length < 8) {
+            Swal.fire({
+                icon: 'error',
+                title: 'ত্রুটি',
+                text: 'পাসওয়ার্ড কমপক্ষে ৮ অক্ষরের হতে হবে',
+                confirmButtonText: 'ঠিক আছে'
+            });
+            return;
+        }
+
+        // Confirm before reset
+        const confirmResult = await Swal.fire({
+            icon: 'question',
+            title: 'নিশ্চিত করুন',
+            text: 'আপনি কি এই ব্যবহারকারীর পাসওয়ার্ড রিসেট করতে চান?',
+            showCancelButton: true,
+            confirmButtonText: 'হ্যাঁ, রিসেট করুন',
+            cancelButtonText: 'না, বাতিল করুন',
+            confirmButtonColor: '#ffc107',
+            cancelButtonColor: '#6c757d'
+        });
+
+        if (!confirmResult.isConfirmed) {
+            return;
+        }
+
+        // Prepare form data
+        const formData = new FormData(passwordResetForm);
+
+        // Show loading
+        Swal.fire({
+            title: 'প্রক্রিয়াকরণ...',
+            text: 'পাসওয়ার্ড রিসেট করা হচ্ছে',
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+
+        try {
+            const response = await fetch(passwordResetForm.action, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            });
+
+            const result = await response.json();
+
+            if (response.ok && result.success) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'সফল!',
+                    text: result.message || 'পাসওয়ার্ড সফলভাবে রিসেট হয়েছে',
+                    confirmButtonText: 'ঠিক আছে',
+                    timer: 2000
+                }).then(() => {
+                    // Clear password fields
+                    document.getElementById('newPassword').value = '';
+                    document.getElementById('confirmPassword').value = '';
+                    
+                    // Optionally reload
+                    if (result.redirect) {
+                        window.location.href = result.redirect;
+                    }
+                });
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'ত্রুটি!',
+                    text: result.message || 'পাসওয়ার্ড রিসেট করতে ব্যর্থ হয়েছে',
+                    confirmButtonText: 'ঠিক আছে'
+                });
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            Swal.fire({
+                icon: 'error',
+                title: 'ত্রুটি!',
+                text: 'সার্ভারের সাথে সংযোগ করতে ব্যর্থ হয়েছে',
+                confirmButtonText: 'ঠিক আছে'
+            });
+        }
+    });
+});
+</script>
+
+{% endblock %}

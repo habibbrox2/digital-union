@@ -1,0 +1,676 @@
+{% extends "layout.twig" %}
+
+{% block title %}{{ page_title }} - Database Migrations{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1 class="page-title">
+                <i class="fas fa-{{ page_icon }}"></i> {{ page_title }}
+            </h1>
+            <p class="text-muted">Safely execute SQL migrations with backup and rollback capabilities</p>
+        </div>
+        <div class="col-md-4 text-end">
+            <div class="btn-group" role="group">
+                <button type="button" class="btn btn-outline-primary" onclick="showBackupsList()">
+                    <i class="fas fa-history"></i> View Backups
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Database Statistics -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h3 class="text-primary" id="dbTables">-</h3>
+                    <small class="text-muted">Tables</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h3 class="text-info" id="dbSize">-</h3>
+                    <small class="text-muted">Database Size</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h3 class="text-success" id="dbBackups">-</h3>
+                    <small class="text-muted">Backups</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h3 class="text-warning" id="dbLastBackup">-</h3>
+                    <small class="text-muted">Last Backup</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="row">
+        <!-- Left Column: Upload & Preview -->
+        <div class="col-lg-7 mb-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-upload"></i> Upload SQL File</h5>
+                </div>
+                <div class="card-body">
+                    <form id="uploadForm" enctype="multipart/form-data">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                        
+                        <!-- File Input -->
+                        <div class="mb-3">
+                            <label for="sqlFile" class="form-label">Select SQL File</label>
+                            <div class="input-group">
+                                <input type="file" class="form-control" id="sqlFile" name="sql_file" 
+                                       accept=".sql" required>
+                                <button class="btn btn-outline-secondary" type="button" id="browseBtn">
+                                    <i class="fas fa-folder-open"></i> Browse
+                                </button>
+                            </div>
+                            <small class="form-text text-muted">Only .sql files are supported</small>
+                        </div>
+
+                        <!-- Preview Section (hidden initially) -->
+                        <div id="previewSection" style="display: none;">
+                            <hr>
+                            
+                            <!-- File Info -->
+                            <div class="alert alert-info alert-dismissible fade show" role="alert">
+                                <h6 class="alert-heading">📋 File Information</h6>
+                                <div class="row text-sm">
+                                    <div class="col-6">
+                                        <p><strong>File:</strong> <span id="previewFileName"></span></p>
+                                        <p><strong>Size:</strong> <span id="previewFileSize"></span></p>
+                                    </div>
+                                    <div class="col-6">
+                                        <p><strong>Total Queries:</strong> <span id="previewTotalQueries" class="badge bg-info"></span></p>
+                                    </div>
+                                </div>
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+
+                            <!-- Query Statistics -->
+                            <div class="row mb-3">
+                                <div class="col-6">
+                                    <div class="card text-center">
+                                        <div class="card-body py-2">
+                                            <h4 class="text-success mb-0">
+                                                <i class="fas fa-check-circle"></i> 
+                                                <span id="safeCount">0</span>
+                                            </h4>
+                                            <small class="text-muted">Safe Queries</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="card text-center">
+                                        <div class="card-body py-2">
+                                            <h4 class="text-warning mb-0">
+                                                <i class="fas fa-exclamation-triangle"></i> 
+                                                <span id="dangerousCount">0</span>
+                                            </h4>
+                                            <small class="text-muted">Dangerous Queries</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Dangerous Queries Table -->
+                            <div id="dangerousTableSection" style="display: none;">
+                                <h6 class="text-warning mt-3">
+                                    <i class="fas fa-shield-alt"></i> Dangerous Operations (Will be backed up)
+                                </h6>
+                                <div class="table-responsive">
+                                    <table class="table table-sm table-hover">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>Type</th>
+                                                <th>Table</th>
+                                                <th>Query Preview</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="dangerousQueriesBody">
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <!-- Safe Queries Preview -->
+                            <div id="safeTableSection" style="display: none;">
+                                <h6 class="text-success mt-3">
+                                    <i class="fas fa-database"></i> Safe Queries (First 5)
+                                </h6>
+                                <div class="table-responsive">
+                                    <table class="table table-sm table-hover">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>Query Preview</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="safeQueriesBody">
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Buttons -->
+                        <div class="mt-4">
+                            <button type="submit" class="btn btn-primary" id="uploadBtn">
+                                <i class="fas fa-upload"></i> Upload & Preview
+                            </button>
+                            <button type="reset" class="btn btn-outline-secondary" id="resetBtn">
+                                <i class="fas fa-redo"></i> Reset
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column: Recent Activity & Backups -->
+        <div class="col-lg-5">
+            <!-- Backups Card -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="fas fa-archive"></i> Recent Backups</h5>
+                </div>
+                <div class="card-body">
+                    <div id="backupsList">
+                        <p class="text-muted text-center py-3">
+                            <i class="fas fa-spinner fa-spin"></i> Loading backups...
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Safety Tips Card -->
+            <div class="card shadow-sm alert-info">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="fas fa-lightbulb"></i> Safety Tips</h5>
+                </div>
+                <div class="card-body small">
+                    <ul class="mb-0">
+                        <li>Always test migrations on a staging database first</li>
+                        <li>Dangerous operations are automatically backed up</li>
+                        <li>Review all dangerous queries before executing</li>
+                        <li>Keep backups for at least 30 days</li>
+                        <li>Only admins can execute migrations</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Backups Modal -->
+<div class="modal fade" id="backupsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-history"></i> Backup History
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="backupsModalContent">
+                    <p class="text-center text-muted">
+                        <i class="fas fa-spinner fa-spin"></i> Loading...
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Execution Result Modal -->
+<div class="modal fade" id="executionModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-check-circle"></i> Migration Results
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="executionResults"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+const CSRF_TOKEN = "{{ csrf_token }}";
+let currentMigration = null;
+
+// File upload handler
+document.getElementById('uploadForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const fileInput = document.getElementById('sqlFile');
+    if (!fileInput.files.length) {
+        Swal.fire('Error', 'Please select a SQL file', 'error');
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('sql_file', fileInput.files[0]);
+    formData.append('csrf_token', CSRF_TOKEN);
+    formData.append('action', 'preview');
+
+    try {
+        showLoadingAlert('Analyzing SQL file...');
+
+        const response = await fetch('/admin/database/migrations/preview', {
+            method: 'POST',
+            body: formData
+        });
+
+        const result = await response.json();
+
+        if (!result.data || response.status !== 200) {
+            throw new Error(result.message || 'Failed to preview file');
+        }
+
+        currentMigration = result.data;
+        displayPreview(result.data);
+        
+        Swal.close();
+    } catch (error) {
+        Swal.fire('Error', error.message, 'error');
+    }
+});
+
+// Display preview
+function displayPreview(data) {
+    document.getElementById('previewSection').style.display = 'block';
+    document.getElementById('previewFileName').textContent = data.file_name;
+    document.getElementById('previewFileSize').textContent = data.file_size;
+    document.getElementById('previewTotalQueries').textContent = data.total_queries;
+    document.getElementById('safeCount').textContent = data.safe_count;
+    document.getElementById('dangerousCount').textContent = data.dangerous_count;
+
+    // Display dangerous queries
+    if (data.dangerous_count > 0 && data.dangerous_queries && data.dangerous_queries.length > 0) {
+        document.getElementById('dangerousTableSection').style.display = 'block';
+        const tbody = document.getElementById('dangerousQueriesBody');
+        tbody.innerHTML = '';
+
+        data.dangerous_queries.forEach(item => {
+            const type = extractQueryType(item.query || item);
+            const query = item.query || item;
+            const preview = query.substring(0, 50) + (query.length > 50 ? '...' : '');
+            tbody.innerHTML += `
+                <tr class="table-warning">
+                    <td><span class="badge bg-warning text-dark">${type}</span></td>
+                    <td><code>${item.table || 'N/A'}</code></td>
+                    <td><code class="text-truncate d-inline-block" style="max-width: 200px;">${preview}</code></td>
+                </tr>
+            `;
+        });
+    }
+
+    // Display safe queries
+    if (data.safe_count > 0 && data.safe_queries && data.safe_queries.length > 0) {
+        document.getElementById('safeTableSection').style.display = 'block';
+        const tbody = document.getElementById('safeQueriesBody');
+        tbody.innerHTML = '';
+
+        data.safe_queries.forEach(query => {
+            const preview = query.substring(0, 60) + (query.length > 60 ? '...' : '');
+            tbody.innerHTML += `
+                <tr>
+                    <td><code class="text-truncate">${preview}</code></td>
+                </tr>
+            `;
+        });
+    }
+}
+
+// Extract query type
+function extractQueryType(query) {
+    const match = query.match(/^\s*(\w+)/i);
+    return match ? match[1].toUpperCase() : 'UNKNOWN';
+}
+
+// Show loading alert
+function showLoadingAlert(message) {
+    Swal.fire({
+        title: message,
+        allowOutsideClick: false,
+        didOpen: () => {
+            Swal.showLoading();
+        }
+    });
+}
+
+// Execute migration
+document.addEventListener('DOMContentLoaded', function() {
+    // Add execute button dynamically
+    const uploadForm = document.getElementById('uploadForm');
+    
+    // Listen for preview section to show up
+    const observer = new MutationObserver(function(mutations) {
+        const previewSection = document.getElementById('previewSection');
+        if (previewSection.style.display !== 'none' && !document.getElementById('executeBtn')) {
+            const executeBtn = document.createElement('button');
+            executeBtn.type = 'button';
+            executeBtn.id = 'executeBtn';
+            executeBtn.className = 'btn btn-success ms-2';
+            executeBtn.innerHTML = '<i class="fas fa-play"></i> Execute Migration';
+            executeBtn.onclick = executeMigration;
+            
+            uploadForm.querySelector('[type="submit"]').parentElement.appendChild(executeBtn);
+        }
+    });
+
+    observer.observe(uploadForm, { subtree: true, attributes: true });
+});
+
+// Execute migration
+async function executeMigration() {
+    if (!currentMigration) {
+        Swal.fire('Error', 'Please upload and preview a file first', 'error');
+        return;
+    }
+
+    // Show confirmation
+    const dangerousCount = currentMigration.dangerous_count;
+    
+    let confirmMessage = `Are you sure you want to execute this migration?\n\n`;
+    confirmMessage += `Safe Queries: ${currentMigration.safe_count}\n`;
+    
+    if (dangerousCount > 0) {
+        confirmMessage += `\n⚠️ DANGEROUS OPERATIONS: ${dangerousCount}\n`;
+        confirmMessage += `Automatic backups will be created!\n`;
+    }
+
+    const result = await Swal.fire({
+        title: 'Confirm Migration',
+        html: confirmMessage.replace(/\n/g, '<br>'),
+        icon: dangerousCount > 0 ? 'warning' : 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#28a745',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Yes, Execute!',
+        input: dangerousCount > 0 ? 'checkbox' : null,
+        inputValue: 0,
+        inputPlaceholder: 'I understand the risks and backups have been created',
+        didOpen: () => {
+            if (dangerousCount > 0) {
+                const inputLabel = Swal.getHtmlContainer().querySelector('label');
+                if (inputLabel) inputLabel.textContent = 'I understand the risks and backups will be created';
+            }
+        },
+        preConfirm: () => {
+            if (dangerousCount > 0 && !Swal.getInput().checked) {
+                Swal.showValidationMessage('Please acknowledge the risks');
+                return false;
+            }
+            return true;
+        }
+    });
+
+    if (!result.isConfirmed) return;
+
+    try {
+        showLoadingAlert('Executing migration...');
+
+        const response = await fetch('/admin/database/migrations/execute', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                csrf_token: CSRF_TOKEN
+            })
+        });
+
+        const resultData = await response.json();
+
+        Swal.close();
+
+        if (response.status !== 200) {
+            Swal.fire('Error', resultData.message, 'error');
+            return;
+        }
+
+        // Show results
+        showExecutionResults(resultData.data);
+
+        // Reset form
+        document.getElementById('uploadForm').reset();
+        document.getElementById('previewSection').style.display = 'none';
+        document.getElementById('executeBtn')?.remove();
+        currentMigration = null;
+
+        // Reload backups
+        loadBackupsList();
+
+    } catch (error) {
+        Swal.fire('Error', error.message, 'error');
+    }
+}
+
+// Show execution results
+function showExecutionResults(data) {
+    let html = '';
+
+    // Safe queries results
+    if (data.safe_results && data.safe_results.length > 0) {
+        html += '<div class="mb-3">';
+        html += '<h6 class="text-success"><i class="fas fa-check-circle"></i> Safe Queries</h6>';
+        html += '<div class="table-responsive">';
+        html += '<table class="table table-sm">';
+        html += '<thead class="table-success"><tr><th>Query</th><th>Status</th></tr></thead>';
+        html += '<tbody>';
+
+        data.safe_results.forEach(r => {
+            const statusBadge = r.status === 'success' 
+                ? '<span class="badge bg-success">Success</span>' 
+                : '<span class="badge bg-danger">Error</span>';
+            html += `<tr><td><code class="small">${r.query.substring(0, 50)}...</code></td><td>${statusBadge}</td></tr>`;
+        });
+
+        html += '</tbody></table></div></div>';
+    }
+
+    // Dangerous queries results
+    if (data.dangerous_results && data.dangerous_results.length > 0) {
+        html += '<div class="mb-3">';
+        html += '<h6 class="text-warning"><i class="fas fa-exclamation-triangle"></i> Dangerous Operations</h6>';
+        html += '<div class="table-responsive">';
+        html += '<table class="table table-sm">';
+        html += '<thead class="table-warning"><tr><th>Table</th><th>Backup</th><th>Status</th></tr></thead>';
+        html += '<tbody>';
+
+        data.dangerous_results.forEach(r => {
+            const statusBadge = r.status === 'success' 
+                ? '<span class="badge bg-success">Success</span>' 
+                : '<span class="badge bg-danger">Error</span>';
+            const backupFile = r.backup ? r.backup.split('/').pop() : 'N/A';
+            html += `<tr><td><code>${r.table}</code></td><td><small>${backupFile}</small></td><td>${statusBadge}</td></tr>`;
+        });
+
+        html += '</tbody></table></div></div>';
+    }
+
+    // Execution log
+    if (data.log && data.log.length > 0) {
+        html += '<div class="mb-3">';
+        html += '<h6><i class="fas fa-scroll"></i> Execution Log</h6>';
+        html += '<div class="alert alert-light" style="max-height: 200px; overflow-y: auto;">';
+        html += '<code><small>' + data.log.join('<br>') + '</small></code>';
+        html += '</div></div>';
+    }
+
+    document.getElementById('executionResults').innerHTML = html;
+    new bootstrap.Modal(document.getElementById('executionModal')).show();
+
+    Swal.fire({
+        title: 'Migration Completed!',
+        text: 'All queries have been executed successfully.',
+        icon: 'success',
+        confirmButtonColor: '#28a745'
+    });
+}
+
+// Load backups list
+async function loadBackupsList() {
+    try {
+        const response = await fetch('/admin/database/migrations/backups', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ csrf_token: CSRF_TOKEN })
+        });
+
+        const result = await response.json();
+
+        if (!result.data || !result.data.backups || result.data.backups.length === 0) {
+            document.getElementById('backupsList').innerHTML = '<p class="text-muted text-center">No backups yet</p>';
+            return;
+        }
+
+        let html = '<div class="list-group">';
+        result.data.backups.slice(0, 5).forEach(backup => {
+            html += `
+                <div class="list-group-item list-group-item-action">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="mb-1"><code>${backup.name}</code></h6>
+                            <small class="text-muted">${backup.date} • ${backup.size}</small>
+                        </div>
+                        <button class="btn btn-sm btn-outline-success" onclick="restoreBackup('${backup.name}')">
+                            <i class="fas fa-undo"></i> Restore
+                        </button>
+                    </div>
+                </div>
+            `;
+        });
+        html += '</div>';
+        html += `<a href="#" class="btn btn-sm btn-outline-secondary mt-2 w-100" onclick="showBackupsList()">View All Backups</a>`;
+
+        document.getElementById('backupsList').innerHTML = html;
+    } catch (error) {
+        console.error('Error loading backups:', error);
+    }
+}
+
+// Show backups list modal
+async function showBackupsList() {
+    try {
+        const response = await fetch('/admin/database/migrations/backups', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ csrf_token: CSRF_TOKEN })
+        });
+
+        const result = await response.json();
+        const backups = result.data.backups || [];
+
+        let html = '';
+        if (!backups.length) {
+            html = '<p class="text-muted text-center">No backups found</p>';
+        } else {
+            html = '<div class="table-responsive"><table class="table table-hover">';
+            html += '<thead class="table-light"><tr><th>File</th><th>Date</th><th>Size</th><th>Action</th></tr></thead>';
+            html += '<tbody>';
+
+            backups.forEach(backup => {
+                html += `
+                    <tr>
+                        <td><code>${backup.name}</code></td>
+                        <td>${backup.date}</td>
+                        <td>${backup.size}</td>
+                        <td>
+                            <button class="btn btn-sm btn-success" onclick="restoreBackup('${backup.name}')">
+                                <i class="fas fa-undo"></i> Restore
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            html += '</tbody></table></div>';
+        }
+
+        document.getElementById('backupsModalContent').innerHTML = html;
+        new bootstrap.Modal(document.getElementById('backupsModal')).show();
+    } catch (error) {
+        Swal.fire('Error', 'Failed to load backups', 'error');
+    }
+}
+
+// Restore backup
+async function restoreBackup(backupName) {
+    const result = await Swal.fire({
+        title: 'Restore Backup?',
+        text: `This will restore: ${backupName}`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc3545',
+        confirmButtonText: 'Yes, Restore!'
+    });
+
+    if (!result.isConfirmed) return;
+
+    try {
+        showLoadingAlert('Restoring backup...');
+
+        const response = await fetch('/admin/database/migrations/restore', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                csrf_token: CSRF_TOKEN,
+                backup_name: backupName
+            })
+        });
+
+        const data = await response.json();
+        
+        Swal.close();
+
+        if (response.status !== 200) {
+            Swal.fire('Error', data.message, 'error');
+            return;
+        }
+
+        Swal.fire('Success', 'Backup restored successfully!', 'success');
+        loadBackupsList();
+    } catch (error) {
+        Swal.fire('Error', error.message, 'error');
+    }
+}
+
+// Load backups on page load
+document.addEventListener('DOMContentLoaded', loadBackupsList);
+</script>
+{% endblock %}

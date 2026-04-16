@@ -1,0 +1,324 @@
+{# Users Management - Admin Panel - Production Ready v2.0 #}
+{% extends "layout.twig" %}
+
+{% block title %}{{ 'ব্যবহারকারী ব্যবস্থাপনা' }}{% endblock %}
+{% block header_title %}{{ header_title|default('ব্যবহারকারী ব্যবস্থাপনা') }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <!-- Header Section -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <h2>
+                <i class="fas fa-users"></i> {{ 'ব্যবহারকারী ব্যবস্থাপনা'}}
+            </h2>
+            <p class="text-muted">{{ 'মোট ব্যবহারকারী: ' }}{{ total_users ?? '0' }}</p>
+        </div>
+        <div class="col-md-6 text-end">
+            <a href="/users/add" class="btn btn-primary">
+                <i class="fas fa-plus"></i> {{ 'নতুন ব্যবহারকারী' }}
+            </a>
+            <a href="/users/export" class="btn btn-success ms-2">
+                <i class="fas fa-download"></i> {{ 'এক্সপোর্ট' }}
+            </a>
+        </div>
+    </div>
+
+    <!-- Alert Messages -->
+    {% include 'components/sweetAlert.twig' %}
+
+    <!-- Search & Filter Form -->
+    <div class="card mb-4 shadow-sm">
+        <div class="card-body">
+            <form method="GET" class="row g-3" id="searchForm">
+                <div class="col-md-5">
+                    <label class="form-label">{{ 'অনুসন্ধান' }}</label>
+                    <input type="text" name="search" class="form-control" 
+                           placeholder="{{ 'ব্যবহারকারীনাম, ইমেইল বা নাম' }}"
+                           value="{{ filters.search ?? '' }}">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">{{ 'অবস্থা' }}</label>
+                    <select name="status" class="form-select">
+                        <option value="">{{ 'সকল অবস্থা' }}</option>
+                        <option value="active" {% if filters.status == 'active' %}selected{% endif %}>{{ 'সক্রিয়' }}</option>
+                        <option value="inactive" {% if filters.status == 'inactive' %}selected{% endif %}>{{ 'নিষ্ক্রিয়' }}</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">{{ 'ভূমিকা' }}</label>
+                    <select name="role" class="form-select">
+                        <option value="">{{ 'সব ভূমিকা' }}</option>
+                        {% for role in roles %}
+                        <option value="{{ role.id }}" {% if filters.role == role.id %}selected{% endif %}>
+                            {{ role.role_name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-search"></i> {{ 'অনুসন্ধান' }}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Users Table -->
+    <div class="card shadow">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light sticky-top">
+                    <tr>
+                        <th style="width: 60px;">{{ 'আইডি' }}</th>
+                        <th>{{ 'ব্যবহারকারীনাম' }}</th>
+                        <th>{{ 'ইমেইল' }}</th>
+                        <th>{{ 'নাম' }}</th>
+                        <th style="width: 120px;">{{ 'ভূমিকা' }}</th>
+                        <th>{{ 'ইউনিয়ন' }}</th>
+                        <th style="width: 80px;">{{ 'অবস্থা' }}</th>
+                        <th>{{ 'যোগদান' }}</th>
+                        <th>{{ 'শেষ লগইন' }}</th>
+                        <th style="width: 120px;">{{ 'পদক্ষেপ' }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if users|length > 0 %}
+                        {% for user in users %}
+                        <tr>
+                            <td>
+                                <code class="text-primary">{{ user.user_id }}</code>
+                            </td>
+                            <td>
+                                <strong>{{ user.username }}</strong>
+                                {% if user.email_verified_at %}
+                                <span class="badge bg-success" title="{{ 'ইমেইল যাচাইকৃত' }}">
+                                    <i class="fas fa-check"></i>
+                                </span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <small>{{ user.email }}</small>
+                            </td>
+                            <td>
+                                {% if user.name_bn %}
+                                <div>{{ user.name_bn }}</div>
+                                <small class="text-muted">{{ user.name_en }}</small>
+                                {% else %}
+                                <em class="text-muted">-</em>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if user.role_id == 1 %}
+                                    <span class="badge bg-danger">অ্যাডমিনিস্ট্রেটর</span>
+                                {% elseif user.role_id == 2 %}
+                                    <span class="badge bg-primary">সচিব</span>
+                                {% elseif user.role_id == 3 %}
+                                    <span class="badge bg-secondary">চেয়ারম্যান</span>
+                                {% elseif user.role_id == 4 %}
+                                    <span class="badge bg-warning text-dark">মেম্বার</span>
+                                {% elseif user.role_id == 5 %}
+                                    <span class="badge bg-success">কম্পিউটার অপারেটর</span>
+                                {% elseif user.role_id == 6 %}
+                                    <span class="badge bg-info text-dark">গ্রাম পুলিশ</span>
+                                {% elseif user.role_id == 7 %}
+                                    <span class="badge bg-light text-dark">অফিস সহকারী</span>
+                                {% else %}
+                                    <span class="badge bg-light text-dark">{{ user.role_name ?? 'Unknown' }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if user.union_name_bn %}
+                                <small>{{ user.union_name_bn }}</small>
+                                {% else %}
+                                <em class="text-muted">-</em>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if user.status == 'active' %}
+                                <span class="badge bg-success">{{ 'সক্রিয়' }}</span>
+                                {% else %}
+                                <span class="badge bg-danger">{{ 'নিষ্ক্রিয়' }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <small>{{ user.created_at|date('d-m-Y') }}</small>
+                            </td>
+                            <td>
+                                {% if user.last_login %}
+                                <small>{{ user.last_login|date('d-m-Y') }}</small>
+                                {% else %}
+                                <em class="text-muted">কখনও নয়</em>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <a href="/users/{{ user.user_id }}" class="btn btn-outline-info" 
+                                       title="{{ 'প্রোফাইল দেখুন' }}" data-bs-toggle="tooltip">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <a href="/users/{{ user.user_id }}/edit" class="btn btn-outline-warning" 
+                                       title="{{ 'সম্পাদনা করুন' }}" data-bs-toggle="tooltip">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <button type="button" class="btn btn-outline-danger delete-user-btn" 
+                                            data-id="{{ user.user_id }}" 
+                                            data-username="{{ user.username }}"
+                                            title="{{ 'মুছুন' }}" data-bs-toggle="tooltip">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                    <tr>
+                        <td colspan="10" class="text-center py-5">
+                            <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                            <div class="text-muted">{{ 'কোন ব্যবহারকারী পাওয়া যায়নি' }}</div>
+                        </td>
+                    </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Pagination -->
+    {% if pagination and pagination.total > 1 %}
+    <nav aria-label="পৃষ্ঠা নেভিগেশন" class="mt-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <div class="text-muted">
+                {{ pagination.showing_from }} থেকে {{ pagination.showing_to }} পর্যন্ত দেখানো হচ্ছে, মোট {{ pagination.total_records }} টি
+            </div>
+        </div>
+        <ul class="pagination justify-content-center">
+            {% if pagination.current > 1 %}
+            <li class="page-item">
+                <a class="page-link" href="?page=1&search={{ filters.search ?? '' }}&status={{ filters.status ?? '' }}&role={{ filters.role ?? '' }}">
+                    <i class="fas fa-step-backward"></i> {{ 'প্রথম' }}
+                </a>
+            </li>
+            <li class="page-item">
+                <a class="page-link" href="?page={{ pagination.current - 1 }}&search={{ filters.search ?? '' }}&status={{ filters.status ?? '' }}&role={{ filters.role ?? '' }}">
+                    <i class="fas fa-chevron-left"></i> {{ 'পূর্ববর্তী' }}
+                </a>
+            </li>
+            {% endif %}
+
+            {% for i in range(max(1, pagination.current - 2), min(pagination.total, pagination.current + 2)) %}
+                {% if i == pagination.current %}
+                <li class="page-item active">
+                    <span class="page-link">{{ i }}</span>
+                </li>
+                {% else %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ i }}&search={{ filters.search ?? '' }}&status={{ filters.status ?? '' }}&role={{ filters.role ?? '' }}">{{ i }}</a>
+                </li>
+                {% endif %}
+            {% endfor %}
+
+            {% if pagination.current < pagination.total %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ pagination.current + 1 }}&search={{ filters.search ?? '' }}&status={{ filters.status ?? '' }}&role={{ filters.role ?? '' }}">
+                    {{ 'পরবর্তী' }} <i class="fas fa-chevron-right"></i>
+                </a>
+            </li>
+            <li class="page-item">
+                <a class="page-link" href="?page={{ pagination.total }}&search={{ filters.search ?? '' }}&status={{ filters.status ?? '' }}&role={{ filters.role ?? '' }}">
+                    {{ 'শেষ' }} <i class="fas fa-step-forward"></i>
+                </a>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+</div>
+
+<script>
+// Initialize tooltips
+document.addEventListener('DOMContentLoaded', function() {
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+});
+
+// Delete user handler
+document.querySelectorAll('.delete-user-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+        const userId = this.getAttribute('data-id');
+        const username = this.getAttribute('data-username');
+
+        Swal.fire({
+            title: 'নিশ্চিত করুন',
+            html: `আপনি কি নিশ্চিতভাবে ব্যবহারকারী <strong>"${username}"</strong> কে মুছে ফেলতে চান?`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'হ্যাঁ, মুছে ফেলুন',
+            cancelButtonText: 'বাতিল'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                deleteUser(userId);
+            }
+        });
+    });
+});
+
+/**
+ * Delete user via AJAX
+ */
+function deleteUser(userId) {
+    Swal.fire({
+        title: 'প্রক্রিয়া করা হচ্ছে...',
+        text: 'অনুগ্রহ করে অপেক্ষা করুন',
+        allowOutsideClick: false,
+        didOpen: () => {
+            Swal.showLoading();
+        }
+    });
+
+    const formData = new FormData();
+    formData.append('csrf_token', '{{ csrf_token }}');
+
+    fetch(`/users/${userId}/delete`, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            Swal.fire({
+                title: data.alert.title || 'সফল',
+                text: data.alert.message || 'ব্যবহারকারী মুছে ফেলা হয়েছে',
+                icon: 'success',
+                timer: 2000
+            }).then(() => {
+                window.location.reload();
+            });
+        } else {
+            Swal.fire({
+                title: data.alert.title || 'ত্রুটি',
+                text: data.alert.message || 'মুছে ফেলা সম্ভব হয়নি',
+                icon: 'error'
+            });
+        }
+    })
+    .catch(err => {
+        console.error('Error:', err);
+        Swal.fire({
+            title: 'ত্রুটি',
+            text: 'সার্ভারে সমস্যা হয়েছে',
+            icon: 'error'
+        });
+    });
+}
+</script>
+
+{% endblock %}

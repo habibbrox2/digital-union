@@ -1,0 +1,272 @@
+{
+    "bibahito": [
+        { 
+            "id": "marriage_date", 
+            "label": "বিবাহের তারিখ", 
+            "type": "date", 
+            "orderAfter": "marital_status"
+        }
+    ],
+    "character": [
+        { 
+            "id": "purpose", 
+            "label": "সনদ গ্রহণের কারণ", 
+            "type": "textarea", 
+            "count":2,
+            "orderAfter": "marital_status"
+        }
+    ],
+    "warish": [
+        {
+        "id": "name_en",
+        "type": "label",
+        "label": "মৃত ব্যক্তির নাম (ইংরেজিতে)",
+        "placeholder": "Enter deceased person's name in English"
+        },
+        {
+        "id": "name_bn",
+                "type": "label",
+        "label": "মৃত ব্যক্তির নাম (বাংলায়)",
+        "placeholder": "মৃত ব্যক্তির নাম বাংলায় লিখুন"
+        },
+        {
+            "id": "death_date",
+            "label": "মৃত্যুর তারিখ",
+            "type": "date",
+            "orderAfter": "birth_date"
+        },
+        {
+            "id": "applicant_name_father",
+            "label": "আবেদনকারীর পিতার নাম",
+            "type": "text",
+            "count": 2,
+            "orderAfter": "applicant_name"
+        }
+    ],
+    "death": [
+        {
+        "id": "name_en",
+        "type": "label",
+        "label": "মৃত ব্যক্তির নাম (ইংরেজিতে)",
+        "placeholder": "Enter deceased person's name in English"
+        },
+        {
+        "id": "name_bn",
+        "type": "label",
+        "label": "মৃত ব্যক্তির নাম (বাংলায়)",
+        "placeholder": "মৃত ব্যক্তির নাম বাংলায় লিখুন"
+        },
+                {
+            "id": "death_date",
+            "label": "মৃত্যুর তারিখ",
+            "type": "date",
+            "orderAfter": "birth_date"
+        },
+        {
+            "id": "death_reason",
+            "label": "মৃত্যুর কারণ",
+            "type": "text",
+            "count": 2,
+            "orderAfter": "death_date"
+        }
+    ],
+    "ekoinam": [
+        { 
+            "id": "nickname", 
+            "label": "প্রকাশে নাম / ডাকনাম", 
+            "type": "text", 
+            "count": 2,
+            "orderAfter": "name_en" 
+        }
+    ], 
+    "nodibanga": [
+        { 
+            "id": "affected_reason", 
+            "label": "ক্ষতিগ্রস্ত হওয়ার কারণ", 
+            "type": "textarea",
+            "count":2, 
+            "orderAfter": "applicant_phone" 
+        }
+    ],
+    "obibahito": [
+        { 
+            "id": "reason", 
+            "label": "অবিবাহিত থাকার কারণ", 
+            "type": "textarea", 
+            "count":2,
+            "orderAfter": "birth_date" 
+        }
+    ],
+    "onapotti": [
+        
+        {
+            "id": "business_name",
+            "label": "ব্যবসা/প্রতিষ্ঠান/ভবনের নাম",
+            "type": "text",
+            "count": 2,
+            "orderAfter": "name_bn"
+        },
+        {
+            "id": "business_location",
+            "label": "ব্যবসা/প্রতিষ্ঠান/ভবনের অবস্থান",
+            "type": "text",
+            "count": 2,
+            "orderAfter": "name_bn"
+        },
+        {
+            "id": "business_type",
+            "label": "ব্যবসা/প্রতিষ্ঠান/ভবনের ধরণ",
+            "type": "text",
+            "count": 2,
+            "orderAfter": "name_bn"
+        },
+        {
+            "id": "trade_license_no",
+            "label": "ট্রেড লাইসেন্স নং",
+            "type": "text",
+            "orderAfter": "name_bn"
+        },
+        {
+            "id": "land_description",
+            "label": "ব্যবসা/প্রতিষ্ঠান/ভবনের ব্যবহৃত জমির বিবরণ",
+            "type": "text",
+            "orderAfter": "name_bn"
+        },
+        { 
+            "id": "opposition_details", 
+            "label": "অনাপত্তির বিবরণ", 
+            "type": "textarea", 
+            "orderAfter": "name_bn"
+         },
+        {
+            "id": "mouza",
+            "label": "মৌজা",
+            "type": "number",
+            "orderAfter": "applicant_phone"
+        },
+        {
+            "id": "khatian_no",
+            "label": "খতিয়ান নং",
+            "type": "number",
+            "orderAfter": "mouza"
+        },
+        {
+            "id": "land_type",
+            "label": "জমির ধরণ",
+            "type": "text",
+            "orderAfter": "khatian_no"
+        },
+        {
+            "id": "land_amount",
+            "label": "জমির পরিমাণ",
+            "type": "number",
+            "orderAfter": "khatian_no"
+        }
+    ],
+    "onumoti": [
+        { 
+            "id": "permission_reason", 
+            "label": "কর্ম ক্ষেত্রের নাম", 
+            "count": 2,
+            "type": "text", 
+            "orderAfter": "name_bn" 
+        }
+    ],
+    "others": [
+        { 
+            "id": "description", 
+            "label": "বিবরণ", 
+            "type": "textarea",
+            "count":2, 
+            "orderAfter": "applicant_phone" 
+        }
+    ],
+    "protibondi": [
+        { 
+            "id": "disability_type", 
+            "label": "প্রতিবন্ধিতার ধরণ", 
+            "type": "text",
+            "count":2, 
+            "orderAfter": "name_bn" 
+        },
+        { 
+            "id": "disability_percentage", 
+            "label": "প্রতিবন্ধিতার হার", 
+            "type": 
+            "number", 
+            "orderAfter": "disability_type_bn" 
+        }
+    ],
+    "prottyon": [
+        { 
+            "id": "certified_by", 
+            "label": "প্রত্যয়নকারী কর্তৃপক্ষ", 
+            "type": "text", 
+            "count":2,
+            "orderAfter": "applicant_phone"
+        }
+    ],
+    "punobibaho": [
+        { 
+        "id": "previous_marriage_status", 
+        "label": "পূর্বের বিবাহের অবস্থা", 
+        "type": "text", 
+        "orderAfter": "spouse_name_bn" }
+    ],
+    "rastakhonon": [
+        { 
+        "id": "digging_purpose", 
+        "label": "রাস্তা খননের উদ্দেশ্য", 
+        "type": "textarea",
+        "count":2,
+        "orderAfter": "applicant_phone"
+     },
+        { 
+            "id": "road_type", 
+            "label": "রাস্তার ধরণ", 
+            "type": "text", 
+            "count":2,
+            "orderAfter": "digging_purpose" 
+        }
+    ],
+    "sonaton": [
+        { 
+            "id": "religious_id_number", 
+            "label": "ধর্মীয় পরিচিতি নম্বর", 
+            "type": "text", 
+            "orderAfter": "birth_id" }
+    ],
+    "vumihin": [
+        { 
+        "id": "landless_reason", 
+        "label": "ভূমিহীনতার কারণ", 
+        "type": "textarea",
+        "count":2, 
+        "orderAfter": "applicant_phone" 
+    }
+    ],
+    "yearlyincome": [
+        {
+            "id": "earn_type",
+            "label": "আয়ের ধরণ",
+            "type": "select",
+            "options": [
+                { "value": "1", "text": "মাসিক" },
+                { "value": "2", "text": "বার্ষিক" }
+            ],
+            "orderAfter": "name_bn"
+        },
+        {
+            "id": "yearly_income",
+            "label": "আয়ের পরিমান",
+            "type": "number",
+            "orderAfter": "earn_type"
+        },
+        {
+            "id": "purpose",
+            "label": "সনদ গ্রহণের কারণ",
+            "type": "text",
+            "orderAfter": "yearly_income"
+        }
+    ]
+}

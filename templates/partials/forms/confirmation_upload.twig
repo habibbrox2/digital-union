@@ -1,0 +1,156 @@
+<div class="row align-items-center g-3 photo-section">
+  <!-- বাম পাশে ইনপুট -->
+  <div class="col-md-6">
+    <label for="photo" class="form-label fw-semibold">ছবি আপলোড করুন</label>
+    <input type="file" id="photo" name="photo" class="form-control" accept="image/*">
+  </div>
+
+  <!-- ডান পাশে প্রিভিউ -->
+  <div class="col-md-6">
+    <div class="image-overlay position-relative">
+      <img id="photo_preview"
+           src="{{ data.photo_url ?? '/assets/images/default.jpg' }}"
+           class="image-previewer img-fluid rounded shadow-sm"
+           alt="ছবি প্রিভিউ">
+      <div class="overlay d-flex justify-content-center align-items-center">
+        <div class="text text-white fw-semibold">ক্লিক করুন</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Applicant Name -->
+<div class="row mb-3">
+  <div class="col-md-6">
+    <label for="applicant_name" class="form-label">আবেদনকারীর নাম</label>
+    <input type="text" id="applicant_name" name="applicant_name" class="form-control"
+           placeholder="আবেদনকারীর নাম" value="{{ data.applicant_name ?? '' }}">
+  </div>
+</div>
+
+<!-- Applicant Phone -->
+<div class="row mb-4">
+  <div class="col-md-6">
+    <label for="applicant_phone" class="form-label">আবেদনকারীর মোবাইল নম্বর</label>
+    <input type="text" id="applicant_phone" name="applicant_phone" class="form-control"
+           placeholder="আপনার মোবাইল নম্বর লিখুন" value="{{ data.applicant_phone ?? '' }}">
+  </div>
+</div>
+
+<!-- Documents Upload -->
+<div class="row mb-3">
+  <label class="form-label">প্রয়োজনীয় ডকুমেন্ট আপলোড করুন</label>
+  <div id="documents_container"></div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    /** ---------------------- মোবাইল নাম্বার ---------------------- **/
+    const mobileInput = document.getElementById('applicant_phone');
+    function convertToEnglishNumber(str) {
+        const bnNumbers = ['০','১','২','৩','৪','৫','৬','৭','৮','৯'];
+        return str.replace(/[০-৯]/g, m => bnNumbers.indexOf(m))
+                  .replace(/[۰-۹]/g, m => m.charCodeAt(0) - 1776);
+    }
+    mobileInput.addEventListener('input', function() {
+        let val = convertToEnglishNumber(this.value).replace(/\D/g, '');
+        this.value = val;
+        const warningId = 'mobile_warning';
+        document.getElementById(warningId)?.remove();
+        if(val.length > 0 && val.length < 11) {
+            const warn = document.createElement('div');
+            warn.id = warningId;
+            warn.style.color = 'red';
+            warn.style.fontSize = '0.85rem';
+            warn.textContent = 'মোবাইল নম্বর অবশ্যই ১১ সংখ্যার হতে হবে।';
+            mobileInput.parentNode.appendChild(warn);
+        }
+    });
+
+    /** ---------------------- ছবি প্রিভিউ ---------------------- **/
+    document.getElementById('photo').addEventListener('change', function(e){
+        const file = e.target.files[0];
+        if (!file) return;
+        if (!file.type.startsWith('image/')) return alert('শুধুমাত্র ছবি আপলোড করুন');
+        document.getElementById('photo_preview').src = URL.createObjectURL(file);
+    });
+
+    /** ---------------------- ডকুমেন্ট আপলোড ---------------------- **/
+    const container = document.getElementById('documents_container');
+
+    function createDocumentRow(url = null) {
+        const row = document.createElement('div');
+        row.className = 'row align-items-center document-row mb-2';
+
+        let previewHTML = '';
+        if (url) {
+            if (url.match(/\.(jpg|jpeg|png|gif)$/i)) {
+                previewHTML = `<img src="${url}" class="img-fluid rounded shadow-sm">`;
+            } else if (url.match(/\.pdf$/i)) {
+                previewHTML = `<a href="${url}" target="_blank">PDF দেখুন</a>`;
+            } else {
+                const name = url.split('/').pop();
+                previewHTML = `<a href="${url}" target="_blank">${name}</a>`;
+            }
+        }
+
+        row.innerHTML = `
+            <div class="col-md-5">
+                <input type="file" name="documents[]" class="form-control file-input">
+            </div>
+            <div class="col-md-5 preview-area">${previewHTML}</div>
+            <div class="col-md-2 d-flex gap-2">
+                <button type="button" class="btn btn-add-doc icon-only" title="নতুন ফাইল">
+                    <i class="bi bi-plus"></i>
+                </button>
+                <button type="button" class="btn btn-remove-file icon-only" title="মুছে ফেলুন">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </div>
+        `;
+        container.appendChild(row);
+    }
+
+    // বোতাম হ্যান্ডলার
+    container.addEventListener('click', e => {
+        const btn = e.target.closest('button');
+        if(!btn) return;
+        if(btn.classList.contains('btn-add-doc')) createDocumentRow();
+        if(btn.classList.contains('btn-remove-file')) btn.closest('.document-row').remove();
+    });
+
+    // ফাইল প্রিভিউ
+    container.addEventListener('change', e => {
+        if(!e.target.classList.contains('file-input')) return;
+        const file = e.target.files[0];
+        const previewArea = e.target.closest('.document-row').querySelector('.preview-area');
+        previewArea.innerHTML = '';
+        if(!file) return;
+
+        if(file.type.startsWith('image/')){
+            const img = document.createElement('img');
+            img.src = URL.createObjectURL(file);
+            img.className = 'img-fluid rounded shadow-sm';
+            previewArea.appendChild(img);
+        } else if(file.type === 'application/pdf'){
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(file);
+            link.target = '_blank';
+            link.textContent = 'PDF দেখুন';
+            previewArea.appendChild(link);
+        } else {
+            const span = document.createElement('span');
+            span.textContent = file.name;
+            previewArea.appendChild(span);
+        }
+    });
+
+    /** ---------------------- পূর্বের ডকুমেন্ট প্রিলোড ---------------------- **/
+    const docs = {{ data.documents|default([])|json_encode|raw }};
+    if (Array.isArray(docs) && docs.length) {
+        docs.forEach(url => createDocumentRow(url));
+    } else {
+        createDocumentRow(); // যদি কিছু না থাকে, একটিমাত্র ফাঁকা ইনপুট দেখাও
+    }
+});
+</script>

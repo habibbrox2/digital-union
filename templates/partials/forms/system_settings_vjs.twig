@@ -1,0 +1,277 @@
+{# /partials/system_settings_vjs.twig #}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+
+    const userRole = "{{ user_role|lower }}";
+
+    const systemForm = document.getElementById('systemSettingsForm');
+    const unionForm = document.getElementById('unionFormContainer');
+const unionSelect = document.getElementById('unionSelect');
+
+const divisionSelect = document.getElementById('division_id');
+const districtSelect = document.getElementById('district_id');
+const upazilaSelect  = document.getElementById('upazila_id');
+
+// hidden fields
+const divisionEnField = document.getElementById('division_name_en');
+const divisionBnField = document.getElementById('division_name_bn');
+
+const districtEnField = document.getElementById('district_name_en');
+const districtBnField = document.getElementById('district_name_bn');
+
+const upazilaEnField = document.getElementById('upazila_name_en');
+const upazilaBnField = document.getElementById('upazila_name_bn');
+
+function ajaxPost(url, data, callback) {
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', url);
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    xhr.onload = function () {
+        if (xhr.status === 200) callback(JSON.parse(xhr.responseText));
+        else console.error('AJAX Error', xhr.status, xhr.responseText);
+    };
+    const payload = Object.keys(data).map(k => encodeURIComponent(k) + '=' + encodeURIComponent(data[k])).join('&');
+    xhr.send(payload);
+}
+
+function resetSelect(select) {
+    select.innerHTML = '<option value="">Select</option>';
+}
+
+function populateSelect(select, data, selectedId = '') {
+    resetSelect(select);
+    data.forEach(item => {
+        const option = document.createElement('option');
+        option.value = item.id;
+        option.textContent = `${item.name_bn} (${item.name_en})`;
+        option.dataset.nameEn = item.name_en;
+        option.dataset.nameBn = item.name_bn;
+
+        if (item.id == selectedId) option.selected = true;
+
+        select.appendChild(option);
+    });
+    updateHiddenFields(select);
+}
+
+function updateHiddenFields(select) {
+    const option = select.options[select.selectedIndex];
+    if (!option) return;
+
+    if (select === divisionSelect) {
+        divisionEnField.value = option.dataset.nameEn || '';
+        divisionBnField.value = option.dataset.nameBn || '';
+    }
+    if (select === districtSelect) {
+        districtEnField.value = option.dataset.nameEn || '';
+        districtBnField.value = option.dataset.nameBn || '';
+    }
+    if (select === upazilaSelect) {
+        upazilaEnField.value = option.dataset.nameEn || '';
+        upazilaBnField.value = option.dataset.nameBn || '';
+    }
+}
+
+// Load divisions, districts, upazilas in cascade
+function loadGeo(order, parentId, select, selectedId = '', callback) {
+    ajaxPost('/geo/getdata', { geo_order: order, parent_geo_id: parentId }, function(items) {
+        populateSelect(select, items, selectedId);
+        if (callback) {
+            const id = items.find(d => d.id == selectedId)?.id || null;
+            callback(id);
+        }
+    });
+}
+
+// ----------------- Preselect based on /get_union_data -----------------
+function loadUnionData(unionId) {
+    if (!unionId) return;
+
+    ajaxPost('/settings/get_union_data', { union_id: unionId }, function(resp) {
+        if (resp.status !== 'success') return;
+
+        const data = resp.data;
+
+        // Set union fields
+        ['union_name_en','union_name_bn','ward_count','union_code','email','phone','website','postcode'].forEach(f=>{
+            const el = document.getElementById(f);
+            if(el) el.value = data[f] || '';
+        });
+
+        // Cascade selects with preselected IDs
+        loadGeo(0, 1, divisionSelect, data.division_id, function(divId){
+            if(!divId) return;
+            loadGeo(1, divId, districtSelect, data.district_id, function(distId){
+                if(!distId) return;
+                loadGeo(2, distId, upazilaSelect, data.upazila_id);
+            });
+        });
+    });
+}
+
+if(unionSelect){
+    unionSelect.addEventListener('change', function(){
+        const unionId = unionSelect.value;
+        loadUnionData(unionId);
+    });
+
+    // If already selected union
+    if(unionSelect.value) loadUnionData(unionSelect.value);
+}
+
+
+    // ------------------- Union Select & Form -------------------
+    if (userRole !== 'administrator') {
+        document.querySelectorAll('.system-setting').forEach(el => {
+            el.readOnly = true;
+            el.classList.add('bg-light');
+        });
+        if (systemForm) systemForm.querySelector('button[type="submit"]')?.remove();
+        unionForm.style.display = 'block';
+    } else {
+        if (unionSelect) {
+            unionSelect.addEventListener('change', function () {
+                const unionId = unionSelect.value;
+                document.getElementById('union_id').value = unionId;
+                if (!unionId) {
+                    unionForm.style.display = 'none';
+                    unionForm.querySelectorAll('input, select').forEach(el => el.value = '');
+                    return;
+                }
+                unionForm.style.display = 'block';
+                ajaxPost('/settings/get_union_data', { union_id: unionId }, function (resp) {
+                    if (resp.status === 'success') {
+                        const data = resp.data;
+                        const fields = ['union_name_en','union_name_bn','ward_count','union_code','email','phone','website','postcode','division_name_en','division_name_bn','district_name_en','district_name_bn','upazila_name_en','upazila_name_bn'];
+                        fields.forEach(f => {
+                            const el = document.getElementById(f);
+                            if (el) el.value = data[f] || '';
+                        });
+                        // Show existing logo
+                        const logoPreview = document.querySelector('#unionFormContainer img');
+                        if (logoPreview) logoPreview.src = data.logo_url || '';
+                        else if (data.logo_url) {
+                            const img = document.createElement('img');
+                            img.src = data.logo_url;
+                            img.alt = "Union Logo";
+                            img.className = "img-fluid mt-2";
+                            img.style.maxHeight = "100px";
+                            document.getElementById('union_logo').after(img);
+                        }
+                        // Cascade
+                        loadGeo(0, 1, divisionSelect, data.division_name_en, function (divisionId) {
+                            if (!divisionId) return;
+                            loadGeo(1, divisionId, districtSelect, data.district_name_en, function(districtId){
+                                if (!districtId) return;
+                                loadGeo(2, districtId, upazilaSelect, data.upazila_name_en);
+                            });
+                        });
+
+                    } else {
+                        showMessage('danger','Failed to load union data.');
+                    }
+                });
+            });
+        }
+        unionForm.style.display = 'none';
+    }
+
+    // ------------------- System Form Submit -------------------
+    if (systemForm) {
+        systemForm.addEventListener('submit', function (e) {
+            e.preventDefault();
+            const formData = new FormData(systemForm);
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST','/settings/system');
+            xhr.onload = function () {
+                if (xhr.status===200){
+                    const resp = JSON.parse(xhr.responseText);
+                    if(resp.status==='success') showMessage('success', resp.message);
+                    else showMessage('danger','Failed: '+resp.message);
+                } else showMessage('danger','AJAX Error: Could not update system settings.');
+            };
+            xhr.send(formData);
+        });
+    }
+
+    // ------------------- Union Form Submit -------------------
+
+if (unionForm) {
+    unionForm.addEventListener('submit', function(e){
+        e.preventDefault();
+
+        const fd = new FormData();
+
+        // union_id
+        fd.set('union_id', document.getElementById('union_id').value);
+
+        // Flat keys (no nested settings[])
+        [
+            'division_id','division_name_en','division_name_bn',
+            'district_id','district_name_en','district_name_bn',
+            'upazila_id','upazila_name_en','upazila_name_bn',
+            'union_name_en','union_name_bn','ward_count','union_code',
+            'email','phone','website','postcode'
+        ].forEach(f=>{
+            const el = document.getElementById(f);
+            if(el) fd.set(f, el.value);
+        });
+
+        // union logo
+        const logoInput = document.getElementById('union_logo');
+        if(logoInput && logoInput.files.length>0) fd.set('union_logo', logoInput.files[0]);
+
+
+        fd.set('csrf_token', getCsrfToken());
+
+        // fetch POST
+        fetch('/settings/union', { method:'POST', body: fd })
+        .then(res => res.json())
+        .then(resp => {
+            if(resp.status==='success') showMessage('success', resp.message);
+            else showMessage('danger','Error: '+resp.message);
+        })
+        .catch(err => showMessage('danger','Update failed: '+err.message));
+    });
+}
+
+
+
+});
+
+// ----------------- Helper: Show Message (SweetAlert2) -----------------
+function showMessage(type, message) {
+    let iconType = 'info';
+    let titleText = 'Notification';
+
+    switch (type) {
+        case 'success':
+            iconType = 'success';
+            titleText = 'সফলভাবে সম্পন্ন হয়েছে!';
+            break;
+        case 'danger':
+        case 'error':
+            iconType = 'error';
+            titleText = 'ত্রুটি ঘটেছে!';
+            break;
+        case 'warning':
+            iconType = 'warning';
+            titleText = 'সতর্কবার্তা!';
+            break;
+        case 'info':
+            iconType = 'info';
+            titleText = 'তথ্য';
+            break;
+    }
+
+    Swal.fire({
+        icon: iconType,
+        title: titleText,
+        text: message,
+        confirmButtonText: 'ঠিক আছে',
+        confirmButtonColor: '#3085d6',
+        timer: 5000,
+        timerProgressBar: true
+    });
+}
+</script>

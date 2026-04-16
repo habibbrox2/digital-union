@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ data.sonod_number }}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Arial&display=swap" rel="stylesheet">
+    <style>
+        * {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-print-color-adjust: exact;
+        }
+
+        @page {
+            size: A4;
+            margin: 10mm;
+        }
+
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-sizing: border-box;
+            flex-direction: column;
+            margin: 0; 
+            padding: 0;
+            font-size: 14pt; 
+        }
+
+        .container {
+            background-image: url('{{ url }}/assets/bg.png');
+            background-size: cover;
+            background-repeat: no-repeat;
+            width: 209mm;
+            height: 297mm;
+            position: relative;
+            padding: 12mm 16mm; 
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 4.5pt;
+            font-size: 9pt;
+        }
+        tr, td, th {
+            font-size: 9pt;
+        }
+
+        
+        .title {
+            font-size: 12pt;
+            font-weight: bold;
+            color: #3c01c5;
+            text-align: center;
+        }
+        
+        .info {
+            font-size: 9pt;
+            text-align: center;
+        }
+
+        .title-section {
+            font-size: 12pt;
+            font-weight: bold;
+            text-align: center;
+            border-bottom: 1.5pt solid #000;
+            padding-bottom: 5pt;
+            margin-bottom: 10pt;
+        }
+
+        .sonod-no {
+            font-size: 14pt;
+        }
+        .sonod-no tr td {
+            font-size: 10pt;
+            border: 0.75pt solid black; padding: 3.75pt; text-align: center;
+        }
+        .bottom-text {
+            position: absolute;
+            bottom: 10mm;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 12pt;
+            font-weight: bold;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <table>
+        <tr>
+            <td class="title">{{ union.union_name_en|title }}</td>
+        </tr>
+        <tr>
+            <td class="info">{{ union.upazila_name_en|title }}, {{ union.district_name_en|title }}-{{ union.postcode|title }} </td>
+        </tr>
+        <tr>
+            <td class="info">Mobile: {{ union.phone }} </td>
+        </tr>
+        <tr>
+            <td class="info">E-mail: {{ union.email }}</td>
+        </tr>
+        <tr>
+            <td class="info">Website: {{ union.website }}</td>
+        </tr>
+    </table>
+
+    <table style="height: 140pt;">
+        <tr>
+            <td style="text-align: center; width: 2.1in;">
+                <img src="https://quickchart.io/qr?text={{ url }}/verify/trade_en/{{ (union.union_code|default('000') ~ data.sonod_number|default(''))|slice(-17) }}/{{ union.union_code|default('000') }}/{{ union.rmo_code|default('1') }}&margin=1&size=300" alt="QR Code" height="48.75pt" width="67.5pt">
+                <p style="text-decoration: underline;font-size: 7.5pt;">License Issue Details </p>
+                <p style="font-size: 7.5pt;">Date of Issue: </p>
+                <p style="font-size: 7.5pt;">{{ data.issue_date|date('d-m-Y') }} </p>
+                <p style="text-decoration:overline; font-size: 7.5pt;">Issue Time: 12:00:00</p>
+            </td>
+            <td style="text-align: center;">
+                <img src="{{ url }}/assets/logo/logo.png" alt="Government of Bangladesh" height="75pt" width="75pt">
+            </td>
+            <td style="width: 2.1in;">
+                <img src="{{ url }}/assets/img/band-cross.png" style="padding: 10px;" alt="Icon" height="60pt" width="60pt">
+            </td>
+        </tr>
+    </table>
+
+    <table>
+        <tr>
+            <td style="text-align: center; font-size: 14pt; text-decoration: underline; ">TRADE LICENSE</td>
+        </tr>
+    </table>
+    
+    <table class="sonod-no">
+        <tr>
+            <td>Certificate No.</td>
+            {% set sonod_number_bn = data.sonod_number %}
+            {% for digit in sonod_number_bn | split('') %}
+            <td>{{ digit }}</td> 
+            {% endfor %}
+        </tr>
+        <tr>
+            <td colspan="18" style="font-size: 8pt; text-align: left; padding: 4pt;"> Under the power conferred by Section 66 of the Local Government (Union Parishad) Act, 2009 (Act No. 61 of 2009),
+                the Model Tax Schedule, 2016, as promulgated by the Government, and in accordance with Articles 6 and 17, this Trade License is issued 
+                in favor of the following person/organization on the specified terms for the purpose of collecting taxes imposed on business, occupation, 
+                profession or industrial establishments: 
+            </td>
+        </tr>
+    </table>
+
+    <!-- Business Information Table -->
+    <table style="width: 100%; border-collapse: collapse;">
+        <tr>
+            <td style="width: 30%; font-weight: bold;">Business Name</td>
+            <td colspan="4" style="font-size: 12pt;">: {{ business_meta.business_name_en }}</td>
+        </tr>
+        <tr>
+            <td>Owner/Proprietor Name</td>
+            <td colspan="4">: {{ data.name_en }}</td>
+        </tr>
+        <tr>
+            <td>Mother's Name</td>
+            <td colspan="4">: {{ data.mother_name_en }}</td>
+        </tr>
+        <tr>
+            <td>Father's Name</td>
+            <td colspan="4">: {{ data.father_name_en }}</td>
+        </tr>
+        <tr>
+            <td>Nature of Business</td>
+            <td colspan="4">: {{ business_meta.ownership_name_en }}</td>
+        </tr>
+        <tr>
+            <td>Type of Business</td>
+            <td colspan="4">: {{ business_meta.business_type_en }}</td>
+        </tr>
+        <tr>
+            <td>Business Address</td>
+            <td colspan="4">
+                : Road/Block/Sector: {{ business_meta.business_rbs_en|title }}, Village/Mohalla: {{ business_meta.business_village_en|title }}, Ward No- {{ business_meta.permanent_ward_no }}, <br>
+                &nbsp; Post Office: {{ business_meta.business_postoffice_en|title }}, Upazila: {{ business_meta.business_upazila_en|title }}, District: {{ business_meta.business_district_en|title }}.
+            </td>
+        </tr>
+        <tr>
+            <td>Region (if applicable)</td>
+            <td colspan="4">: {{ business_meta.business_district_en }}.</td>
+        </tr>
+        <tr>
+            <td>ID Card/Birth Registration/Passport</td>
+            <td colspan="4">:
+                {% if data.birth_id %}
+                    {{ data.birth_id }}
+                {% elseif data.nid %}
+                    {{ data.nid }}
+                {% elseif data.passport_no %}
+                    {{ data.passport_no }}
+                {% endif %}
+            </td>
+        </tr>
+        <tr>
+            <td style="width: 25%;">TIN</td>
+            <td style="width: 25%;">: {{ business_meta.tax_id }}</td>
+            <td style="width: 25%;">BIN</td>
+            <td style="width: 25%;">: {{ business_meta.vat_id }}</td>
+        </tr>
+        <tr>
+            <td>Mobile</td>
+            <td>: {{ data.applicant_phone }}</td>
+            <td>E-mail</td>
+            <td>: {{ business_meta.email }}</td>
+        </tr>
+        <tr>
+            <td>Fiscal Year</td>
+            <td>: {{ business_meta.fiscal_year }}</td>
+            <td>Business Start Date</td>
+            <td>: {{ business_meta.business_start_date }}</td>
+        </tr>
+    </table>
+
+
+
+
+
+    <!-- Owner/Proprietor/Company Present and Permanent Address -->
+    <table style="margin-top: 16px;">
+        <tr>
+            <td style="width: 50%; vertical-align: top;">
+		<table style="width: 100%; font-family: Arial; font-size: 9pt;">
+		    <tr>
+		        <td colspan="2" style="text-align: center; text-decoration: underline; font-size: 9pt;">
+		            Owner/Proprietor/Company Present Address
+		        </td>
+		    </tr>
+		    <tr>
+		        <td style="width:70%;">Road/Block/Sector</td>
+		        <td style="width:30%;">: {{ data.present_rbs_en|title }}</td>
+		    </tr>
+		    <tr>
+		        <td>Village/Mohalla</td>
+		        <td>: {{ data.present_village_en|title }}</td>
+		    </tr>
+		    <tr>
+		        <td>Post Office</td>
+		        <td>: {{ data.present_postoffice_en|title }}</td>
+		    </tr>
+		    <tr>
+		        <td>Upazila/Thana</td>
+		        <td>: {{ data.present_upazila_en|title }}</td>
+		    </tr>
+		    <tr>
+		        <td>District</td>
+		        <td>: {{ data.present_district_en|title }}</td>
+		    </tr>
+		    <tr>
+		        <td>Division</td>
+		        <td>: {{ data.present_division_en|title }}</td>
+		    </tr>
+		    <tr>
+		        <td>Country</td>
+		        <td>: Bangladesh.</td>
+		    </tr>
+		</table>
+
+            </td>
+
+            <td style="width: 50%; vertical-align: top;">
+                <table>
+                    <tr>
+                        <td colspan="2" style="text-align: center; text-decoration: underline; font-size: 9pt;">Owner/Proprietor/Company Permanent Address</td>
+                    </tr>
+                <tr>
+                        <td style="width:70%;">Road/Block/Sector</td>
+                        <td style="width:30%;">: {{ data.permanent_rbs_en|title }}</td>
+                    </tr>
+                    <tr>
+                        <td>Village/Mohalla</td>
+                        <td>: {{ data.permanent_village_en|title }}</td>
+                    </tr>
+                    <tr>
+                        <td>Post Office</td>
+                        <td>: {{ data.permanent_postoffice_en|title }}</td>
+                    </tr>
+                    <tr>
+                        <td>Upazila/Thana</td>
+                        <td>: {{ data.permanent_upazila_en|title }}</td>
+                    </tr>
+                    <tr>
+                        <td>District</td>
+                        <td>: {{ data.permanent_district_en|title }}</td>
+                    </tr>
+                    <tr>
+                        <td>Division</td>
+                        <td>: {{ data.permanent_district_en|title }}</td>
+                    </tr>
+                    <tr>
+                        <td>Country</td>
+                        <td>: Bangladesh.</td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+
+	<table>
+	    <tr>
+	        <td style="width: 50%; vertical-align: top;">
+	            <!-- Fee and Tax Details -->
+	            <table style="width: 100%; margin-bottom: 15pt;">
+	                <tr>
+	                    <td>License Fee (New)</td>
+	                    <td>
+	                    	:
+	                        {% if business_meta.license_fee != 0 %}
+	                            {{ business_meta.license_fee }}
+	                        {% endif %}
+	                    </td>
+	                </tr>
+	                <tr>
+	                    <td>VAT</td>
+	                    <td>
+	                    	:
+	                        {% if business_meta.vat_amount != 0 %}
+	                            {{ business_meta.vat_amount }}
+	                        {% endif %}
+	                    </td>
+	                </tr>
+	                <tr>
+	                    <td>Income Tax/Tax at Source</td>
+	                    <td>
+	                        :
+	                        {% if business_meta.income_tax != 0 %}
+	                            {{ business_meta.income_tax }}
+	                        {% endif %}
+	                    </td>
+	                </tr>
+	                <tr>
+	                    <td><b>Total</b></td>
+	                    <td>
+	                    	:
+	                        {% if business_meta.total_fee != 0 %}
+	                            <b> {{ business_meta.total_fee }}</b>
+	                        {% endif %}
+	                    </td>
+	                </tr>
+	            </table>
+	        </td>
+	
+	        <td style="width: 50%; vertical-align: top;">
+	            <!-- Other Taxes -->
+	            <table style="width: 100%;">
+	                <tr>
+	                    <td>Signboard Tax (Annual)</td>
+	                    <td>
+	                        :
+	                        {% if business_meta.signboard_tax != 0 %}
+	                            {{ business_meta.signboard_tax }}
+	                        {% endif %}
+	                    </td>
+	                </tr>
+	                <tr>
+	                    <td>Surcharge</td>
+	                    <td>
+	                        : 
+	                        {% if business_meta.surcharge != 0 %}
+	                            {{ business_meta.surcharge }}
+	                        {% endif %}
+	                    </td>
+	                </tr>
+	                <tr>
+	                    <td>Profession & Trade Tax</td>
+	                    <td>
+	                        :
+	                        {% if business_meta.occupation_tax != 0 %}
+	                            {{ business_meta.occupation_tax }}
+	                        {% endif %}
+	                    </td>
+	                </tr>
+	            </table>
+	        </td>
+	    </tr>
+	</table>
+	
+
+
+    <!-- Validity Table -->
+    <table style="">
+        <tr>
+            <td style="font-size: 9pt;">Validity of this Trade License:------------{{ business_meta.expiry_date | date('d-m-Y') }}------------Up to</td>
+        </tr>
+    </table>
+
+
+
+	<!-- UP Administrative Officer and Chairman -->
+	<table border="0" width="100%" style="margin-top:80px; font-family:Arial; font-size:14pt;">
+	    <tr>
+	        <!-- Left column: positioned further left -->
+	        <td style="width:35%; text-align:center;">
+	            _______________________<br>
+	            UP Administrative Officer
+	        </td>
+	        <!-- Spacer cell to create gap -->
+	        <td style="width:30%;"></td>
+	        <!-- Right column: positioned further right -->
+	        <td style="width:35%; text-align:center;">
+	            _______________________<br>
+	            Chairman
+	        </td>
+	    </tr>
+	</table>
+
+
+
+
+
+
+
+
+
+
+
+</div>
+
+</body>
+</html>

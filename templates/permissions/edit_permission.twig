@@ -1,0 +1,80 @@
+{% extends 'layout.twig' %}
+
+{% block title %}Edit Permission{% endblock %}
+{% block header_title %}{{ header_title|default('Edit Permission') }}{% endblock %}
+
+{% block content %}
+{% include 'components/sweetAlert.twig' %}
+<div class="container mt-4">
+  <div class="row">
+    <div class="col-md-8 offset-md-2">
+      <div class="card shadow-sm border-0">
+        <div class="card-header bg-warning text-dark">
+          <h4 class="mb-0"><i class="fas fa-key"></i> Edit Permission</h4>
+        </div>
+        <div class="card-body">
+          <div class="alert alert-info mb-3">
+            <i class="fas fa-info-circle"></i>
+            <strong>ID:</strong> {{ permission.id }}
+          </div>
+
+          <form method="post" action="/permissions/{{ permission.id }}/edit">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}" />
+
+            <div class="mb-3">
+              <label for="module" class="form-label fw-bold">Module <span class="text-danger">*</span></label>
+              <select class="form-control form-control-lg" id="module" name="module" required>
+                {% for m in modules %}
+                  <option value="{{ m|e }}" {% if m == permission.module %}selected{% endif %}>
+                    {{ m|upper }}
+                  </option>
+                {% endfor %}
+              </select>
+              <small class="form-text text-muted d-block mt-2">
+                <i class="fas fa-info-circle"></i>
+                Select the module for this permission
+              </small>
+            </div>
+
+            <div class="mb-3">
+              <label for="name" class="form-label fw-bold">Permission Name <span class="text-danger">*</span></label>
+              <input class="form-control form-control-lg" 
+                     id="name" 
+                     name="name" 
+                     value="{{ permission.name|e }}" 
+                     required
+                     maxlength="191" />
+              <small class="form-text text-muted d-block mt-2">
+                <i class="fas fa-info-circle"></i>
+                Update the permission name if needed
+              </small>
+            </div>
+
+            <div class="mb-3">
+              <label for="description" class="form-label fw-bold">Description</label>
+              <textarea class="form-control" 
+                        id="description" 
+                        name="description" 
+                        rows="4"
+                        maxlength="1000">{{ permission.description|e }}</textarea>
+              <small class="form-text text-muted d-block mt-2">
+                <i class="fas fa-info-circle"></i>
+                Update the description
+              </small>
+            </div>
+
+            <div class="d-flex gap-2 mt-4">
+              <button class="btn btn-warning btn-lg" type="submit">
+                <i class="fas fa-save"></i> Update Permission
+              </button>
+              <a href="/permissions" class="btn btn-secondary btn-lg">
+                <i class="fas fa-times"></i> Cancel
+              </a>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

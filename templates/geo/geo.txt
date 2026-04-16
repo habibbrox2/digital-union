@@ -1,0 +1,378 @@
+<script>
+$(document).ready(function () {
+    // Fetch divisions initially for both English and Bengali dropdowns
+    $.ajax({
+        url: '/GeoData.php',
+        method: 'POST',
+        data: { geo_order: 0, parent_geo_id: 1 }, // Initial request for divisions
+        dataType: 'json',
+        success: function (data) {
+            populateDropdown('#present_division_bn', '#present_division_en', data);
+
+            // Handle changes for Division (English & Bengali)
+            $('#present_division_en, #present_division_bn').change(function () {
+                const divisionId = parseInt($(this).find('option:selected').attr('data-geo-id'));
+                console.log("Selected Division ID:", divisionId); // Debugging line
+                $.ajax({
+                    url: '/GeoData.php',
+                    method: 'POST',
+                    data: { geo_order: 1, parent_geo_id: divisionId }, // Request for districts
+                    dataType: 'json',
+                    success: function (data) {
+                        populateDropdown('#present_district_bn', '#present_district_en', data);
+                        resetUpazilaUnion(); // Reset Upazila and Union dropdowns
+                    }
+                });
+            });
+
+            // Handle changes for District (English & Bengali)
+            $('#present_district_en, #present_district_bn').change(function () {
+                const districtId = parseInt($(this).find('option:selected').attr('data-geo-id'));
+                console.log("Selected District ID:", districtId); // Debugging line
+                $.ajax({
+                    url: '/GeoData.php',
+                    method: 'POST',
+                    data: { geo_order: 2, parent_geo_id: districtId }, // Request for upazilas
+                    dataType: 'json',
+                    success: function (data) {
+                        populateDropdown('#present_upazila_bn', '#present_upazila_en', data);
+                        resetUnion(); // Reset Union dropdown
+                    }
+                });
+            });
+
+            // Handle changes for Upazila (English & Bengali)
+            $('#present_upazila_en, #present_upazila_bn').change(function () {
+                const upazilaId = parseInt($(this).find('option:selected').attr('data-geo-id'));
+                console.log("Selected Upazila ID:", upazilaId); // Debugging line
+                $.ajax({
+                    url: '/GeoData.php',
+                    method: 'POST',
+                    data: { geo_order: 3, parent_geo_id: upazilaId }, // Request for unions
+                    dataType: 'json',
+                    success: function (data) {
+                        populateDropdown('#present_union_bn', '#present_union_en', data);
+                    }
+                });
+            });
+        },
+        error: function (error) {
+            console.error('Error fetching data', error);
+        }
+    });
+
+    // Function to populate dropdowns for both Bengali and English
+    function populateDropdown(idBn, idEn, data) {
+        let optionsBn = '<option value="" data-geo-id="" data-name-bn="" data-name-en="" data-geo-order="0" data-parent-geo-id="1">--নির্বাচন করুন--</option>';
+        let optionsEn = '<option value="" data-geo-id="" data-name-bn="" data-name-en="" data-geo-order="0" data-parent-geo-id="1">--Select Option--</option>';
+
+        data.forEach(item => {
+            optionsBn += `<option value="${item.name_bn}" data-geo-id="${item.id}" data-name-bn="${item.name_bn}" data-name-en="${item.name_en}" data-geo-order="${item.geo_order}" data-parent-geo-id="${item.parent_geo_id}">${item.name_bn}</option>`;
+            optionsEn += `<option value="${item.name_en}" data-geo-id="${item.id}" data-name-bn="${item.name_bn}" data-name-en="${item.name_en}" data-geo-order="${item.geo_order}" data-parent-geo-id="${item.parent_geo_id}">${item.name_en}</option>`;
+        });
+
+        $(idBn).html(optionsBn);
+        $(idEn).html(optionsEn);
+    }
+
+    // Function to reset Upazila and Union dropdowns after Division change
+    function resetUpazilaUnion() {
+        const resetOptionBn = '<option value="" data-geo-id="" data-name-bn="" data-name-en="" data-geo-order="2" data-parent-geo-id="1">--নির্বাচন করুন--</option>';
+        const resetOptionEn = '<option value="" data-geo-id="" data-name-bn="" data-name-en="" data-geo-order="2" data-parent-geo-id="1">--Select Option--</option>';
+        $('#present_upazila_en, #present_union_en').html(resetOptionEn);
+        $('#present_upazila_bn, #present_union_bn').html(resetOptionBn);
+    }
+
+    // Function to reset Union dropdown after Upazila change
+    function resetUnion() {
+        const resetOptionBn = '<option value="" data-geo-id="" data-name-bn="" data-name-en="" data-geo-order="3" data-parent-geo-id="1">--নির্বাচন করুন--</option>';
+        const resetOptionEn = '<option value="" data-geo-id="" data-name-bn="" data-name-en="" data-geo-order="3" data-parent-geo-id="1">--Select Option--</option>';
+        $('#present_union_en').html(resetOptionEn);
+        $('#present_union_bn').html(resetOptionBn);
+    }
+
+    // Mapping from English to Bengali (updated to use data-geo-id)
+    const englishToBengaliMapping = {
+        'present_division_en': 'present_division_bn',
+        'present_district_en': 'present_district_bn',
+        'present_upazila_en': 'present_upazila_bn',
+        'present_union_en': 'present_union_bn',
+    };
+
+    // Mapping from Bengali to English (updated to use data-geo-id)
+    const bengaliToEnglishMapping = {
+        'present_division_bn': 'present_division_en',
+        'present_district_bn': 'present_district_en',
+        'present_upazila_bn': 'present_upazila_en',
+        'present_union_bn': 'present_union_en',
+    };
+
+    // Function to update Bengali fields when English fields are updated
+    function updateBengaliFields(event) {
+        const englishField = event.target;
+        const bengaliFieldId = englishToBengaliMapping[englishField.id];
+        if (bengaliFieldId) {
+            const bengaliField = document.getElementById(bengaliFieldId);
+            const selectedOption = $(englishField).find('option:selected');
+            const geoId = selectedOption.attr('data-geo-id');
+            console.log("Bengali Update:", geoId); // Debugging line
+            
+            if (bengaliField && geoId) {
+                const bengaliOption = $(bengaliField).find(`option[data-geo-id="${geoId}"]`);
+                if (bengaliOption.length > 0) {
+                    bengaliOption.prop('selected', true);
+                }
+            }
+        }
+    }
+
+    // Function to update English fields when Bengali fields are updated
+    function updateEnglishFields(event) {
+        const bengaliField = event.target;
+        const englishFieldId = bengaliToEnglishMapping[bengaliField.id];
+        if (englishFieldId) {
+            const englishField = document.getElementById(englishFieldId);
+            const selectedOption = $(bengaliField).find('option:selected');
+            const geoId = selectedOption.attr('data-geo-id');
+            console.log("English Update:", geoId); // Debugging line
+            
+            if (englishField && geoId) {
+                const englishOption = $(englishField).find(`option[data-geo-id="${geoId}"]`);
+                if (englishOption.length > 0) {
+                    englishOption.prop('selected', true);
+                }
+            }
+        }
+    }
+
+    // Add event listeners to the English address fields
+    Object.keys(englishToBengaliMapping).forEach(englishFieldId => {
+        const englishField = document.getElementById(englishFieldId);
+        if (englishField) {
+            englishField.addEventListener('change', updateBengaliFields);
+        }
+    });
+
+    // Add event listeners to the Bengali address fields
+    Object.keys(bengaliToEnglishMapping).forEach(bengaliFieldId => {
+        const bengaliField = document.getElementById(bengaliFieldId);
+        if (bengaliField) {
+            bengaliField.addEventListener('change', updateEnglishFields);
+        }
+    });
+
+
+
+    $('#permanentAddress').hide();
+
+        $.ajax({
+        url: '/GeoData.php',
+        method: 'POST',
+        data: { geo_order: 0, parent_geo_id: 1 }, // Initial request for divisions
+        dataType: 'json',
+        success: function (data) {
+            populatePrDropdown('#permanent_division_bn', '#permanent_division_en', data);
+
+            // Handle changes for Division (English & Bengali)
+            $('#permanent_division_en, #permanent_division_bn').change(function () {
+                const divisionId = parseInt($(this).find('option:selected').attr('data-geo-id'));
+                console.log("Selected Division ID:", divisionId); 
+                $.ajax({
+                    url: '/GeoData.php',
+                    method: 'POST',
+                    data: { geo_order: 1, parent_geo_id: divisionId }, 
+                    dataType: 'json',
+                    success: function (data) {
+                        populatePrDropdown('#permanent_district_bn', '#permanent_district_en', data);
+                        resetPrUpazilaUnion(); // resetPr Upazila and Union dropdowns
+                    }
+                });
+            });
+
+            // Handle changes for District (English & Bengali)
+            $('#permanent_district_en, #permanent_district_bn').change(function () {
+                const districtId = parseInt($(this).find('option:selected').attr('data-geo-id'));
+                console.log("Selected District ID:", districtId); // Debugging line
+                $.ajax({
+                    url: '/GeoData.php',
+                    method: 'POST',
+                    data: { geo_order: 2, parent_geo_id: districtId }, // Request for upazilas
+                    dataType: 'json',
+                    success: function (data) {
+                        populatePrDropdown('#permanent_upazila_bn', '#permanent_upazila_en', data);
+                        resetPrUnion(); // resetPr Union dropdown
+                    }
+                });
+            });
+
+            // Handle changes for Upazila (English & Bengali)
+            $('#permanent_upazila_en, #permanent_upazila_bn').change(function () {
+                const upazilaId = parseInt($(this).find('option:selected').attr('data-geo-id'));
+                console.log("Selected Upazila ID:", upazilaId); // Debugging line
+                $.ajax({
+                    url: '/GeoData.php',
+                    method: 'POST',
+                    data: { geo_order: 3, parent_geo_id: upazilaId }, // Request for unions
+                    dataType: 'json',
+                    success: function (data) {
+                        populatePrDropdown('#permanent_union_bn', '#permanent_union_en', data);
+                    }
+                });
+            });
+        },
+        error: function (error) {
+            console.error('Error fetching data', error);
+        }
+    });
+
+    // Function to populate dropdowns for both Bengali and English
+    function populatePrDropdown(idBn, idEn, data) {
+        let optionsPrBn = '<option value="" data-geo-id="" data-name-bn="" data-name-en="" data-geo-order="0" data-parent-geo-id="1">--নির্বাচন করুন--</option>';
+        let optionsPrEn = '<option value="" data-geo-id="" data-name-bn="" data-name-en="" data-geo-order="0" data-parent-geo-id="1">--Select Option--</option>';
+
+        data.forEach(item => {
+            optionsPrBn += `<option value="${item.name_bn}" data-geo-id="${item.id}" data-name-bn="${item.name_bn}" data-name-en="${item.name_en}" data-geo-order="${item.geo_order}" data-parent-geo-id="${item.parent_geo_id}">${item.name_bn}</option>`;
+            optionsPrEn += `<option value="${item.name_en}" data-geo-id="${item.id}" data-name-bn="${item.name_bn}" data-name-en="${item.name_en}" data-geo-order="${item.geo_order}" data-parent-geo-id="${item.parent_geo_id}">${item.name_en}</option>`;
+        });
+
+        $(idBn).html(optionsPrBn);
+        $(idEn).html(optionsPrEn);
+    }
+
+    // Function to resetPr Upazila and Union dropdowns after Division change
+    function resetPrUpazilaUnion() {
+        const resetPrOptionBn = '<option value="" data-geo-id="" data-name-bn="" data-name-en="" data-geo-order="2" data-parent-geo-id="1">--নির্বাচন করুন--</option>';
+        const resetPrOptionEn = '<option value="" data-geo-id="" data-name-bn="" data-name-en="" data-geo-order="2" data-parent-geo-id="1">--Select Option--</option>';
+        $('#permanent_upazila_en, #permanent_union_en').html(resetPrOptionEn);
+        $('#permanent_upazila_bn, #permanent_union_bn').html(resetPrOptionBn);
+    }
+
+    // Function to resetPr Union dropdown after Upazila change
+    function resetPrUnion() {
+        const resetPrOptionBn = '<option value="" data-geo-id="" data-name-bn="" data-name-en="" data-geo-order="3" data-parent-geo-id="1">--নির্বাচন করুন--</option>';
+        const resetPrOptionEn = '<option value="" data-geo-id="" data-name-bn="" data-name-en="" data-geo-order="3" data-parent-geo-id="1">--Select Option--</option>';
+        $('#permanent_union_en').html(resetPrOptionEn);
+        $('#permanent_union_bn').html(resetPrOptionBn);
+    }
+
+    // PrMapping from English to Bengali (updated to use data-geo-id)
+    const englishToBengaliPrMapping = {
+        'permanent_division_en': 'permanent_division_bn',
+        'permanent_district_en': 'permanent_district_bn',
+        'permanent_upazila_en': 'permanent_upazila_bn',
+        'permanent_union_en': 'permanent_union_bn',
+    };
+
+    // PrMapping from Bengali to English (updated to use data-geo-id)
+    const bengaliToEnglishPrMapping = {
+        'permanent_division_bn': 'permanent_division_en',
+        'permanent_district_bn': 'permanent_district_en',
+        'permanent_upazila_bn': 'permanent_upazila_en',
+        'permanent_union_bn': 'permanent_union_en',
+    };
+
+    // Function to update Bengali PrFields when English PrFields are updated
+    function updateBengaliPrFields(event) {
+        const englishPrField = event.target;
+        const bengaliPrFieldId = englishToBengaliPrMapping[englishPrField.id];
+        if (bengaliPrFieldId) {
+            const bengaliPrField = document.getElementById(bengaliPrFieldId);
+            const selectedOption = $(englishPrField).find('option:selected');
+            const geoId = selectedOption.attr('data-geo-id');
+            console.log("Bengali Update:", geoId); // Debugging line
+            
+            if (bengaliPrField && geoId) {
+                const bengaliOption = $(bengaliPrField).find(`option[data-geo-id="${geoId}"]`);
+                if (bengaliOption.length > 0) {
+                    bengaliOption.prop('selected', true);
+                }
+            }
+        }
+    }
+
+    // Function to update English PrFields when Bengali PrFields are updated
+    function updateEnglishPrFields(event) {
+        const bengaliPrField = event.target;
+        const englishPrFieldId = bengaliToEnglishPrMapping[bengaliPrField.id];
+        if (englishPrFieldId) {
+            const englishPrField = document.getElementById(englishPrFieldId);
+            const selectedOption = $(bengaliPrField).find('option:selected');
+            const geoId = selectedOption.attr('data-geo-id');
+            console.log("English Update:", geoId); // Debugging line
+            
+            if (englishPrField && geoId) {
+                const englishOption = $(englishPrField).find(`option[data-geo-id="${geoId}"]`);
+                if (englishOption.length > 0) {
+                    englishOption.prop('selected', true);
+                }
+            }
+        }
+    }
+
+    // Add event listeners to the English address PrFields
+    Object.keys(englishToBengaliPrMapping).forEach(englishPrFieldId => {
+        const englishPrField = document.getElementById(englishPrFieldId);
+        if (englishPrField) {
+            englishPrField.addEventListener('change', updateBengaliPrFields);
+        }
+    });
+
+    // Add event listeners to the Bengali address PrFields
+    Object.keys(bengaliToEnglishPrMapping).forEach(bengaliPrFieldId => {
+        const bengaliPrField = document.getElementById(bengaliPrFieldId);
+        if (bengaliPrField) {
+            bengaliPrField.addEventListener('change', updateEnglishPrFields);
+        }
+    });
+
+
+
+    $('#nagorik_status').change(function() {
+
+        if ($(this).is(':checked')) {
+            $('#permanentAddress').show(); 
+        } else {
+            $('#permanentAddress').hide();
+        }
+    });
+
+
+$('#AddressisSame').change(function () {
+    if ($(this).is(':checked')) {
+        // Copy the selected values from the present address fields to the permanent address fields
+
+        // Iterate over all present address dropdowns
+        $('#present_division_en, #present_division_bn, #present_district_en, #present_district_bn, #present_upazila_en, #present_upazila_bn, #present_union_en, #present_union_bn').each(function () {
+            const selectedOption = $(this).find('option:selected');
+            const geoId = selectedOption.data('geo-id');
+            const geoOrder = selectedOption.data('geo-order');
+            
+            // Map the present field to the corresponding permanent field
+            let correspondingFieldId = '';
+            if ($(this).attr('id').includes('present_division')) {
+                correspondingFieldId = $(this).attr('id').replace('present', 'permanent');
+            }
+
+            // Find the corresponding permanent dropdown and select the same option
+            const correspondingField = $('#' + correspondingFieldId);
+            correspondingField.find(`option[data-geo-id="${geoId}"][data-geo-order="${geoOrder}"]`).prop('selected', true);
+        });
+
+        // Optionally trigger the change event to load any associated sub-districts/upazilas/unions
+        $('#permanent_division_en, #permanent_division_bn').change();
+    } else {
+        // Clear the permanent address fields if not checked
+        $('#permanent_division_en, #permanent_division_bn, #permanent_district_en, #permanent_district_bn, #permanent_upazila_en, #permanent_upazila_bn, #permanent_union_en, #permanent_union_bn').each(function () {
+            $(this).val('');
+        });
+
+    }
+});
+
+
+
+
+
+
+});
+</script>

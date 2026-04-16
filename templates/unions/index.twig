@@ -1,0 +1,196 @@
+{% extends "layout.twig" %}
+{% block title %}{{ title }}{% endblock %}
+{% block header_title %}{{ header_title }}{% endblock %}
+{% block content %}
+{% include 'components/sweetAlert.twig' %}
+
+<div class="container py-5 modern-union">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold text-primary">{{ header_title }}</h2>
+        <a href="/unions/add" class="btn btn-success btn-md shadow-sm">
+            <i class="bi bi-plus-lg me-1"></i> Add Union
+        </a>
+    </div>
+
+    <!-- Filter/Search Form -->
+    <form method="get" class="row g-3 align-items-center mb-4">
+        <div class="col-md-4 col-sm-12">
+            <div class="input-group">
+                <span class="input-group-text"><i class="bi bi-search"></i></span>
+                <input
+                    type="text"
+                    name="search"
+                    class="form-control form-control-md shadow-sm"
+                    placeholder="ইউনিয়ন সার্চ করুন..."
+                    value="{{ search|e }}"
+                >
+            </div>
+        </div>
+        <div class="col-md-2 col-sm-6">
+            <select name="sortBy" class="form-select form-select-md shadow-sm">
+                <option value="union_name_bn" {% if sortBy == 'union_name_bn' %}selected{% endif %}>ইউনিয়নের নাম</option>
+                <option value="upazila_name_en" {% if sortBy == 'upazila_name_en' %}selected{% endif %}>উপজেলা</option>
+                <option value="district_name_en" {% if sortBy == 'district_name_en' %}selected{% endif %}>জেলা</option>
+                <option value="division_name_en" {% if sortBy == 'division_name_en' %}selected{% endif %}>বিভাগ</option>
+            </select>
+        </div>
+        <div class="col-md-2 col-sm-6">
+            <select name="sortDir" class="form-select form-select-md shadow-sm">
+                <option value="ASC" {% if sortDir == 'ASC' %}selected{% endif %}>Ascending</option>
+                <option value="DESC" {% if sortDir == 'DESC' %}selected{% endif %}>Descending</option>
+            </select>
+        </div>
+        <div class="col-md-2 col-sm-6">
+            <select name="limit" class="form-select form-select-md shadow-sm">
+                <option value="5" {% if limit == 5 %}selected{% endif %}>5</option>
+                <option value="10" {% if limit == 10 %}selected{% endif %}>10</option>
+                <option value="20" {% if limit == 20 %}selected{% endif %}>20</option>
+                <option value="50" {% if limit == 50 %}selected{% endif %}>50</option>
+                <option value="100" {% if limit == 100 %}selected{% endif %}>100</option>
+            </select>
+        </div>
+        <div class="col-md-2 col-sm-6 d-grid">
+            <button type="submit" class="btn btn-primary btn-md shadow-sm">
+                <i class="bi bi-funnel-fill me-1"></i> সার্চ / ফিল্টার
+            </button>
+        </div>
+    </form>
+
+    {% if message %}
+        <div class="alert alert-{{ status }} rounded-3 shadow-sm d-flex align-items-center">
+            <i class="bi bi-info-circle-fill me-2"></i> {{ message }}
+        </div>
+    {% endif %}
+
+    <!-- Card Grid -->
+    <div class="row g-4">
+        {% for union in unions %}
+            <div class="col-lg-4 col-md-6 col-sm-12">
+                <div class="card shadow-sm border glassy h-100 union-card">
+                    <div class="card-body d-flex flex-column">
+                        <h5 class="card-title mb-2 fw-semibold">{{ union.union_name_bn }}</h5>
+                        <h6 class="text-muted mb-3">{{ union.union_name_en }}</h6>
+                        <ul class="list-unstyled mb-3 flex-grow-1">
+                            <li><i class="bi bi-geo-alt-fill me-1 text-primary"></i> {{ union.upazila_name_en ?: '-' }}</li>
+                            <li><i class="bi bi-map-fill me-1 text-primary"></i> {{ union.district_name_en ?: '-' }}</li>
+                            <li><i class="bi bi-building me-1 text-primary"></i> {{ union.division_name_en ?: '-' }}</li>
+                            <li><i class="bi bi-people-fill me-1 text-primary"></i> {{ union.ward_count ?: '০' }}</li>
+                            <li><i class="bi bi-envelope-fill me-1 text-primary"></i> {{ union.email ?: '-' }}</li>
+                            <li><i class="bi bi-telephone-fill me-1 text-primary"></i> {{ union.phone ?: '-' }}</li>
+                            <li>
+                                {% if union.website %}
+                                    <i class="bi bi-globe2 me-1 text-primary"></i>
+                                    <a href="{{ union.website }}" target="_blank" class="text-decoration-none">
+                                        {{ union.website|replace({'https://':'','http://':''})|slice(0, 25) }}...
+                                    </a>
+                                {% else %}-{% endif %}
+                            </li>
+                        </ul>
+                        <div class="mt-auto d-flex gap-2 flex-wrap">
+                            <a href="/unions/edit/{{ union.union_id }}" class="btn btn-warning btn-sm flex-fill">
+                                <i class="bi bi-pencil-fill"></i> Edit
+                            </a>
+                            <form method="post" action="/unions/delete/{{ union.union_id }}" onsubmit="return confirm('আপনি কি নিশ্চিত?');" class="d-inline flex-fill">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                                <button type="submit" class="btn btn-danger btn-sm w-100">
+                                    <i class="bi bi-trash-fill"></i> Delete
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% else %}
+            <div class="col-12 text-center text-muted py-4">
+                কোনো ইউনিয়ন পাওয়া যায়নি।
+            </div>
+        {% endfor %}
+    </div>
+
+    <!-- Pagination -->
+    {% if totalPages > 1 %}
+        <nav aria-label="Page navigation" class="mt-4">
+            <ul class="pagination justify-content-center flex-wrap">
+                {% if page > 1 %}
+                    <li class="page-item">
+                        <a class="page-link" href="?search={{ search|url_encode }}&sortBy={{ sortBy }}&sortDir={{ sortDir }}&limit={{ limit }}&page={{ page - 1 }}">
+                            <i class="bi bi-chevron-left"></i>
+                        </a>
+                    </li>
+                {% endif %}
+                {% for i in 1..totalPages %}
+                    <li class="page-item {% if i == page %}active{% endif %}">
+                        <a class="page-link" href="?search={{ search|url_encode }}&sortBy={{ sortBy }}&sortDir={{ sortDir }}&limit={{ limit }}&page={{ i }}">{{ i }}</a>
+                    </li>
+                {% endfor %}
+                {% if page < totalPages %}
+                    <li class="page-item">
+                        <a class="page-link" href="?search={{ search|url_encode }}&sortBy={{ sortBy }}&sortDir={{ sortDir }}&limit={{ limit }}&page={{ page + 1 }}">
+                            <i class="bi bi-chevron-right"></i>
+                        </a>
+                    </li>
+                {% endif %}
+            </ul>
+        </nav>
+    {% endif %}
+
+</div>
+
+{% block styles %}
+<style>
+
+.glassy {
+    background: rgba(255,255,255,0.08);
+    backdrop-filter: blur(12px);
+    border-radius: 1rem;
+    border: 1px solid rgba(255,255,255,0.1);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.union-card:hover {
+    transform: scale(1.02);
+    box-shadow: 0 12px 24px rgba(0,0,0,0.15);
+}
+
+.card-title {
+    font-weight: 600;
+}
+
+.form-control:focus, .form-select:focus {
+    box-shadow: 0 0 12px rgba(0,123,255,0.5);
+    border-color: #007bff;
+}
+
+ul.list-unstyled li {
+    margin-bottom: 0.4rem;
+}
+
+@media (max-width: 768px) {
+    .union-card ul li {
+        font-size: 0.9rem;
+    }
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Scroll to top
+    const topBtn = document.getElementById("topBtn");
+    if(topBtn){
+        window.onscroll = () => {
+            if (document.body.scrollTop > 100 || document.documentElement.scrollTop > 100) {
+                topBtn.style.display = "block";
+            } else {
+                topBtn.style.display = "none";
+            }
+        };
+        topBtn.onclick = () => {
+            document.body.scrollTop = 0;
+            document.documentElement.scrollTop = 0;
+        };
+    }
+</script>
+{% endblock %}
+
+{% endblock %}

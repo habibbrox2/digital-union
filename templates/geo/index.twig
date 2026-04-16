@@ -1,0 +1,335 @@
+{% extends "layout.twig" %}
+
+{% block title %}Advanced Geo Locations{% endblock %}
+
+{% block header_title %}Advanced Geo Locations{% endblock %}
+
+{% block content %}
+{% include 'components/sweetAlert.twig' %}
+
+{% if not is_logged_in %}
+    {# Client-side redirect is generally discouraged; a server-side redirect is safer. 
+       Assuming the template context handles server-side checks, keeping client redirect for quick feedback. #}
+    {% set redirect = "<script>window.location.href='/#';</script>" %}
+    {{ redirect|raw }}
+{% endif %}
+
+<div class="container mt-5">
+
+
+
+
+    <div class="mb-4">
+        <h2>🗺️ Select Geo Location</h2>
+
+        <div class="mb-3">
+            <label for="division" class="form-label">Division:</label>
+            <select id="division" class="form-control" disabled></select>
+        </div>
+
+        <div class="mb-3">
+            <label for="district" class="form-label">District:</label>
+            <select id="district" class="form-control" disabled></select>
+        </div>
+
+        <div class="mb-3">
+            <label for="upazila" class="form-label">Upazila:</label>
+            <select id="upazila" class="form-control" disabled></select>
+        </div>
+
+        <div class="mb-3">
+            <label for="union" class="form-label">Union:</label>
+            <select id="union" class="form-control" disabled></select>
+        </div>
+    </div>
+
+    <hr>
+
+    <div class="mb-5">
+        <h2>📤 Upload XML File from URL</h2>
+        <form id="xmlUploadForm" class="needs-validation" novalidate>  
+            <div class="mb-3">
+                <label for="xml_url" class="form-label">Enter XML file URL:</label>
+                <input type="url" name="xml_url" id="xml_url" class="form-control" placeholder="https://bdris.gov.bd/..." required>
+                <div class="invalid-feedback">Please enter a valid XML URL.</div>
+            </div>
+            <button type="submit" id="uploadButton" class="btn btn-primary">Upload</button>
+            <span id="uploadSpinner" class="spinner-border spinner-border-sm text-primary d-none ms-2" role="status" aria-hidden="true"></span>
+        </form>
+    </div>
+
+    <div id="statusMessage">
+        {% if status == 'success' %}
+            <div class="alert alert-success">
+                <pre>{{ message }}</pre>
+            </div>
+        {% elseif status == 'error' %}
+            <div class="alert alert-danger">
+                <pre>{{ message }}</pre>
+            </div>
+        {% endif %}
+    </div>
+
+
+    <div class="table-responsive mt-3">
+        <h2>📋 Geo Data List</h2>
+        <table class="table table-bordered table-striped">
+            <thead class="table-dark">
+                <tr>
+                    <th>#</th>
+                    <th>ID</th>
+                    <th>Name (EN)</th>
+                    <th>Name (BN)</th>
+                    <th>Geo Order</th>
+                    <th>Geo Code</th>
+                    <th>RMO Code</th>
+                    <th>Child Count</th>
+                </tr>
+            </thead>
+            <tbody id="geoData">
+                <tr><td colspan="8" class="text-center">Loading...</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    // --- Constants ---
+    const GEO_ORDER = { division: 0, district: 1, upazila: 2, union: 3 };
+    const BASE_XML_URL = 'https://bdris.gov.bd/v1/api/geo/parentGeoIdWithGeoGroupAndGeoOrder';
+    const API_ENDPOINTS = {
+        fetchGeo: '/geo/getByType',
+        storeGeo: '/geo/store'
+    };
+
+    // --- DOM Elements ---
+    const xmlUrlInput = document.getElementById('xml_url');
+    const division = document.getElementById('division');
+    const district = document.getElementById('district');
+    const upazila = document.getElementById('upazila');
+    const union = document.getElementById('union');
+    const geoTableBody = document.getElementById('geoData');
+    const statusMessage = document.getElementById('statusMessage');
+    const uploadButton = document.getElementById('uploadButton');
+    const uploadSpinner = document.getElementById('uploadSpinner');
+    const selectElements = [division, district, upazila, union];
+
+    // --- Utility Functions ---
+
+    // Enable/Disable Select Elements
+    function setSelectsDisabled(isDisabled) {
+        selectElements.forEach(el => el.disabled = isDisabled);
+    }
+    
+    // Set loading state for a single select
+    function setLoadingState(selectEl, isLoading) {
+        if (isLoading) {
+            selectEl.innerHTML = '<option value="">-- Loading... --</option>';
+            selectEl.disabled = true;
+        } else {
+            selectEl.disabled = false;
+        }
+    }
+
+    // Generate XML URL for selected option
+    function updateXmlUrl(selectEl) {
+        const selected = selectEl.options[selectEl.selectedIndex];
+        if (!selected || !selected.value || !selected.dataset.geoOrder) {
+            xmlUrlInput.value = '';
+            return;
+        }
+
+        const parentGeoId = selected.value;
+        // The next Geo Order is the order of the *children* being fetched.
+        const nextGeoOrder = parseInt(selected.dataset.geoOrder, 10) + 1; 
+
+        // BD-specific API logic: geoOrder and geoType are often the same for the next level.
+        xmlUrlInput.value = `${BASE_XML_URL}/${parentGeoId}?geoGroup=birthPlace&geoOrder=${nextGeoOrder}&geoType=${nextGeoOrder}`;
+    }
+
+    // Populate the table with all options from the current select
+    function populateTable(selectEl) {
+        geoTableBody.innerHTML = '';
+        const options = Array.from(selectEl.options).filter(opt => opt.value); // Exclude the placeholder
+        
+        if (options.length === 0) {
+            geoTableBody.innerHTML = '<tr><td colspan="8" class="text-center">No data available</td></tr>';
+            return;
+        }
+
+        options.forEach((opt, index) => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${index + 1}</td>
+                <td>${opt.value}</td>
+                <td>${opt.dataset.nameEn}</td>
+                <td>${opt.dataset.nameBn}</td>
+                <td>${opt.dataset.geoOrder}</td>
+                <td>${opt.dataset.geoCode}</td>
+                <td>${opt.dataset.rmoCode}</td>
+                <td>${opt.dataset.childCount}</td>
+            `;
+            geoTableBody.appendChild(tr);
+        });
+    }
+
+    // Load dropdown options via AJAX (Advanced version)
+    async function loadDropdown(selectEl, geoOrder, parentId = 0) {
+        setLoadingState(selectEl, true);
+        
+        try {
+            const formData = new FormData();
+            formData.append('geo_order', geoOrder);
+            formData.append('parent_geo_id', parentId);
+
+            const res = await fetch(API_ENDPOINTS.fetchGeo, { method: 'POST', body: formData });
+            
+            if (!res.ok) {
+                 throw new Error(`HTTP error! status: ${res.status}`);
+            }
+
+            const data = await res.json();
+            
+            // Clear and add placeholder
+            selectEl.innerHTML = '';
+            const placeholder = document.createElement('option');
+            placeholder.value = '';
+            placeholder.textContent = parentId === 0 ? '-- Select Division --' : '-- Select --';
+            selectEl.appendChild(placeholder);
+
+            if (data.status === 'success' && Array.isArray(data.data)) {
+                data.data.forEach(item => {
+                    const option = document.createElement('option');
+                    option.value = item.id;
+                    option.textContent = `${item.name_en} / ${item.name_bn} (${item.child_count})`;
+                    // Store all necessary data attributes
+                    option.dataset.nameEn = item.name_en;
+                    option.dataset.nameBn = item.name_bn;
+                    option.dataset.geoOrder = item.geo_order;
+                    option.dataset.geoCode = item.geo_code;
+                    option.dataset.rmoCode = item.rmo_code;
+                    option.dataset.childCount = item.child_count;
+                    selectEl.appendChild(option);
+                });
+            } else {
+                 console.warn('API returned non-success or no array data:', data);
+            }
+
+        } catch (err) {
+            console.error('Error loading dropdown:', err);
+            // Display an error option
+            selectEl.innerHTML = `<option value="" disabled>-- Load Error --</option>`;
+            // Show user-friendly error message in status area if critical
+            // statusMessage.innerHTML = `<div class="alert alert-danger">Failed to load data. Please check your network.</div>`;
+        } finally {
+            setLoadingState(selectEl, false);
+            selectEl.value = ''; // Ensure nothing is selected initially
+            updateXmlUrl(selectEl);
+        }
+    }
+
+
+    // --- Event Listeners and Cascading Logic ---
+
+    division.addEventListener('change', async function() {
+        const divisionId = division.value || 0;
+        district.value = upazila.value = union.value = '';
+        upazila.innerHTML = union.innerHTML = ''; // Clear lower levels immediately
+        
+        if (divisionId) {
+            await loadDropdown(district, GEO_ORDER.district, divisionId);
+        } else {
+            district.innerHTML = '';
+        }
+        populateTable(division);
+        updateXmlUrl(division);
+    });
+
+    district.addEventListener('change', async function() {
+        const districtId = district.value || 0;
+        upazila.value = union.value = '';
+        union.innerHTML = ''; // Clear lowest level immediately
+        
+        if (districtId) {
+            await loadDropdown(upazila, GEO_ORDER.upazila, districtId);
+        } else {
+            upazila.innerHTML = '';
+        }
+        populateTable(district);
+        updateXmlUrl(district);
+    });
+
+    upazila.addEventListener('change', async function() {
+        const upazilaId = upazila.value || 0;
+        union.value = '';
+        
+        if (upazilaId) {
+            await loadDropdown(union, GEO_ORDER.union, upazilaId);
+        } else {
+            union.innerHTML = '';
+        }
+        populateTable(upazila);
+        updateXmlUrl(upazila);
+    });
+
+    union.addEventListener('change', function() {
+        populateTable(union);
+        updateXmlUrl(union);
+    });
+
+    // AJAX XML submission (Advanced version)
+    document.getElementById('xmlUploadForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const xmlUrl = xmlUrlInput.value.trim();
+        const isFormValid = document.getElementById('xmlUploadForm').checkValidity();
+
+        if (!xmlUrl || !isFormValid) {
+            // Apply bootstrap validation classes
+            document.getElementById('xmlUploadForm').classList.add('was-validated'); 
+            return;
+        }
+        
+        // Show loading state
+        uploadButton.disabled = true;
+        uploadButton.textContent = 'Processing...';
+        uploadSpinner.classList.remove('d-none');
+        statusMessage.innerHTML = `<div class="alert alert-info">Processing upload from **${xmlUrl}**...</div>`;
+
+        const formData = new FormData();
+        formData.append('xml_url', xmlUrl);
+
+        fetch(API_ENDPOINTS.storeGeo, { method: 'POST', body: formData })
+            .then(res => res.json())
+            .then(data => {
+                // Remove existing messages first, then add new one
+                statusMessage.innerHTML = ''; 
+                if (data.status === 'success') {
+                    statusMessage.innerHTML = `<div class="alert alert-success">✅ Success: <pre>${data.message}</pre></div>`;
+                } else {
+                    statusMessage.innerHTML = `<div class="alert alert-danger">❌ Error: <pre>${data.message}</pre></div>`;
+                }
+            })
+            .catch(err => {
+                console.error('AJAX Error on Store:', err);
+                statusMessage.innerHTML = `<div class="alert alert-danger">Critical Error: Network issue or unexpected response. ${err.message}</div>`;
+            })
+            .finally(() => {
+                // Restore button state
+                uploadButton.disabled = false;
+                uploadButton.textContent = 'Upload';
+                uploadSpinner.classList.add('d-none');
+            });
+    });
+
+    // --- Initial Load ---
+    (async function initialLoad() {
+        setSelectsDisabled(true); // Disable all until divisions load
+        await loadDropdown(division, GEO_ORDER.division);
+        populateTable(division);
+    })();
+});
+</script>
+
+{% endblock %}

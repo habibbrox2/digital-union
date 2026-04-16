@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ data.sonod_number }}</title>
+    <link href="https://fonts.maateen.me/solaiman-lipi/font.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url }}/assets/css/sonod.css">
+    <style>
+
+    .person-info {
+        font-size: 12pt;
+        width: 100%;
+    }
+
+    .person-info td {
+        padding: 3.75pt 7.5pt;
+        text-align: left;
+    }
+
+    .person-photo {
+        position: absolute;
+        top: 300px;
+        right: 20px;
+        z-index: 10;
+        padding: 2.25pt;
+    }
+
+    .person-info td:first-child {
+        width: 30%;
+    }
+
+    .person-info td:last-child {
+        width: 65%;
+        word-wrap: break-word;
+    }
+
+
+           
+
+    /* Intro Text */
+    .intro-text {
+        font-size: 10.5pt;
+        line-height: 1.8;
+        margin: 7.5pt 0;
+        font-weight: normal;
+        color: #000;
+    }
+
+    /* Personal Information Table */
+    .personal-info {
+        width: 100%;
+       
+        margin: 4.5pt 0 4.5pt 0;
+        font-size: 10.5pt;
+    }
+
+    .personal-info td {
+        padding: 4.5pt 6pt;
+        vertical-align: top;
+        color: #000;
+    }
+
+    .personal-info .info-label {
+        white-space: nowrap;
+        width: 75pt;  /* Fixed width for label cells */
+    }
+
+    /* Warish Statement */
+    .warish-statement {
+        font-size: 10.5pt;
+        line-height: 1.8;
+        margin: 7.5pt 0 7.5pt 0;
+        color: #000;
+    }
+
+/* Warish Table - mPDF Ready */
+table.warish-table {
+    width: 98%;
+    border-collapse: collapse;
+    font-size: 10.5pt;           /* Default font-size */
+    margin-bottom: 7.5pt;
+    color: #000;
+    table-layout: fixed; 
+    page-break-inside: auto;   /* Table can break across pages */
+    word-wrap: break-word;
+    word-break: break-word;
+}
+
+/* Table Header & Cells */
+table.warish-table th,
+table.warish-table td {
+    border: 0.75pt solid #000;
+    padding: 4.5pt 6pt;
+    text-align: center;
+    vertical-align: middle;
+    word-wrap: break-word;
+    word-break: break-all;   /* Ensures long words break inside cells */
+}
+
+/* Avoid row break inside a page */
+table.warish-table tr {
+    page-break-inside: avoid;
+}
+
+/* Compact Version for many rows */
+table.warish-table.warish-compact {
+    font-size: 9pt !important;
+}
+
+table.warish-table.warish-compact th,
+table.warish-table.warish-compact td {
+    padding: 2.25pt 3pt !important;
+    line-height: 1.2 !important;
+}
+
+/* Last row summary */
+table.warish-table tr:last-child td {
+    font-weight: bold;
+}
+
+/* Ensure text wraps properly in all cells */
+table.warish-table td {
+    white-space: normal !important;
+}
+
+.instructions-md-top {
+        margin-top: 22.5pt !important;
+
+}
+
+
+
+    .indented-paragraph {
+        width: 98%;
+        text-indent: 37.5pt;
+        line-height: 1.8;
+        margin: 9pt 0 9pt 0;
+        padding: 0;
+    word-wrap: break-word;
+    }
+
+
+
+    </style>
+</head>
+<body>
+    <div class="content-wrapper">
+        <div class="content">
+        <br>
+            <!-- Header -->
+            <table class="header-table" border="0" width="98%" align="center" style="border-collapse: collapse;">
+                <tr>
+                    <td>
+                        <img src="{{ url }}/assets/logo/logo.png" alt="Logo" class="logo">
+                    </td>
+                    <td>
+                    <div class="gov-info">
+                        <div class="gov-title">গণপ্রজাতন্ত্রী বাংলাদেশ সরকার</div>
+                        <div class="union-name">{{ union.union_name_bn }}</div>
+                        <div class="union-address">
+                            {{ union.upazila_name_bn }},{{ union.district_name_bn }}-{{ union.postcode|bn }}<br>
+                            ই-মেইলঃ {{ union.email }}<br>
+                            ওয়েব সাইটঃ {{ union.website }}
+                        </div>
+                    </div>
+
+                    </td>
+                    <td>
+                     <img src="{{ url }}/assets/img/band-cross.png" alt="X" class="logo">
+                    </td>
+                </tr>
+            </table>
+
+
+
+
+            <!-- Certificate Section -->
+            <table width="98%" cellspacing="0" style="margin: 0 auto;">
+                <tr>
+                    <td colspan="2" style="text-align:center; font-size:19.5pt; font-weight:bold; padding-bottom: 3.75pt">
+                        <u>{{ certificate_type_bn }}</u>
+                    </td>
+                </tr>
+                <tr>
+                    <td style="width: 75%;">
+                        <table style="width: 450pt; border-color:black; border-collapse:collapse;">
+                            <tr>
+                                <td style="width:74pt; text-align:center; border: 0.75pt solid black; font-size:12pt; text-align: left;">সনদ নং :</td>
+                                {% set sonod_number_bn = data.sonod_number | bn_number %}
+                                {% for digit in sonod_number_bn | split('') %}
+                                    <td style="text-align:center; font-size:13.5pt; padding: 4.5pt; border: 0.75pt solid black;">{{ digit }}</td>
+                                {% endfor %}
+                            </tr>
+                        </table>
+                    </td>
+                    <td style="text-align:right; font-size:12pt;">
+
+                            ইস্যু তাংঃ {{ data.issue_date|date('d-m-Y')|bn }}
+
+                    </td>
+                </tr>
+            </table>
+
+            <!-- Intro Text -->
+            <table><tr><td class="intro-text"> &nbsp; &nbsp;&nbsp; &nbsp;এই মর্মে প্রত্যয়ন করা যাচ্ছে যে,</td></tr></table>
+
+            <!-- Personal Information Table -->
+            <table class="personal-info">
+                <tr>
+                    <td class="info-label">নাম</td>
+                    <td>: {{ data.name_bn }}</td>
+                </tr>
+                {% if data.father_name_bn %}
+                <tr>
+                    <td class="info-label">পিতার নাম</td>
+                    <td colspan="3">: {{ data.father_name_bn }}</td>
+                </tr>
+                {% endif %}
+                
+                {% if data.mother_name_bn %}
+                <tr>
+                    <td class="info-label">মাতার নাম</td>
+                    <td colspan="3">: {{ data.mother_name_bn }}</td>
+                </tr>
+                {% endif %}
+                
+                {% if data.spouse_name_bn %}
+                <tr>
+                    <td class="info-label">
+                        {% if data.gender|lower == 'male' %}
+                            স্ত্রীর নাম
+                        {% elseif data.gender|lower == 'female' %}
+                            স্বামীর নাম
+                        {% else %}
+                            স্বামী/স্ত্রীর নাম
+                        {% endif %}
+                    </td>
+                    <td colspan="3">: {{ data.spouse_name_bn }}</td>
+                </tr>
+                {% endif %}
+
+                <tr>
+                    <td class="info-label">স্থায়ী ঠিকানা</td>
+                    <td colspan="3">: গ্রাম/মহল্লা : {{ data.present_village_bn }}, রাস্তা/ব্লক/সেক্টর : {{ data.present_rbs_bn }}, ওয়ার্ড : {{ data.present_ward_no|bn }},<br>
+                    &nbsp; ডাকঘর : {{ data.present_postoffice_bn }},
+                     উপজেলা : {{ data.present_upazila_bn }}, জেলা : {{ data.present_district_bn }}</td>
+                </tr>
+                <tr>
+                    <td class="info-label">বর্তমান ঠিকানা</td>
+                    <td colspan="3">: গ্রাম/মহল্লা : {{ data.permanent_village_bn }}, রাস্তা/ব্লক/সেক্টর : {{ data.permanent_rbs_bn }}, ওয়ার্ড : {{ data.permanent_ward_no|bn }},<br>
+                    &nbsp;  ডাকঘর : {{ data.permanent_postoffice_bn }},  
+                     উপজেলা : {{ data.permanent_upazila_bn }}, জেলা : {{ data.permanent_district_bn }} </td>
+                </tr>
+            </table>
+
+            <!-- Warish Statement -->
+            <table><tr><td class="warish-statement"> &nbsp; &nbsp;&nbsp; &nbsp; অত্র ইউনিয়নের স্থায়ী অধিবাসী ছিলেন। তিনি {{ data.extra.death_year ? (data.extra.death_year|bn ~ ' সালে') : (data.birth_date|date("d-m-Y")|bn ~ ' তারিখে') }}
+
+
+            মৃত্যুবরণ করেন। মৃত্যুকালে তিনি নিম্নলিখিত ওয়ারিশগণকে রাখিয়া মৃত্যুবরণ করেন।</td></tr></table>
+
+            <!-- Warish List -->
+            <table class="warish-table {% if data.warish_members|length > 10 %}warish-compact{% endif %}">
+
+                <tr>
+                    <th>ক্রমিক নং</th><th>নাম</th><th>সম্পর্ক</th>
+                    <th>বয়স/জন্ম তারিখ</th><th>জাতীয় পরিচয়পত্র/নিবন্ধন নং</th>
+                    <th>বৈবাহিক অবস্থা</th><th>জীবিত/মৃত</th>
+                </tr>
+                {% for member in data.warish_members %}
+                    <tr>
+                        <td>{{ loop.index|bn }}</td>
+                        <td>{{ member.name_bn }}</td>
+                        <td>{{ member.relation_bn }}</td>
+                        <td>{{ member.birth_date|bn }}</td>
+                        <td>{{ member.nid|bn }}</td>
+                        <td>{{ member.marital_status }}</td>
+                        <td> {% if member.is_dead == "1" %}
+                            মৃত
+                        {% else %}
+                            জীবিত
+                        {% endif %}</td>
+                    </tr>
+                {% endfor %}
+                <tr>
+                    <td colspan="7"> ওয়ারিশ সংখ্যা {{ data.warish_members|length|bn }} জন</td>
+                </tr>
+            </table>
+
+
+            <table>
+            <tr>
+                <td colspan="5" class="indented-paragraph">
+                    &nbsp; &nbsp;&nbsp; &nbsp;অত্র ইউনিয়নের {{ approval.verifier_name_bn is not empty ? '"' ~ approval.verifier_name_bn ~ '"' : '' }} এর প্রদত্ত তথ্যের ভিত্তিতে এই সনদ প্রদান করা হলো। এখানে উল্লেখ্য যে, আবেদন পত্রে আবেদনকারী কর্তৃক ওয়ারিশান সংক্রান্ত কোন ভুল তথ্য প্রদান করা হলে ওয়ারিশ সনদটি বাতিল বলে গণ্য হবে।
+                </td>
+            </tr>
+		<tr>
+		    <td colspan="5" style="line-height:20pt;">&nbsp;</td>
+		</tr>
+            <tr>
+                <td class="no-border" colspan="2">আবেদনকারী: {{ data.applicant_name }}</td>
+                <td class="no-border" colspan="3" style="text-align: left;">পিতা/স্বামী: {{ data.extra.applicant_name_father_bn }}</td>
+            </tr>
+            </table>
+            
+            
+
+            <table class="instructions {% if data.warish_members|length > 10 %}instructions-md-top{% endif %}">
+                <tr>
+                    <td style="border-right:1px solid black; border-top:1px solid black; text-align:center; width: 25%;">
+                        <img src="https://quickchart.io/qr?text={{ url }}/verify/warish_bn/{{ data.sonod_number }}/{{ union.union_code }}/1&margin=1&size=300" height="110" width="110">
+                    </td>
+                    <td style="padding-left:30px; border-bottom:1px solid black; width: 75%;">
+                        <b>নির্দেশাবলীঃ</b><br>
+                        ১] সার্টিফিকেট টি ১৭ ডিজিটের সনদ নাম্বার দিয়ে ওয়েবসাইট ({{ union.website }}) থেকে যাচাই করুন অথবা Play Store থেকে ”স্মার্ট ইউপি, ঢাকা” Apps টি install করে QR code টি Scan করুন।<br>
+                        ২) যে কোন ধরনের তথ্য নেয়ার জন্য ফোন করুন অথবা ইমেইল করুন।
+                    </td>
+                </tr>
+                <tr>
+                    <td style="text-align:center;">
+                        <font style="font-size:8px;">Developed by Innovation IT</font><br>
+                        <font style="font-size:8px;">www.innovationit.com.bd</font>
+                    </td>
+                    <td style="text-align:center;">
+                        <font style="font-size:8px;">{{ union.website }} - {{ union.email }}</font>
+                    </td>
+                </tr>
+            </table>
+            
+ 
+        </div>
+    </div>
+</body>
+</html>

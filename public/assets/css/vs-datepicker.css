@@ -1,0 +1,372 @@
+/* =====================================================================
+   CompactDatepicker Modern CSS - Enhanced Version
+   ===================================================================== */
+
+/* ---------------------- Main Container ---------------------- */
+.vs-datepicker {
+    position: absolute;
+    background: #fff;
+    border: 1px solid #ccc;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    border-radius: 8px;
+    padding: 8px;
+    font-size: 14px;
+    z-index: 9999;
+    width: 240px;
+    max-width: 95vw;
+    user-select: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    animation: vsFadeIn 0.15s ease-out;
+}
+
+@keyframes vsFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(4px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ---------------------- Header Section ---------------------- */
+.vs-datepicker .header {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 6px;
+    width: 100%;
+}
+
+.vs-datepicker .month-arrow {
+    font-weight: bold;
+    padding: 4px 8px;
+    cursor: pointer;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    background: #f5f5f5;
+    transition: all 0.2s;
+    font-size: 14px;
+    line-height: 1;
+}
+
+.vs-datepicker .month-arrow:hover,
+.vs-datepicker .month-arrow:focus {
+    background: #4caf50;
+    color: #fff;
+    outline: none;
+    border-color: #4caf50;
+}
+
+.vs-datepicker .month-arrow:active {
+    transform: scale(0.95);
+}
+
+.vs-datepicker .month-arrow.disabled {
+    opacity: 0.4;
+    pointer-events: none;
+}
+
+.vs-datepicker select {
+    font-size: 14px;
+    padding: 4px 6px;
+    border-radius: 4px;
+    border: 1px solid #ccc;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.vs-datepicker select:hover {
+    border-color: #999;
+}
+
+.vs-datepicker select:focus {
+    border-color: #4caf50;
+    box-shadow: 0 0 0 2px rgba(76,175,80,0.2);
+    outline: none;
+}
+
+/* ---------------------- Calendar Table ---------------------- */
+.vs-datepicker table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: center;
+}
+
+/* ---------------------- Table Head (Weekdays) ---------------------- */
+.vs-datepicker thead th {
+    font-weight: 600;
+    font-size: 13px;
+    padding: 6px 0;
+    color: #555;
+    background: #f0f0f0;
+    border-bottom: 1px solid #ddd;
+}
+
+.vs-datepicker thead th:first-child,
+.vs-datepicker thead th:last-child {
+    color: #e53935;
+}
+
+/* ---------------------- Table Body ---------------------- */
+.vs-datepicker th, 
+.vs-datepicker td {
+    padding: 2px;
+}
+
+.vs-datepicker td.empty {
+    pointer-events: none;
+}
+
+.vs-datepicker td.empty::after {
+    content: '';
+    display: block;
+    width: 30px;
+    height: 30px;
+}
+
+/* ---------------------- Day Buttons ---------------------- */
+.vs-datepicker td button {
+    width: 30px;
+    height: 30px;
+    border: none;
+    background: #f5f5f5;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 13px;
+    line-height: 1;
+    font-weight: 500;
+}
+
+.vs-datepicker td button:hover, 
+.vs-datepicker td button:focus {
+    background: #4caf50;
+    color: #fff;
+    outline: none;
+    transform: scale(1.05);
+}
+
+.vs-datepicker td button:active {
+    transform: scale(0.95);
+}
+
+.vs-datepicker td button:focus-visible {
+    outline: 2px solid #4caf50;
+    outline-offset: 2px;
+}
+
+/* Today (not selected) */
+.vs-datepicker td button.today {
+    border: 2px solid #ff9800;
+    background: #fff7e6;
+    color: #e65100;
+    font-weight: 600;
+}
+
+.vs-datepicker td button.today:hover {
+    background: #ff9800;
+    color: #fff;
+}
+
+/* Selected day */
+.vs-datepicker td button.selected {
+    background: #2196f3;
+    color: #fff;
+    font-weight: 600;
+}
+
+.vs-datepicker td button.selected:hover {
+    background: #1976d2;
+}
+
+/* Today + Selected */
+.vs-datepicker td button.today.selected {
+    background: #1976d2;
+    border-color: #1976d2;
+    color: #fff;
+}
+
+/* Disabled dates */
+.vs-datepicker td button.disabled {
+    background: #eee;
+    color: #aaa;
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
+.vs-datepicker td button.disabled:hover {
+    background: #eee;
+    color: #aaa;
+    transform: none;
+}
+
+/* Weekend dates */
+.vs-datepicker td.weekend button {
+    color: #d32f2f;
+}
+
+/* ---------------------- Footer Section ---------------------- */
+.vs-datepicker .footer {
+    display: flex;
+    gap: 6px;
+    margin-top: 8px;
+    width: 100%;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* Today Button */
+.vs-datepicker .today-btn {
+    flex: 1;
+    padding: 8px 12px;
+    background: #ff9800;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 13px;
+    transition: all 0.2s;
+    text-align: center;
+}
+
+.vs-datepicker .today-btn:hover, 
+.vs-datepicker .today-btn:focus {
+    background: #fb8c00;
+    outline: none;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(251, 140, 0, 0.3);
+}
+
+.vs-datepicker .today-btn:active {
+    transform: scale(0.98);
+}
+
+/* Clear Button */
+.vs-datepicker .clear-btn {
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    background: #f44336;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 18px;
+    line-height: 1;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.vs-datepicker .clear-btn:hover, 
+.vs-datepicker .clear-btn:focus {
+    background: #d32f2f;
+    outline: none;
+    transform: translateY(-1px) rotate(90deg);
+    box-shadow: 0 2px 6px rgba(244, 67, 54, 0.3);
+}
+
+.vs-datepicker .clear-btn:active {
+    transform: scale(0.9) rotate(90deg);
+}
+
+/* ---------------------- Mobile Refinements ---------------------- */
+@media (max-width: 400px) {
+    .vs-datepicker {
+        width: 95vw;
+        font-size: 13px;
+    }
+    
+    .vs-datepicker td button {
+        width: 26px;
+        height: 26px;
+        font-size: 12px;
+    }
+    
+    .vs-datepicker select {
+        font-size: 13px;
+        padding: 3px 5px;
+    }
+    
+    .vs-datepicker thead th {
+        font-size: 12px;
+        padding: 4px 0;
+    }
+    
+    .vs-datepicker .today-btn {
+        padding: 6px 10px;
+        font-size: 12px;
+    }
+    
+    .vs-datepicker .clear-btn {
+        width: 32px;
+        height: 32px;
+        font-size: 16px;
+    }
+    
+    .vs-datepicker td button.today {
+        border-width: 1px;
+    }
+}
+
+/* ---------------------- Dark Mode Support (Optional) ---------------------- */
+@media (prefers-color-scheme: dark) {
+    .vs-datepicker {
+        background: #2a2a2a;
+        border-color: #444;
+        color: #e0e0e0;
+    }
+    
+    .vs-datepicker select {
+        background: #333;
+        color: #e0e0e0;
+        border-color: #555;
+    }
+    
+    .vs-datepicker .month-arrow {
+        background: #333;
+        color: #e0e0e0;
+        border-color: #555;
+    }
+    
+    .vs-datepicker thead th {
+        background: #333;
+        color: #bbb;
+        border-color: #444;
+    }
+    
+    .vs-datepicker td button {
+        background: #333;
+        color: #e0e0e0;
+    }
+    
+    .vs-datepicker td button:hover {
+        background: #4caf50;
+    }
+    
+    .vs-datepicker td button.today {
+        background: #3a2a1a;
+        border-color: #ff9800;
+    }
+    
+    .vs-datepicker td button.selected {
+        background: #1976d2;
+    }
+}
+
+/* ---------------------- Print Styles ---------------------- */
+@media print {
+    .vs-datepicker {
+        display: none !important;
+    }
+}

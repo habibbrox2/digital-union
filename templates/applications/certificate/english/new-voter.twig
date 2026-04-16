@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ data.sonod_number }}</title>
+    <style>
+        * {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-print-color-adjust: exact;
+        }
+
+        @page {
+            size: A4;
+            margin: 0;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+        }
+
+        .content-wrapper {
+            background-image: url('{{ url }}/assets/bg.png');
+            background-size: cover;
+            background-repeat: no-repeat;
+            width: 209mm;
+            height: 297mm;
+            position: relative;
+            padding: 15mm;
+        }
+
+        /* Header */
+        .header {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: center;
+            margin-bottom: 7.5pt;
+        }
+        .header td {
+            vertical-align: middle;
+            padding: 3.75pt;
+        }
+        .logo {
+            height: 60pt;
+            width: 60pt;
+        }
+        .bd-govt {
+            font-size: 9pt;
+            color: red;
+        }
+        .parishad-name {
+            color: #3c01c5;
+            font-size: 19.5pt;
+            font-weight: bold;
+            padding: 3.75pt 0;
+        }
+        .sub-header {
+            font-size: 12pt;
+            color: black;
+            line-height: 1.5;
+        }
+
+        /* Certificate Title */
+        .certificate-title {
+            text-align: center;
+            font-size: 19.5pt;
+            text-decoration: underline;
+            margin: 7.5pt;
+        }
+
+        /* Certificate Info */
+        .certificate-info {
+            width: 98%;
+            margin: 7.5pt;
+            border-collapse: collapse;
+        }
+
+        /* Person Info */
+        .person-info {
+            width: 98%;
+            margin: 0 auto 15pt;
+            font-size: 12pt;
+            border-collapse: collapse;
+        }
+        .person-info td {
+            padding: 3.75pt 7.5pt;
+            text-align: left;
+        }
+        .person-info td:first-child {
+            width: 30%;
+            font-weight: bold;
+        }
+        .person-info td:last-child {
+            width: 65%;
+        }
+
+        /* Paragraph */
+        .paragraph {
+            width: 98%;
+            margin: 15pt auto;
+            line-height: 2;
+            text-indent: 37.5pt;
+            font-size: 12pt;
+        }
+
+        /* Instructions */
+        .instructions {
+            width: 98%;
+            margin: 30pt auto 0;
+            border-collapse: collapse;
+        }
+        .instructions td {
+            font-size: 10.5pt;
+            padding: 7.5pt;
+        }
+        .instructions img {
+            padding: 11.25pt;
+        }
+    </style>
+</head>
+<body>
+    <div class="content-wrapper">
+
+        <!-- Header -->
+        <table class="header">
+            <tr>
+                <td width="20%">
+                    <img src="{{ url }}/assets/logo/logo.png" alt="Logo" class="logo">
+                </td>
+                <td width="60%">
+                    <div class="bd-govt">Government of Bangladesh</div>
+                    <div class="parishad-name">
+                        {% if union.union_name_en is defined and union.union_name_en %}
+                            {{ union.union_name_en }}
+                        {% else %}
+                            {{ union.union_name_bn }}
+                        {% endif %}
+                    </div>
+                    <div class="sub-header">
+                        {% if union.upazila_name_en is defined and union.upazila_name_en %}
+                            {{ union.upazila_name_en }},
+                        {% else %}
+                            {{ union.upazila_name_bn }},
+                        {% endif %}
+                        {% if union.district_name_en is defined and union.district_name_en %}
+                            {{ union.district_name_en }}
+                        {% else %}
+                            {{ union.district_name_bn }}
+                        {% endif %}
+                        -{{ union.postcode }} <br>
+                        Mobile: {{ union.phone }} | Email: {{ union.email }}<br>
+                        Website: {{ union.website }}
+                    </div>
+                </td>
+                <td width="20%">
+                    <img src="{{ url }}/assets/img/band-cross.png" alt="X" class="logo">
+                </td>
+            </tr>
+        </table>
+
+        <!-- Certificate Title -->
+        <div class="certificate-title">New Voter Certificate</div>
+
+        <!-- Certificate Number & Date -->
+        <table class="certificate-info">
+            <tr>
+                <td style="width:77%;">
+                    <table style="width: 450pt; border-color:black; border-collapse:collapse;">
+                        <tr>
+                            <td style="width:75pt; text-align:center; border: 0.75pt solid black; font-size:12pt; text-align: left;">Certificate No:</td>
+                            {% set sonod_number_display = data.sonod_number %}
+                            {% for digit in sonod_number_display | split('') %}
+                                <td style="text-align:center; font-size:13.5pt; padding: 4.5pt; border: 0.75pt solid black;">{{ digit }}</td>
+                            {% endfor %}
+                        </tr>
+                    </table>
+                </td>
+                <td style="text-align:right; font-size:12pt;">
+                    Date: {{ data.issue_date|date('d-m-Y') }}
+                </td>
+            </tr>
+        </table>
+
+        <!-- Intro Text -->
+        <p style="margin-left:11.25pt;">&nbsp; &nbsp;&nbsp; &nbsp; This is to certify that,</p>
+
+        <!-- Person Info -->
+        <table class="person-info">
+            <tr><td>Name</td><td>: {{ data.name_en|default(data.name_bn) }}</td></tr>
+            <tr><td>Father's Name</td><td>: {{ data.father_name_en|default(data.father_name_bn) }}</td></tr>
+            <tr><td>Mother's Name</td><td>: {{ data.mother_name_en|default(data.mother_name_bn) }}</td></tr>
+            {% if citizen.marital_status == 'Married' %}
+            <tr><td>Spouse Name</td><td>: {{ data.spouse_name_en|default(data.spouse_name_bn) }}</td></tr>
+            {% endif %}
+            <tr><td>Present Address</td><td>: Village: {{ data.present_village_en|default(data.present_village_bn) }}, Road/Block: {{ data.present_rbs_en|default(data.present_rbs_bn) }}, Post Office: {{ data.present_postoffice_en|default(data.present_postoffice_bn) }}, Upazila: {{ data.present_upazila_en|default(data.present_upazila_bn) }}, District: {{ data.present_district_en|default(data.present_district_bn) }}</td></tr>
+            <tr><td>Permanent Address</td><td>: Village: {{ data.permanent_village_en|default(data.permanent_village_bn) }}, Road/Block: {{ data.permanent_rbs_en|default(data.permanent_rbs_bn) }}, Post Office: {{ data.permanent_postoffice_en|default(data.permanent_postoffice_bn) }}, Upazila: {{ data.permanent_upazila_en|default(data.permanent_upazila_bn) }}, District: {{ data.permanent_district_en|default(data.permanent_district_bn) }}</td></tr>
+            {% if data.birth_id or data.nid or data.passport_no %}
+            <tr><td>{% if data.birth_id %} Birth Registration No {% elseif data.nid %} National ID No {% else %} Passport No {% endif %}</td>
+                <td>: {% if data.birth_id %} {{ data.birth_id }} {% elseif data.nid %} {{ data.nid }} {% elseif data.passport_no %} {{ data.passport_no }} {% endif %}</td></tr>
+            {% endif %}
+            <tr><td>Religion</td><td>: {% set translations = {'Islam':'Islam','Hinduism':'Hinduism','Christianity':'Christianity','Buddhism':'Buddhism','Other':'Other'} %} {{ translations[data.religion] | default(data.religion) }}</td></tr>
+            <tr><td>Ward No</td><td>: {{ data.present_ward_no }}</td></tr>
+            <tr><td>Date of Birth</td><td>: {{ data.birth_date | date('d-m-Y') }}</td></tr>
+        </table>
+
+        <!-- Paragraph -->
+        <div class="paragraph">
+            A permanent resident of this Union. By birth, he/she is a citizen of Bangladesh and is known to me.
+            During the time of voter list compilation and update, he/she was not present at home, so his/her name was not included in the list.
+            He/She is recommended to become a new voter. I wish for his/her overall well-being and progress.
+        </div>
+
+        <!-- Signature Table -->
+        <table style="width:100%; border-collapse:collapse; margin-top: 37.5pt; margin-bottom: 22.5pt;">
+            <tr>
+            {% if approval.verifier_name %}
+                <td style="text-align: center; padding-right: 15pt; width: 50%;">
+                    <div style="border-top: 0.75pt solid #000; display: inline-block; padding-top: 3.75pt;">
+                        UP Member
+                    </div>
+                </td>
+            {% endif %}
+                <td style="text-align: right; padding-right: 90pt; width: 50%;">
+                    <div style="border-top: 0.75pt solid #000; display: inline-block; padding-top: 3.75pt;">
+                        Chairman Signature
+                    </div>
+                </td>
+            </tr>
+        </table>
+        <!-- Instructions -->
+<!-- Footer -->
+<htmlpagefooter name="MyFooter">
+    <table class="instructions" style="width: 94%; border-collapse: collapse;">
+        <tr>
+            <td style="border-right:0.75pt solid black; border-top:0.75pt solid black; text-align:center; width: 25%;">
+                <img src="https://quickchart.io/qr?text={{ url }}/verify/new-voter_en/{{ data.sonod_number }}/{{ union.union_code }}/1&margin=1&size=300" height="82.5pt" width="82.5pt">
+            </td>
+            <td style="padding-left:22.5pt; border-bottom:0.75pt solid black; width: 75%;">
+                <b>Instructions:</b><br>
+                1) Verify this certificate using the 17-digit certificate number from the website ({{ union.website }}) or install "Smart UP, Dhaka" app from Play Store and scan the QR code.<br>
+                2) For any information, call or email us.
+            </td>
+        </tr>
+        <tr>
+            <td style="text-align:center;">
+                <font style="font-size:6pt;">Developed by Innovation IT</font><br>
+                <font style="font-size:6pt;">www.innovationit.com.bd</font>
+            </td>
+            <td style="text-align:center;">
+                <font style="font-size:6pt;">{{ union.website }} - {{ union.email }}</font>
+            </td>
+        </tr>
+    </table>
+</htmlpagefooter>
+
+<!-- Enable Footer -->
+<sethtmlpagefooter name="MyFooter" value="on" />
+
+
+    </div>
+</body>
+</html>

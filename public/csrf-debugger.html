@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CSRF Token Debugger</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            border-bottom: 3px solid #007bff;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #555;
+            margin-top: 30px;
+        }
+        .status {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-weight: bold;
+            margin: 5px 0;
+        }
+        .status.ok {
+            background: #d4edda;
+            color: #155724;
+        }
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .status.warning {
+            background: #fff3cd;
+            color: #856404;
+        }
+        .code-block {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 15px;
+            overflow-x: auto;
+            font-family: 'Courier New', monospace;
+            margin: 10px 0;
+        }
+        .test-section {
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 20px;
+            margin: 20px 0;
+            background: #f8f9fa;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin: 5px 5px 5px 0;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        button.success {
+            background: #28a745;
+        }
+        button.success:hover {
+            background: #1e7e34;
+        }
+        button.danger {
+            background: #dc3545;
+        }
+        button.danger:hover {
+            background: #bd2130;
+        }
+        .result {
+            margin-top: 15px;
+            padding: 15px;
+            border-radius: 4px;
+            display: none;
+        }
+        .result.show {
+            display: block;
+        }
+        .result.success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .result.error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .result.info {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+        }
+        th, td {
+            text-align: left;
+            padding: 12px;
+            border-bottom: 1px solid #dee2e6;
+        }
+        th {
+            background: #f8f9fa;
+            font-weight: bold;
+        }
+        tr:hover {
+            background: #f8f9fa;
+        }
+        .copy-btn {
+            background: #6c757d;
+            padding: 5px 10px;
+            font-size: 12px;
+            margin-left: 10px;
+        }
+        .copy-btn:hover {
+            background: #545b62;
+        }
+        .tabs {
+            display: flex;
+            border-bottom: 2px solid #dee2e6;
+            margin: 20px 0;
+        }
+        .tab-btn {
+            background: none;
+            border: none;
+            padding: 12px 20px;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            color: #666;
+            font-weight: 500;
+            margin-bottom: -2px;
+        }
+        .tab-btn.active {
+            border-bottom-color: #007bff;
+            color: #007bff;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔒 CSRF Token Debugger</h1>
+        <p>Use this tool to diagnose and test CSRF token functionality.</p>
+
+        <!-- Status Check -->
+        <h2>Quick Status Check</h2>
+        <div class="test-section">
+            <button class="success" onclick="checkStatus()">Check Status</button>
+            <div id="statusResult" class="result"></div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab(event, 'test-tab')">Tests</button>
+            <button class="tab-btn" onclick="switchTab(event, 'info-tab')">Information</button>
+            <button class="tab-btn" onclick="switchTab(event, 'logs-tab')">Logs</button>
+        </div>
+
+        <!-- Test Tab -->
+        <div id="test-tab" class="tab-content active">
+            <h2>Token Tests</h2>
+
+            <!-- Test 1: Check Token -->
+            <div class="test-section">
+                <h3>Test 1: Token Generation</h3>
+                <p>Verify that CSRF token is generated and available.</p>
+                <button class="success" onclick="testTokenGeneration()">Check Token</button>
+                <div id="test1Result" class="result"></div>
+            </div>
+
+            <!-- Test 2: Form Submission -->
+            <div class="test-section">
+                <h3>Test 2: Form Submission (Test POST)</h3>
+                <p>Test if form correctly includes CSRF token.</p>
+                <button class="success" onclick="testFormSubmission()">Test Form Submit</button>
+                <div id="test2Result" class="result"></div>
+            </div>
+
+            <!-- Test 3: AJAX Request -->
+            <div class="test-section">
+                <h3>Test 3: AJAX Request (Test POST)</h3>
+                <p>Test if AJAX request correctly includes CSRF token in headers.</p>
+                <button class="success" onclick="testAjaxRequest()">Test AJAX Request</button>
+                <div id="test3Result" class="result"></div>
+            </div>
+
+            <!-- Test 4: Session -->
+            <div class="test-section">
+                <h3>Test 4: Session Check</h3>
+                <p>Verify that session is properly maintained.</p>
+                <button class="success" onclick="testSession()">Check Session</button>
+                <div id="test4Result" class="result"></div>
+            </div>
+
+            <!-- Test 5: Token Persistence -->
+            <div class="test-section">
+                <h3>Test 5: Token Persistence</h3>
+                <p>Verify token remains same across multiple requests.</p>
+                <button class="success" onclick="testTokenPersistence()">Test Persistence</button>
+                <div id="test5Result" class="result"></div>
+            </div>
+        </div>
+
+        <!-- Info Tab -->
+        <div id="info-tab" class="tab-content">
+            <h2>Debug Information</h2>
+
+            <!-- Token Info -->
+            <div class="test-section">
+                <h3>Current Token Information</h3>
+                <table>
+                    <tr>
+                        <th>Property</th>
+                        <th>Value</th>
+                    </tr>
+                    <tr>
+                        <td>Token Value</td>
+                        <td><code id="tokenValue">-</code></td>
+                    </tr>
+                    <tr>
+                        <td>Token Length</td>
+                        <td><code id="tokenLength">-</code></td>
+                    </tr>
+                    <tr>
+                        <td>Meta Tag Status</td>
+                        <td><code id="metaStatus">-</code></td>
+                    </tr>
+                    <tr>
+                        <td>Session ID</td>
+                        <td><code id="sessionId">-</code></td>
+                    </tr>
+                </table>
+                <button class="success" onclick="refreshInfo()">Refresh Info</button>
+            </div>
+
+            <!-- Browser Info -->
+            <div class="test-section">
+                <h3>Browser & Environment</h3>
+                <table>
+                    <tr>
+                        <th>Property</th>
+                        <th>Value</th>
+                    </tr>
+                    <tr>
+                        <td>User Agent</td>
+                        <td><code id="userAgent">-</code></td>
+                    </tr>
+                    <tr>
+                        <td>Protocol</td>
+                        <td><code id="protocol">-</code></td>
+                    </tr>
+                    <tr>
+                        <td>Host</td>
+                        <td><code id="host">-</code></td>
+                    </tr>
+                    <tr>
+                        <td>Cookies Enabled</td>
+                        <td><code id="cookiesEnabled">-</code></td>
+                    </tr>
+                </table>
+            </div>
+
+            <!-- JavaScript Status -->
+            <div class="test-section">
+                <h3>JavaScript Libraries</h3>
+                <table id="libsTable">
+                    <tr>
+                        <th>Library</th>
+                        <th>Status</th>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        <!-- Logs Tab -->
+        <div id="logs-tab" class="tab-content">
+            <h2>Debug Logs</h2>
+            <button class="success" onclick="clearLogs()">Clear Logs</button>
+            <button class="success" onclick="exportLogs()">Export Logs</button>
+            <button class="danger" onclick="enableDebugMode()">Enable Debug Mode</button>
+            <div id="logsContainer" class="code-block" style="max-height: 400px; overflow-y: auto;">
+                <div id="logs"><em>No logs yet. Run tests to generate logs.</em></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Log storage
+        let debugLogs = [];
+
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = `[${timestamp}] [${type.toUpperCase()}] ${message}`;
+            debugLogs.push(logEntry);
+            updateLogsDisplay();
+            console.log(logEntry);
+        }
+
+        function updateLogsDisplay() {
+            const logsDiv = document.getElementById('logs');
+            logsDiv.innerHTML = debugLogs.join('<br>');
+            logsDiv.parentElement.scrollTop = logsDiv.parentElement.scrollHeight;
+        }
+
+        function clearLogs() {
+            debugLogs = [];
+            document.getElementById('logs').innerHTML = '<em>Logs cleared.</em>';
+            log('Logs cleared by user', 'info');
+        }
+
+        function exportLogs() {
+            const data = debugLogs.join('\n');
+            const blob = new Blob([data], { type: 'text/plain' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `csrf-debug-${Date.now()}.txt`;
+            a.click();
+            log('Logs exported', 'success');
+        }
+
+        function enableDebugMode() {
+            window.DEBUG_CSRF = true;
+            if (window.debugCsrf) {
+                window.debugCsrf();
+            }
+            log('Debug mode enabled', 'success');
+            alert('Debug mode enabled. Check browser console (F12) for detailed logs during CSRF operations.');
+        }
+
+        function switchTab(e, tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+
+            // Show selected tab
+            document.getElementById(tabName).classList.add('active');
+            e.target.classList.add('active');
+        }
+
+        function showResult(elementId, message, type = 'info') {
+            const el = document.getElementById(elementId);
+            el.innerHTML = message;
+            el.className = `result show ${type}`;
+        }
+
+        function refreshInfo() {
+            const token = typeof getCsrfToken === 'function' ? getCsrfToken() : null;
+            document.getElementById('tokenValue').innerHTML = token ? token.substring(0, 16) + '...' : 'NOT FOUND';
+            document.getElementById('tokenLength').innerHTML = token ? token.length + ' chars' : '-';
+            document.getElementById('metaStatus').innerHTML = document.querySelector('meta[name="csrf_token"]') ? '✓ Found' : '✗ Not Found';
+            document.getElementById('sessionId').innerHTML = document.cookie.includes('PHPSESSID') ? '✓ Active' : '✗ No Session';
+
+            document.getElementById('userAgent').innerHTML = navigator.userAgent;
+            document.getElementById('protocol').innerHTML = window.location.protocol;
+            document.getElementById('host').innerHTML = window.location.host;
+            document.getElementById('cookiesEnabled').innerHTML = navigator.cookieEnabled ? '✓ Yes' : '✗ No';
+
+            // Check libraries
+            const libs = [
+                { name: 'jQuery', check: () => typeof jQuery !== 'undefined' },
+                { name: 'SweetAlert2', check: () => typeof Swal !== 'undefined' },
+                { name: 'csrf.js', check: () => typeof getCsrfToken === 'function' },
+                { name: 'ajaxHandler.js', check: () => typeof handleAjaxSuccess === 'function' }
+            ];
+
+            const table = document.getElementById('libsTable');
+            libs.forEach(lib => {
+                const status = lib.check() ? '✓ Loaded' : '✗ Not Loaded';
+                const row = table.insertRow(-1);
+                row.innerHTML = `<td>${lib.name}</td><td>${status}</td>`;
+            });
+
+            log('Info refreshed', 'success');
+        }
+
+        function checkStatus() {
+            const token = typeof getCsrfToken === 'function' ? getCsrfToken() : null;
+            const hasMeta = !!document.querySelector('meta[name="csrf_token"]');
+            const hasSession = document.cookie.includes('PHPSESSID');
+
+            let html = '<h4>Status Summary</h4>';
+            html += token ? '<p><span class="status ok">✓ Token Generated</span></p>' : '<p><span class="status error">✗ Token Missing</span></p>';
+            html += hasMeta ? '<p><span class="status ok">✓ Meta Tag Found</span></p>' : '<p><span class="status error">✗ Meta Tag Missing</span></p>';
+            html += hasSession ? '<p><span class="status ok">✓ Session Active</span></p>' : '<p><span class="status warning">⚠ No Session Cookie</span></p>';
+
+            const allOk = token && hasMeta && hasSession;
+            if (allOk) {
+                html += '<p><strong style="color: green;">✓ All systems OK - CSRF protection is active</strong></p>';
+                showResult('statusResult', html, 'success');
+                log('Status check: All OK', 'success');
+            } else {
+                html += '<p><strong style="color: red;">✗ Issues detected - See details above</strong></p>';
+                showResult('statusResult', html, 'error');
+                log('Status check: Issues found', 'error');
+            }
+        }
+
+        function testTokenGeneration() {
+            const token = typeof getCsrfToken === 'function' ? getCsrfToken() : null;
+            
+            if (!token) {
+                showResult('test1Result', '<strong>✗ FAILED:</strong> getcSrfToken() is not available. Check if csrf.js is loaded.', 'error');
+                log('Token generation test: FAILED - getCsrfToken not available', 'error');
+                return;
+            }
+
+            if (!/^[a-f0-9]{64}$/.test(token)) {
+                showResult('test1Result', `<strong>✗ FAILED:</strong> Token format invalid. Got: ${token.substring(0, 20)}...`, 'error');
+                log('Token generation test: FAILED - Invalid format', 'error');
+                return;
+            }
+
+            showResult('test1Result', `
+                <strong>✓ PASSED:</strong> Token generated successfully<br>
+                <strong>Token:</strong> <code>${token}</code><br>
+                <strong>Length:</strong> ${token.length} characters
+            `, 'success');
+            log(`Token generation test: PASSED (${token.substring(0, 8)}...)`, 'success');
+        }
+
+        function testFormSubmission() {
+            const formHtml = `
+                <form id="csrfTestForm" method="POST" action="javascript:void(0);" style="display:inline;">
+                    <input type="hidden" name="test" value="true">
+                    <button type="submit">Submit Test</button>
+                </form>
+            `;
+
+            const result = document.getElementById('test2Result');
+            result.innerHTML = formHtml + '<div id="formResult"></div>';
+            result.classList.add('show');
+
+            document.getElementById('csrfTestForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                const token = this.querySelector('input[name="csrf_token"]');
+                
+                if (!token) {
+                    document.getElementById('formResult').innerHTML = '<p class="result error show"><strong>✗ FAILED:</strong> Token not auto-injected into form</p>';
+                    log('Form submission test: FAILED - Token not injected', 'error');
+                } else {
+                    document.getElementById('formResult').innerHTML = `<p class="result success show"><strong>✓ PASSED:</strong> Token auto-injected<br><code>${token.value.substring(0, 20)}...</code></p>`;
+                    log('Form submission test: PASSED', 'success');
+                }
+            });
+
+            document.getElementById('csrfTestForm').submit();
+        }
+
+        function testAjaxRequest() {
+            log('AJAX test: Starting...', 'info');
+            
+            $.ajax({
+                type: 'POST',
+                url: window.location.href,
+                data: { csrf_test: true },
+                dataType: 'text',
+                success: function(data) {
+                    showResult('test3Result', '<strong>✓ PASSED:</strong> AJAX request completed (token was sent in header)', 'success');
+                    log('AJAX test: PASSED', 'success');
+                },
+                error: function(xhr) {
+                    if (xhr.status === 403) {
+                        showResult('test3Result', '<strong>✗ FAILED:</strong> Got 403 Forbidden - Token may not be in header. Check X-CSRF-TOKEN header.', 'error');
+                        log('AJAX test: FAILED - 403 Forbidden', 'error');
+                    } else {
+                        showResult('test3Result', `<strong>⚠ ERROR:</strong> Request failed with status ${xhr.status}. This might be expected if endpoint doesn't handle test requests.`, 'warning');
+                        log(`AJAX test: Request failed with status ${xhr.status}`, 'warning');
+                    }
+                }
+            });
+        }
+
+        function testSession() {
+            const hasSession = document.cookie.includes('PHPSESSID');
+            if (hasSession) {
+                showResult('test4Result', '<strong>✓ PASSED:</strong> Session cookie found (PHPSESSID)', 'success');
+                log('Session test: PASSED', 'success');
+            } else {
+                showResult('test4Result', '<strong>✗ FAILED:</strong> No session cookie found. Session may not be active.', 'error');
+                log('Session test: FAILED', 'error');
+            }
+        }
+
+        function testTokenPersistence() {
+            const token1 = typeof getCsrfToken === 'function' ? getCsrfToken() : null;
+            
+            if (!token1) {
+                showResult('test5Result', '<strong>✗ FAILED:</strong> Could not get initial token', 'error');
+                log('Token persistence test: FAILED', 'error');
+                return;
+            }
+
+            log('Token persistence: Got initial token, making test request...', 'info');
+
+            setTimeout(() => {
+                const token2 = typeof getCsrfToken === 'function' ? getCsrfToken() : null;
+                
+                if (token1 === token2) {
+                    showResult('test5Result', '<strong>✓ PASSED:</strong> Token persisted across requests (same value)', 'success');
+                    log('Token persistence test: PASSED', 'success');
+                } else {
+                    showResult('test5Result', '<strong>✗ FAILED:</strong> Token changed. This might indicate session issues.', 'error');
+                    log('Token persistence test: FAILED', 'error');
+                }
+            }, 500);
+        }
+
+        // Initialize on load
+        window.addEventListener('load', function() {
+            log('CSRF Debugger initialized', 'success');
+            refreshInfo();
+        });
+    </script>
+
+    <!-- Ensure jQuery is loaded -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script><script src="/assets/js/csrf.js"></script>
+</body>
+</html>

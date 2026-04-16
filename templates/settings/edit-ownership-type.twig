@@ -1,0 +1,45 @@
+{# templates/settings/edit-ownership-type.twig #}
+{% extends 'layout.twig' %}
+
+{% block title %}মালিকানার ধরণ সম্পাদনা করুন{% endblock %}
+{% block header_title %}{{ header_title|default('মালিকানার ধরণ সম্পাদনা করুন') }}{% endblock %}
+
+{% block content %}
+
+{% if not is_logged_in %}
+    {% set redirect = "<script>window.location.href='/#';</script>" %}
+    {{ redirect|raw }}
+{% endif %}
+
+<h2>Edit Ownership Type</h2>
+
+{% if status %}
+    <div class="alert alert-{{ status == 'success' ? 'success' : 'danger' }}">
+        {{ message }}
+    </div>
+{% endif %}
+
+<form method="POST">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <input type="hidden" name="id" value="{{ ownershipType.id }}">
+
+    <div class="form-group">
+        <label for="ownership_name_bn">Ownership Name (Bangla)</label>
+        <input type="text" id="ownership_name_bn" name="ownership_name_bn" class="form-control" 
+               value="{{ ownershipType.ownership_name_bn }}" placeholder="বাংলায় মালিকানার নাম লিখুন" required>
+    </div>
+
+    <div class="form-group">
+        <label for="ownership_name_en">Ownership Name (English)</label>
+        <input type="text" id="ownership_name_en" name="ownership_name_en" class="form-control" 
+               value="{{ ownershipType.ownership_name_en }}" placeholder="Enter ownership name in English" required>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Update Ownership Type</button>
+</form>
+
+<a href="{{ previous_url }}" class="btn btn-secondary">Back</a>
+
+{% endblock %}
+
+

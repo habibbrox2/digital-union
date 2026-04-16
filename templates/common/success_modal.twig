@@ -1,0 +1,136 @@
+{# common/success_modal.twig #}
+<div id="successModal" class="custom-modal" style="display: none;">
+    <div class="custom-modal-content">
+        <div class="custom-modal-header">
+            <i class="fa fa-check-circle"></i> আবেদন সফল!
+        </div>
+        <div class="custom-modal-body">
+            <p>আপনার আবেদনটি সফলভাবে সাবমিট হয়েছে।</p>
+            <p><b>আপনার ট্র্যাকিং নম্বর:</b> <span id="application_id"></span></p>
+        </div>
+        <div class="custom-modal-footer">
+            <button class="btn-action" id="downloadCopy">আবেদন কপি ডাউনলোড</button>
+            <button class="btn-action" id="newApplication">নতুন আবেদন করুন</button>
+            <button class="btn-close-modal">বন্ধ করুন</button>
+        </div>
+    </div>
+</div>
+
+<div id="updateModal" class="custom-modal" style="display: none;">
+    <div class="custom-modal-content">
+        <div class="custom-modal-header">
+            <i class="fa fa-check-circle"></i> আবেদন আপডেট সফল!
+        </div>
+        <div class="custom-modal-body">
+            <p>আপনার আবেদনটি সফলভাবে আপডেট হয়েছে।</p>
+            <ul id="updateChangeList" style="margin-bottom: 15px;"></ul>
+            <div id="updateLinks" style="margin-top: 10px;">
+                <a href="#" id="downloadCertificate" class="btn-action" target="_blank">সার্টিফিকেট ডাউনলোড করুন</a>
+                <a href="/applications/{{ certificate_type|default('application') }}" class="btn-action">সকল আবেদন দেখুন</a>
+            </div>
+        </div>
+        <div class="custom-modal-footer">
+            <button class="btn-close-modal">বন্ধ করুন</button>
+        </div>
+    </div>
+</div>
+    <script>
+        $(document).ready(function () {
+            const form = $("#applicationForm");
+            const submitButton = form.find("button[type='submit']");
+
+
+            form.submit(function (event) {
+                event.preventDefault();
+                var certificateType = "{{ certificate_type }}";
+                var isUpdate = $("#application_id").val() ? true : false;
+                var url = `/applications/${certificateType}/${isUpdate ? 'update' : 'insert'}`;
+
+
+                $.ajax({
+                    type: "POST",
+                    url: url,
+                    data: new FormData(this),
+                    contentType: false,
+                    processData: false,
+                    dataType: "json",
+                    beforeSend: function () {
+                        submitButton.text("জমা দেওয়া হচ্ছে...").prop("disabled", true);
+                    },
+                    success: function (response) {
+                        if (response.status === "success") {
+                            if (isUpdate) {
+                                // Show change list if provided
+                                if (response.changes && Array.isArray(response.changes) && response.changes.length > 0) {
+                                    let listHtml = response.changes.map(function(item) {
+                                        return '<li>' + item + '</li>';
+                                    }).join('');
+                                    $("#updateChangeList").html(listHtml).show();
+                                } else {
+                                    $("#updateChangeList").hide();
+                                }
+                                // Show certificate download or approve link based on sonod_number and status
+                                var certType = certificateType || 'application';
+                                if (response.sonod_number && (!response.status || response.status.toLowerCase() !== 'pending')) {
+                                    var certUrl = '/application/' + certType + '/bangla/' + response.sonod_number;
+                                    $("#downloadCertificate").attr("href", certUrl).text('সার্টিফিকেট ডাউনলোড করুন').show();
+                                } else if (response.application_id) {
+                                    var approveUrl = '/applications/' + certType + '/approve/' + response.application_id;
+                                    $("#downloadCertificate").attr("href", approveUrl).text('অনুমোদন দিন / দেখুন').show();
+                                } else {
+                                    $("#downloadCertificate").hide();
+                                }
+                                $("#updateModal").show();
+                            } else {
+                                $("#application_id").text(response.application_id);
+                                $("#union_code").text(response.union_code);
+                                $("#rmo_code").text(response.rmo_code);
+                                $("#successModal").show();
+                            }
+                        } else {
+                            alert("⚠️ কিছু সমস্যা হয়েছে: " + response.message);
+                        }
+                    },
+                    error: function (xhr) {
+                        let message = "⚠️ কিছু সমস্যা হয়েছে, আবার চেষ্টা করুন।";
+                        try {
+                            let response = JSON.parse(xhr.responseText);
+                            if (response.message) {
+                                message = "⚠️ " + response.message;
+                            }
+                        } catch (e) {
+                            if (xhr.responseText) {
+                                message = "⚠️ সার্ভার থেকে উত্তর: " + xhr.responseText;
+                            }
+                        }
+                        alert(message);
+                    },
+                    complete: function () {
+                        submitButton.text("জমা দিন").prop("disabled", false);
+                    }
+                });
+            });
+
+
+            $("#newApplication").click(function () {
+                $("#successModal").hide();
+                form[0].reset();
+                // Optional: reset district/upazila/union dropdowns if needed
+            });
+
+            $(document).on('click', '.btn-close-modal', function () {
+                $(this).closest('.custom-modal').hide();
+            });
+
+            $("#downloadCopy").click(function () {
+                let applicantId = $("#application_id").text();
+                let union_code = $("#union_code").text().trim() || "0";
+                let rmo_code = $("#rmo_code").text().trim() || "0";
+
+                window.open(
+                    "/" + certificateType + "/_verify/application/" + applicantId + "/" + union_code + "/" + rmo_code,
+                    "_blank"
+                );
+            });
+        });
+    </script>

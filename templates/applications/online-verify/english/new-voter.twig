@@ -1,0 +1,116 @@
+<html>
+    <head>
+        <meta charset="utf-8">
+        <base href="">
+        <title>New Voter Certificate (English)</title>
+        <style>
+            body { font-family: 'Arial', sans-serif; font-size:10.5pt }
+            @media print { * { -webkit-print-color-adjust:exact } }
+            @page { header:page-header; footer:page-footer; margin:20px 0px; padding:0px }
+            .header-font { font-size:18.75pt; font-weight:bold; color:blue; }
+            .title-font { font-size:13.5pt; font-weight:bold; }
+            .label-font { font-size:12pt; font-weight:bold; }
+            .value-font { font-size:12pt; }
+        </style>
+    </head>
+    <body>
+        <table border="0" width="98%" align="center" style="padding-top:37.5pt">
+            <tr>
+                <td style="text-align:center; font-size:18.75pt; font-weight:bold; color:blue;">{{ union.union_name_en|default(union.union_name_bn) }}</td>
+            </tr>
+            <tr>
+                <td style="text-align:center; font-size:12pt; font-weight:bold;">{{ union.upazila_name_en|default(union.upazila_name_bn) }}, {{ union.district_name_en|default(union.district_name_bn) }}</td>
+            </tr>
+        </table>
+
+        <table border="0" width="98%" align="center" style="margin-top:15pt;">
+            <tr>
+                <td style="text-align:center;font-size:13.5pt;font-weight:bold;"><u>New Voter Certificate</u></td>
+            </tr>
+        </table>
+
+        <table border="0" width="99%" align="center" style="margin-top:7.5pt;">
+            <tr>
+                <td style="padding-left:37.5pt; font-size:12pt;">Verification Ref No: {{ citizen.sonod_number }}</td>
+            </tr>
+            <tr>
+                <td style="padding-left:37.5pt; font-size:12pt;">Issued Date: {{ citizen.issue_date|date('d-m-Y') }}</td>
+            </tr>
+        </table>
+
+        <table border="0" width="99%" align="center" style="margin-top:15pt;">
+            <tr>
+                <td style="padding-left:37.5pt; font-size:12pt;">This is to certify that:</td>
+            </tr>
+        </table>
+
+        <table border="0" width="99%" align="center" style="margin-top:7.5pt;">
+            <tr>
+                <td style="padding-left:37.5pt; font-size:12pt;">Name</td>
+                <td style="font-weight:bold; font-size:12pt;">: {{ citizen.name_en|default(citizen.name_bn) }}</td>
+            </tr>
+            <tr>
+                <td style="padding-left:37.5pt; font-size:12pt;">Father's Name</td>
+                <td style="font-weight:bold; font-size:12pt;">: {{ citizen.father_name_en|default(citizen.father_name_bn) }}</td>
+            </tr>
+            <tr>
+                <td style="padding-left:37.5pt; font-size:12pt;">Mother's Name</td>
+                <td style="font-weight:bold; font-size:12pt;">: {{ citizen.mother_name_en|default(citizen.mother_name_bn) }}</td>
+            </tr>
+            <tr>
+                <td style="padding-left:37.5pt; font-size:12pt;">Date of Birth</td>
+                <td style="font-weight:bold; font-size:12pt;">: {{ citizen.birth_date|date('d-m-Y') }}</td>
+            </tr>
+            <tr>
+                <td style="padding-left:37.5pt; font-size:12pt;">Age</td>
+                <td style="font-weight:bold; font-size:12pt;">: {{ citizen.age|default('') }} years</td>
+            </tr>
+            <tr>
+                <td style="padding-left:37.5pt; font-size:12pt;">National ID</td>
+                <td style="font-weight:bold; font-size:12pt;">: {{ citizen.nid }}</td>
+            </tr>
+            <tr>
+                <td valign="top" style="padding-left:37.5pt; font-size:12pt;">Present Address</td>
+                <td style="font-size:12pt;">
+                    : Village: {{ citizen.present_village_en|default(citizen.present_village_bn) }}, <br>
+                    &nbsp;&nbsp;&nbsp; Post Office: {{ citizen.present_postoffice_en|default(citizen.present_postoffice_bn) }}, <br>
+                    &nbsp;&nbsp;&nbsp; Ward No: {{ citizen.present_ward_no }},<br>
+                    &nbsp;&nbsp;&nbsp; Upazila: {{ citizen.present_upazila_en|default(citizen.present_upazila_bn) }}, <br>
+                    &nbsp;&nbsp;&nbsp; District: {{ citizen.present_district_en|default(citizen.present_district_bn) }}
+                </td>
+            </tr>
+        </table>
+
+        <table border="0" width="99%" align="center" style="margin-top:15pt;">
+            <tr>
+                <td style="padding-left:37.5pt; font-size:12pt; line-height: 1.8;">
+                    The above mentioned person is a qualified new voter and is eligible for voter registration. This certificate is issued to assist in the voter registration process.
+                </td>
+            </tr>
+        </table>
+
+        <table border="0" width="99%" align="center" style="margin-top:22.5pt;">
+            <tr>
+                <td style="padding-left:37.5pt; font-size:11.25pt;">
+                    Applicant: {{ citizen.applicant_name_en|default(citizen.applicant_name) }}
+                </td>
+            </tr>
+            <tr>
+                <td style="padding-left:37.5pt; font-size:11.25pt; margin-top:7.5pt;">
+                    Mobile: {{ citizen.mobile|default('') }} | Email: {{ citizen.email|default('') }}
+                </td>
+            </tr>
+        </table>
+
+        <table border="0" width="99%" align="center" style="margin-top:22.5pt;">
+            <tr>
+                <td style="font-size:11.25pt; text-align:right; padding-top: 15pt;">
+                    Issued by: {{ union.union_name_en|default(union.union_name_bn) }} <br>
+                    Authorized Officer: _________________ <br>
+                    Date: {{ 'now'|date('d-m-Y') }}
+                </td>
+            </tr>
+        </table>
+
+    </body>
+</html>

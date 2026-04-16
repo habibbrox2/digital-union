@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ data.sonod_number }}</title>
+    <link href="https://fonts.maateen.me/solaiman-lipi/font.css" rel="stylesheet">
+    <style>
+        * {
+            font-family: "solaimanlipi", Arial;
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-print-color-adjust: exact;
+        }
+
+        @page {
+            size: A4;
+            margin: 10mm;
+        }
+
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-sizing: border-box;
+            flex-direction: column;
+            margin: 0; 
+            padding: 0;
+            font-size: 14pt; 
+        }
+
+        .container {
+            background-image: url('{{ url }}/assets/bg.png');
+            background-size: cover;
+            background-repeat: no-repeat;
+            width: 209mm;
+            height: 297mm;
+            position: relative;
+            padding: 16mm; 
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 4.5pt;
+            font-size: 9pt;
+        }
+        tr, td, th {
+            font-size: 9pt;
+        }
+
+        
+        .title {
+            font-size: 16pt;
+            font-weight: bold;
+            color: #3c01c5;
+            text-align: center;
+        }
+        
+        .info {
+            font-size: 10pt;
+            text-align: center;
+        }
+
+        .title-section {
+            font-size: 13.5pt;
+            font-weight: bold;
+            text-align: center;
+            border-bottom: 1.5pt solid #000;
+            padding-bottom: 5pt;
+            margin-bottom: 10pt;
+        }
+
+        .sonod-no {
+            font-size: 14pt;
+        }
+        .sonod-no tr td {
+            font-size: 10pt;
+            border: 0.75pt solid black; padding: 3.75pt; text-align: center;
+        }
+        .bottom-text {
+            position: absolute;
+            bottom: 10mm;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 12pt;
+            font-weight: bold;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <table>
+        <tr>
+            <td class="title">{{ union.union_name_bn }}</td>
+        </tr>
+        <tr>
+            <td class="info">{{ union.upazila_name_bn }}, {{ union.district_name_bn }}-{{ union.postcode|bn }} </td>
+        </tr>
+        <tr>
+            <td class="info">মোবাইলঃ {{ union.phone | bn }} </td>
+        </tr>
+        <tr>
+            <td class="info">ই-মেইলঃ {{ union.email }}</td>
+        </tr>
+        <tr>
+            <td class="info">ওয়েবসাইট : {{ union.website }}</td>
+        </tr>
+    </table>
+
+    <table style="height: 140pt;">
+        <tr>
+            <td style="text-align: center; width: 2.1in;">
+                <img src="https://quickchart.io/qr?text={{ url }}/verify/trade_bn/{{ (union.union_code|default('000') ~ data.sonod_number|default(''))|slice(-17) }}/{{ union.union_code|default('000') }}/{{ union.rmo_code|default('1') }}&margin=1&size=300" alt="QR Code" height="48.75pt" width="67.5pt">
+                <p style="text-decoration: underline;font-size: 7.5pt;">লাইসেন্স ইস্যু বিবরণ </p>
+                <p style="font-size: 7.5pt;">ইস্যু তারিখ (Date of Issue): </p>
+                <p style="font-size: 7.5pt;">{{ data.issue_date|date('d-m-Y')|bn }} </p>
+                <p style="text-decoration:overline; font-size: 7.5pt;">ইস্যু সময় (Issue Time): ১২:০০:০০</p>
+            </td>
+            <td style="text-align: center;">
+                <img src="{{ url }}/assets/logo/logo.png" alt="বাংলাদেশ সরকার" height="75pt" width="75pt">
+            </td>
+            <td style="width: 2.1in;">
+                <img src="{{ url }}/assets/img/band-cross.png" style="padding: 10px;" alt="Icon" height="60pt" width="60pt">
+            </td>
+        </tr>
+    </table>
+
+    <table>
+        <tr>
+            <td style="text-align: center; font-size: 16.5pt; text-decoration: underline; ">ট্রেড লাইসেন্স</td>
+        </tr>
+    </table>
+    
+    <table class="sonod-no">
+        <tr>
+            <td>সনদ নং</td>
+            {% set sonod_number_bn = data.sonod_number | bn %}
+            {% for digit in sonod_number_bn | split('') %}
+            <td>{{ digit }}</td> 
+            {% endfor %}
+        </tr>
+        <tr>
+            <td colspan="18" style="font-size: 8pt; text-align: left; padding: 4pt;"> স্থানীয় সরকার (ইউনিয়ন পরিষদ) আইন, ২০০৯ (২০০৯ সনের ৬১ নং আইন) এর ধারা ৬৬-তে প্রদত্ত ক্ষমতাবলে
+                সরকার প্রণীত আদর্শ কর তফসিল, ২০১৬ এবং ৬ ও ১৭ নং অনুচ্ছেদ অনুযায়ী ব্যবসা, বৃত্তি, পেশা বা শিল্প প্রতিষ্ঠানের উপর 
+                আরোপিত কর আদায়ের লক্ষ্যে নির্ধারিত শর্তে নিম্নবর্ণিত ব্যক্তি/প্রতিষ্ঠানের অনুকূলে এই ট্রেড লাইসেন্সটি ইস্যু করা হল: 
+            </td>
+        </tr>
+    </table>
+
+    <!-- ব্যবসার তথ্য টেবিল -->
+    <table style="width: 100%; border-collapse: collapse;">
+        <tr>
+            <td style="width: 30%; font-weight: bold;">ব্যবসা প্রতিষ্ঠানের নাম</td>
+            <td colspan="4" style="font-size: 12pt;">: {{ business_meta.business_name_bn }}</td>
+        </tr>
+        <tr>
+            <td>মালিক/স্বত্বাধিকারীর নাম</td>
+            <td colspan="4">: {{ data.name_bn }}</td>
+        </tr>
+        <tr>
+            <td>মাতার নাম</td>
+            <td colspan="4">: {{ data.mother_name_bn }}</td>
+        </tr>
+        <tr>
+            <td>পিতার নাম</td>
+            <td colspan="4">: {{ data.father_name_bn }}</td>
+        </tr>
+        <tr>
+            <td>ব্যবসার প্রকৃতি</td>
+            <td colspan="4">: {{ business_meta.ownership_name_bn }}</td>
+        </tr>
+        <tr>
+            <td>ব্যবসার ধরন</td>
+            <td colspan="4">: {{ business_meta.business_type_bn }}</td>
+        </tr>
+        <tr>
+            <td>ব্যবসা প্রতিষ্ঠানের ঠিকানা</td>
+            <td colspan="4">
+                : রোড/ব্লক/সেক্টর: {{ business_meta.business_rbs_bn }}, গ্রাম/মহল্লা: {{ business_meta.business_village_bn }}, ওয়ার্ড নং- {{ business_meta.ward_no | bn }}, <br>
+                &nbsp; পোস্ট অফিস: {{ business_meta.business_postoffice_bn }}, উপজেলা: {{ business_meta.business_upazila_bn }}, জেলা: {{ business_meta.business_district_bn }}।
+            </td>
+        </tr>
+        <tr>
+            <td>অঞ্চল (প্রয়োজ্য ক্ষেত্রে)</td>
+            <td colspan="4">: {{ business_meta.business_district_bn }}।</td>
+        </tr>
+        <tr>
+            <td>পরিচয় পত্র/জন্ম নিবন্ধন/পাসপোর্ট</td>
+            <td colspan="4">:
+                {% if data.birth_id %}
+                    {{ data.birth_id | bn }}
+                {% elseif data.nid %}
+                    {{ data.nid | bn }}
+                {% elseif data.passport_no %}
+                    {{ data.passport_no | bn }}
+                {% endif %}
+            </td>
+        </tr>
+        <tr>
+            <td style="width: 25%;">টিআইএন (TIN)</td>
+            <td style="width: 25%;">: {{ business_meta.tax_id | bn }}</td>
+            <td style="width: 25%;">বিআইএন (BIN)</td>
+            <td style="width: 25%;">: {{ business_meta.vat_id | bn }}</td>
+        </tr>
+        <tr>
+            <td>মোবাইল</td>
+            <td>: {{ data.applicant_phone | bn }}</td>
+            <td>ই-মেইল</td>
+            <td>: {{ business_meta.email }}</td>
+        </tr>
+        <tr>
+            <td>অর্থবছর</td>
+            <td>: {{ business_meta.fiscal_year | bn }}</td>
+            <td>ব্যবসা শুরুর তারিখ</td>
+            <td>: {{ business_meta.business_start_date | bn }}</td>
+        </tr>
+    </table>
+
+
+
+
+
+    <!-- মালিক/স্বত্বাধিকারী/কোম্পানির বর্তমান ঠিকানা -->
+    <table style="margin-top: 16px;">
+        <tr>
+            <td style="width: 50%; vertical-align: top;">
+		<table style="width: 100%; font-family: solaimanlipi; font-size: 9pt;">
+		    <tr>
+		        <td colspan="2" style="text-align: center; text-decoration: underline; font-size: 9pt;">
+		            মালিক/স্বত্বাধিকারী/কোম্পানির বর্তমান ঠিকানা
+		        </td>
+		    </tr>
+		    <tr>
+		        <td style="width:70%;">রোড/ব্লক/সেক্টর</td>
+		        <td style="width:30%;">: {{ data.present_rbs_bn }}</td>
+		    </tr>
+		    <tr>
+		        <td>গ্রাম/মহল্লা</td>
+		        <td>: {{ data.present_village_bn }}</td>
+		    </tr>
+		    <tr>
+		        <td>ডাকঘর</td>
+		        <td>: {{ data.present_postoffice_bn }}</td>
+		    </tr>
+		    <tr>
+		        <td>উপজেলা/থানা</td>
+		        <td>: {{ data.present_upazila_bn }}</td>
+		    </tr>
+		    <tr>
+		        <td>জেলা</td>
+		        <td>: {{ data.present_district_bn }}</td>
+		    </tr>
+		    <tr>
+		        <td>বিভাগ</td>
+		        <td>: {{ data.present_district_bn }}</td>
+		    </tr>
+		    <tr>
+		        <td>দেশ</td>
+		        <td>: বাংলাদেশ।</td>
+		    </tr>
+		</table>
+
+            </td>
+
+            <td style="width: 50%; vertical-align: top;">
+                <table>
+                    <tr>
+                        <td colspan="2" style="text-align: center; text-decoration: underline; font-size: 9pt;">মালিক/স্বত্বাধিকারী/কোম্পানির স্থায়ী ঠিকানা</td>
+                    </tr>
+                <tr>
+                        <td style="width:70%;">রোড/ব্লক/সেক্টর</td>
+                        <td style="width:30%;">: {{ data.permanent_rbs_bn }}</td>
+                    </tr>
+                    <tr>
+                        <td>গ্রাম/মহল্লা</td>
+                        <td>: {{ data.permanent_village_bn }}</td>
+                    </tr>
+                    <tr>
+                        <td>ডাকঘর</td>
+                        <td>: {{ data.permanent_postoffice_bn }}</td>
+                    </tr>
+                    <tr>
+                        <td>উপজেলা/থানা</td>
+                        <td>: {{ data.permanent_upazila_bn }}</td>
+                    </tr>
+                    <tr>
+                        <td>জেলা</td>
+                        <td>: {{ data.permanent_district_bn }}</td>
+                    </tr>
+                    <tr>
+                        <td>বিভাগ</td>
+                        <td>: {{ data.permanent_district_bn }}</td>
+                    </tr>
+                    <tr>
+                        <td>দেশ</td>
+                        <td>: বাংলাদেশ।</td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+
+	<table>
+	    <tr>
+	        <td style="width: 50%; vertical-align: top;">
+	            <!-- ফি ও ট্যাক্স বিবরণ -->
+	            <table style="width: 100%; margin-bottom: 15pt;">
+	                <tr>
+	                    <td>লাইসেন্স ফি (নতুন)</td>
+	                    <td>
+	                    	:
+	                        {% if business_meta.license_fee != 0 %}
+	                            {{ business_meta.license_fee | bn }}
+	                        {% endif %}
+	                    </td>
+	                </tr>
+	                <tr>
+	                    <td>ভ্যাট (VAT)</td>
+	                    <td>
+	                    	:
+	                        {% if business_meta.vat_amount != 0 %}
+	                            {{ business_meta.vat_amount | bn }}
+	                        {% endif %}
+	                    </td>
+	                </tr>
+	                <tr>
+	                    <td>আয়কর/উৎসে কর</td>
+	                    <td>
+	                        :
+	                        {% if business_meta.income_tax != 0 %}
+	                            {{ business_meta.income_tax | bn }}
+	                        {% endif %}
+	                    </td>
+	                </tr>
+	                <tr>
+	                    <td><b>সর্বমোট</b></td>
+	                    <td>
+	                    	:
+	                        {% if business_meta.total_fee != 0 %}
+	                            <b> {{ business_meta.total_fee | bn }}</b>
+	                        {% endif %}
+	                    </td>
+	                </tr>
+	            </table>
+	        </td>
+	
+	        <td style="width: 50%; vertical-align: top;">
+	            <!-- অন্যান্য কর -->
+	            <table style="width: 100%;">
+	                <tr>
+	                    <td>সাইনবোর্ড কর (বাৎসরিক)</td>
+	                    <td>
+	                        :
+	                        {% if business_meta.signboard_tax != 0 %}
+	                            {{ business_meta.signboard_tax | bn }}
+	                        {% endif %}
+	                    </td>
+	                </tr>
+	                <tr>
+	                    <td>সারচার্জ</td>
+	                    <td>
+	                        : 
+	                        {% if business_meta.surcharge != 0 %}
+	                            {{ business_meta.surcharge | bn }}
+	                        {% endif %}
+	                    </td>
+	                </tr>
+	                <tr>
+	                    <td>পেশা ও বাণিজ্য কর</td>
+	                    <td>
+	                        :
+	                        {% if business_meta.occupation_tax != 0 %}
+	                            {{ business_meta.occupation_tax | bn }}
+	                        {% endif %}
+	                    </td>
+	                </tr>
+	            </table>
+	        </td>
+	    </tr>
+	</table>
+	
+
+
+    <!-- প্রথম টেবিল: ট্রেড লাইসেন্সের মেয়াদ -->
+    <table style="">
+        <tr>
+            <td style="font-size: 9pt;">অত্র ট্রেড লাইসেন্সের মেয়াদ (Validity of this trade License):------------{{ business_meta.expiry_date | date('d-m-Y') | bn }}------------পর্যন্ত (Up to)</td>
+        </tr>
+    </table>
+
+
+
+	<!-- ইউপি প্রশাসনিক কর্মকর্তা এবং চেয়ারম্যান -->
+	<table border="0" width="100%" style="margin-top:80px; font-family:solaimanlipi; font-size:14pt;">
+	    <tr>
+	        <!-- Left column: positioned further left -->
+	        <td style="width:35%; text-align:center;">
+	            _______________________<br>
+	            ইউপি প্রশাসনিক কর্মকর্তা
+	        </td>
+	        <!-- Spacer cell to create gap -->
+	        <td style="width:30%;"></td>
+	        <!-- Right column: positioned further right -->
+	        <td style="width:35%; text-align:center;">
+	            _______________________<br>
+	            চেয়ারম্যান
+	        </td>
+	    </tr>
+	</table>
+
+
+
+
+
+
+
+
+
+
+
+</div>
+
+</body>
+</html>

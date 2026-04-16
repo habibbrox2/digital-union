@@ -1,0 +1,949 @@
+{# /birth/form.twig  #}
+{% extends "layout.twig" %}
+
+{% block title %} জন্ম নিবন্ধন{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <h1 class="mb-4 text-center">{{ header_title ?? (birth.id ? 'জন্ম নিবন্ধন (সম্পাদনা)' : 'নতুন জন্ম নিবন্ধন') }}</h1>
+
+    <a href="/birth" class="btn btn-secondary text-end mb-3">
+        <i class="bi bi-arrow-left"></i> ফিরে যান / Back to List
+    </a>
+
+
+{% if birth.id is not defined %}
+<!-- ================= UBRN Verification Form ================= -->
+<div class="card shadow-sm mb-4 rounded-4 border-0">
+    <div class="card-header bg-primary text-white d-flex align-items-center">
+        <i class="bi bi-qr-code-scan me-2"></i>
+        <span>UBRN Verification</span>
+    </div>
+    <div class="card-body">
+        <form id="frm" autocomplete="on">
+            <input type="hidden" id="local_csrf" name="local_csrf" value="">
+            <input type="hidden" id="server_token" name="server_token" value="">
+            <input type="hidden" id="captcha_de_text" name="captcha_de_text" value="">
+
+            <div class="row g-3">
+
+                <!-- UBRN -->
+                <div class="col-md-6">
+                    <label for="ubrn" class="form-label">জন্ম নিবন্ধন নম্বর <span class="text-danger">*</span></label>
+                    <input id="ubrn" name="ubrn" type="text" class="form-control" placeholder="20002611471127204" required>
+                </div>
+
+                <!-- Birth Date -->
+                <div class="col-md-6">
+                    <label for="birthdate" class="form-label">জন্ম তারিখ <span class="text-danger">*</span></label>
+                    <input id="birthdate" name="birthdate" type="text" class="form-control datepicker" placeholder="DD-MM-YYYY" required>
+                </div>
+
+                <!-- Captcha -->
+                <div class="col-md-6">
+                    <label class="form-label">Captcha <span class="text-danger">*</span></label>
+                    <div class="d-flex align-items-center gap-2 mb-2" id="captchaBlock">
+                        <img src="" alt="captcha" class="border rounded p-1" id="captchaImg">
+                        <button id="refreshBtn" type="button" class="btn btn-outline-secondary btn-sm" title="Refresh Captcha">
+                            <i class="bi bi-arrow-clockwise"></i>
+                        </button>
+                    </div>
+                    <input id="captchaInput" name="captcha" type="text" class="form-control" placeholder="Type text from image" required>
+                </div>
+
+                <!-- Verify Button -->
+                <div class="col-md-6 d-flex align-items-end">
+                    <button id="verifyBtn" type="submit" class="btn btn-success w-100">
+                        <i class="bi bi-check-circle me-1"></i> Verify
+                    </button>
+                </div>
+
+            </div>
+        </form>
+
+        <!-- Status -->
+        <div id="alertBox" class="mt-3 text-info"></div>
+    </div>
+</div>
+
+
+
+
+
+<!-- ===================== Custom Styles ===================== -->
+<style>
+    #captchaBlock img {
+        width: 280px;      /* fixed width */
+        height: 60px;      /* fixed height */
+        object-fit: contain; /* maintain aspect ratio */
+        border: 1px solid #ced4da;
+        border-radius: 5px;
+        background: #f8f9fa;
+    }
+
+    #captchaBlock button {
+        height: 38px;      /* match input height */
+    }
+
+    @media (max-width: 576px) {
+        #captchaBlock {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        #captchaBlock img, #captchaBlock button {
+            width: 100%;
+        }
+    }
+</style>
+{% endif %}
+
+
+	
+
+
+
+
+
+
+
+
+<!-- ================= Main Birth Form ================= -->
+
+        <form id="birthForm" action="/birth/save" method="post" class="needs-validation" novalidate>
+            <input type="hidden" name="id" value="{{ birth.id ?? '' }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+            <div id="formAlert" class="mb-3">
+                {% if alert %}
+                    <div class="alert alert-{{ alert.type }} alert-dismissible fade show" role="alert">
+                        {{ alert.message|raw }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endif %}
+            </div>
+	<div class="card shadow-sm mb-4 rounded-4 border-0">
+	    <div class="card-header bg-success text-white">
+	        <i class="bi bi-journal-check me-2"></i> Birth Registration
+	    </div>
+	    <div class="card-body">
+	            <div class="row g-3">
+	                <div class="col-md-4">
+	                    <label for="registration_number" class="form-label">Birth Registration Number <span class="text-danger">*</span></label>
+	                    <input type="text" id="registration_number" name="registration_number" class="form-control"
+	                           placeholder="20250000000000001" pattern="\d{17}" maxlength="17" required
+	                           value="{{ birth.registration_number ?? '' }}">
+	                    <div class="invalid-feedback">১৭ ডিজিটের রেজিস্ট্রেশন নম্বর দিন।</div>
+	                </div>
+	
+	                <div class="col-md-4">
+	                    <label for="date_of_registration" class="form-label">Date of Registration <span class="text-danger">*</span></label>
+	                    <input type="text" id="date_of_registration" name="date_of_registration" class="form-control datepicker"
+	                           placeholder="DD-MM-YYYY" required value="{{ birth.date_of_registration ? birth.date_of_registration|date('d-m-Y') : '' }}">
+	                    <div class="invalid-feedback">নিবন্ধনের তারিখ দিন।</div>
+	                </div>
+	
+	                <div class="col-md-4">
+	                    <label for="date_of_issuance" class="form-label">Date of Issuance <span class="text-danger">*</span></label>
+	                    <input type="text" id="date_of_issuance" name="date_of_issuance" class="form-control datepicker"
+	                           placeholder="DD-MM-YYYY" required value="{{ birth.date_of_issuance ? birth.date_of_issuance|date('d-m-Y') : '' }}">
+	                </div>
+	            </div>
+	        </div>
+            </div>
+		
+		{# ================= Personal Info ================= #}
+		<div class="card shadow-sm mb-4 rounded-4 border-0">
+		    <div class="card-header bg-success text-white">
+		        <i class="bi bi-person-fill me-2"></i> Personal Information
+		    </div>
+		    <div class="card-body">
+		        <div class="row g-3">
+		            <div class="col-md-6">
+		                <label for="name_bn" class="form-label">নাম (Bengali) <span class="text-danger">*</span></label>
+		                <input type="text" id="name_bn" name="name_bn" class="form-control" placeholder="বাংলায় নাম লিখুন" required
+		                    value="{{ birth.name_bn ?? '' }}">
+		                <div class="invalid-feedback">নাম লিখুন।</div>
+		            </div>
+		            <div class="col-md-6">
+		                <label for="name_en" class="form-label">Name (English) <span class="text-danger">*</span></label>
+		                <input type="text" id="name_en" name="name_en" class="form-control" placeholder="Enter name in English" required
+		                    value="{{ birth.name_en ?? '' }}">
+		                <div class="invalid-feedback">Name in English is required.</div>
+		            </div>
+		              <div class="col-md-6">
+		                <label for="birth_date" class="form-label">Date of Birth <span class="text-danger">*</span></label>
+		                <input type="text" id="birth_date" name="birth_date" class="form-control datepicker" placeholder="DD-MM-YYYY" required
+		                    value="{{ birth.birth_date ? birth.birth_date|date('d-m-Y') : '' }}">
+		                <div class="invalid-feedback">Enter birth date.</div>
+		            </div>
+		            <div class="col-md-6">
+		                <label for="sex" class="form-label">Sex <span class="text-danger">*</span></label>
+		                <select id="sex" name="sex" class="form-select" required>
+		                    <option value="">Select</option>
+		                    <option value="male" {% if birth.sex == 'male' %}selected{% endif %}>Male</option>
+		                    <option value="female" {% if birth.sex == 'female' %}selected{% endif %}>Female</option>
+		                    <option value="other" {% if birth.sex == 'other' %}selected{% endif %}>Other</option>
+		                </select>
+		                <div class="invalid-feedback">Select gender.</div>
+		            </div>
+		
+		        </div>
+		    </div>
+		</div>
+
+
+                {# ================= Parents Info ================= #}
+                <div class="card shadow-sm mb-4 rounded-4 border-0">
+                    <div class="card-header bg-warning text-dark">
+                        <i class="bi bi-people-fill me-2"></i> Parents Information
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label for="father_name_bn" class="form-label">পিতার নাম (Bengali) <span class="text-danger">*</span></label>
+                                <input type="text" id="father_name_bn" name="father_name_bn" class="form-control" placeholder="বাংলায় নাম লিখুন" required
+                                    value="{{ birth.father_name_bn ?? '' }}">
+                                <div class="invalid-feedback">পিতার নাম দিন।</div>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="father_name_en" class="form-label">Father's Name (EN) <span class="text-danger">*</span></label>
+                                <input type="text" id="father_name_en" name="father_name_en" class="form-control" placeholder="Enter father's name in English" required
+                                    value="{{ birth.father_name_en ?? '' }}">
+                                <div class="invalid-feedback">Father's name required.</div>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="father_nationality_en" class="form-label">Father's Nationality</label>
+                                <input type="text" id="father_nationality_en" name="father_nationality_en" class="form-control" placeholder="Bangladeshi"
+                                    value="{{ birth.father_nationality_en ?? 'Bangladeshi' }}">
+                                <input type="hidden" id="father_nationality_bn" name="father_nationality_bn" value="{{ birth.father_nationality_bn ?? 'বাংলাদেশী' }}">
+                            </div>
+
+                            <div class="col-md-4">
+                                <label for="mother_name_bn" class="form-label">মাতার নাম (Bengali) <span class="text-danger">*</span></label>
+                                <input type="text" id="mother_name_bn" name="mother_name_bn" class="form-control" placeholder="বাংলায় নাম লিখুন" required
+                                    value="{{ birth.mother_name_bn ?? '' }}">
+                                <div class="invalid-feedback">মাতার নাম দিন।</div>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="mother_name_en" class="form-label">Mother's Name (EN) <span class="text-danger">*</span></label>
+                                <input type="text" id="mother_name_en" name="mother_name_en" class="form-control" placeholder="Enter mother's name in English" required
+                                    value="{{ birth.mother_name_en ?? '' }}">
+                                <div class="invalid-feedback">Mother's name required.</div>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="mother_nationality_en" class="form-label">Mother's Nationality</label>
+                                <input type="text" id="mother_nationality_en" name="mother_nationality_en" class="form-control" placeholder="Bangladeshi"
+                                    value="{{ birth.mother_nationality_en ?? 'Bangladeshi' }}">
+                                <input type="hidden" id="mother_nationality_bn" name="mother_nationality_bn" value="{{ birth.mother_nationality_bn ?? 'বাংলাদেশী' }}">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+{# ================= Office of the Registrar ================= #}
+<div class="card shadow-sm mb-4 rounded-4 border-0">
+    <div class="card-header bg-secondary text-white">
+        <i class="bi bi-building-check me-2"></i> Office of the Registrar
+    </div>
+    <div class="card-body">
+        <div class="row g-3">
+
+            <!-- District -->
+            <div class="col-md-4">
+                <label for="district_office_en" class="form-label">District (Registrar Office) <span class="text-danger">*</span></label>
+                <select id="district_office_en" name="district_office_en" class="form-select" required>
+                    <option value="">চিহ্নিত করুন</option>
+                    {% for d in districts %}
+                    <option value="{{ d.name_en|default('')|trim }}" 
+                            data-geo-id="{{ d.id }}" 
+                            data-name-bn="{{ d.name_bn|default('')|trim }}"
+                            {% if birth.district_office_en|default('')|trim == d.name_en|trim %}selected{% endif %}>
+                        {{ d.name_en }} / {{ d.name_bn }}
+                    </option>
+                    {% endfor %}
+                </select>
+                <input type="hidden" id="district_office_bn" name="district_office_bn" value="{{ birth.district_office_bn|default('')|trim }}">
+                <div class="invalid-feedback">Select district.</div>
+            </div>
+
+            <!-- Upazila -->
+            <div class="col-md-4">
+                <label for="upazila_office_en" class="form-label">Upazila (Registrar Office) <span class="text-danger">*</span></label>
+                <select id="upazila_office_en" name="upazila_office_en" class="form-select" required>
+                    <option value="">চিহ্নিত করুন</option>
+                    {% for u in upazilas %}
+                    <option value="{{ u.name_en|default('')|trim }}" 
+                            data-geo-id="{{ u.id }}" 
+                            data-name-bn="{{ u.name_bn|default('')|trim }}"
+                            {% if birth.upazila_office_en|default('')|trim == u.name_en|trim %}selected{% endif %}>
+                        {{ u.name_en }} / {{ u.name_bn }}
+                    </option>
+                    {% endfor %}
+                </select>
+                <input type="hidden" id="upazila_office_bn" name="upazila_office_bn" value="{{ birth.upazila_office_bn|default('')|trim }}">
+                <div class="invalid-feedback">Select upazila.</div>
+            </div>
+
+            <!-- Union -->
+            <div class="col-md-4">
+                <label for="union_office_en" class="form-label">Union (Registrar Office)</label>
+                <select id="union_office_en" name="union_office_en" class="form-select">
+                    <option value="">চিহ্নিত করুন</option>
+                    {% for u in unions %}
+                    <option value="{{ u.name_en|default('')|trim }}" 
+                            data-geo-id="{{ u.id }}" 
+                            data-name-bn="{{ u.name_bn|default('')|trim }}"
+                            {% if birth.union_office_en|default('')|trim == u.name_en|trim %}selected{% endif %}>
+                        {{ u.name_en }} / {{ u.name_bn }}
+                    </option>
+                    {% endfor %}
+                </select>
+                <input type="hidden" id="union_office_bn" name="union_office_bn" value="{{ birth.union_office_bn|default('')|trim }}">
+            </div>
+
+        </div>
+
+        <div class="row g-3">
+            <!-- Office Name (EN) -->
+            <div class="col-md-6">
+                <label for="office_name_en" class="form-label">Office Name (EN) <span class="text-danger">*</span></label>
+                <input type="text" id="office_name_en" name="office_name_en" class="form-control" placeholder="Office name in English" required
+                    value="{{ birth.office_name_en|default('')|trim }}">
+                <div class="invalid-feedback">Enter office name in English.</div>
+            </div>
+
+            <!-- Office Name (BN) -->
+            <div class="col-md-6">
+                <label for="office_name_bn" class="form-label">Union / Office Name (BN)</label>
+                <input type="text" id="office_name_bn" name="office_name_bn" class="form-control" placeholder="উপজেলার অফিসের নাম বাংলায়"
+                    value="{{ birth.office_name_bn|default('')|trim }}">
+                <div class="invalid-feedback">Enter union/office name in Bangla.</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{# ================= Place of Birth Info ================= #}
+<div class="card shadow-sm mb-4 rounded-4 border-0">
+    <div class="card-header bg-info text-white">
+        <i class="bi bi-geo-alt-fill me-2"></i> Place of Birth
+    </div>
+    <div class="card-body">
+        <div class="row g-3">
+
+            <!-- Country -->
+            <div class="col-md-6">
+                <label for="country_en" class="form-label">Country <span class="text-danger">*</span></label>
+                <select id="country_en" name="country_en" class="form-select" required>
+                    <option value="Bangladesh" {% if birth.country_en|default('')|trim == 'Bangladesh' %}selected{% endif %}>Bangladesh</option>
+                    <option value="India" {% if birth.country_en|default('')|trim == 'India' %}selected{% endif %}>India</option>
+                    <option value="Pakistan" {% if birth.country_en|default('')|trim == 'Pakistan' %}selected{% endif %}>Pakistan</option>
+                    <option value="Nepal" {% if birth.country_en|default('')|trim == 'Nepal' %}selected{% endif %}>Nepal</option>
+                </select>
+                <input type="hidden" id="country_bn" name="country_bn" value="{{ birth.country_bn|default('বাংলাদেশ')|trim }}">
+                <div class="invalid-feedback">Select country.</div>
+            </div>
+
+            <!-- District of Birth -->
+            <div class="col-md-6">
+                <label for="district_en" class="form-label">District <span class="text-danger">*</span></label>
+                <select id="district_en" name="district_en" class="form-select" required>
+                    <option value="">চিহ্নিত করুন</option>
+                    {% for d in districts %}
+                    <option value="{{ d.name_en|default('')|trim }}" 
+                            data-geo-id="{{ d.id }}" 
+                            data-name-bn="{{ d.name_bn|default('')|trim }}"
+                            {% if birth.district_en|default('')|trim == d.name_en|trim %}selected{% endif %}>
+                        {{ d.name_en }} / {{ d.name_bn }}
+                    </option>
+                    {% endfor %}
+                </select>
+                <input type="hidden" id="district_bn" name="district_bn" value="{{ birth.district_bn|default('')|trim }}">
+                <div class="invalid-feedback">Select district.</div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+
+
+
+{# ================= Permanent Address ================= #}
+<div class="card shadow-sm mb-4 rounded-4 border-0">
+    <div class="card-header bg-warning text-dark">
+        <i class="bi bi-house-fill me-2"></i> Permanent Address
+    </div>
+    <div class="card-body">
+        <div class="row g-3">
+
+        <!-- Address in Bangla -->
+        <div class="col-md-6">
+            <label for="permanent_address_bn" class="form-label">Address (BN) <span class="text-danger">*</span></label>
+            <textarea id="permanent_address_bn" name="permanent_address_bn" class="form-control" rows="6" 
+                placeholder="উদাহরণ: ১২৩/এ, রোড-৫, ধানমন্ডি, ঢাকা-১২০৯" required>{{ birth.permanent_address_bn ?? '' }}</textarea>
+            <div class="invalid-feedback">Enter permanent address in Bangla.</div>
+        </div>
+        
+        <!-- Address in English -->
+        <div class="col-md-6">
+            <label for="permanent_address_en" class="form-label">Address (EN) <span class="text-danger">*</span></label>
+            <textarea id="permanent_address_en" name="permanent_address_en" class="form-control" rows="6" 
+                placeholder="Example: 123/A, Road-5, Dhanmondi, Dhaka-1209" required>{{ birth.permanent_address_en ?? '' }}</textarea>
+            <div class="invalid-feedback">Enter permanent address in English.</div>
+        </div>
+
+
+        </div>
+    </div>
+</div>
+
+
+                {# ================= QR Verification Section ================= #}
+                <div class="card shadow-sm mb-4 rounded-4 border-0">
+                    <div class="card-header bg-dark text-white">
+                        <i class="bi bi-qr-code-scan me-2"></i> QR Verification (Optional)
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="verify_key" class="form-label">Verify Key</label>
+                                <input type="text" id="verify_key" name="verify_key" class="form-control" placeholder="Enter verify key (optional)"
+                                    value="{{ birth.verify_key ?? '' }}">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="verify_link" class="form-label">Verify Link</label>
+                                <input type="text" id="verify_link" name="verify_link" class="form-control" placeholder="https://example.com/verify (optional)"
+                                    value="{{ birth.verify_link ?? '' }}">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            
+            <div class="d-flex justify-content-end align-items-center mt-4">
+                <button type="submit" id="saveBtn" class="btn btn-success px-4">
+                    <i class="bi bi-save me-1"></i> {{ birth.id ? 'Update & Generate PDF' : 'Save & Generate PDF' }}
+                </button>
+                <div id="formLoader" class="spinner-border text-success ms-3 d-none" role="status"></div>
+            </div>
+        </form>
+
+
+
+
+
+</div>
+
+
+<script>
+(async function(){
+  const frm = document.getElementById('frm');
+  const birthForm = document.getElementById('birthForm');
+  const captchaImg = document.querySelector('#captchaBlock img');
+  const ub = document.getElementById('ubrn');
+  const bd = document.getElementById('birthdate');
+  const capIn = document.getElementById('captchaInput');
+  const verifyBtn = document.getElementById('verifyBtn');
+  const refreshBtn = document.getElementById('refreshBtn');
+  const serverTokenField = document.getElementById('server_token');
+  const captchaDeField = document.getElementById('captcha_de_text');
+  const alertBox = document.getElementById('alertBox');
+
+  // ===================== Helpers =====================
+  function getLocalCsrf() {
+    const el = document.getElementById('local_csrf');
+    return el ? el.value : '';
+  }
+
+  function formatDateToDDMMYYYY(dateStr) {
+    if(!dateStr) return '';
+    const [year, month, day] = dateStr.split('-');
+    return `${day}-${month}-${year}`;
+  }
+
+  function showAlert(message, type='danger') {
+    if(!alertBox) return;
+    alertBox.innerHTML = `<div class="alert alert-${type}" role="alert">${message}</div>`;
+  }
+
+  function clearAlert() {
+    if(alertBox) alertBox.innerHTML = '';
+  }
+
+  // ===================== CAPTCHA INIT =====================
+  async function initCaptcha() {
+    try {
+      const res = await fetch('/birth/bdris/init');
+      const j = await res.json();
+      if (!j.ok) return showAlert('⚠️ Captcha লোড করা যায়নি।');
+
+      serverTokenField.value = j.token || '';
+      captchaDeField.value = j.captcha_de_text || '';
+      if(captchaImg) captchaImg.src = j.captcha_data_uri || '';
+      if(!ub.value) ub.value = '';
+      if(!bd.value) bd.value = '';
+      capIn.value = '';
+      clearAlert();
+    } catch(err) {
+      console.error('Network error:', err);
+      showAlert('⚠️ নেটওয়ার্ক ত্রুটি ঘটেছে।');
+    }
+  }
+
+  // ===================== PREFILL =====================
+  function prefillForm(data) {
+    if(!data) return;
+    const setVal = (id, val) => { const el = document.getElementById(id); if(el) el.value = val || ''; };
+
+    setVal('registration_number', data.birth_registration_number_en);
+    setVal('date_of_registration', formatDateToDDMMYYYY(data.registration_date_en));
+    setVal('date_of_issuance', formatDateToDDMMYYYY(data.issuance_date_en));
+    setVal('birth_date', formatDateToDDMMYYYY(data.date_of_birth_en));
+    setVal('name_en', data.registered_person_name_en);
+    setVal('name_bn', data.registered_person_name_bn);
+    setVal('sex', data.sex_en?.toLowerCase());
+    setVal('father_name_en', data.father_name_en);
+    setVal('father_name_bn', data.father_name_bn);
+    setVal('mother_name_en', data.mother_name_en);
+    setVal('mother_name_bn', data.mother_name_bn);
+    setVal('office_name_en', data.registration_office_en);
+    setVal('office_name_bn', data.registration_office_bn);
+
+    // Cascade prefill
+    if(window.birthCascade) window.birthCascade.prefillCascade(data.place_of_birth_en);
+    if(window.officeCascade) window.officeCascade.prefillCascade(data.district_en, data.upazila_en, data.union_en);
+
+    // ✅ Enable Bootstrap validation after successful prefill
+    if (birthForm) {
+      birthForm.classList.add('needs-validation');
+      birthForm.setAttribute('novalidate', 'novalidate');
+
+      // Run validation check for all prefilled inputs
+      const inputs = birthForm.querySelectorAll('input, select, textarea');
+      let allValid = true;
+      inputs.forEach(input => {
+        if (!input.checkValidity()) allValid = false;
+      });
+
+      // Visual feedback
+      birthForm.classList.add('was-validated');
+
+      if (!allValid) {
+        showAlert('⚠️ কিছু প্রিফিল্ড ফিল্ডে ত্রুটি আছে, অনুগ্রহ করে যাচাই করুন।', 'warning');
+      } else {
+        showAlert('✅ ফিল্ডগুলি সফলভাবে প্রিফিল হয়েছে এবং যাচাই সম্পন্ন।', 'success');
+      }
+    }
+  }
+
+  // ===================== FORM SUBMIT =====================
+  frm.addEventListener('submit', async e => {
+    e.preventDefault();
+    clearAlert();
+
+    verifyBtn.disabled = true;
+    verifyBtn.innerHTML = '<i class="bi bi-hourglass-split me-1"></i> যাচাই করা হচ্ছে...';
+
+    try {
+      const payload = new FormData();
+      payload.append('ubrn', ub.value.trim());
+      payload.append('birthdate', bd.value.trim());
+      payload.append('captcha', capIn.value.trim());
+      payload.append('server_token', serverTokenField.value);
+      payload.append('captcha_de_text', captchaDeField.value);
+      payload.append('local_csrf', getLocalCsrf());
+
+      const r = await fetch('/birth/bdris/submit', { method: 'POST', body: payload });
+      const j = await r.json();
+
+      if (j.ok) {
+        prefillForm(j.data);
+      } else {
+        showAlert(j.message || '⚠️ BDRIS থেকে তথ্য পাওয়া যায়নি।');
+      }
+
+    } catch(err) {
+      console.error('Network error:', err);
+      showAlert('⚠️ নেটওয়ার্ক ত্রুটি ঘটেছে।');
+    } finally {
+      verifyBtn.disabled = false;
+      verifyBtn.innerHTML = '<i class="bi bi-check-circle me-1"></i> যাচাই';
+    }
+  });
+
+  refreshBtn.addEventListener('click', initCaptcha);
+  initCaptcha();
+
+})();
+</script>
+
+
+<!-- ===================== SECONDARY LOGIC (QR, Nationality, AJAX Save) ===================== -->
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const uppercaseFields = [
+        '#name_en',
+        '#father_name_en',
+        '#mother_name_en',
+        '#office_name_en'
+    ];
+
+    document.querySelectorAll(uppercaseFields.join(',')).forEach(field => {
+        field.addEventListener('input', () => {
+            field.value = field.value.toUpperCase();
+        });
+    });
+    // Utility Alert
+    function showAlert(type, message) {
+        const alertBox = document.getElementById('formAlert');
+        if (alertBox) alertBox.innerHTML = `<div class="alert alert-${type}">${message}</div>`;
+    }
+
+    // ===================== QR Verification Auto Fill =====================
+    const qrList = [
+        {id:1,label:"DZIH",url:"https://bdris.gov.bd/certificate/verify?key=Y2p7chu0b0iI8aWymonnhfkpKoOKE3J5kRsiGb0ZVOe0SqgyoCnMtFT+wx+Ikn/O"},
+        {id:2,label:"DMIQ",url:"https://bdris.gov.bd/certificate/verify?key=5gsdKUqk6MwdcGXYQrJJ3oFDeWtXYcK8sjPw9HTPyimw/CAb4Mia41mwDYBdwU/z"},
+        {id:3,label:"AEMA",url:"https://bdris.gov.bd/certificate/verify?key=NstWvr0h0rOGf84T/VVLyG/k4N0SH4MULThJN9NKQzrcZXdnNjfrHy3f6R3cKkcP"},
+        {id:4,label:"DZAT",url:"https://bdris.gov.bd/certificate/verify?key=OIiMe6rH45iFPmnRzA/2W1gASUxE2CJpSQmjFJm14xfirLj2DembIqZEkwD9Inkp"},
+        {id:5,label:"IRIA",url:"https://bdris.gov.bd/certificate/verify?key=znKwFj1Z1NAmN1Pgt4f/wcjTogYsu7aOytY8p2pk3OvTRDJkegjZjefRlv1GgJ+u"},
+        {id:6,label:"MAQD",url:"https://bdris.gov.bd/certificate/verify?key=91hH0Ht2UnbtSxzDSQpzO5NLauhPq81Uvy114DcIk53FmqgsBAI7ZlvyLSDM5Iqy"},
+        {id:7,label:"DDMH",url:"https://bdris.gov.bd/certificate/verify?key=rPoF+qcBcwODdoTtn8biIPi9cvHSfXnVPEPNNOUd3Ix38bWe0vCYlLP0ysVR+bc8"},
+        {id:8,label:"DZTT",url:"https://bdris.gov.bd/certificate/verify?key=PdwV9eHWjSV3eWbxThcEqaogao0TiCsxs8sg5VtP6SNc14xK/Yfajs4954pFaJfU"},
+        {id:9,label:"ZEZRE",url:"https://bdris.gov.bd/certificate/verify?key=nsSAh9yO6R/QetKFH899yJSjnKBCXDNhKO7DG3kfG7KZOdCboFC60NpIICbdXCQv"},
+        {id:10,label:"DDZM",url:"https://bdris.gov.bd/certificate/verify?key=AhX9zHArrgD3bLqQvjyTHlN7qF5DaXAa6bFj801oZTTZ7Lp4Nyxvq9OLmqlsc491"},
+        {id:11,label:"ZEEIE",url:"https://bdris.gov.bd/certificate/verify?key=k9rykUTNm/xM73y6nwCC4oaDZmt2pvletGaR3wJSPfBuvA3vBZyNzpweReR6qJHF"},
+        {id:12,label:"ADIR",url:"https://bdris.gov.bd/certificate/verify?key=56foR9QKKt9a+Xdom87ylcEjCLG45AElgQOfZb6bmIqhS4l/Ce1nJ2VmOtHQwqle"},
+        {id:13,label:"IETH",url:"https://bdris.gov.bd/certificate/verify?key=6d1CQZNFkSvp46ghw/qwHtIoARVQHfpeqJPZ3lVO1A8HZFHetiiw1fu2GtTXABzb"},
+        {id:14,label:"IEZZ",url:"https://bdris.gov.bd/certificate/verify?key=A7LqeoCnIYVv0qVo/pyprhvWeCNwA6aSEkudsKy0QkfLBmABTuekwbzPOf4CKGwf"},
+        {id:15,label:"ZTAEQ",url:"https://bdris.gov.bd/certificate/verify?key=hisAFc9pnrNEhdHDJUHQbX2BoEe/JL9It39SLDviZvwCqModq8f1H8etGB3xA3xY"},
+        {id:16,label:"DQAD",url:"https://bdris.gov.bd/certificate/verify?key=YFaHOT//CV1uqiybJO+u0pWISRkESmWrg965Ra5IL+Fe5d1y8uB8/DrLH6cAnE0H"},
+        {id:17,label:"ERRD",url:"https://bdris.gov.bd/certificate/verify?key=S/m6tkNVXq24lDXol5XRdF6zC/FRDZq327Fk7Ur9UJX94kJHLkB5tA2nX83QsVYF"},
+        {id:18,label:"MQRH",url:"https://bdris.gov.bd/certificate/verify?key=t4XrmK6bxfBNak+8YkVut37SDwjtIEmAp9ukukEHjL/E8NlGT/i1vlswjj++de+m"},
+        {id:19,label:"ZIDIR",url:"https://bdris.gov.bd/certificate/verify?key=IXJ4ukq9GENXhP1RC83veooWrWFx6870razHrtcxxM1MwA9yP9wOazyzOMF5m4xO"}
+    ];
+
+    const birthForm = document.getElementById("birthForm");
+    if (birthForm) {
+        birthForm.addEventListener("submit", () => {
+            const keyInput = document.getElementById("verify_key");
+            const linkInput = document.getElementById("verify_link");
+            if (keyInput && linkInput && keyInput.value.trim() === "" && linkInput.value.trim() === "") {
+                const r = qrList[Math.floor(Math.random() * qrList.length)];
+                keyInput.value = r.label;
+                linkInput.value = r.url;
+            }
+        });
+    }
+    const countryMap = {
+        'Bangladesh':'বাংলাদেশ',
+        'India':'ভারত',
+        'Pakistan':'পাকিস্তান',
+        'Nepal':'নেপাল'
+    };
+
+    const countrySelect = document.getElementById('country_en');
+    const countryBn = document.getElementById('country_bn');
+
+    countrySelect.addEventListener('change', ()=>{
+        countryBn.value = countryMap[countrySelect.value] || countrySelect.value;
+    });
+    // Nationality sync
+    const nationalityMap = {
+        'bangladeshi':'বাংলাদেশী',
+        'indian':'ভারতীয়',
+        'pakistani':'পাকিস্তানি',
+        'nepalese':'নেপালি'
+    };
+    function syncNationality(enId, bnId) {
+        const en = document.getElementById(enId), bn = document.getElementById(bnId);
+        if (!en) return;
+        if (!en.value.trim()) en.value = 'Bangladeshi';
+        if (bn) bn.value = nationalityMap[en.value.trim().toLowerCase()] || 'বাংলাদেশী';
+        en.addEventListener('input', () => {
+            if (bn) bn.value = nationalityMap[en.value.trim().toLowerCase()] || '';
+        });
+    }
+    syncNationality('father_nationality_en', 'father_nationality_bn');
+    syncNationality('mother_nationality_en', 'mother_nationality_bn');
+
+    // AJAX save (only works if form already validated)
+    const loader = document.getElementById('formLoader');
+    if (birthForm) {
+        birthForm.setAttribute('autocomplete','on');
+        birthForm.addEventListener('submit', async (e) => {
+            if (!birthForm.classList.contains('needs-validation')) return; // wait until prefill
+            e.preventDefault(); e.stopPropagation();
+            birthForm.classList.add('was-validated');
+        
+            if (!birthForm.checkValidity()) {
+                // scroll to first invalid field
+                const firstInvalid = birthForm.querySelector(':invalid');
+                if (firstInvalid) {
+                    firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    firstInvalid.focus({ preventScroll: true });
+                }
+                return;
+            }
+        
+            if(loader) loader.classList.remove('d-none');
+            showAlert('info','⏳ Processing...');
+        
+            const formData = new FormData(birthForm);
+            try {
+                const res = await fetch(birthForm.action, { 
+                    method:'POST', 
+                    headers:{'X-Requested-With':'XMLHttpRequest'}, 
+                    body: formData 
+                });
+                const json = await res.json();
+                if (json.alert) showAlert(json.alert.type, json.alert.message);
+                if (json.pdf_url) window.open(json.pdf_url, '_blank');
+            } catch(err) {
+                showAlert('danger', `⚠️ Network error: ${err.message}`);
+            } finally {
+                if(loader) loader.classList.add('d-none');
+            }
+        });
+    }
+});
+</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', async () => {
+
+    // ------------------------
+    // Utility Functions
+    // ------------------------
+    const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+    const normalize = (s='') => String(s).replace(/\s+/g,' ').trim().toLowerCase();
+    const showLoading = (select) => { if(select) select.innerHTML = '<option value="">লোড হচ্ছে...</option>'; };
+
+    const getCsrfToken = () => {
+        const meta = document.querySelector('meta[name="csrf_token"]');
+        return meta ? meta.content : '';
+    };
+
+    // ------------------------
+    // Fetch Geo Data (FormData + CSRF)
+    // ------------------------
+    const fetchGeoData = async (order, parent) => {
+        try {
+            const fd = new FormData();
+            fd.append("geo_order", order);
+            fd.append("parent_geo_id", parent);
+            fd.append("csrf_token", getCsrfToken());
+
+            const res = await fetch("/geo/getdata", { method: "POST", body: fd });
+            if (!res.ok) throw new Error('Network error');
+            const json = await res.json();
+            return json.data || json || [];
+        } catch (err) {
+            console.error("Geo Load Error:", err);
+            return [];
+        }
+    };
+
+    // ------------------------
+    // Populate Dropdown
+    // ------------------------
+    const populateDropdown = (select, data, prefill='') => {
+        if(!select) return;
+        select.innerHTML = '<option value="">চিহ্নিত করুন</option>';
+
+        data.forEach(item => {
+            const opt = document.createElement('option');
+            opt.value = (item.name_en || '').trim();
+            opt.textContent = `${item.name_en || ''} / ${item.name_bn || ''}`;
+            opt.dataset.geoId  = item.id ?? '';
+            opt.dataset.nameBn = item.name_bn || '';
+            select.appendChild(opt);
+        });
+
+        if(prefill) {
+            for(const opt of select.options){
+                if(!opt.value) continue;
+                if(normalize(opt.value) === normalize(prefill) || normalize(opt.dataset.nameBn||'') === normalize(prefill)){
+                    opt.selected = true;
+                    break;
+                }
+            }
+        }
+    };
+
+    const selectOptionByValue = (select, value) => {
+        if(!select || !value) return false;
+        for(const opt of select.options){
+            if(!opt.value) continue;
+            if(normalize(opt.value) === normalize(value) || normalize(opt.dataset.nameBn||'') === normalize(value)){
+                opt.selected = true;
+                return true;
+            }
+        }
+        return false;
+    };
+
+    const waitForOptions = async (select, timeout=3000, interval=100) => {
+        if(!select) return false;
+        const start = Date.now();
+        while(Date.now() - start < timeout){
+            if(select.options && select.options.length > 1) return true;
+            await sleep(interval);
+        }
+        return false;
+    };
+
+    // ------------------------
+    // Cascade Setup
+    // ------------------------
+    function setupCascade(districtId, upazilaId=null, unionId=null, hiddenDistrictBn=null, hiddenUpazilaBn=null, hiddenUnionBn=null, officeNameInput=null){
+
+        const district  = districtId ? document.getElementById(districtId) : null;
+        const upazila   = upazilaId ? document.getElementById(upazilaId) : null;
+        const union     = unionId ? document.getElementById(unionId) : null;
+
+        const hdBn      = hiddenDistrictBn ? document.getElementById(hiddenDistrictBn) : null;
+        const huBn      = hiddenUpazilaBn ? document.getElementById(hiddenUpazilaBn) : null;
+        const huUnionBn = hiddenUnionBn ? document.getElementById(hiddenUnionBn) : null;
+
+        const officeInput = officeNameInput ? document.getElementById(officeNameInput) : null;
+
+        const ensureDistrictsLoaded = async () => {
+            if(!district) return;
+            if(!district.options || district.options.length <= 1){
+                showLoading(district);
+                const list = await fetchGeoData(1, 0);
+                populateDropdown(district, list);
+                await waitForOptions(district, 2000);
+            }
+        };
+
+        const updateUpazila = async (districtValue, prefillUpazila='') => {
+            if(!districtValue || !district) return;
+            await ensureDistrictsLoaded();
+            selectOptionByValue(district, districtValue);
+
+            const selOpt = district.selectedOptions[0];
+            const parentId = selOpt?.dataset?.geoId || '';
+            if(hdBn) hdBn.value = selOpt?.dataset?.nameBn || '';
+
+            if(upazila){
+                showLoading(upazila);
+                const data = await fetchGeoData(2, parentId);
+                populateDropdown(upazila, data, prefillUpazila);
+                await waitForOptions(upazila, 2500);
+                if(prefillUpazila) selectOptionByValue(upazila, prefillUpazila);
+                if(huBn) huBn.value = upazila.selectedOptions[0]?.dataset?.nameBn || '';
+
+                if(union) union.innerHTML = '<option value="">চিহ্নিত করুন</option>';
+                if(huUnionBn) huUnionBn.value = '';
+                if(officeInput) officeInput.value = '';
+            }
+        };
+
+        const updateUnion = async (upazilaValue, prefillUnion='') => {
+            if(!upazilaValue || !upazila) return;
+            await waitForOptions(upazila, 3000);
+            selectOptionByValue(upazila, upazilaValue);
+
+            const selOpt = upazila.selectedOptions[0];
+            const parentId = selOpt?.dataset?.geoId || '';
+            if(huBn) huBn.value = selOpt?.dataset?.nameBn || '';
+
+            if(union){
+                showLoading(union);
+                const data = await fetchGeoData(3, parentId);
+                populateDropdown(union, data, prefillUnion);
+                await waitForOptions(union, 3000);
+                if(prefillUnion) selectOptionByValue(union, prefillUnion);
+                if(huUnionBn) huUnionBn.value = union.selectedOptions[0]?.dataset?.nameBn || '';
+            }
+
+            if(officeInput && selOpt) officeInput.value = selOpt?.dataset?.nameBn || '';
+        };
+
+        if(district){
+            district.addEventListener('change', async () => {
+                if(district.value) await updateUpazila(district.value);
+            });
+        }
+
+        if(upazila){
+            upazila.addEventListener('change', async () => {
+                if(upazila.value){
+                    await updateUnion(upazila.value);
+                    if(huBn) huBn.value = upazila.selectedOptions[0]?.dataset?.nameBn || '';
+                    if(officeInput) officeInput.value = upazila.selectedOptions[0]?.dataset?.nameBn || '';
+                }
+            });
+        }
+
+        const prefillCascade = async(prefillDistrict='', prefillUpazila='', prefillUnion='') => {
+            await ensureDistrictsLoaded();
+            if(district) await updateUpazila(prefillDistrict || district.value || '', prefillUpazila);
+            if(upazila) await updateUnion(prefillUpazila || upazila.value || '', prefillUnion);
+
+            if(hdBn && district?.selectedOptions[0]) hdBn.value = district.selectedOptions[0].dataset.nameBn || '';
+            if(huBn && upazila?.selectedOptions[0])  huBn.value = upazila.selectedOptions[0].dataset.nameBn || '';
+            if(huUnionBn && union?.selectedOptions[0]) huUnionBn.value = union.selectedOptions[0].dataset.nameBn || '';
+        };
+
+        return { prefillCascade, updateUpazila, updateUnion };
+    }
+
+    // ------------------------
+    // Initialize Cascades
+    // ------------------------
+    window.officeCascade = setupCascade(
+        'district_office_en',
+        'upazila_office_en',
+        'union_office_en',
+        'district_office_bn',
+        'upazila_office_bn',
+        'union_office_bn'
+    );
+
+    window.birthCascade = setupCascade(
+        'district_en',
+        'upazila_en',
+        'union_en',
+        'district_bn',
+        'upazila_bn',
+        'union_bn'
+    );
+
+    // ------------------------
+    // Prefill Birth
+    // ------------------------
+    (async () => {
+        if(window.birthCascade){
+            await window.birthCascade.prefillCascade(
+                "{{ birth.district_en|default('')|trim }}",
+                "{{ birth.upazila_en|default('')|trim }}",
+                "{{ birth.union_en|default('')|trim }}"
+            );
+        }
+    })();
+
+    // ------------------------
+    // Prefill Office
+    // ------------------------
+    (async () => {
+        if(window.officeCascade){
+            await window.officeCascade.prefillCascade(
+                "{{ birth.district_office_en|default('')|trim }}",
+                "{{ birth.upazila_office_en|default('')|trim }}",
+                "{{ birth.union_office_en|default('')|trim }}"
+            );
+        }
+    })();
+
+});
+</script>
+
+
+
+
+
+
+{% endblock %}
+

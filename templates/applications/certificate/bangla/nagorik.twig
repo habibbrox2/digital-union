@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ data.sonod_number }}</title>
+<link href="https://fonts.maateen.me/solaiman-lipi/font.css" rel="stylesheet">
+<link rel="stylesheet" href="{{ url }}/assets/css/sonod.css">
+
+</head>
+<body>
+
+    
+
+    <div class="content-wrapper">
+        <div class="content">
+
+        <br>
+
+            <!-- Header -->
+            <table class="header-table" border="0" width="98%" align="center" style="border-collapse: collapse;">
+                <tr>
+                    <td>
+                        <img src="{{ url }}/assets/logo/logo.png" alt="Logo" class="logo" height="60pt" width="60pt">
+                    </td>
+                    <td>
+                    <div class="gov-info">
+                        <div class="gov-title" style="font-size: 9pt; color: red;">গণপ্রজাতন্ত্রী বাংলাদেশ সরকার</div>
+                        <div class="union-name" style="font-size: 19.5pt; color: #3c01c5; font-weight: bold; padding: 3.75pt 0;">{{ union.union_name_bn }}</div>
+                        <div class="union-address" style="font-size: 12pt; color: black; line-height: 1.5;">
+                            {{ union.upazila_name_bn }},{{ union.district_name_bn }}-{{ union.postcode|bn }}<br>
+                            ই-মেইলঃ {{ union.email }}<br>
+                            ওয়েব সাইটঃ {{ union.website }}
+                        </div>
+                    </div>
+
+                    </td>
+                    <td>
+                     <img src="{{ url }}/assets/img/band-cross.png" alt="X" class="logo" height="60pt" width="60pt">
+                    </td>
+                </tr>
+            </table>
+
+            <!-- Citizen Certificate Section -->
+            <table style="width:100%; border-color:lightgray; border-collapse:collapse; margin-top: 4.5pt;" cellpadding="0" cellspacing="0">
+                <tr>
+                    <td colspan="2" style="text-align:center; font-size:13.5pt; font-weight:bold; padding-bottom: 3.75pt">
+                        <u>{{ certificate_type_bn }}</u>
+                    </td>
+                </tr>
+                <tr>
+                    <td style="width: 75%;">
+                        <table border="1" style="width: 450pt; border-color:lightgray; border-collapse:collapse;" cellpadding="0" cellspacing="0">
+                            <tr>
+                                <td style="width:75pt; text-align:center; font-size:10.5pt;">সনদ নংঃ</td>
+                                {% set sonod_number_bn = data.sonod_number | bn_number %}
+                                {% for digit in sonod_number_bn | split('') %}
+                                    <td style="text-align:center; font-size:13.5pt; padding: 4.5pt; border: 0.75pt solid black;">{{ digit }}</td>
+                                {% endfor %}
+                            </tr>
+                        </table>
+
+                    </td>
+                    <td style="width: 25%; padding: 4.5pt; font-size: 12pt;">
+                     তারিখঃ {{ data.issue_date|date('d-m-Y')|bn }}
+                    </td>
+                </tr>
+            </table>
+
+            <table style="width:100%; border-color:lightgray; border-collapse:collapse; margin-top:7.5pt;" cellpadding="0" cellspacing="0">
+                <tr>
+                    <td colspan="2" style="text-indent:37.5pt; padding-top: 3.75pt; padding-bottom: 3.75pt; font-size: 12pt;">
+                       &nbsp; &nbsp;&nbsp; &nbsp; এই মর্মে প্রত্যয়ন পত্র প্রদান করা যাইতেছে যে,
+                    </td>
+                </tr>
+            </table>
+
+
+
+            <!-- Citizen Information Section -->
+            <table align="center" border="0" height="285pt" width="100%" cellspacing="0" style="border-collapse:collapse; margin:0 auto; table-layout:fixed;">
+
+
+                <tr class="citizen-info" style="font-size: 12pt;">
+                    
+                    <td>নাম</td>
+                    <td>: {{ data.name_bn }}</td>
+                    <td rowspan="4" valign="top" style="text-align: center; z-index: 10;">
+                        {% if data.applicant_photo %}
+                            <img src="{{ url }}/{{ data.applicant_photo }}" height="75pt" width="75pt" alt="profile"
+                                 style="overflow: hidden; z-index: 10; border-radius: 3.75pt; display: block; margin: 0 auto;" />
+                        {% endif %}
+                    </td>
+                </tr>
+                <tr class="citizen-info" style="font-size: 12pt;">
+                    <td>পিতার নাম</td>
+                    <td>: {{ data.father_name_bn  }}</td>
+                </tr>
+                <tr class="citizen-info" style="font-size: 12pt;">
+                    <td>মাতার নাম</td>
+                    <td>: {{ data.mother_name_bn }}</td>
+                </tr>
+                        {% if data.marital_status == 'Married' %}
+                        <tr class="citizen-info" style="font-size: 12pt;">
+                            <td>স্বামী/স্ত্রীর নাম</td>
+                            <td>: {{ data.spouse_name_bn | default('N/A') }}</td>
+                        </tr>
+                        {% endif %}
+                                     
+
+<tr class="citizen-info" style="font-size: 12pt;">
+    <td rowspan="2" valign="top">বর্তমান ঠিকানা</td>
+    <td style="white-space: pre-line;" valign="top">:
+        {% set line1 = [] %}
+        {% if data.present_village_bn %}
+            {% set line1 = line1|merge(['গ্রাম/মহল্লাঃ ' ~ data.present_village_bn]) %}
+        {% endif %}
+        {% if data.present_rbs_bn %}
+            {% set line1 = line1|merge(['রাস্তা/ব্লক/সেক্টরঃ ' ~ data.present_rbs_bn]) %}
+        {% endif %}
+
+        {{ line1|join(', ') }},
+    </td>
+</tr>
+
+<tr class="citizen-info" style="font-size: 12pt;">
+    <td style="white-space: pre-line;" valign="top"> &nbsp;
+        {% set line2 = [] %}
+        {% if data.present_postoffice_bn %}
+            {% set line2 = line2|merge(['পোস্ট অফিসঃ ' ~ data.present_postoffice_bn]) %}
+        {% endif %}
+        {% if data.present_upazila_bn %}
+            {% set line2 = line2|merge(['উপজেলাঃ ' ~ data.present_upazila_bn]) %}
+        {% endif %}
+        {% if data.present_district_bn %}
+            {% set line2 = line2|merge(['জেলাঃ ' ~ data.present_district_bn]) %}
+        {% endif %}
+
+        {{ line2|join(', ') }}।
+    </td>
+</tr>
+
+
+<tr class="citizen-info" style="font-size: 12pt;">
+    <td rowspan="2" valign="top">স্থায়ী ঠিকানা</td>
+    <td style="white-space: pre-line;" valign="top">:
+        {% set p1 = [] %}
+        {% if data.permanent_village_bn %}
+            {% set p1 = p1|merge(['গ্রাম/মহল্লাঃ ' ~ data.permanent_village_bn]) %}
+        {% endif %}
+        {% if data.permanent_rbs_bn %}
+            {% set p1 = p1|merge(['রাস্তা/ব্লক/সেক্টরঃ ' ~ data.permanent_rbs_bn]) %}
+        {% endif %}
+
+        {{ p1|join(', ') }},
+    </td>
+</tr>
+
+<tr class="citizen-info" style="font-size: 12pt;">
+    <td style="white-space: pre-line;" valign="top"> &nbsp;
+        {% set p2 = [] %}
+        {% if data.permanent_postoffice_bn %}
+            {% set p2 = p2|merge(['পোস্ট অফিসঃ ' ~ data.permanent_postoffice_bn]) %}
+        {% endif %}
+        {% if data.permanent_upazila_bn %}
+            {% set p2 = p2|merge(['উপজেলাঃ ' ~ data.permanent_upazila_bn]) %}
+        {% endif %}
+        {% if data.permanent_district_bn %}
+            {% set p2 = p2|merge(['জেলাঃ ' ~ data.permanent_district_bn]) %}
+        {% endif %}
+
+        {{ p2|join(', ') }}।
+    </td>
+</tr>
+
+
+
+
+                
+               {% if data.birth_id or data.nid or data.passport_no %}
+                <tr class="citizen-info" style="font-size: 12pt;">
+                    <td>
+                        {% if data.birth_id %}
+                            জন্ম নিবন্ধন নং
+                        {% elseif data.nid %}
+                            ন্যাশনাল আইডি নং
+                        {% else %}
+                            পার্সপোট নং
+                        {% endif %}
+                    </td>
+                    <td>:
+                        {% if data.birth_id %}
+                            {{ data.birth_id | bn_number }}
+                        {% elseif data.nid %}
+                            {{ data.nid | bn_number }}
+                        {% elseif data.passport_no %}
+                            {{ data.passport_no | bn_number }}
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endif %}
+
+                <tr class="citizen-info" style="font-size: 12pt;">
+                   <td>ধর্ম</td>
+                    <td>: 
+                        {% set translations = {
+                            'Islam': 'ইসলাম',
+                            'Hinduism': 'হিন্দুধর্ম',
+                            'Christianity': 'খ্রিস্টধর্ম',
+                            'Buddhism': 'বৌদ্ধধর্ম',
+                            'Other': 'অন্যান্য'
+                        } %}
+
+                        {{ translations[data.religion] | default(data.religion) }}
+                    </td>
+
+                </tr>
+                <tr class="citizen-info" style="font-size: 12pt;">
+                    <td>ওয়ার্ড নং</td>
+                    <td>: {{ data.permanent_ward_no | bn_number }}</td>
+                </tr>
+                {% if data.applicant_phone %}
+                <tr class="citizen-info" style="font-size: 12pt;">
+                    <td>মোবাইল </td>
+                    <td>: {{ data.applicant_phone | bn }}</td>
+                </tr>
+                {% endif %}
+
+                <tr class="citizen-info" style="font-size: 12pt;">
+                    <td>জন্ম তারিখ</td>
+                    <td>: {{ data.birth_date | date('d-m-Y') | bn }}</td>
+                </tr>
+                
+            </table>
+
+            <!-- Additional Information Table -->
+            <table style="width:100%; border-collapse:collapse; margin:0 auto; padding:0;">
+                {% if approval.verifier_name_bn %}
+                    <tr>
+                        <td style="padding: 15pt; line-height: 1.8; white-space: normal; text-wrap: break-word; text-align: left; font-size: 12pt;">
+                            &nbsp;&nbsp;&nbsp;&nbsp;
+                            অত্র ইউনিয়নের ওয়ার্ড সদস্য {{ approval.verifier_name_bn }} এর প্রদত্ত তথ্যের ভিত্তিতে এই সনদ প্রদান করা হলো।
+                            এখানে উল্লেখ্য যে, আবেদনপত্রে আবেদনকারী কর্তৃক কোনো তথ্য ভুল প্রদান করা হলে, সনদটি বাতিল বলে গণ্য হবে।
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td style="padding: 7.5pt; line-height: 1.8; font-size: 12pt;">
+                            &nbsp;&nbsp;&nbsp;&nbsp; অত্র ইউনিয়নের একজন স্থায়ী বাসিন্দা। তিনি জন্মগতভাবে বাংলাদেশের নাগরিক।
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 7.5pt; line-height: 1.8; font-size: 12pt;">
+                            &nbsp;&nbsp;&nbsp;&nbsp; আমি তাহার সর্বাঙ্গীণ মঙ্গল ও উন্নতি কামনা করি।
+                        </td>
+                    </tr>
+                {% endif %}
+            </table>
+
+            <!-- Signature Table -->
+            <table style="width:100%; border-collapse:collapse; margin-top: 37.5pt;">
+                <tr>
+                {% if approval.verifier_name %}
+                    <td style="text-align: center; padding-right: 15pt; width: 50%; font-size: 12pt;">
+                        <div style="border-top: 0.75pt solid #000; display: inline-block; padding-top: 3.75pt;">
+                            ইউপি সদস্য
+                        </div>
+                    </td>
+                {% endif %}
+                    <td style="text-align: right; padding-right: 90pt; width: 50%; font-size: 12pt;">
+                        <div style="border-top: 0.75pt solid #000; display: inline-block; padding-top: 3.75pt;">
+                            চেয়ারম্যান স্বাক্ষর
+                        </div>
+                    </td>
+                </tr>
+            </table>
+
+
+
+            <!-- Instructions Section -->
+            <table class="instructions">
+                <tr>
+                    <td style="border-right:0.75pt solid black; border-top:0.75pt solid black; text-align:center;">
+                        <img src="https://quickchart.io/qr?text={{ url }}/verify/nagorik_bn/{{ data.sonod_number }}/{{ union.union_code }}/1&margin=1&size=300" height="82.5pt" width="82.5pt" style="padding:11.25pt;">
+                    </td>
+                    <td style="padding-left:22.5pt; border-bottom:0.75pt solid black; font-size: 10.5pt;">
+                        নির্দেশাবলীঃ <br />
+                        ১) সার্টিফিকেট টি ১৭ ডিজিটের সনদ নাম্বার দিয়ে ওয়েবসাইট ({{ union.website }}) থেকে যাচাই করুন অথবা Play Store থেকে "স্মার্ট ইউপি, ঢাকা" Apps টি install করে QR code টি Scan করুন।<br />
+                        ২) যে কোন ধরনের তথ্য নেয়ার জন্য ফোন করুন অথবা ইমেইল করুন।
+                    </td>
+                </tr>
+                <tr>
+                    <td style="width: 25%; text-align:center;">
+                        <font style="font-size:6pt;">Developed by Innovation IT</font><br/>
+                        <font style="font-size:6pt;">www.innovationit.com.bd</font>
+                    </td>
+                    <td style="width: 75%; text-align:center;">
+                        <font style="font-size:6pt;">{{ union.website }}- {{ union.email }}</font>
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </div>
+</body>
+</html>

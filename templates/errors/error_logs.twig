@@ -1,0 +1,118 @@
+{% extends "layout.twig" %}
+
+{% block title %}Error Logs{% endblock %}
+
+{% block content %}
+{% include 'components/sweetAlert.twig' %}
+<div class="container my-5">
+    <h2 class="mb-4 text-info d-flex align-items-center gap-2">
+        ⚡ Error Log Viewer
+        <small class="text-muted">(Superadmin Only)</small>
+    </h2>
+
+    {% if cleared %}
+        <div class="alert alert-success shadow-sm">✅ Log file has been cleared successfully.</div>
+    {% endif %}
+
+    <div class="d-flex flex-wrap gap-2 mb-3 align-items-center">
+        <button id="refreshBtn" class="btn btn-sm btn-primary shadow-sm">🔄 Refresh</button>
+        <button id="autoRefreshBtn" class="btn btn-sm btn-outline-info shadow-sm active" data-on="true">⏱️ Auto Refresh: ON</button>
+        <button id="copyBtn" class="btn btn-sm btn-outline-light shadow-sm">📋 Copy</button>
+        <a href="/admin/logs?action=download" class="btn btn-sm btn-success shadow-sm">⬇️ Download</a>
+        <a href="/admin/logs?action=clear" class="btn btn-sm btn-danger shadow-sm" onclick="return confirm('Are you sure you want to clear the log file?')">🧹 Clear</a>
+        <a href="/admin/dashboard" class="btn btn-sm btn-secondary shadow-sm ms-auto">🏠 Dashboard</a>
+    </div>
+
+    <div class="position-relative border rounded-3 shadow-sm" style="background:#0d1117; max-height:75vh; overflow:auto;">
+        <pre id="logContent"
+             class="m-0 p-3"
+             style="color:#c9d1d9; font-family:'Fira Code', monospace; white-space:pre-wrap; counter-reset: line;">
+            ⏳ Loading logs...
+        </pre>
+    </div>
+</div>
+
+<style>
+    #logContent span.line::before {
+        counter-increment: line;
+        content: counter(line);
+        display: inline-block;
+        width: 2.5em;
+        margin-right: .75em;
+        color: #6c757d;
+        text-align: right;
+        user-select: none;
+    }
+    .highlight-error { color: #ff6b6b; font-weight: bold; }
+    .highlight-warning { color: #f4d03f; font-weight: bold; }
+    .highlight-exception { color: #f39c12; font-weight: bold; }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const logContent = document.getElementById('logContent');
+    const refreshBtn = document.getElementById('refreshBtn');
+    const copyBtn = document.getElementById('copyBtn');
+    const autoRefreshBtn = document.getElementById('autoRefreshBtn');
+
+    let logsLoadedOnce = false; // Prevent flicker on SPA reload
+
+    async function loadLogs(scrollBottom = false) {
+        if (!logsLoadedOnce) {
+            logContent.textContent = "⏳ Loading logs...";
+        }
+        try {
+            const res = await fetch('/admin/logs?ajax=1');
+            const data = await res.json();
+
+            logsLoadedOnce = true;
+
+            if (data.logs && data.logs.length > 0) {
+                let html = data.logs.map(line => {
+                    // Escape HTML
+                    line = line.replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+                    // Highlight keywords
+                    line = line
+                        .replace(/error/gi, '<span class="highlight-error">$&</span>')
+                        .replace(/warning/gi, '<span class="highlight-warning">$&</span>')
+                        .replace(/exception/gi, '<span class="highlight-exception">$&</span>');
+                    return `<span class="line">${line}</span>`;
+                }).join('\n');
+                logContent.innerHTML = html;
+
+                if (scrollBottom) logContent.scrollTop = logContent.scrollHeight;
+            } else {
+                logContent.innerHTML = "<span style='color:#aaa;'>⚙️ No log entries found.</span>";
+            }
+        } catch (err) {
+            logContent.textContent = "❌ Error loading logs: " + err;
+        }
+    }
+
+    // Buttons
+    refreshBtn?.addEventListener('click', () => loadLogs(true));
+
+    copyBtn?.addEventListener('click', () => {
+        navigator.clipboard.writeText(logContent.innerText);
+        copyBtn.textContent = "✅ Copied!";
+        setTimeout(() => copyBtn.textContent = "📋 Copy", 1500);
+    });
+
+    autoRefreshBtn?.addEventListener('click', () => {
+        const on = autoRefreshBtn.dataset.on === "true";
+        autoRefreshBtn.dataset.on = (!on).toString();
+        autoRefreshBtn.classList.toggle('active');
+        autoRefreshBtn.textContent = on ? "⏸️ Auto Refresh: OFF" : "⏱️ Auto Refresh: ON";
+    });
+
+    // Auto-refresh every 30 sec
+    setInterval(() => {
+        if (autoRefreshBtn?.dataset.on === "true") loadLogs(true);
+    }, 30000);
+
+    // Initial load
+    loadLogs(true);
+});
+</script>
+
+{% endblock %}

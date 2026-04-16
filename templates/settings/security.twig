@@ -1,0 +1,81 @@
+{% extends "layout.twig" %}
+
+{% block title %}{{ header_title }}{% endblock %}
+
+{% block content %}
+{% include 'components/sweetAlert.twig' %}
+<div class="container mt-4">
+    <h2>{{ header_title }}</h2>
+
+    <form id="securitySettingsForm" method="POST" action="/settings/security" class="mt-4">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+        <div class="mb-3">
+            <label for="password_policy" class="form-label">Password Policy</label>
+            <input
+                type="text"
+                class="form-control"
+                id="password_policy"
+                name="settings[password_policy]"
+                value="{{ security_settings.password_policy|e }}"
+                placeholder="e.g. Minimum 8 characters, 1 uppercase, 1 number"
+            >
+            <div class="form-text">Specify password rules for users.</div>
+        </div>
+
+        <div class="mb-3 form-check">
+            <input
+                type="checkbox"
+                class="form-check-input"
+                id="two_factor_enabled"
+                name="settings[two_factor_enabled]"
+                value="1"
+                {% if security_settings.two_factor_enabled == '1' %}checked{% endif %}
+            >
+            <label class="form-check-label" for="two_factor_enabled">Enable Two-Factor Authentication (2FA)</label>
+        </div>
+
+        <div class="mb-3">
+            <label for="session_timeout_minutes" class="form-label">Session Timeout (minutes)</label>
+            <input
+                type="number"
+                min="1"
+                class="form-control"
+                id="session_timeout_minutes"
+                name="settings[session_timeout_minutes]"
+                value="{{ security_settings.session_timeout_minutes|default(30) }}"
+            >
+            <div class="form-text">Set how long user sessions last before automatic logout.</div>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Save Security Settings</button>
+    </form>
+
+    <div id="securityAlert" class="alert mt-3 d-none" role="alert"></div>
+</div>
+
+{% block javascripts %}
+<script>
+    $(function() {
+        $('#securitySettingsForm').on('submit', function(e) {
+            e.preventDefault();
+
+            let $form = $(this);
+            let url = $form.attr('action');
+            let data = $form.serialize();
+
+            $.post(url, data, function(response) {
+                let $alert = $('#securityAlert');
+                if (response.status === 'success') {
+                    $alert.removeClass('d-none alert-danger').addClass('alert-success').text(response.message);
+                } else {
+                    $alert.removeClass('d-none alert-success').addClass('alert-danger').text(response.message);
+                }
+            }, 'json').fail(function() {
+                $('#securityAlert').removeClass('d-none alert-success').addClass('alert-danger').text('Something went wrong. Please try again.');
+            });
+        });
+    });
+</script>
+{% endblock %}
+{% endblock %}

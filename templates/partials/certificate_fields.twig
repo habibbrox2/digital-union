@@ -1,0 +1,411 @@
+{# certificate_fields.twig #}
+
+{% set iconMap = {
+    'death': 'bi bi-heartbreak',
+    'obibahito': 'bi bi-person-x',
+    'punobibaho': 'bi bi-arrow-repeat',
+    'ekoinam': 'bi bi-file-earmark-text',
+    'sonaton': 'bi bi-journal-check',
+    'prottyon': 'bi bi-file-earmark-check',
+    'nodibanga': 'bi bi-droplet-half',
+    'character': 'bi bi-person-badge',
+    'vumihin': 'bi bi-house-door',
+    'yearlyincome': 'bi bi-currency-dollar',
+    'protibondi': 'bi bi-universal-access',
+    'onumoti': 'bi bi-check2-circle',
+    'onapotti': 'bi bi-file-earmark-excel',
+    'rastakhonon': 'bi bi-signpost-split',
+    'warish': 'bi bi-people-fill',
+    'family': 'bi bi-people',
+    'trade': 'bi bi-shop',
+    'bibahito': 'bi bi-person-check'
+} %}
+
+{% set certType = data.certificate_type %}
+{% set iconClass = iconMap[certType]|default('bi bi-file-earmark-text') %}
+
+<section class="mb-5 border rounded-4 p-4 shadow-sm bg-light">
+    <h6 class="text-success fw-bold mb-4 fs-5 d-flex align-items-center">
+        <i class="{{ iconClass }} me-3 fs-4"></i>
+        {{ certificate_names[certType].bn|default('সনদ') }}
+    </h6>
+
+    {% if certType == 'death' %}
+        <div class="row mb-3">
+            <label class="col-sm-4 col-form-label fw-bold">মৃত ব্যক্তির নাম (বাংলায়):</label>
+            <div class="col-sm-8">{{ data.extra_data.name_bn|default('—') }}</div>
+        </div>
+        <div class="row mb-3">
+            <label class="col-sm-4 col-form-label fw-bold">Deceased Person's Name (English):</label>
+            <div class="col-sm-8">{{ data.extra_data.name_en|default('—') }}</div>
+        </div>
+        <div class="row mb-3">
+            <label class="col-sm-4 col-form-label fw-bold">মৃত্যুর তারিখ:</label>
+            <div class="col-sm-8">{{ data.extra_data.death_date|default('—') }}</div>
+        </div>
+        <div class="row mb-3">
+            <label class="col-sm-4 col-form-label fw-bold">মৃত্যুর কারণ:</label>
+            <div class="col-sm-8">{{ data.extra_data.death_reason|default('—') }}</div>
+        </div>
+
+    {% elseif certType == 'obibahito' %}
+        <div class="row mb-3">
+            <label class="col-sm-4 col-form-label fw-bold">অবিবাহিত থাকার কারণ (বাংলায়):</label>
+            <div class="col-sm-8">{{ data.extra_data.reason_bn|default('—') }}</div>
+        </div>
+        <div class="row mb-3">
+            <label class="col-sm-4 col-form-label fw-bold">Reason for Being Unmarried (English):</label>
+            <div class="col-sm-8">{{ data.extra_data.reason_en|default('—') }}</div>
+        </div>
+
+    {% elseif certType == 'punobibaho' %}
+        <div class="row mb-3">
+            <label class="col-sm-4 col-form-label fw-bold">পূর্বের বিবাহের অবস্থা (বাংলায়):</label>
+            <div class="col-sm-8">{{ data.extra_data.previous_marriage_status_bn|default('—') }}</div>
+        </div>
+        <div class="row mb-3">
+            <label class="col-sm-4 col-form-label fw-bold">Previous Marriage Status (English):</label>
+            <div class="col-sm-8">{{ data.extra_data.previous_marriage_status_en|default('—') }}</div>
+        </div>
+
+    {% elseif certType == 'ekoinam' %}
+        <div class="row mb-3">
+            <label class="col-sm-4 col-form-label fw-bold">প্রকাশে নাম / ডাকনাম (বাংলায়):</label>
+            <div class="col-sm-8">{{ data.extra_data.nickname_bn|default('—') }}</div>
+        </div>
+        <div class="row mb-3">
+            <label class="col-sm-4 col-form-label fw-bold">Nickname / Public Name (English):</label>
+            <div class="col-sm-8">{{ data.extra_data.nickname_en|default('—') }}</div>
+        </div>
+
+    {% elseif certType == 'sonaton' %}
+        <div class="row mb-3">
+            <label class="col-sm-4 col-form-label fw-bold">ধর্মীয় পরিচিতি নম্বর:</label>
+            <div class="col-sm-8">{{ data.extra_data.religious_id_number|default('—') }}</div>
+        </div>
+
+    {% elseif certType == 'prottyon' %}
+        <div class="row mb-3">
+            <label class="col-sm-4 col-form-label fw-bold">প্রত্যয়নকারী কর্তৃপক্ষ:</label>
+            <div class="col-sm-8">{{ data.extra_data.certified_by|default('—') }}</div>
+        </div>
+
+    {% elseif certType == 'nodibanga' %}
+        <div class="row mb-3">
+            <label class="col-sm-4 col-form-label fw-bold">ক্ষতিগ্রস্ত হওয়ার কারণ (বাংলায়):</label>
+            <div class="col-sm-8">{{ data.extra_data.affected_reason_bn|default('—') }}</div>
+        </div>
+        <div class="row mb-3">
+            <label class="col-sm-4 col-form-label fw-bold">Reason for Damage (English):</label>
+            <div class="col-sm-8">{{ data.extra_data.affected_reason_en|default('—') }}</div>
+        </div>
+
+    {% elseif certType == 'character' %}
+        <div class="row mb-3">
+            <label class="col-sm-4 col-form-label fw-bold">সনদ গ্রহণের কারণ (বাংলায়):</label>
+            <div class="col-sm-8">{{ data.extra_data.purpose_bn|default('—') }}</div>
+        </div>
+        <div class="row mb-3">
+            <label class="col-sm-4 col-form-label fw-bold">Reason for Certificate (English):</label>
+            <div class="col-sm-8">{{ data.extra_data.purpose_en|default('—') }}</div>
+        </div>
+
+    {% elseif certType == 'vumihin' %}
+        <div class="row mb-3">
+            <label class="col-sm-4 col-form-label fw-bold">ভূমিহীনতার কারণ (বাংলায়):</label>
+            <div class="col-sm-8">{{ data.extra_data.landless_reason_bn|default('—') }}</div>
+        </div>
+        <div class="row mb-3">
+            <label class="col-sm-4 col-form-label fw-bold">Reason for Being Landless (English):</label>
+            <div class="col-sm-8">{{ data.extra_data.landless_reason_en|default('—') }}</div>
+        </div>
+
+    {% elseif certType == 'yearlyincome' %}
+        <div class="row mb-3">
+            <label class="col-sm-4 col-form-label fw-bold">আয়ের ধরণ:</label>
+            <div class="col-sm-8">
+                {% if data.extra_data.earn_type == '1' %}
+                    মাসিক
+                {% elseif data.extra_data.earn_type == '2' %}
+                    বার্ষিক
+                {% else %}
+                    —
+                {% endif %}
+            </div>
+        </div>
+        <div class="row mb-3">
+            <label class="col-sm-4 col-form-label fw-bold">আয়ের পরিমান:</label>
+            <div class="col-sm-8">{{ data.extra_data.yearly_income|default('—') }}</div>
+        </div>
+        <div class="row mb-3">
+            <label class="col-sm-4 col-form-label fw-bold">সনদ গ্রহণের কারণ:</label>
+            <div class="col-sm-8">{{ data.extra_data.purpose|default('—') }}</div>
+        </div>
+
+    {% elseif certType == 'protibondi' %}
+        <div class="row mb-3">
+            <label class="col-sm-4 col-form-label fw-bold">প্রতিবন্ধিতার ধরণ (বাংলায়):</label>
+            <div class="col-sm-8">{{ data.extra_data.disability_type_bn|default('—') }}</div>
+        </div>
+        <div class="row mb-3">
+            <label class="col-sm-4 col-form-label fw-bold">Disability Type (English):</label>
+            <div class="col-sm-8">{{ data.extra_data.disability_type_en|default('—') }}</div>
+        </div>
+        <div class="row mb-3">
+            <label class="col-sm-4 col-form-label fw-bold">প্রতিবন্ধিতার হার:</label>
+            <div class="col-sm-8">{{ data.extra_data.disability_percentage|default('—') }}</div>
+        </div>
+
+    {% elseif certType == 'onumoti' %}
+        <div class="row mb-3">
+            <label class="col-sm-4 col-form-label fw-bold">কর্ম ক্ষেত্রের নাম (বাংলায়):</label>
+            <div class="col-sm-8">{{ data.extra_data.permission_reason_bn|default('—') }}</div>
+        </div>
+        <div class="row mb-3">
+            <label class="col-sm-4 col-form-label fw-bold">Work Area Name (English):</label>
+            <div class="col-sm-8">{{ data.extra_data.permission_reason_en|default('—') }}</div>
+        </div>
+
+    {% elseif certType == 'onapotti' %}
+        <div class="row mb-3">
+            <label class="col-sm-4 col-form-label fw-bold">ব্যবসা/প্রতিষ্ঠান/ভবনের নাম (বাংলায়):</label>
+            <div class="col-sm-8">{{ data.extra_data.business_name_bn|default('—') }}</div>
+        </div>
+        <div class="row mb-3">
+            <label class="col-sm-4 col-form-label fw-bold">Business/Institution/Building Name (English):</label>
+            <div class="col-sm-8">{{ data.extra_data.business_name_en|default('—') }}</div>
+        </div>
+
+        <div class="row mb-3">
+            <label class="col-sm-4 col-form-label fw-bold">ব্যবসা/প্রতিষ্ঠান/ভবনের অবস্থান (বাংলায়):</label>
+            <div class="col-sm-8">{{ data.extra_data.business_location_bn|default('—') }}</div>
+        </div>
+        <div class="row mb-3">
+            <label class="col-sm-4 col-form-label fw-bold">Business/Institution/Building Location (English):</label>
+            <div class="col-sm-8">{{ data.extra_data.business_location_en|default('—') }}</div>
+        </div>
+
+        <div class="row mb-3">
+            <label class="col-sm-4 col-form-label fw-bold">ব্যবসা/প্রতিষ্ঠান/ভবনের ধরণ (বাংলায়):</label>
+            <div class="col-sm-8">{{ data.extra_data.business_type_bn|default('—') }}</div>
+        </div>
+        <div class="row mb-3">
+            <label class="col-sm-4 col-form-label fw-bold">Business/Institution/Building Type (English):</label>
+            <div class="col-sm-8">{{ data.extra_data.business_type_en|default('—') }}</div>
+        </div>
+
+        <div class="row mb-3">
+            <label class="col-sm-4 col-form-label fw-bold">ট্রেড লাইসেন্স নং:</label>
+            <div class="col-sm-8">{{ data.extra_data.trade_license_no|default('—') }}</div>
+        </div>
+
+        <div class="row mb-3">
+            <label class="col-sm-4 col-form-label fw-bold">ব্যবহৃত জমির বিবরণ (বাংলায়):</label>
+            <div class="col-sm-8">{{ data.extra_data.land_description_bn|default('—') }}</div>
+        </div>
+        <div class="row mb-3">
+            <label class="col-sm-4 col-form-label fw-bold">Land Description (English):</label>
+            <div class="col-sm-8">{{ data.extra_data.land_description_en|default('—') }}</div>
+        </div>
+
+        <div class="row mb-3">
+            <label class="col-sm-4 col-form-label fw-bold">অনাপত্তির বিবরণ (বাংলায়):</label>
+            <div class="col-sm-8">{{ data.extra_data.opposition_details_bn|default('—') }}</div>
+        </div>
+        <div class="row mb-3">
+            <label class="col-sm-4 col-form-label fw-bold">No Objection Details (English):</label>
+            <div class="col-sm-8">{{ data.extra_data.opposition_details_en|default('—') }}</div>
+        </div>
+
+        <div class="row mb-3">
+            <label class="col-sm-4 col-form-label fw-bold">মৌজা:</label>
+            <div class="col-sm-8">{{ data.extra_data.mouza|default('—') }}</div>
+        </div>
+        <div class="row mb-3">
+            <label class="col-sm-4 col-form-label fw-bold">খতিয়ান নং:</label>
+            <div class="col-sm-8">{{ data.extra_data.khatian_no|default('—') }}</div>
+        </div>
+        <div class="row mb-3">
+            <label class="col-sm-4 col-form-label fw-bold">জমির ধরণ:</label>
+            <div class="col-sm-8">{{ data.extra_data.land_type|default('—') }}</div>
+        </div>
+        <div class="row mb-3">
+            <label class="col-sm-4 col-form-label fw-bold">জমির পরিমাণ:</label>
+            <div class="col-sm-8">{{ data.extra_data.land_amount|default('—') }}</div>
+        </div>
+
+    {% elseif certType == 'rastakhonon' %}
+        <div class="row mb-3">
+            <label class="col-sm-4 col-form-label fw-bold">রাস্তা খননের উদ্দেশ্য (বাংলায়):</label>
+            <div class="col-sm-8">{{ data.extra_data.digging_purpose_bn|default('—') }}</div>
+        </div>
+        <div class="row mb-3">
+            <label class="col-sm-4 col-form-label fw-bold">Road Digging Purpose (English):</label>
+            <div class="col-sm-8">{{ data.extra_data.digging_purpose_en|default('—') }}</div>
+        </div>
+
+        <div class="row mb-3">
+            <label class="col-sm-4 col-form-label fw-bold">রাস্তার ধরণ:</label>
+            <div class="col-sm-8">{{ data.extra_data.road_type|default('—') }}</div>
+        </div>
+
+    {% elseif certType in ['warish', 'family'] %}
+    {# ================= Header Info ================= #}
+    <div class="row mb-3">
+        {% if certType == 'warish' %}
+            <label class="col-sm-4 col-form-label fw-bold">মৃত ব্যক্তির নাম:</label>
+            <div class="col-sm-8">{{ data.name_bn|default('—') }}</div>
+        {% elseif certType == 'family' %}
+            <label class="col-sm-4 col-form-label fw-bold">পরিবারের সদস্য সংখ্যা:</label>
+            <div class="col-sm-8">{{ data.extra_data.family_members_count|default('—') }}</div>
+        {% endif %}
+    </div>
+
+    <div class="row mb-3">
+        <div class="col-md-6">
+            <label class="col-form-label fw-bold">আবেদনকারীর নাম:</label>
+            <div>{{ data.applicant_name|default('—') }}</div>
+        </div>
+        <div class="col-md-6">
+            <label class="col-form-label fw-bold">আবেদনকারীর পিতার নাম:</label>
+            <div>{{ data.extra_data.applicant_name_father_bn|default('—') }}</div>
+        </div>
+    </div>
+
+    {# ================= Members Table ================= #}
+    {% set members = certType == 'warish' ? data.warish_members : data.family_members %}
+    {% set totalMembers = members is defined ? members|length : 0 %}
+
+    {% if members is defined and totalMembers > 0 %}
+        <p class="fw-semibold">মোট সদস্য সংখ্যা: {{ totalMembers }}</p>
+
+        <h5 class="mt-2 mb-3 text-primary fw-semibold">
+            {% if certType == 'warish' %}👨‍👩‍👧‍👦 ওয়ারিশ সদস্যদের তালিকা{% else %}👨‍👩‍👧‍👦 পরিবারের সদস্যদের তালিকা{% endif %}
+        </h5>
+        <div class="table-responsive">
+        <table class="table table-bordered table-sm" style="font-size: 0.9rem;">
+            <thead class="table-light">
+                <tr>
+                    <th scope="col">ক্রমিক</th>
+                    <th scope="col">নাম (বাংলা)</th>
+                    <th scope="col">নাম (ইংরেজি)</th>
+                    <th scope="col">সম্পর্ক</th>
+                    <th scope="col">জন্ম তারিখ</th>
+                    <th scope="col">পরিচয়পত্র নম্বর</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for member in members %}
+                <tr>
+                    <td>{{ loop.index }}</td>
+                    <td>{{ member.name_bn|default('—') }}</td>
+                    <td>{{ member.name_en|default('—') }}</td>
+                    <td>{{ member.relation_bn|default('—') }}</td>
+                    <td>{{ member.birth_date ? member.birth_date|date('d-m-Y') : '—' }}</td>
+                    <td>{{ member.nid ?: member.birth_id ?: member.passport_no ?: '—' }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        </div>
+    {% else %}
+        <p class="text-warning">⚠️ {% if certType == 'warish' %}ওয়ারিশ{% else %}পরিবারের{% endif %} সদস্যের তথ্য পাওয়া যায়নি।</p>
+    {% endif %}
+
+
+
+{% elseif certType == 'trade' %}
+
+    <h4 class="mb-3 border-bottom pb-2">ব্যবসার প্রাথমিক তথ্য</h4>
+
+    <div class="row mb-2">
+        <label class="col-sm-4 fw-bold">ব্যবসা প্রতিষ্ঠানের নাম (বাংলা)</label>
+        <div class="col-sm-8">
+            {{ data.business_meta.business_name_bn|default('—') }}
+        </div>
+    </div>
+
+    <div class="row mb-3">
+        <label class="col-sm-4 fw-bold">Business Type (English)</label>
+        <div class="col-sm-8">
+            {{ data.business_meta.trade_type_en|default('—') }}
+        </div>
+    </div>
+
+    {# ================= Business Details ================= #}
+
+        <h4 class="mt-4 mb-3 border-bottom pb-2">
+            ব্যবসার বিস্তারিত তথ্য (Business Details)
+        </h4>
+
+        {% set bm = business_meta ?? null %}
+
+        {% if bm %}
+            <ul class="list-group list-group-flush">
+
+                <li class="list-group-item">
+                    <strong>ব্যবসার নাম:</strong>
+                    {{ bm.business_name_bn|default('—') }}
+                </li>
+
+                <li class="list-group-item">
+                    <strong>ব্যবসার ধরণ:</strong>
+                    {{ bm.business_type_bn|default('—') }}
+                </li>
+
+                <li class="list-group-item">
+                    <strong>মালিকানার ধরণ:</strong>
+                    {{ bm.ownership_type_bn|default('—') }}
+                </li>
+
+                <li class="list-group-item">
+                    <strong>ঠিকানা (বাংলা):</strong><br>
+                    {{ bm.holding_no|default('') }},
+                    {{ bm.business_rbs_bn|default('') }},
+                    {{ bm.business_village_bn|default('') }},
+                    ওয়ার্ড নং: {{ bm.business_ward_no|default('') }},
+                    {{ bm.business_postoffice_bn|default('') }},
+                    {{ bm.business_union_bn|default('') }},
+                    {{ bm.business_upazila_bn|default('') }},
+                    {{ bm.business_district_bn|default('') }}
+                </li>
+
+                <li class="list-group-item">
+                    <strong>Address (English):</strong><br>
+                    {{ bm.holding_no|default('') }},
+                    {{ bm.business_rbs_en|default('') }},
+                    {{ bm.business_village_en|default('') }},
+                    Ward No: {{ bm.business_ward_no|default('') }},
+                    {{ bm.business_postoffice_en|default('') }},
+                    {{ bm.business_union_en|default('') }},
+                    {{ bm.business_upazila_en|default('') }},
+                    {{ bm.business_district_en|default('') }}
+                </li>
+
+            </ul>
+        {% else %}
+            <p class="text-muted fst-italic">
+                ব্যবসার তথ্য পাওয়া যায়নি।
+            </p>
+        {% endif %}
+
+
+
+    {% elseif certType == 'bibahito' %}
+        <div class="row mb-3">
+            <label class="col-sm-4 col-form-label fw-bold">স্বামী/স্ত্রীর নাম (বাংলায়):</label>
+            <div class="col-sm-8">{{ data.extra_data.spouse_name_bn|default('—') }}</div>
+        </div>
+        <div class="row mb-3">
+            <label class="col-sm-4 col-form-label fw-bold">Spouse Name (English):</label>
+            <div class="col-sm-8">{{ data.extra_data.spouse_name_en|default('—') }}</div>
+        </div>
+        <div class="row mb-3">
+            <label class="col-sm-4 col-form-label fw-bold">বিবাহের তারিখ:</label>
+            <div class="col-sm-8">{{ data.extra_data.marriage_date|default('—') }}</div>
+        </div>
+
+    {% else %}
+        <p class="text-muted fst-italic">এই সার্টিফিকেটের অতিরিক্ত তথ্য পাওয়া যায়নি।</p>
+    {% endif %}
+</section>

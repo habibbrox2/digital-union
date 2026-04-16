@@ -1,0 +1,246 @@
+<link href="https://fonts.maateen.me/solaiman-lipi/font.css" rel="stylesheet">
+<style type="text/css">
+    body {
+        font-family: 'Arial', sans-serif !important;
+        font-size: 10.5pt;
+    }
+
+    @media print {
+        * {
+            -webkit-print-color-adjust: exact;
+        }
+    }
+
+    @page {
+        header: page-header;
+        footer: page-footer;
+        margin: 20px 0px;
+        padding: 0px;
+    }
+    
+    .header-font { font-size: 18.75pt; font-weight: bold; color: blue; }
+    .subheader-font { font-size: 12pt; font-weight: bold; }
+    .title-text { font-size: 13.5pt; font-weight: bold; }
+    .label-text { font-size: 12pt; font-weight: bold; }
+    .value-text { font-size: 12pt; }
+    .intro-text { font-size: 12pt; text-indent: 37.5pt; line-height: 1.8; }
+    
+    .expired-overlay {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%) rotate(-45deg);
+        opacity: 0.5;
+        z-index: 1000;
+        pointer-events: none;
+    }
+    .expired-overlay img {
+        width: 600px;
+        height: auto;
+        display: block;
+    }
+</style>
+
+{% set is_expired = business_meta.expiry_date and business_meta.expiry_date < 'now'|date('Y-m-d') %}
+
+<section>
+    {% if is_expired %}
+    <div class="expired-overlay">
+        <img src="{{ url }}/assets/images/expire.png" alt="Expired License" />
+    </div>
+    {% endif %}
+    <div class="container">
+        <div class="card" style="margin:20px 0px; padding: 10px 0px 20px 0px">
+
+            <table border="0" width="98%" align="center" style="border-collapse:collapse; margin:2px auto; padding-top: 37.5pt">
+                <tr>
+                    <td style="width:1.5in; text-align:center;"></td>
+
+                    <td style="text-align:center;">
+                        <font class="header-font">{{ union.union_name_en|default(union.union_name_bn) }}</font>
+                        <br />
+                        <font class="subheader-font">
+                            {{ union.upazila_name_en|default(union.upazila_name_bn) }}, {{ union.district_name_en|default(union.district_name_bn) }}-{{ union.postcode }}<br>
+                            Mobile: {{ union.phone }}, Email: {{ union.email }} <br>
+                            Website: {{ union.website }}
+                        </font>
+                    </td>
+
+                    <td style="width:1.2in; text-align:left;"></td>
+                </tr>
+            </table>
+
+            <table border="0" width="98%" style="border-collapse:collapse;margin:2px auto;" cellspacing="0" cellpadding="0">
+                <tr>
+                    <td style="text-align:center;font-size:13.5pt;font-weight:bold;" height="38">
+                        <u>Trade License Verification</u>
+                    </td>
+                </tr>
+            </table>
+
+            <table border="1" align="left" style="width:100%; margin-left:48px;border-color:lightgray;margin-top:7.5pt;" cellpadding="0" cellspacing="0">
+                <tr>
+                    <td style="width:100px; text-align:center;font-size:13.5pt;">Certificate No:</td>
+                    
+                    {% set sonod_number = citizen.sonod_number %}
+                    {% for digit in sonod_number | split('') %}
+                        <td style="text-align:center; font-weight:bold; font-size:15pt; padding: 3.75pt;">{{ digit }}</td>
+                    {% endfor %}
+                    
+                    <td style="border: none;">
+                        <font style="font-size: 13.5pt">&nbsp;&nbsp;&nbsp;Date: {{ citizen.issue_date|date('d-m-Y') }}</font>
+                    </td>
+                </tr>
+            </table>
+
+            <table class="jolchap" align="center" border="0" width="99%" cellspacing="0" style="border-collapse:collapse;margin:0 auto;table-layout:fixed;">
+                <tr height="41.25pt" style="">
+                    <td colspan="2" style="font-size:13.5pt; text-indent:37.5pt;padding-left: 37.5pt; padding-top: 11.25pt; padding-bottom: 7.5pt;">This certificate is hereby issued for verification of trade license registration.</td>
+                </tr>
+            </table>
+
+            <table border="0" width="99%" align="center" style="border-collapse:collapse; margin:1px auto;" cellspacing="0" cellpadding="0">
+                <tr>
+                    <td align="left" style="font-size:12pt;text-indent:41.25pt; width: 150px; padding-left: 37.5pt">Name</td>
+                    <td colspan="3"><font style="font-size:12pt;font-weight:bold;">: {{ citizen.name_en|default(citizen.name_bn) }}</font></td>
+                </tr>
+                <tr>
+                    <td align="left" style="font-size:12pt;text-indent:41.25pt; width: 150px; padding-left: 37.5pt">Father's Name</td>
+                    <td style="width:260px;"><font style="font-size:12pt;font-weight:bold;">: {{ citizen.father_name_en|default(citizen.father_name_bn) }}</font></td>
+                    {% if citizen.applicant_phone %}
+                        <td style="font-size:12pt; text-align:left;">Mobile</td>
+                        <td><font style="font-size:12pt;font-weight:bold;">: {{ citizen.applicant_phone }}</font></td>
+                    {% endif %}
+                </tr>
+                <tr>
+                    <td align="left" style="font-size:12pt;text-indent:41.25pt; width: 150px; padding-left: 37.5pt">Email</td>
+                    <td style="font-size:12pt;font-weight:bold;">: {{ citizen.applicant_email|default('') }}</td>
+                    <td valign="top" style="font-size:12pt;">National ID</td>
+                    <td colspan="2" style="font-size:11.25pt;font-weight:bold;">: {{ citizen.nid }}</td>
+                </tr>
+                <tr height="15pt"></tr>
+                <tr>
+                    <td valign="top" style="font-size: 12pt; padding-left: 37.5pt;">Business Name</td>
+                    <td colspan="5">
+                        <p style="font-size:12pt;">
+                            : {{ business_meta.business_name_en|default(business_meta.business_name_bn) }}
+                        </p>
+                    </td>
+                </tr>
+                <tr>
+                    <td valign="top" style="font-size: 12pt; padding-left: 37.5pt;">Business Type</td>
+                    <td colspan="5">
+                        <p style="font-size:12pt;">
+                            : {{ business_meta.business_type_en|default(business_meta.business_type_bn) }}
+                        </p>
+                    </td>
+                </tr>
+                <tr>
+                    <td valign="top" style="font-size: 12pt; padding-left: 37.5pt;">Business Address</td>
+                    <td colspan="5">
+                        <p style="font-size:12pt;">
+                            : Village: {{ business_meta.business_village_en|default(business_meta.business_village_bn) }}, 
+                            Post Office: {{ business_meta.business_postoffice_en|default(business_meta.business_postoffice_bn) }}, 
+                            Ward No: {{ business_meta.business_ward_no }},
+                            Upazila: {{ business_meta.business_upazila_en|default(business_meta.business_upazila_bn) }},
+                            District: {{ business_meta.business_district_en|default(business_meta.business_district_bn) }}
+                        </p>
+                    </td>
+                </tr>
+            </table>
+
+            <table border="0" width="99%" align="center" style="border-collapse:collapse; margin:1px auto;" cellspacing="0" cellpadding="0">
+                <tr>
+                    <td align="left" style="font-size:12pt;text-indent:41.25pt; width: 150px; padding-left: 37.5pt">Issue Date</td>
+                    <td colspan="3"><font style="font-size:12pt;font-weight:bold;">: {{ citizen.issue_date|date('d-m-Y') }}</font></td>
+                </tr>
+                <tr>
+                    <td align="left" style="font-size:12pt;text-indent:41.25pt; width: 150px; padding-left: 37.5pt">Expiry Date</td>
+                    <td colspan="3"><font style="font-size:12pt;font-weight:bold;">: {{ business_meta.expiry_date|date('d-m-Y') }}</font></td>
+                </tr>
+            </table>
+
+            {% if business_meta.license_fee or business_meta.vat_amount or business_meta.occupation_tax or business_meta.income_tax or business_meta.signboard_tax or business_meta.surcharge or business_meta.total_fee %}
+            <table border="1" align="center" width="93%" style="border-collapse:collapse; margin-top: 15pt;" cellspacing="0" cellpadding="0">
+                <tr height="15pt">
+                    <th style="width:40%;font-size:12pt; padding: 5pt;">Description</th>
+                    <th style="width:30%;font-size:12pt; padding: 5pt;">Amount</th>
+                </tr>
+                
+                {% if business_meta.license_fee %}
+                <tr height="">
+                    <td style="text-align:left;font-size:12pt; padding: 5pt;">Fee</td>
+                    <td style="text-align:right;font-size:12pt; padding: 5pt;">{{ business_meta.license_fee }}</td>
+                </tr>
+                {% endif %}
+                
+                {% if business_meta.occupation_tax %}
+                <tr height="">
+                    <td style="text-align:left;font-size:12pt; padding: 5pt;">Occupation Tax</td>
+                    <td style="text-align:right;font-size:12pt; padding: 5pt;">{{ business_meta.occupation_tax }}</td>
+                </tr>
+                {% endif %}
+                
+                {% if business_meta.income_tax %}
+                <tr height="">
+                    <td style="text-align:left;font-size:12pt; padding: 5pt;">Income Tax</td>
+                    <td style="text-align:right;font-size:12pt; padding: 5pt;">{{ business_meta.income_tax }}</td>
+                </tr>
+                {% endif %}
+                
+                {% if business_meta.signboard_tax %}
+                <tr height="">
+                    <td style="text-align:left;font-size:12pt; padding: 5pt;">Signboard Tax</td>
+                    <td style="text-align:right;font-size:12pt; padding: 5pt;">{{ business_meta.signboard_tax }}</td>
+                </tr>
+                {% endif %}
+                
+                {% if business_meta.vat_amount %}
+                <tr height="">
+                    <td style="text-align:left;font-size:12pt; padding: 5pt;">VAT</td>
+                    <td style="text-align:right;font-size:12pt; padding: 5pt;">{{ business_meta.vat_amount }}</td>
+                </tr>
+                {% endif %}
+                
+                {% if business_meta.surcharge %}
+                <tr height="">
+                    <td style="text-align:left;font-size:12pt; padding: 5pt;">Surcharge</td>
+                    <td style="text-align:right;font-size:12pt; padding: 5pt;">{{ business_meta.surcharge }}</td>
+                </tr>
+                {% endif %}
+                
+                {% if business_meta.total_fee %}
+                <tr height="">
+                    <td style="text-align:left;font-size:12pt; font-weight: bold; padding: 5pt;">Total</td>
+                    <td style="text-align:right;font-size:12pt; font-weight: bold; padding: 5pt;">{{ business_meta.total_fee }}</td>
+                </tr>
+                {% endif %}
+            </table>
+            {% endif %}
+
+            <table width="93%" align="center" style="margin-top:15pt;">
+                <tr>
+                    <td style="font-size:11.25pt; text-indent: 15pt; line-height: 1.8; padding-top: 7.5pt;">
+                        This trade license certificate is issued by the Union Parishad office based on verified business information. The applicant hereby declares that all information provided regarding the business is accurate and true. If any false information is found, this certificate shall be considered null and void.
+                    </td>
+                </tr>
+                <tr>
+                    <td style="font-size:11.25pt; padding-top: 11.25pt;">
+                        Applicant: {{ citizen.applicant_name_en|default(citizen.applicant_name) }} <span style="margin-left: 37.5pt;">Guardian: {{ citizen.extra.applicant_name_father_en|default(citizen.extra.applicant_name_father_bn) }}</span>
+                    </td>
+                </tr>
+            </table>
+
+            <table border="0" width="93%" align="center" style="margin-top:22.5pt;">
+                <tr>
+                    <td style="font-size:11.25pt; text-align:right; padding-top: 15pt;">
+                        Issued by: {{ union.union_name_en|default(union.union_name_bn) }} <br>
+                        Authorized Officer: _________________ <br>
+                        Date: {{ 'now'|date('d-m-Y') }}
+                    </td>
+                </tr>
+            </table>
+
+        </div>
+    </div>
+</section>

@@ -1,0 +1,262 @@
+{# /partials/system_settings_vjs.twig #}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+
+    const userRole = "{{ user_role|lower|raw }}";
+
+    const systemForm = document.getElementById('systemSettingsForm');
+    const unionForm = document.getElementById('unionFormContainer');
+    const unionSelect = document.getElementById('unionSelect');
+
+    const divisionSelect = document.getElementById('division_id');
+    const districtSelect = document.getElementById('district_id');
+    const upazilaSelect  = document.getElementById('upazila_id');
+
+    // Hidden fields
+    const divisionEnField = document.getElementById('division_name_en');
+    const divisionBnField = document.getElementById('division_name_bn');
+    const districtEnField = document.getElementById('district_name_en');
+    const districtBnField = document.getElementById('district_name_bn');
+    const upazilaEnField = document.getElementById('upazila_name_en');
+    const upazilaBnField = document.getElementById('upazila_name_bn');
+
+    // Spinner / Loading Indicator
+    function showSpinner(select) {
+        resetSelect(select);
+        const opt = document.createElement('option');
+        opt.textContent = 'Loading...';
+        opt.disabled = true;
+        opt.selected = true;
+        select.appendChild(opt);
+        select.disabled = true;
+    }
+
+    function hideSpinner(select) {
+        select.disabled = false;
+    }
+
+    // ------------------- AJAX POST Async -------------------
+    function ajaxPostAsync(url, data) {
+        return new Promise((resolve, reject) => {
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', url);
+            xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+            xhr.onload = function () {
+                if (xhr.status === 200) {
+                    try {
+                        resolve(JSON.parse(xhr.responseText));
+                    } catch(e) {
+                        reject(e);
+                    }
+                } else {
+                    reject({status: xhr.status, text: xhr.responseText});
+                }
+            };
+            const payload = Object.keys(data)
+                .map(k => encodeURIComponent(k) + '=' + encodeURIComponent(data[k]))
+                .join('&');
+            xhr.send(payload);
+        });
+    }
+
+    // ------------------- Select Helpers -------------------
+    function resetSelect(select) {
+        select.innerHTML = '<option value="">Select</option>';
+    }
+
+    async function populateSelect(select, data, selectedId = '') {
+        resetSelect(select);
+        if (!Array.isArray(data) || !data.length) return;
+
+        data.forEach(item => {
+            const option = document.createElement('option');
+            option.value = item.id;
+            option.textContent = `${item.name_bn} (${item.name_en})`;
+            option.dataset.nameEn = item.name_en;
+            option.dataset.nameBn = item.name_bn;
+            if (item.id == selectedId) option.selected = true;
+            select.appendChild(option);
+        });
+
+        updateHiddenFields(select);
+        await new Promise(r => requestAnimationFrame(r)); // ensure DOM update
+    }
+
+    function updateHiddenFields(select) {
+        const option = select.options[select.selectedIndex];
+        if (!option) return;
+        if (select === divisionSelect) {
+            divisionEnField.value = option.dataset.nameEn || '';
+            divisionBnField.value = option.dataset.nameBn || '';
+        }
+        if (select === districtSelect) {
+            districtEnField.value = option.dataset.nameEn || '';
+            districtBnField.value = option.dataset.nameBn || '';
+        }
+        if (select === upazilaSelect) {
+            upazilaEnField.value = option.dataset.nameEn || '';
+            upazilaBnField.value = option.dataset.nameBn || '';
+        }
+    }
+
+    // ------------------- Geo Cascade Async -------------------
+    async function loadGeoAsync(order, parentId, select, selectedId = '') {
+        if (!parentId) {
+            resetSelect(select);
+            return;
+        }
+        showSpinner(select);
+        try {
+            const items = await ajaxPostAsync('/geo/getdata', { geo_order: order, parent_geo_id: parentId });
+            await populateSelect(select, items, selectedId);
+        } catch(e) {
+            console.error('Geo Load Error:', e);
+            resetSelect(select);
+        }
+        hideSpinner(select);
+    }
+
+    async function loadUnionCascade(data) {
+        await loadGeoAsync(0, 1, divisionSelect, data.division_id);
+        await loadGeoAsync(1, data.division_id, districtSelect, data.district_id);
+        await loadGeoAsync(2, data.district_id, upazilaSelect, data.upazila_id);
+    }
+
+    // ------------------- Event Listeners -------------------
+    divisionSelect.addEventListener('change', async function(){
+        updateHiddenFields(divisionSelect);
+        const divId = divisionSelect.value;
+        await loadGeoAsync(1, divId, districtSelect);
+        resetSelect(upazilaSelect);
+    });
+
+    districtSelect.addEventListener('change', async function(){
+        updateHiddenFields(districtSelect);
+        const distId = districtSelect.value;
+        await loadGeoAsync(2, distId, upazilaSelect);
+    });
+
+    upazilaSelect.addEventListener('change', function(){
+        updateHiddenFields(upazilaSelect);
+    });
+
+    // ------------------- Load Union Data -------------------
+    async function loadUnionData(unionId) {
+    if (!unionId) return;
+    try {
+        const resp = await ajaxPostAsync('/settings/get_union_data', { union_id: unionId });
+        if (resp.status !== 'success') return;
+
+        const data = resp.data;
+
+        // Safe assignment without ?. operator
+        ['union_id','union_name_en','union_name_bn','ward_count','union_code','email','phone','website','postcode'].forEach(f=>{
+            const el = document.getElementById(f);
+            if (el) el.value = data[f] || '';
+        });
+
+        // Logo preview
+        let logoPreview = document.querySelector('#unionFormContainer img');
+        if (logoPreview) {
+            logoPreview.src = data.logo_url || '';
+        } else if (data.logo_url) {
+            const img = document.createElement('img');
+            img.src = data.logo_url;
+            img.alt = "Union Logo";
+            img.className = "img-fluid mt-2";
+            img.style.maxHeight = "100px";
+            document.getElementById('union_logo').after(img);
+        }
+
+        // Cascade
+        await loadUnionCascade(data);
+
+    } catch(e) {
+        console.error('Failed to load union data:', e);
+        showMessage('danger','Failed to load union data.');
+    }
+}
+
+
+    // ------------------- Union Select Event -------------------
+    if (unionSelect) {
+        unionSelect.addEventListener('change', function(){
+            const unionId = unionSelect.value;
+            if (!unionId) {
+                unionForm.style.display = 'none';
+                unionForm.querySelectorAll('input, select').forEach(el => el.value = '');
+                return;
+            }
+            unionForm.style.display = 'block';
+            loadUnionData(unionId);
+        });
+
+        if(unionSelect.value) {
+            unionForm.style.display = 'block';
+            loadUnionData(unionSelect.value);
+        }
+    }
+
+    // ------------------- Admin / Non-admin -------------------
+    if (userRole !== 'administrator') {
+        document.querySelectorAll('.system-setting').forEach(el => {
+            el.readOnly = true;
+            el.classList.add('bg-light');
+        });
+        if (systemForm) systemForm.querySelector('button[type="submit"]')?.remove();
+        unionForm.style.display = 'block';
+        loadUnionData("{{ union_settings.union_id|raw }}");
+    } else {
+        unionForm.style.display = 'none';
+    }
+
+    // ------------------- System Form Submit -------------------
+    if (systemForm) {
+        systemForm.addEventListener('submit', function (e) {
+            e.preventDefault();
+            const formData = new FormData(systemForm);
+            fetch('/settings/system', { method:'POST', body: formData })
+            .then(res => res.json())
+            .then(resp => {
+                if(resp.status==='success') showMessage('success', resp.message);
+                else showMessage('danger','Failed: '+resp.message);
+            })
+            .catch(err => showMessage('danger','AJAX Error: '+err.message));
+        });
+    }
+
+    // ------------------- Union Form Submit -------------------
+    if (unionForm) {
+        unionForm.addEventListener('submit', function(e){
+            e.preventDefault();
+
+            const fd = new FormData();
+
+            fd.set('union_id', document.getElementById('union_id').value);
+
+            [
+                'division_id','division_name_en','division_name_bn',
+                'district_id','district_name_en','district_name_bn',
+                'upazila_id','upazila_name_en','upazila_name_bn',
+                'union_name_en','union_name_bn','ward_count','union_code',
+                'email','phone','website','postcode'
+            ].forEach(f=>{
+                const el = document.getElementById(f);
+                if(el) fd.set(f, el.value);
+            });
+
+            const logoInput = document.getElementById('union_logo');
+            if(logoInput && logoInput.files.length>0) fd.set('union_logo', logoInput.files[0]);
+            fd.set('csrf_token', getCsrfToken());
+
+            fetch('/settings/union', { method:'POST', body: fd })
+            .then(res => res.json())
+            .then(resp => {
+                if(resp.status==='success') showMessage('success', resp.message);
+                else showMessage('danger','Error: '+resp.message);
+            })
+            .catch(err => showMessage('danger','Update failed: '+err.message));
+        });
+    }
+});
+</script>

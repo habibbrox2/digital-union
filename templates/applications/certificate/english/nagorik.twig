@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ data.sonod_number }}</title>
+<link rel="stylesheet" href="{{ url }}/assets/css/sonod.css">
+
+</head>
+<body>
+
+    
+
+    <div class="content-wrapper">
+        <div class="content">
+
+        <br>
+
+            <!-- Header -->
+            <table class="header-table" border="0" width="98%" align="center" style="border-collapse: collapse;">
+                <tr>
+                    <td>
+                        <img src="{{ url }}/assets/logo/logo.png" alt="Logo" class="logo" height="60pt" width="60pt">
+                    </td>
+                    <td>
+                    <div class="gov-info">
+                        <div class="gov-title" style="font-size: 9pt; color: red;">Government of Bangladesh</div>
+                        <div class="union-name" style="font-size: 19.5pt; color: #3c01c5; font-weight: bold; padding: 3.75pt 0;">
+                            {% if union.union_name_en is defined and union.union_name_en %}
+                                {{ union.union_name_en }}
+                            {% else %}
+                                {{ union.union_name_bn }}
+                            {% endif %}
+                        </div>
+                        <div class="union-address" style="font-size: 12pt; color: black; line-height: 1.5;">
+                            {% if union.upazila_name_en is defined and union.upazila_name_en %}
+                                {{ union.upazila_name_en }},
+                            {% else %}
+                                {{ union.upazila_name_bn }},
+                            {% endif %}
+                            {% if union.district_name_en is defined and union.district_name_en %}
+                                {{ union.district_name_en }}
+                            {% else %}
+                                {{ union.district_name_bn }}
+                            {% endif %}
+                            -{{ union.postcode }}<br>
+                            Email: {{ union.email }}<br>
+                            Website: {{ union.website }}
+                        </div>
+                    </div>
+
+                    </td>
+                    <td>
+                     <img src="{{ url }}/assets/img/band-cross.png" alt="X" class="logo" height="60pt" width="60pt">
+                    </td>
+                </tr>
+            </table>
+
+            <!-- Citizen Certificate Section -->
+            <table style="width:100%; border-color:lightgray; border-collapse:collapse; margin-top: 4.5pt;" cellpadding="0" cellspacing="0">
+                <tr>
+                    <td colspan="2" style="text-align:center; font-size:13.5pt; font-weight:bold; padding-bottom: 3.75pt">
+                        <u>{{ data.certificate_type_en|default(data.certificate_type_bn) }}</u>
+                    </td>
+                </tr>
+                <tr>
+                    <td style="width: 80%;">
+                        <table border="1" style="width: 450pt; border-color:lightgray; border-collapse:collapse;" cellpadding="0" cellspacing="0">
+                            <tr>
+                                <td style="width:75pt; text-align:center; font-size:10.5pt;">Certificate No:</td>
+                                {% set sonod_number_display = data.sonod_number %}
+                                {% for digit in sonod_number_display | split('') %}
+                                    <td style="text-align:center; font-size:13.5pt; padding: 4.5pt; border: 0.75pt solid black;">{{ digit }}</td>
+                                {% endfor %}
+                            </tr>
+                        </table>
+
+                    </td>
+                    <td style="width: 20%; padding: 4.5pt; font-size: 12pt;">
+                     Date: {{ data.issue_date|date('d-m-Y') }}
+                    </td>
+                </tr>
+            </table>
+
+            <table style="width:100%; border-color:lightgray; border-collapse:collapse; margin-top:7.5pt;" cellpadding="0" cellspacing="0">
+                <tr>
+                    <td colspan="2" style="text-indent:37.5pt; padding-top: 3.75pt; padding-bottom: 3.75pt; font-size: 12pt;">
+                       &nbsp; &nbsp;&nbsp; &nbsp; This is to certify that,
+                    </td>
+                </tr>
+            </table>
+
+
+
+            <!-- Citizen Information Section -->
+            <table align="center" border="0" height="285pt" width="100%" cellspacing="0" style="border-collapse:collapse; margin:0 auto; table-layout:fixed;">
+
+
+                <tr class="citizen-info" style="font-size: 12pt;">
+                    
+                    <td>Name</td>
+                    <td>: {{ data.name_en|default(data.name_bn) }}</td>
+                    <td rowspan="4" valign="top" style="text-align: center; z-index: 10;">
+                        {% if data.applicant_photo %}
+                            <img src="{{ url }}/{{ data.applicant_photo }}" height="75pt" width="75pt" alt="profile"
+                                 style="overflow: hidden; z-index: 10; border-radius: 3.75pt; display: block; margin: 0 auto;" />
+                        {% endif %}
+                    </td>
+                </tr>
+                <tr class="citizen-info" style="font-size: 12pt;">
+                    <td>Father's Name</td>
+                    <td>: {{ data.father_name_en|default(data.father_name_bn) }}</td>
+                </tr>
+                <tr class="citizen-info" style="font-size: 12pt;">
+                    <td>Mother's Name</td>
+                    <td>: {{ data.mother_name_en|default(data.mother_name_bn) }}</td>
+                </tr>
+                        {% if data.marital_status == 'Married' %}
+                        <tr class="citizen-info" style="font-size: 12pt;">
+                            <td>Spouse Name</td>
+                            <td>: {{ data.spouse_name_en|default(data.spouse_name_bn) | default('N/A') }}</td>
+                        </tr>
+                        {% endif %}
+                                     
+
+<tr class="citizen-info" style="font-size: 12pt;">
+    <td rowspan="2" valign="top">Present Address</td>
+    <td style="white-space: pre-line;" valign="top">:
+        {% set line1 = [] %}
+        {% if data.present_village_en %}
+            {% set line1 = line1|merge(['Village: ' ~ data.present_village_en]) %}
+        {% elseif data.present_village_bn %}
+            {% set line1 = line1|merge(['Village: ' ~ data.present_village_bn]) %}
+        {% endif %}
+        {% if data.present_rbs_en %}
+            {% set line1 = line1|merge(['Road/Block: ' ~ data.present_rbs_en]) %}
+        {% elseif data.present_rbs_bn %}
+            {% set line1 = line1|merge(['Road/Block: ' ~ data.present_rbs_bn]) %}
+        {% endif %}
+
+        {{ line1|join(', ') }},
+    </td>
+</tr>
+
+<tr class="citizen-info" style="font-size: 12pt;">
+    <td style="white-space: pre-line;" valign="top"> &nbsp;
+        {% set line2 = [] %}
+        {% if data.present_postoffice_en %}
+            {% set line2 = line2|merge(['Post Office: ' ~ data.present_postoffice_en]) %}
+        {% elseif data.present_postoffice_bn %}
+            {% set line2 = line2|merge(['Post Office: ' ~ data.present_postoffice_bn]) %}
+        {% endif %}
+        {% if data.present_upazila_en %}
+            {% set line2 = line2|merge(['Upazila: ' ~ data.present_upazila_en]) %}
+        {% elseif data.present_upazila_bn %}
+            {% set line2 = line2|merge(['Upazila: ' ~ data.present_upazila_bn]) %}
+        {% endif %}
+        {% if data.present_district_en %}
+            {% set line2 = line2|merge(['District: ' ~ data.present_district_en]) %}
+        {% elseif data.present_district_bn %}
+            {% set line2 = line2|merge(['District: ' ~ data.present_district_bn]) %}
+        {% endif %}
+
+        {{ line2|join(', ') }}.
+    </td>
+</tr>
+
+
+<tr class="citizen-info" style="font-size: 12pt;">
+    <td rowspan="2" valign="top">Permanent Address</td>
+    <td style="white-space: pre-line;" valign="top">:
+        {% set p1 = [] %}
+        {% if data.permanent_village_en %}
+            {% set p1 = p1|merge(['Village: ' ~ data.permanent_village_en]) %}
+        {% elseif data.permanent_village_bn %}
+            {% set p1 = p1|merge(['Village: ' ~ data.permanent_village_bn]) %}
+        {% endif %}
+        {% if data.permanent_rbs_en %}
+            {% set p1 = p1|merge(['Road/Block: ' ~ data.permanent_rbs_en]) %}
+        {% elseif data.permanent_rbs_bn %}
+            {% set p1 = p1|merge(['Road/Block: ' ~ data.permanent_rbs_bn]) %}
+        {% endif %}
+
+        {{ p1|join(', ') }},
+    </td>
+</tr>
+
+<tr class="citizen-info" style="font-size: 12pt;">
+    <td style="white-space: pre-line;" valign="top"> &nbsp;
+        {% set p2 = [] %}
+        {% if data.permanent_postoffice_en %}
+            {% set p2 = p2|merge(['Post Office: ' ~ data.permanent_postoffice_en]) %}
+        {% elseif data.permanent_postoffice_bn %}
+            {% set p2 = p2|merge(['Post Office: ' ~ data.permanent_postoffice_bn]) %}
+        {% endif %}
+        {% if data.permanent_upazila_en %}
+            {% set p2 = p2|merge(['Upazila: ' ~ data.permanent_upazila_en]) %}
+        {% elseif data.permanent_upazila_bn %}
+            {% set p2 = p2|merge(['Upazila: ' ~ data.permanent_upazila_bn]) %}
+        {% endif %}
+        {% if data.permanent_district_en %}
+            {% set p2 = p2|merge(['District: ' ~ data.permanent_district_en]) %}
+        {% elseif data.permanent_district_bn %}
+            {% set p2 = p2|merge(['District: ' ~ data.permanent_district_bn]) %}
+        {% endif %}
+
+        {{ p2|join(', ') }}.
+    </td>
+</tr>
+
+
+
+
+                
+               {% if data.birth_id or data.nid or data.passport_no %}
+                <tr class="citizen-info" style="font-size: 12pt;">
+                    <td>
+                        {% if data.birth_id %}
+                            Birth Registration No
+                        {% elseif data.nid %}
+                            National ID No
+                        {% else %}
+                            Passport No
+                        {% endif %}
+                    </td>
+                    <td>:
+                        {% if data.birth_id %}
+                            {{ data.birth_id }}
+                        {% elseif data.nid %}
+                            {{ data.nid }}
+                        {% elseif data.passport_no %}
+                            {{ data.passport_no }}
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endif %}
+
+                <tr class="citizen-info" style="font-size: 12pt;">
+                   <td>Religion</td>
+                    <td>: 
+                        {% set translations = {
+                            'Islam': 'Islam',
+                            'Hinduism': 'Hinduism',
+                            'Christianity': 'Christianity',
+                            'Buddhism': 'Buddhism',
+                            'Other': 'Other'
+                        } %}
+
+                        {{ translations[data.religion] | default(data.religion) }}
+                    </td>
+
+                </tr>
+                <tr class="citizen-info" style="font-size: 12pt;">
+                    <td>Ward No</td>
+                    <td>: {{ data.permanent_ward_no }}</td>
+                </tr>
+                {% if data.applicant_phone %}
+                <tr class="citizen-info" style="font-size: 12pt;">
+                    <td>Mobile</td>
+                    <td>: {{ data.applicant_phone }}</td>
+                </tr>
+                {% endif %}
+
+                <tr class="citizen-info" style="font-size: 12pt;">
+                    <td>Date of Birth</td>
+                    <td>: {{ data.birth_date | date('d-m-Y') }}</td>
+                </tr>
+                
+            </table>
+
+            <!-- Additional Information Table -->
+            <table style="width:100%; border-collapse:collapse; margin:0 auto; padding:0;">
+                {% if approval.verifier_name %}
+                    <tr>
+                        <td style="padding: 15pt; line-height: 1.8; white-space: normal; text-wrap: break-word; text-align: left; font-size: 12pt;">
+                            &nbsp;&nbsp;&nbsp;&nbsp;
+                            Based on information provided by UP Ward Member {{ approval.verifier_name }} of this Union, this certificate is issued.
+                            Please note that if any false information is found in the application, the applicant shall be personally responsible and this certificate shall be cancelled.
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td style="padding: 7.5pt; line-height: 1.8; font-size: 12pt;">
+                            &nbsp;&nbsp;&nbsp;&nbsp; A permanent resident of this Union. By birth, he/she is a citizen of Bangladesh.
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 7.5pt; line-height: 1.8; font-size: 12pt;">
+                            &nbsp;&nbsp;&nbsp;&nbsp; I wish for his/her overall well-being and progress.
+                        </td>
+                    </tr>
+                {% endif %}
+            </table>
+
+            <!-- Signature Table -->
+            <table style="width:100%; border-collapse:collapse; margin-top: 37.5pt;">
+                <tr>
+                {% if approval.verifier_name %}
+                    <td style="text-align: center; padding-right: 15pt; width: 50%; font-size: 12pt;">
+                        <div style="border-top: 0.75pt solid #000; display: inline-block; padding-top: 3.75pt;">
+                            UP Member
+                        </div>
+                    </td>
+                {% endif %}
+                    <td style="text-align: right; padding-right: 90pt; width: 50%; font-size: 12pt;">
+                        <div style="border-top: 0.75pt solid #000; display: inline-block; padding-top: 3.75pt;">
+                            Chairman Signature
+                        </div>
+                    </td>
+                </tr>
+            </table>
+
+
+
+            <!-- Instructions Section -->
+            <table class="instructions">
+                <tr>
+                    <td style="border-right:0.75pt solid black; border-top:0.75pt solid black; text-align:center;">
+                        <img src="https://quickchart.io/qr?text={{ url }}/verify/nagorik_en/{{ data.sonod_number }}/{{ union.union_code }}/1&margin=1&size=300" height="82.5pt" width="82.5pt" style="padding:11.25pt;">
+                    </td>
+                    <td style="padding-left:22.5pt; border-bottom:0.75pt solid black; font-size: 10.5pt;">
+                        Instructions: <br />
+                        1) Verify this certificate using the 17-digit certificate number from the website ({{ union.website }}) or install "Smart UP, Dhaka" app from Play Store and scan the QR code.<br />
+                        2) For any information, call or email us.
+                    </td>
+                </tr>
+                <tr>
+                    <td style="width: 25%; text-align:center;">
+                        <font style="font-size:6pt;">Developed by Innovation IT</font><br/>
+                        <font style="font-size:6pt;">www.innovationit.com.bd</font>
+                    </td>
+                    <td style="width: 75%; text-align:center;">
+                        <font style="font-size:6pt;">{{ union.website }}- {{ union.email }}</font>
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </div>
+</body>
+</html>

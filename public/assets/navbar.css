@@ -1,0 +1,157 @@
+
+#global-popup-message {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0,0,0,.35);
+    z-index: 9999;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .2s ease;
+}
+
+#global-popup-message.show {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.popup-box {
+    min-width: 280px;
+    max-width: 420px;
+    color: #fff;
+    padding: 18px 20px;
+    border-radius: 8px;
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    box-shadow: 0 10px 30px rgba(0,0,0,.25);
+    animation: popupScale .2s ease;
+}
+
+.popup-icon {
+    font-size: 20px;
+    flex-shrink: 0;
+}
+
+.popup-text {
+    flex: 1;
+    font-size: 15px;
+    line-height: 1.4;
+}
+
+.popup-close {
+    background: transparent;
+    border: 0;
+    color: #fff;
+    font-size: 22px;
+    cursor: pointer;
+    line-height: 1;
+}
+
+@keyframes popupScale {
+    from { transform: scale(.9); }
+    to   { transform: scale(1); }
+}
+
+/* General Navbar Styling */
+.navbar {
+    background-color: #f8f9fa; /* Light background */
+    border-bottom: 2px solid #007bff; /* Adds a blue bottom border */
+    padding: 0.8rem 1rem; /* Adjust padding */
+    font-family: 'Arial', sans-serif; /* Custom font */
+}
+
+/* Brand Logo */
+.navbar-brand {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #007bff; /* Blue color */
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.navbar-brand:hover {
+    color: #0056b3; /* Darker blue on hover */
+}
+
+/* Toggler Button */
+.navbar-toggler {
+    border: none; /* Remove the default border */
+}
+
+.navbar-toggler-icon {
+    background-image: url("data:image/svg+xml;charset=utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3E%3Cpath stroke='rgba(0, 123, 255, 1)' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3E%3C/svg%3E");
+}
+
+/* Nav Links */
+.navbar-nav .nav-link {
+    color: #343a40; /* Dark gray text */
+    font-size: 1rem;
+    margin-right: 1rem;
+    transition: color 0.3s ease-in-out;
+}
+
+.navbar-nav .nav-link:hover {
+    color: #007bff; /* Blue on hover */
+    text-decoration: underline; /* Add underline on hover */
+}
+
+/* Active Nav Link */
+.navbar-nav .nav-item.active .nav-link {
+    font-weight: bold;
+    color: #0056b3; /* Darker blue */
+}
+
+/* Mobile View Styling */
+@media (max-width: 768px) {
+    .navbar {
+        padding: 0.5rem 0.8rem; /* Reduce padding for small screens */
+    }
+    
+    .navbar-nav {
+        text-align: center; /* Center align nav items */
+    }
+
+    .navbar-nav .nav-link {
+        margin-right: 0; /* Remove margin for compact layout */
+        padding: 0.5rem 0; /* Add padding for better spacing */
+    }
+}
+/* ==================== Breadcrumbs Navbar Integration ==================== */
+.breadcrumb-nav {
+    background: linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(248,249,250,0.95) 100%);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid rgba(0, 123, 255, 0.1);
+    padding: 0;
+    margin-bottom: 0;
+}
+
+.breadcrumb-container {
+    max-width: 100%;
+    margin: 0 auto;
+    padding: 0.75rem 1rem;
+}
+
+.breadcrumb {
+    background: transparent !important;
+    margin-bottom: 0 !important;
+    padding: 0 !important;
+}
+
+.breadcrumb-item {
+    font-size: 0.95rem;
+}
+
+.breadcrumb-link {
+    font-weight: 500;
+}
+
+/* Dark theme support for navbar breadcrumbs */
+@media (prefers-color-scheme: dark) {
+    .breadcrumb-nav {
+        background: linear-gradient(135deg, rgba(33,37,41,0.95) 0%, rgba(52,58,64,0.95) 100%);
+        border-bottom-color: rgba(102, 179, 255, 0.2);
+    }
+}

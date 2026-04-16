@@ -1,0 +1,404 @@
+{% extends "layout.twig" %}
+
+{% block title %}Roles Management - RBAC System{% endblock %}
+
+{% block content %}
+{% include 'components/sweetAlert.twig' %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="page-header mb-4 mt-4">
+        <div class="row align-items-center">
+            <div class="col-md-6">
+                <div class="page-title-wrapper">
+                    <h1 class="page-title mb-0">
+                        <i class="fas fa-user-shield"></i> {{ header_title }}
+                    </h1>
+                    <p class="text-muted small mt-1">Manage system roles and permissions</p>
+                </div>
+            </div>
+            <div class="col-md-6 text-end">
+                <div class="btn-group" role="group">
+                    <a href="/roles/add" class="btn btn-success btn-lg" title="Add New Role">
+                        <i class="fas fa-plus"></i> Add Role
+                    </a>
+                    <a href="/permissions/assign" class="btn btn-info btn-lg" title="Assign Permissions">
+                        <i class="fas fa-link"></i> Assign
+                    </a>
+                    <a href="/manage-permissions" class="btn btn-primary btn-lg" title="Advanced Management">
+                        <i class="fas fa-cogs"></i> Manage
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Content -->
+
+    <!-- Stats Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card stat-card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="stat-icon bg-primary">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h6 class="mb-0 text-muted">Total Roles</h6>
+                            <h3 class="mb-0">{{ roles|length }}</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stat-card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="stat-icon bg-info">
+                            <i class="fas fa-key"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h6 class="mb-0 text-muted">Manage Roles</h6>
+                            <p class="mb-0"><a href="/roles/add" class="btn btn-sm btn-outline-info">+ New</a></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stat-card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="stat-icon bg-warning">
+                            <i class="fas fa-link"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h6 class="mb-0 text-muted">Assign Perms</h6>
+                            <p class="mb-0"><a href="/permissions/assign" class="btn btn-sm btn-outline-warning">Assign</a></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stat-card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="stat-icon bg-success">
+                            <i class="fas fa-cogs"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h6 class="mb-0 text-muted">Advanced</h6>
+                            <p class="mb-0"><a href="/manage-permissions" class="btn btn-sm btn-outline-success">Manage</a></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Roles Table -->
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-gradient-primary text-white">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <h5 class="mb-0">
+                            <i class="fas fa-list"></i> System Roles
+                        </h5>
+                        <span class="badge bg-light text-dark">{{ roles|length }} Roles</span>
+                    </div>
+                </div>
+
+                <div class="card-body p-0">
+                    {% if roles is empty %}
+                        <div class="alert alert-info m-3" role="alert">
+                            <i class="fas fa-info-circle"></i> No roles found. 
+                            <a href="/roles/add" class="alert-link">Create one now</a>
+                        </div>
+                    {% else %}
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0 roles-table">
+                                <thead class="table-light">
+                                    <tr class="border-bottom">
+                                        <th style="width: 5%;"><i class="fas fa-hashtag"></i> ID</th>
+                                        <th style="width: 20%;"><i class="fas fa-tag"></i> Role Name</th>
+                                        <th style="width: 30%;"><i class="fas fa-comment"></i> Description</th>
+                                        <th style="width: 20%; text-align: center;"><i class="fas fa-cog"></i> Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for role in roles %}
+                                        {% if role.role_name|lower not in ['admin', 'superadmin', 'administrator', 'root', 'system admin', 'master admin', 'god mode', 'chief admin', 'global admin', 'platform admin'] %}
+                                            <tr class="role-row" data-role-id="{{ role.role_id }}">
+                                                <td class="align-middle">
+                                                    <strong class="badge badge-primary">{{ role.role_id }}</strong>
+                                                </td>
+                                                <td class="align-middle">
+                                                    <strong>{{ role.role_name|replace({'_':' '})|title }}</strong>
+                                                </td>
+                                                <td class="align-middle">
+                                                    {% if role.description %}
+                                                        <small class="text-muted">
+                                                            {{ role.description[:50] ~ (role.description|length > 50 ? '...' : '') }}
+                                                        </small>
+                                                    {% else %}
+                                                        <span class="badge badge-secondary">No description</span>
+                                                    {% endif %}
+
+                                                </td>
+
+                                                <td class="align-middle text-center">
+                                                    <div class="btn-group btn-group-sm" role="group">
+                                                        <a href="/roles/{{ role.role_id }}/permissions" class="btn btn-info" data-toggle="tooltip" title="Assign Permissions">
+                                                            <i class="fas fa-key"></i>
+                                                        </a>
+                                                        <a href="/roles/edit/{{ role.role_id }}" class="btn btn-warning" data-toggle="tooltip" title="Edit">
+                                                            <i class="fas fa-edit"></i>
+                                                        </a>
+                                                        <a href="/roles/delete/{{ role.role_id }}" class="btn btn-danger" data-toggle="tooltip" title="Delete">
+                                                            <i class="fas fa-trash"></i>
+                                                        </a>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        {% endif %}
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions Section -->
+    <div class="row mt-4 mb-4">
+        <div class="col-md-12">
+            <h5 class="mb-3">
+                <i class="fas fa-lightning-bolt"></i> Quick Actions
+            </h5>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-3 mb-3">
+            <div class="card action-card border-0 shadow-sm bg-primary-light">
+                <div class="card-body text-center">
+                    <div class="action-icon">
+                        <i class="fas fa-lock fa-3x text-primary mb-3"></i>
+                    </div>
+                    <h6 class="card-title font-weight-bold">Manage Permissions</h6>
+                    <p class="card-text small text-muted mb-3">View and manage system permissions</p>
+                    <a href="/permissions" class="btn btn-sm btn-primary">
+                        <i class="fas fa-arrow-right"></i> Go
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3 mb-3">
+            <div class="card action-card border-0 shadow-sm bg-warning-light">
+                <div class="card-body text-center">
+                    <div class="action-icon">
+                        <i class="fas fa-link fa-3x text-warning mb-3"></i>
+                    </div>
+                    <h6 class="card-title font-weight-bold">Assign Permissions</h6>
+                    <p class="card-text small text-muted mb-3">Assign permissions to roles</p>
+                    <a href="/permissions/assign" class="btn btn-sm btn-warning">
+                        <i class="fas fa-arrow-right"></i> Go
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3 mb-3">
+            <div class="card action-card border-0 shadow-sm bg-info-light">
+                <div class="card-body text-center">
+                    <div class="action-icon">
+                        <i class="fas fa-cogs fa-3x text-info mb-3"></i>
+                    </div>
+                    <h6 class="card-title font-weight-bold">Advanced Management</h6>
+                    <p class="card-text small text-muted mb-3">User and role permission management</p>
+                    <a href="/manage-permissions" class="btn btn-sm btn-info">
+                        <i class="fas fa-arrow-right"></i> Go
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3 mb-3">
+            <div class="card action-card border-0 shadow-sm bg-success-light">
+                <div class="card-body text-center">
+                    <div class="action-icon">
+                        <i class="fas fa-plus fa-3x text-success mb-3"></i>
+                    </div>
+                    <h6 class="card-title font-weight-bold">Create New Role</h6>
+                    <p class="card-text small text-muted mb-3">Add a new role to the system</p>
+                    <a href="/roles/add" class="btn btn-sm btn-success">
+                        <i class="fas fa-arrow-right"></i> Go
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .page-header {
+        border-bottom: 1px solid #e3e6f0;
+        padding-bottom: 1rem;
+    }
+
+    .page-title {
+        color: #2c3e50;
+        font-weight: 600;
+        font-size: 2rem;
+    }
+
+    .page-title-wrapper {
+        padding: 1rem 0;
+    }
+
+    .stat-card {
+        border-radius: 0.5rem;
+        transition: all 0.3s ease;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+    }
+
+    .stat-icon {
+        width: 60px;
+        height: 60px;
+        border-radius: 0.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 1.5rem;
+        margin-right: 1rem;
+    }
+
+    .stat-icon.bg-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+
+    .stat-icon.bg-info {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    }
+
+    .stat-icon.bg-warning {
+        background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+    }
+
+    .stat-icon.bg-success {
+        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    }
+
+    .alert-custom {
+        border-radius: 0.5rem;
+        border: none;
+        box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.1);
+    }
+
+    .table-hover tbody tr:hover {
+        background-color: #f8f9fa;
+    }
+
+    .roles-table tbody tr {
+        border-bottom: 1px solid #dee2e6;
+    }
+
+    .bg-gradient-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+
+    .action-card {
+        border-radius: 0.75rem;
+        transition: all 0.3s ease;
+    }
+
+    .action-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 1rem 2rem rgba(0, 0, 0, 0.15) !important;
+    }
+
+    .action-icon {
+        height: 80px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .bg-primary-light {
+        background-color: #f0f4ff;
+    }
+
+    .bg-warning-light {
+        background-color: #fff8f0;
+    }
+
+    .bg-info-light {
+        background-color: #f0f8ff;
+    }
+
+    .bg-success-light {
+        background-color: #f0fff4;
+    }
+
+    .btn-group-sm .btn {
+        padding: 0.4rem 0.6rem;
+        font-size: 0.85rem;
+    }
+
+    .form-inline {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .text-right {
+        text-align: right;
+    }
+
+    .badge-light {
+        background-color: #e9ecef;
+        color: #495057;
+    }
+
+    @media (max-width: 768px) {
+        .page-title {
+            font-size: 1.5rem;
+        }
+
+        .col-md-3 {
+            margin-bottom: 1rem;
+        }
+
+        .btn-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .btn-group .btn {
+            width: 100%;
+        }
+    }
+</style>
+
+
+<script>
+    $(document).ready(function() {
+        // Initialize tooltips
+        $('[data-toggle="tooltip"]').tooltip();
+        
+        // Log initialization
+        console.log('Roles management page loaded');
+    });
+</script>
+{% endblock %}

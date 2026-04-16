@@ -1,0 +1,396 @@
+{% extends "layout.twig" %}
+
+{% block content %}
+<div class="container-fluid mt-5">
+    <div class="row">
+        <div class="col-lg-10 mx-auto">
+            <div class="page-header mb-4">
+                <h1 class="h2">{{ header_title }}</h1>
+                <p class="text-muted">Email system testing and management</p>
+            </div>
+
+            <!-- Status Cards -->
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-body">
+                            <h6 class="card-title">SMTP Configuration</h6>
+                            {% if configExists %}
+                                <span class="badge bg-success mb-2">✓ Configured</span>
+                                <dl class="small mb-0">
+                                    <dt>Host:</dt><dd class="text-monospace">{{ smtpHost }}</dd>
+                                    <dt>Port:</dt><dd class="text-monospace">{{ smtpPort }}</dd>
+                                </dl>
+                            {% else %}
+                                <span class="badge bg-danger">✗ Not Configured</span>
+                                <p class="small mt-2 mb-0">Please configure SMTP in .env file</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-body">
+                            <h6 class="card-title">Email Logs</h6>
+                            {% if logsExist %}
+                                <span class="badge bg-success mb-2">✓ Active</span>
+                                <p class="small text-monospace mb-0">{{ logsDir }}</p>
+                            {% else %}
+                                <span class="badge bg-warning">⚠ Not Ready</span>
+                                <p class="small mt-2 mb-0">Logs directory needs to be created</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- System Tools -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="btn-group" role="group">
+                        <button type="button" class="btn btn-outline-primary" onclick="verifyConnection()">
+                            <i class="fas fa-plug"></i> Verify SMTP
+                        </button>
+                        <button type="button" class="btn btn-outline-info" onclick="viewLogs()">
+                            <i class="fas fa-file-lines"></i> View Logs
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <!-- Results Display Area -->
+            <div id="resultArea" class="mt-4"></div>
+            <!-- Test Forms -->
+            <div class="card">
+                <div class="card-header bg-light border-bottom">
+                    <h5 class="mb-0">Send Test Emails</h5>
+                </div>
+                <div class="card-body">
+                    <!-- Welcome Email -->
+                    <div class="test-form-section mb-4 pb-4 border-bottom">
+                        <h6 class="mb-3">
+                            <span class="badge bg-primary">1</span> Welcome Email
+                            <small class="text-muted d-block">Sent on user registration</small>
+                        </h6>
+                        <form id="welcomeForm" onsubmit="return sendEmail(event, '/settings/email-test/send-welcome', 'welcomeResult')">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-2">
+                                        <label for="welcomeEmail" class="form-label">Email</label>
+                                        <input type="email" class="form-control form-control-sm" id="welcomeEmail" name="email" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-2">
+                                        <label for="welcomeUsername" class="form-label">Username</label>
+                                        <input type="text" class="form-control form-control-sm" id="welcomeUsername" name="username" required>
+                                    </div>
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-sm btn-primary">Send Welcome Email</button>
+                            <div id="welcomeResult" class="mt-2"></div>
+                        </form>
+                    </div>
+
+                    <!-- Password Reset Email -->
+                    <div class="test-form-section mb-4 pb-4 border-bottom">
+                        <h6 class="mb-3">
+                            <span class="badge bg-primary">2</span> Password Reset Email
+                            <small class="text-muted d-block">Sent when user requests password reset</small>
+                        </h6>
+                        <form id="resetForm" onsubmit="return sendEmail(event, '/settings/email-test/send-reset', 'resetResult')">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-2">
+                                        <label for="resetEmail" class="form-label">Email</label>
+                                        <input type="email" class="form-control form-control-sm" id="resetEmail" name="email" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-2">
+                                        <label for="resetUsername" class="form-label">Username</label>
+                                        <input type="text" class="form-control form-control-sm" id="resetUsername" name="username" required>
+                                    </div>
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-sm btn-primary">Send Reset Email</button>
+                            <div id="resetResult" class="mt-2"></div>
+                        </form>
+                    </div>
+
+                    <!-- Password Changed Email -->
+                    <div class="test-form-section mb-4 pb-4 border-bottom">
+                        <h6 class="mb-3">
+                            <span class="badge bg-primary">3</span> Password Changed Confirmation
+                            <small class="text-muted d-block">Sent after successful password change</small>
+                        </h6>
+                        <form id="changedForm" onsubmit="return sendEmail(event, '/settings/email-test/send-changed', 'changedResult')">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-2">
+                                        <label for="changedEmail" class="form-label">Email</label>
+                                        <input type="email" class="form-control form-control-sm" id="changedEmail" name="email" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-2">
+                                        <label for="changedUsername" class="form-label">Username</label>
+                                        <input type="text" class="form-control form-control-sm" id="changedUsername" name="username" required>
+                                    </div>
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-sm btn-primary">Send Confirmation</button>
+                            <div id="changedResult" class="mt-2"></div>
+                        </form>
+                    </div>
+
+                    <!-- Failed Login Alert -->
+                    <div class="test-form-section mb-4 pb-4 border-bottom">
+                        <h6 class="mb-3">
+                            <span class="badge bg-primary">4</span> Failed Login Alert
+                            <small class="text-muted d-block">Sent after multiple failed login attempts</small>
+                        </h6>
+                        <form id="failedForm" onsubmit="return sendEmail(event, '/settings/email-test/send-failed', 'failedResult')">
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="mb-2">
+                                        <label for="failedEmail" class="form-label">Email</label>
+                                        <input type="email" class="form-control form-control-sm" id="failedEmail" name="email" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="mb-2">
+                                        <label for="failedUsername" class="form-label">Username</label>
+                                        <input type="text" class="form-control form-control-sm" id="failedUsername" name="username" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="mb-2">
+                                        <label for="failedAttempts" class="form-label">Failed Attempts</label>
+                                        <input type="number" class="form-control form-control-sm" id="failedAttempts" name="attempts" value="3" min="1" required>
+                                    </div>
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-sm btn-primary">Send Alert</button>
+                            <div id="failedResult" class="mt-2"></div>
+                        </form>
+                    </div>
+
+                    <!-- New Device Login Alert -->
+                    <div class="test-form-section pb-4">
+                        <h6 class="mb-3">
+                            <span class="badge bg-primary">5</span> New Device Login Alert
+                            <small class="text-muted d-block">Sent when login detected from new device</small>
+                        </h6>
+                        <form id="deviceForm" onsubmit="return sendEmail(event, '/settings/email-test/send-device', 'deviceResult')">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-2">
+                                        <label for="deviceEmail" class="form-label">Email</label>
+                                        <input type="email" class="form-control form-control-sm" id="deviceEmail" name="email" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-2">
+                                        <label for="deviceUsername" class="form-label">Username</label>
+                                        <input type="text" class="form-control form-control-sm" id="deviceUsername" name="username" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-2">
+                                        <label for="device" class="form-label">Device</label>
+                                        <input type="text" class="form-control form-control-sm" id="device" name="device" value="Chrome on Windows" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-2">
+                                        <label for="browser" class="form-label">Browser</label>
+                                        <input type="text" class="form-control form-control-sm" id="browser" name="browser" value="Chrome 120.0" required>
+                                    </div>
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-sm btn-primary">Send Alert</button>
+                            <div id="deviceResult" class="mt-2"></div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+
+        </div>
+    </div>
+</div>
+
+<style>
+    .test-form-section {
+        background-color: #f8f9fa;
+        padding: 1.5rem;
+        border-radius: 0.375rem;
+    }
+    .badge {
+        font-size: 0.75rem;
+        padding: 0.4rem 0.6rem;
+    }
+    .text-monospace {
+        font-family: 'Courier New', monospace;
+        font-size: 0.875rem;
+    }
+    dl {
+        margin-bottom: 0;
+    }
+    dl dt {
+        font-weight: 600;
+        margin-top: 0.5rem;
+    }
+    dl dd {
+        margin-left: 1rem;
+        margin-bottom: 0;
+    }
+    .alert {
+        font-size: 0.875rem;
+        padding: 0.75rem;
+    }
+</style>
+
+<script>
+async function sendEmail(event, endpoint, resultId) {
+    event.preventDefault();
+    const form = event.target;
+    const formData = new FormData(form);
+    const resultDiv = document.getElementById(resultId);
+
+    try {
+        const response = await fetch(endpoint, {
+            method: 'POST',
+            body: formData
+        });
+
+        const data = await response.json();
+
+        if (response.ok && data.success) {
+            resultDiv.innerHTML = `
+                <div class="alert alert-success alert-dismissible fade show">
+                    <strong>Success!</strong> ${data.message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            `;
+        } else {
+            resultDiv.innerHTML = `
+                <div class="alert alert-danger alert-dismissible fade show">
+                    <strong>Error!</strong> ${data.message || 'Failed to send email'}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            `;
+        }
+    } catch (error) {
+        resultDiv.innerHTML = `
+            <div class="alert alert-danger alert-dismissible fade show">
+                <strong>Error!</strong> ${error.message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        `;
+    }
+
+    return false;
+}
+
+async function verifyConnection() {
+    const resultArea = document.getElementById('resultArea');
+
+    try {
+        const response = await fetch('/settings/email-test/verify');
+        const data = await response.json();
+
+        if (response.ok && data.success) {
+            resultArea.innerHTML = `
+                <div class="alert alert-success alert-dismissible fade show">
+                    <strong>✓ Connection Successful!</strong><br>
+                    <small>
+                        Host: ${data.details.host} | 
+                        Port: ${data.details.port} | 
+                        Encryption: ${data.details.encryption}
+                    </small>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            `;
+        } else {
+            resultArea.innerHTML = `
+                <div class="alert alert-danger alert-dismissible fade show">
+                    <strong>✗ Connection Failed!</strong><br>
+                    <small>${data.error}</small>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            `;
+        }
+    } catch (error) {
+        resultArea.innerHTML = `
+            <div class="alert alert-danger alert-dismissible fade show">
+                <strong>Error!</strong> ${error.message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        `;
+    }
+}
+
+async function viewLogs() {
+    const resultArea = document.getElementById('resultArea');
+
+    try {
+        const response = await fetch('/settings/email-test/logs');
+        const data = await response.json();
+
+        if (response.ok && data.success) {
+            let logsHTML = `
+                <div class="card">
+                    <div class="card-header bg-info text-white">
+                        <h6 class="mb-0">Email Logs</h6>
+                    </div>
+                    <div class="card-body">
+                        <p class="small text-muted">
+                            <strong>File:</strong> ${data.logFile}<br>
+                            <strong>Timestamp:</strong> ${data.timestamp}<br>
+                            <strong>Lines:</strong> ${data.lineCount}
+                        </p>
+            `;
+
+            if (data.logs && data.logs.length > 0) {
+                logsHTML += `
+                    <div class="border rounded p-3" style="background-color: #f8f9fa; max-height: 400px; overflow-y: auto;">
+                        <pre class="mb-0 small" style="font-family: 'Courier New', monospace;">`;
+                data.logs.forEach(log => {
+                    logsHTML += (log.replace(/</g, '&lt;').replace(/>/g, '&gt;') + '\n');
+                });
+                logsHTML += '</pre></div>';
+            } else {
+                logsHTML += '<div class="alert alert-info mb-0">No logs found</div>';
+            }
+
+            logsHTML += `
+                    </div>
+                    <div class="card-footer">
+                        <button type="button" class="btn btn-sm btn-secondary" onclick="document.getElementById('resultArea').innerHTML = ''">
+                            <i class="fas fa-times"></i> Close
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            resultArea.innerHTML = logsHTML;
+        } else {
+            resultArea.innerHTML = `
+                <div class="alert alert-danger alert-dismissible fade show">
+                    <strong>Error!</strong> ${data.message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            `;
+        }
+    } catch (error) {
+        resultArea.innerHTML = `
+            <div class="alert alert-danger alert-dismissible fade show">
+                <strong>Error!</strong> ${error.message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        `;
+    }
+}
+</script>
+{% endblock %}

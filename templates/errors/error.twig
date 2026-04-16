@@ -1,0 +1,117 @@
+{% extends "layout.twig" %}
+
+{% block title %} {{error_code}} {% endblock %}
+{% block header_title %}{{error_code}}{% endblock %}
+
+{% block content %}
+{% include 'components/sweetAlert.twig' %}
+<link href="https://fonts.maateen.me/solaiman-lipi/font.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+<script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+
+<style>
+    body {
+        background: linear-gradient(to right, #fdfbfb, #ebedee);
+        font-family: 'SolaimanLipi', sans-serif;
+    }
+    .error-container {
+        max-width: 600px;
+        margin: 80px auto;
+        background-color: #ffffff;
+        border-radius: 20px;
+        box-shadow: 0 12px 30px rgba(0, 0, 0, 0.1);
+        padding: 40px 30px;
+        text-align: center;
+    }
+    .error-container h3 {
+        color: #dc3545;
+        font-size: 28px;
+        font-weight: 700;
+        margin-top: 20px;
+        margin-bottom: 15px;
+    }
+    .error-container p {
+        font-size: 18px;
+        color: #333;
+        margin-bottom: 30px;
+    }
+    .btn-home {
+        font-size: 16px;
+        padding: 12px 30px;
+        border-radius: 30px;
+        transition: all 0.3s ease;
+    }
+    .btn-home:hover {
+        background-color: #0d6efd;
+        color: #fff;
+    }
+    .lottie-wrapper {
+        width: 200px;
+        margin: 0 auto;
+    }
+    .custom-login-btn {
+        padding: 8px 18px;
+        font-weight: 600;
+        border-radius: 30px;
+        background-color: #28a745;
+        color: #fff;
+        text-decoration: none;
+        box-shadow: 0 4px 8px rgba(40, 167, 69, 0.3);
+        transition: background-color 0.3s ease, box-shadow 0.3s ease;
+    }
+    .custom-login-btn:hover {
+        background-color: #218838;
+        box-shadow: 0 6px 12px rgba(33, 136, 56, 0.5);
+        color: #fff;
+    }
+</style>
+
+<div class="error-container">
+    <div class="lottie-wrapper">
+        <lottie-player
+            src="https://lottie.host/7401522f-2d8b-4049-ad18-eb0edb6af224/CE9lFrNlEH.json"
+            background="transparent"
+            speed="1"
+            loop
+            autoplay>
+        </lottie-player>
+    </div>
+
+    {% if error_code == 400 %}
+        <h3><i class="bi bi-exclamation-triangle-fill"></i> ভুল অনুরোধ (400)</h3>
+        <p>আপনার পাঠানো অনুরোধটি সঠিক নয়। দয়া করে পুনরায় চেষ্টা করুন।</p>
+
+    {% elseif error_code == 401 %}
+        <h3><i class="bi bi-shield-lock-fill"></i> অনুমতি নেই (401)</h3>
+        <p>আপনি লগইন করেননি বা আপনার সেশন শেষ হয়ে গেছে।</p>
+        <a href="/login" class="custom-login-btn d-inline-flex align-items-center">
+            <i class="bi bi-box-arrow-in-right me-2"></i> লগইন করুন
+        </a>
+
+    {% elseif error_code == 403 %}
+        <h3><i class="bi bi-lock-fill"></i> প্রবেশ নিষেধ (403)</h3>
+        <p>আপনার এই পৃষ্ঠায় প্রবেশের অনুমতি নেই।</p>
+
+    {% elseif error_code == 404 %}
+        <h3><i class="bi bi-search"></i> পৃষ্ঠা পাওয়া যায়নি (404)</h3>
+        <p>আপনি যে পৃষ্ঠাটি খুঁজছেন সেটি বিদ্যমান নয়।</p>
+
+    {% elseif error_code == 500 %}
+        <h3><i class="bi bi-bug-fill"></i> সার্ভার সমস্যা (500)</h3>
+        <p>আমাদের সার্ভারে একটি সমস্যা হয়েছে। পরে আবার চেষ্টা করুন।</p>
+
+    {% elseif error_code == 503 %}
+        <h3><i class="bi bi-cone-striped"></i> সার্ভিস অস্থায়ীভাবে বন্ধ (503)</h3>
+        <p>সার্ভার বর্তমানে ব্যস্ত বা রক্ষণাবেক্ষণে আছে।</p>
+
+    {% else %}
+        <h3><i class="bi bi-shield-fill-exclamation"></i> অজানা ত্রুটি{% if error_code %} ({{ error_code }}){% endif %}</h3>
+        <p>{{ error_message|default('দুঃখিত, কিছু ভুল হয়েছে।') }}</p>
+    {% endif %}
+
+    <a href="/" class="btn btn-outline-primary btn-home mt-3">
+        <i class="bi bi-house-door-fill"></i> হোম পেইজে ফিরে যান
+    </a>
+</div>
+{% endblock %}

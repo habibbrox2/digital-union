@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{{ title|default('Login') }}</title>
+    
+    {# ✅ CSRF Token Meta Tag #}
+    <meta name="csrf_token" content="{{ csrf_token }}">
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    
+    {# ✅ CSRF JS - Load Early #}
+    <script src="{{ url }}/assets/js/csrf.js?t={{ "now"|date("Hiss") }}"></script>
+    
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
+
+    <style>
+        /* Background Gradient + subtle pattern using SVG */
+        body {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding: 20px;
+        }
+
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(255,255,255,0.1) 0%, transparent 70%),
+                radial-gradient(circle at 80% 80%, rgba(255,255,255,0.05) 0%, transparent 70%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .card {
+            position: relative;
+            z-index: 1;
+            border-radius: 15px;
+            box-shadow: 0 15px 30px rgba(0,0,0,0.3);
+            background: rgba(255, 255, 255, 0.95);
+        }
+
+        h2 {
+            color: #4a2fbd;
+            font-weight: 700;
+        }
+
+        .input-group-text.bg-primary {
+            background-color: #4a2fbd !important;
+            border: none !important;
+            color: white !important;
+        }
+
+        .form-control:focus {
+            box-shadow: 0 0 5px #4a2fbd;
+            border-color: #4a2fbd;
+        }
+
+        .btn-primary {
+            background-color: #4a2fbd;
+            border-color: #4a2fbd;
+            font-weight: 600;
+            font-size: 1.1rem;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary:hover, .btn-primary:focus {
+            background-color: #3a208b;
+            border-color: #3a208b;
+            box-shadow: 0 0 8px #3a208b;
+            transform: translateY(-2px);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Loading spinner */
+        .btn-loading {
+            pointer-events: none;
+        }
+
+        .btn-loading::after {
+            content: '';
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            top: 50%;
+            left: 50%;
+            margin-left: -8px;
+            margin-top: -8px;
+            border: 2px solid #ffffff;
+            border-radius: 50%;
+            border-top-color: transparent;
+            animation: spin 0.6s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        a.text-primary {
+            color: #4a2fbd !important;
+            font-weight: 600;
+        }
+
+        a.text-primary:hover {
+            color: #3a208b !important;
+            text-decoration: underline;
+        }
+
+        .form-check-label {
+            user-select: none;
+        }
+
+        /* Timeout notice styling */
+        .timeout-notice {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeeba;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 20px;
+            text-align: center;
+            animation: slideDown 0.3s ease-out;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Alert animation */
+        .alert {
+            animation: fadeIn 0.3s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+{% block content %}
+
+    <div class="card p-5" style="max-width: 420px; width: 100%;">
+        <h2 class="text-center mb-4">
+            <i class="fas fa-lock text-primary me-2"></i>
+            আপনার অ্যাকাউন্টে প্রবেশ করুন
+        </h2>
+
+        {# ✅ Session timeout notice #}
+        {% if timeout %}
+        <div class="timeout-notice">
+            <i class="fas fa-clock me-2"></i>
+            আপনার সেশন মেয়াদ শেষ হয়েছে। দয়া করে আবার লগইন করুন।
+        </div>
+        {% endif %}
+
+        {# ✅ Static messages from server #}
+        {% if message %}
+        <div class="alert alert-{{ message_type|default('info') }} alert-dismissible fade show" role="alert">
+            {{ message|raw }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endif %}
+
+        {# ✅ SweetAlert messages #}
+        {% if sweetAlert %}
+        <div class="alert alert-{{ sweetAlert.type }} alert-dismissible fade show" role="alert">
+            <strong>{{ sweetAlert.title }}:</strong> {{ sweetAlert.message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endif %}
+
+        {# ✅ Dynamic alert for AJAX responses #}
+        <div id="dynamicAlert" class="alert d-none" role="alert"></div>
+
+        <form id="loginForm" action="/login" method="POST" autocomplete="off" novalidate>
+            {# ✅ CSRF token auto-injected by csrf.js #}
+            
+            {# Hidden redirect field #}
+            <input type="hidden" name="redirect" value="{{ redirect|default('/dashboard') }}">
+            
+            <!-- Username or Email Field -->
+            <div class="mb-3">
+                <label for="username" class="form-label fw-semibold">
+                    <i class="fas fa-user me-1"></i>
+                    ইউজারনেম বা ইমেইল
+                </label>
+                <div class="input-group shadow-sm">
+                    <span class="input-group-text bg-primary">
+                        <i class="fas fa-user"></i>
+                    </span>
+                    <input class="form-control" 
+                           type="text" 
+                           id="username" 
+                           name="username" 
+                           placeholder="আপনার ইউজারনেম বা ইমেইল লিখুন" 
+                           required 
+                           autocomplete="username"
+                           autofocus>
+                </div>
+            </div>
+
+            <!-- Password Field -->
+            <div class="mb-3">
+                <label for="password" class="form-label fw-semibold">
+                    <i class="fas fa-lock me-1"></i>
+                    পাসওয়ার্ড
+                </label>
+                <div class="input-group shadow-sm">
+                    <span class="input-group-text bg-primary">
+                        <i class="fas fa-lock"></i>
+                    </span>
+                    <input class="form-control" 
+                           type="password" 
+                           id="password" 
+                           name="password" 
+                           placeholder="আপনার পাসওয়ার্ড লিখুন" 
+                           required 
+                           autocomplete="current-password">
+                    <button class="btn btn-outline-secondary" 
+                            type="button" 
+                            id="togglePassword"
+                            title="পাসওয়ার্ড দেখান/লুকান">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Remember Me Checkbox -->
+            <div class="form-check mb-4">
+                <input class="form-check-input" type="checkbox" id="remember" name="remember">
+                <label class="form-check-label" for="remember">
+                    মনে রাখুন
+                </label>
+            </div>
+
+            <!-- Login Button -->
+            <button type="submit" class="btn btn-primary w-100 py-2 fw-bold fs-5" id="loginBtn">
+                <i class="fas fa-sign-in-alt me-2"></i> লগইন করুন
+            </button>
+        </form>
+
+        <!-- Forgot Password Link -->
+        <div class="text-center mt-4">
+            <a href="/password-reset" class="text-decoration-none text-muted small">
+                <i class="fas fa-question-circle me-1"></i>
+                পাসওয়ার্ড ভুলে গেছেন?
+            </a>
+        </div>
+
+        <!-- Home Page Link -->
+        <div class="text-center mt-3">
+            <a href="/" class="btn btn-outline-primary btn-sm fw-semibold">
+                <i class="fas fa-home me-1"></i> হোম পেজ
+            </a>
+        </div>
+
+        <!-- Optional: Registration Link -->
+        <!-- <div class="text-center mt-3">
+            <span class="small">নতুন অ্যাকাউন্ট? </span>
+            <a href="/register" class="text-decoration-none text-primary">নিবন্ধন করুন</a>
+        </div> -->
+    </div>
+ 
+{% endblock %}
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+{# ✅ SweetAlert2 (if needed) #}
+{% if sweetAlert %}
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+    Swal.fire({
+        icon: '{{ sweetAlert.type }}',
+        title: '{{ sweetAlert.title }}',
+        text: '{{ sweetAlert.message }}',
+        confirmButtonText: 'ঠিক আছে',
+        timer: 3000
+    });
+</script>
+{% endif %}
+
+<script>
+    // ✅ Password Toggle
+    document.getElementById('togglePassword')?.addEventListener('click', function() {
+        const passwordInput = document.getElementById('password');
+        const icon = this.querySelector('i');
+        
+        if (passwordInput.type === 'password') {
+            passwordInput.type = 'text';
+            icon.classList.remove('fa-eye');
+            icon.classList.add('fa-eye-slash');
+        } else {
+            passwordInput.type = 'password';
+            icon.classList.remove('fa-eye-slash');
+            icon.classList.add('fa-eye');
+        }
+    });
+
+    // ✅ Enhanced AJAX Login Handler
+    document.getElementById('loginForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const form = this;
+        const btn = document.getElementById('loginBtn');
+        const alertBox = document.getElementById('dynamicAlert');
+        const btnText = btn.innerHTML;
+        
+        // Disable button and show loading
+        btn.disabled = true;
+        btn.classList.add('btn-loading');
+        btn.innerHTML = '<span style="opacity: 0;">লগইন করুন</span>';
+        
+        // Hide previous alerts
+        alertBox.classList.add('d-none');
+        
+        try {
+            const formData = new FormData(form);
+            formData.append('return_json', '1'); // Request JSON response
+            
+            const response = await fetch('/login', {
+                method: 'POST',
+                body: formData
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                // ✅ Success
+                alertBox.className = 'alert alert-success';
+                alertBox.innerHTML = '<i class="fas fa-check-circle me-2"></i>' + data.message;
+                
+                // Redirect after delay
+                setTimeout(() => {
+                    window.location.href = data.redirect || '/dashboard';
+                }, 1000);
+            } else {
+                // ✅ Error
+                alertBox.className = 'alert alert-danger';
+                alertBox.innerHTML = '<i class="fas fa-exclamation-circle me-2"></i>' + data.message;
+                
+                // Re-enable button
+                btn.disabled = false;
+                btn.classList.remove('btn-loading');
+                btn.innerHTML = btnText;
+            }
+        } catch (error) {
+            // ✅ Network error
+            alertBox.className = 'alert alert-danger';
+            alertBox.innerHTML = '<i class="fas fa-exclamation-triangle me-2"></i>সংযোগ ত্রুটি। আবার চেষ্টা করুন।';
+            
+            // Re-enable button
+            btn.disabled = false;
+            btn.classList.remove('btn-loading');
+            btn.innerHTML = btnText;
+            
+            console.error('Login error:', error);
+        }
+    });
+
+    // ✅ Auto-hide alerts after 5 seconds
+    setTimeout(() => {
+        const alerts = document.querySelectorAll('.alert:not(#dynamicAlert)');
+        alerts.forEach(alert => {
+            if (alert.classList.contains('show')) {
+                const bsAlert = new bootstrap.Alert(alert);
+                bsAlert.close();
+            }
+        });
+    }, 5000);
+
+    // ✅ Enter key on any field submits form
+    document.querySelectorAll('#loginForm input').forEach(input => {
+        input.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                document.getElementById('loginForm').dispatchEvent(new Event('submit'));
+            }
+        });
+    });
+</script>
+
+</body>
+</html>

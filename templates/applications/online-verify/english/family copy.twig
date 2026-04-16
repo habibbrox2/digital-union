@@ -1,0 +1,538 @@
+<link rel="stylesheet" href="/assets/css/certificate-online-verify.css">
+<style>
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+    
+    body {
+        font-family: Arial, sans-serif;
+        background: #f5f5f5;
+        padding: 15pt;
+    }
+    
+    .certificate-container {
+        max-width: 525pt;
+        margin: 0 auto;
+        background: white;
+        padding: 60pt;
+        box-shadow: 0 0 10pt rgba(0, 0, 0, 0.1);
+        border: 1pt solid #ddd;
+    }
+    
+    .certificate-header {
+        text-align: center;
+        margin-bottom: 37.5pt;
+        border-bottom: 2pt solid #333;
+        padding-bottom: 15pt;
+    }
+    
+    .header-title {
+        font-size: 18.75pt;
+        font-weight: bold;
+        color: #1a1a1a;
+        margin-bottom: 10.5pt;
+    }
+    
+    .header-subtitle {
+        font-size: 12.75pt;
+        color: #333;
+        margin-bottom: 7.5pt;
+    }
+    
+    .union-name {
+        font-size: 12pt;
+        font-weight: bold;
+        color: #0066cc;
+        margin-bottom: 10.5pt;
+    }
+    
+    .certificate-number {
+        font-size: 12pt;
+        font-weight: bold;
+        margin-bottom: 10.5pt;
+    }
+    
+    .cert-no-label {
+        display: inline-block;
+        width: 100pt;
+        font-weight: bold;
+    }
+    
+    .cert-no-value {
+        display: inline-block;
+        padding-bottom: 1pt;
+        border-bottom: 1pt solid #333;
+        width: 250pt;
+        text-align: left;
+    }
+    
+    .info-section {
+        margin-bottom: 30pt;
+    }
+    
+    .section-title {
+        font-size: 12.75pt;
+        font-weight: bold;
+        background: #e8f0f7;
+        padding: 7.5pt;
+        margin-bottom: 12pt;
+        border-left: 3pt solid #0066cc;
+    }
+    
+    .info-row {
+        display: flex;
+        margin-bottom: 12pt;
+        font-size: 11.25pt;
+    }
+    
+    .info-label {
+        font-weight: bold;
+        width: 120pt;
+        color: #333;
+    }
+    
+    .info-value {
+        flex: 1;
+        padding-left: 15pt;
+        color: #1a1a1a;
+        word-break: break-word;
+    }
+    
+    .info-value.underline {
+        border-bottom: 1pt solid #666;
+        padding-bottom: 3pt;
+    }
+    
+    .dual-column-layout {
+        display: flex;
+        gap: 30pt;
+        margin-bottom: 20pt;
+    }
+    
+    .column {
+        flex: 1;
+    }
+    
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 20pt;
+        font-size: 10.5pt;
+    }
+    
+    table thead {
+        background: #d9e8f5;
+        border: 1pt solid #999;
+    }
+    
+    table th {
+        padding: 7.5pt;
+        text-align: left;
+        font-weight: bold;
+        border: 1pt solid #999;
+        font-size: 10.5pt;
+    }
+    
+    table td {
+        padding: 7.5pt;
+        border: 1pt solid #ccc;
+        font-size: 10.5pt;
+    }
+    
+    table tbody tr:nth-child(odd) {
+        background: #f9f9f9;
+    }
+    
+    table tbody tr:nth-child(even) {
+        background: white;
+    }
+    
+    .column-table {
+        width: 100%;
+        font-size: 10.5pt;
+    }
+    
+    .column-table thead {
+        background: #e8f0f7;
+    }
+    
+    .column-table th {
+        padding: 6pt;
+        font-size: 10.5pt;
+        font-weight: bold;
+        border-bottom: 1pt solid #999;
+    }
+    
+    .column-table td {
+        padding: 6pt;
+        border-bottom: 1pt solid #ddd;
+        font-size: 10.5pt;
+    }
+    
+    .members-count {
+        background: #f5f5f5;
+        padding: 12pt;
+        border: 1pt solid #ddd;
+        margin-bottom: 20pt;
+        font-size: 12pt;
+        font-weight: bold;
+    }
+    
+    .members-count-label {
+        display: inline-block;
+        width: 150pt;
+        color: #333;
+    }
+    
+    .members-count-value {
+        text-align: right;
+        width: 60pt;
+        padding-right: 10pt;
+        border-bottom: 1pt dotted #999;
+    }
+    
+    .member-row {
+        margin-bottom: 12pt;
+    }
+    
+    .member-table {
+        width: 100%;
+        font-size: 10.5pt;
+        margin-bottom: 10pt;
+    }
+    
+    .member-table tr {
+        display: table-row;
+    }
+    
+    .member-table td {
+        padding: 5pt;
+        border: 1pt solid #ddd;
+        font-size: 10.5pt;
+    }
+    
+    .empty-cell {
+        height: 20pt;
+        border: 1pt dashed #ddd;
+        background: #fafafa;
+        padding: 3pt;
+        font-size: 10.5pt;
+        color: #999;
+    }
+    
+    .verification-badge {
+        background: #e8f5e9;
+        border: 2pt solid #4caf50;
+        padding: 12pt;
+        border-radius: 4pt;
+        text-align: center;
+        margin-bottom: 20pt;
+    }
+    
+    .verification-badge .badge-title {
+        font-weight: bold;
+        color: #2e7d32;
+        font-size: 12pt;
+    }
+    
+    .verification-badge .badge-date {
+        color: #558b2f;
+        font-size: 10.5pt;
+        margin-top: 3pt;
+    }
+    
+    .signature-section {
+        margin-top: 30pt;
+        display: flex;
+        justify-content: space-between;
+    }
+    
+    .signature-box {
+        width: 120pt;
+        text-align: center;
+        border-top: 1pt solid #333;
+        padding-top: 10pt;
+        font-size: 10.5pt;
+    }
+    
+    .certificate-footer {
+        margin-top: 40pt;
+        text-align: center;
+        font-size: 10.5pt;
+        color: #666;
+        border-top: 1pt solid #ccc;
+        padding-top: 15pt;
+    }
+    
+    .page-break {
+        page-break-after: always;
+        margin-bottom: 30pt;
+    }
+</style>
+
+<div class="certificate-container">
+    <div class="verification-badge">
+        <div class="badge-title">✓ Online Verified Certificate</div>
+        <div class="badge-date">Verified on: {{ 'now'|date('d M Y H:i:s') }}</div>
+    </div>
+    
+    <div class="certificate-header">
+        <div class="header-title">Family Certificate</div>
+        <div class="header-subtitle">Online Verification</div>
+        <div class="union-name">{{ union.union_name_en|default(union.union_name_bn) }}</div>
+        <div class="certificate-number">
+            <span class="cert-no-label">Certificate No:</span>
+            <span class="cert-no-value">{{ application.application_code }}</span>
+        </div>
+    </div>
+    
+    <div class="info-section">
+        <div class="section-title">Head of Family Information</div>
+        
+        <div class="info-row">
+            <div class="info-label">Name</div>
+            <div class="info-value underline">{{ application.head_name_en|default(application.head_name_bn)|default('N/A') }}</div>
+        </div>
+        
+        <div class="info-row">
+            <div class="info-label">Father's Name</div>
+            <div class="info-value underline">{{ application.father_name_en|default(application.father_name_bn)|default('N/A') }}</div>
+        </div>
+        
+        <div class="info-row">
+            <div class="info-label">Mother's Name</div>
+            <div class="info-value underline">{{ application.mother_name_en|default(application.mother_name_bn)|default('N/A') }}</div>
+        </div>
+        
+        <div class="info-row">
+            <div class="info-label">Date of Birth</div>
+            <div class="info-value underline">{{ application.head_dob|date('d M Y')|default('N/A') }}</div>
+        </div>
+        
+        <div class="info-row">
+            <div class="info-label">Address</div>
+            <div class="info-value underline">{{ application.address_en|default(application.address_bn)|default('N/A') }}</div>
+        </div>
+        
+        <div class="info-row">
+            <div class="info-label">Mobile</div>
+            <div class="info-value underline">{{ application.mobile_number|default('N/A') }}</div>
+        </div>
+    </div>
+    
+    <div class="info-section">
+        <div class="section-title">Certificate Details</div>
+        
+        <div class="info-row">
+            <div class="info-label">Issue Date</div>
+            <div class="info-value underline">{{ application.issue_date|date('d M Y') }}</div>
+        </div>
+        
+        <div class="info-row">
+            <div class="info-label">Expiry Date</div>
+            <div class="info-value underline">{{ application.expiry_date|date('d M Y') }}</div>
+        </div>
+    </div>
+    
+    <div class="info-section">
+        <div class="section-title">Family Members</div>
+        
+        <div class="members-count">
+            <span class="members-count-label">Total Members</span>
+            <span class="members-count-value">
+                {% set members = application.family_members|default([]) %}
+                {% if members is iterable %}
+                    {{ members|length }}
+                {% else %}
+                    0
+                {% endif %}
+            </span>
+        </div>
+        
+        {% set members = application.family_members|default([]) %}
+        {% set member_list = members is iterable ? members : [] %}
+        
+        {% if member_list|length > 0 %}
+            {% set mid_point = (member_list|length / 2)|round(0, 'ceil') %}
+            
+            <div class="dual-column-layout">
+                <div class="column">
+                    <table class="column-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 25pt;">S.No</th>
+                                <th style="width: 90pt;">Name</th>
+                                <th style="width: 70pt;">Relation</th>
+                                <th style="width: 60pt;">Age/DOB</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for member in member_list|slice(0, mid_point) %}
+                                <tr>
+                                    <td>{{ loop.index }}</td>
+                                    <td>{{ member.name_en|default(member.name_bn)|default('N/A') }}</td>
+                                    <td>{{ member.relation_en|default(member.relation_bn)|default('Member') }}</td>
+                                    <td>
+                                        {% if member.dob %}
+                                            {{ member.dob|date('d M Y') }}
+                                        {% elseif member.age %}
+                                            Age: {{ member.age }}
+                                        {% else %}
+                                            N/A
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="column">
+                    <table class="column-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 25pt;">S.No</th>
+                                <th style="width: 90pt;">Name</th>
+                                <th style="width: 70pt;">Relation</th>
+                                <th style="width: 60pt;">Age/DOB</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for member in member_list|slice(mid_point) %}
+                                <tr>
+                                    <td>{{ loop.index + mid_point }}</td>
+                                    <td>{{ member.name_en|default(member.name_bn)|default('N/A') }}</td>
+                                    <td>{{ member.relation_en|default(member.relation_bn)|default('Member') }}</td>
+                                    <td>
+                                        {% if member.dob %}
+                                            {{ member.dob|date('d M Y') }}
+                                        {% elseif member.age %}
+                                            Age: {{ member.age }}
+                                        {% else %}
+                                            N/A
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        {% else %}
+            <table class="column-table">
+                <thead>
+                    <tr>
+                        <th style="width: 25pt;">S.No</th>
+                        <th style="width: 150pt;">Name</th>
+                        <th style="width: 100pt;">Relation</th>
+                        <th style="width: 100pt;">Age/DOB</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for i in 1..10 %}
+                        <tr>
+                            <td>{{ i }}</td>
+                            <td class="empty-cell"></td>
+                            <td class="empty-cell"></td>
+                            <td class="empty-cell"></td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% endif %}
+    </div>
+    
+    <div class="info-section">
+        <div class="section-title">Warish Information</div>
+        
+        {% set warish_list = application.warish_members|default([]) %}
+        {% if warish_list is iterable and warish_list|length > 0 %}
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 30pt;">Serial</th>
+                        <th style="width: 120pt;">Name</th>
+                        <th style="width: 100pt;">Relation</th>
+                        <th style="width: 80pt;">Age/DOB</th>
+                        <th style="width: 100pt;">Share</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for warish in warish_list %}
+                        <tr>
+                            <td>{{ loop.index }}</td>
+                            <td>{{ warish.name_en|default(warish.name_bn)|default('N/A') }}</td>
+                            <td>{{ warish.relation_en|default(warish.relation_bn)|default('Warish') }}</td>
+                            <td>
+                                {% if warish.dob %}
+                                    {{ warish.dob|date('d M Y') }}
+                                {% elseif warish.age %}
+                                    Age: {{ warish.age }}
+                                {% else %}
+                                    N/A
+                                {% endif %}
+                            </td>
+                            <td>{{ warish.share|default('Equal') }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 30pt;">Serial</th>
+                        <th style="width: 120pt;">Name</th>
+                        <th style="width: 100pt;">Relation</th>
+                        <th style="width: 80pt;">Age/DOB</th>
+                        <th style="width: 100pt;">Share</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for i in 1..5 %}
+                        <tr>
+                            <td>{{ i }}</td>
+                            <td class="empty-cell"></td>
+                            <td class="empty-cell"></td>
+                            <td class="empty-cell"></td>
+                            <td class="empty-cell"></td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% endif %}
+    </div>
+    
+    <div class="info-section">
+        <div class="section-title">Remarks</div>
+        <div style="min-height: 50pt; border: 1pt dashed #ddd; padding: 12pt; background: #fafafa;">
+            <p style="font-size: 10.5pt; color: #999;">
+                {% if application.remarks %}
+                    {{ application.remarks }}
+                {% else %}
+                    No remarks on record
+                {% endif %}
+            </p>
+        </div>
+    </div>
+    
+    <div class="signature-section">
+        <div class="signature-box">
+            <div style="margin-bottom: 5pt;">Office Seal</div>
+            <div style="height: 36pt; border: 1pt dashed #999;"></div>
+        </div>
+        <div class="signature-box">
+            <div style="margin-bottom: 5pt;">Authorized Officer</div>
+            <div style="height: 36pt; border: 1pt dashed #999;"></div>
+        </div>
+    </div>
+    
+    <div class="certificate-footer">
+        <p>This is a digitally verified certificate. Verification code: {{ application.verification_code|default('') }}</p>
+        <p style="margin-top: 7.5pt; font-size: 10pt;">Printed on: {{ 'now'|date('d M Y H:i:s') }}</p>
+    </div>
+</div>
+
+</section>

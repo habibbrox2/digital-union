@@ -1,0 +1,46 @@
+{# 
+  Breadcrumbs Component
+  Displays automated breadcrumb navigation with Bengali translations
+  
+  Usage in templates:
+  {% include 'components/breadcrumbs.twig' %}
+  
+  Or pass custom breadcrumbs:
+  {% include 'components/breadcrumbs.twig' with {'breadcrumbs': custom_breadcrumbs} %}
+#}
+
+{% if breadcrumbs|default([]) is not empty and show_breadcrumbs|default(false) %}
+<nav class="breadcrumb-nav" aria-label="breadcrumb" role="navigation">
+    <div class="breadcrumb-container">
+        <ol class="breadcrumb" itemscope itemtype="https://schema.org/BreadcrumbList">
+            {% for breadcrumb in breadcrumbs %}
+                <li class="breadcrumb-item {% if breadcrumb.is_active|default(false) %}active{% endif %}" 
+                    itemprop="itemListElement" 
+                    itemscope 
+                    itemtype="https://schema.org/ListItem"
+                    {% if breadcrumb.is_active|default(false) %}aria-current="page"{% endif %}>
+                    
+                    {% if breadcrumb.url is defined and not breadcrumb.is_active|default(false) %}
+                        <a href="{{ breadcrumb.url }}" 
+                           class="breadcrumb-link" 
+                           itemprop="item"
+                           title="{{ breadcrumb.name }}">
+                            {% if breadcrumb.icon|default(false) %}
+                                <i class="{{ breadcrumb.icon }}" aria-hidden="true"></i>
+                            {% endif %}
+                            <span itemprop="name">{{ breadcrumb.name }}</span>
+                        </a>
+                    {% else %}
+                        {% if breadcrumb.icon|default(false) %}
+                            <i class="{{ breadcrumb.icon }}" aria-hidden="true"></i>
+                        {% endif %}
+                        <span itemprop="name">{{ breadcrumb.name }}</span>
+                    {% endif %}
+                    
+                    <meta itemprop="position" content="{{ loop.index }}">
+                </li>
+            {% endfor %}
+        </ol>
+    </div>
+</nav>
+{% endif %}

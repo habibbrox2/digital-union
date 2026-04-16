@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <style>
+        .dropdown-container {
+            display: flex;
+            gap: 15px;
+        }
+        .dropdown-column {
+            flex: 1;
+        }
+        .form-label {
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container mt-5">
+    <h1 class="mb-4">{{ title }}</h1>
+
+    <!-- Division Dropdown -->
+    <div class="mb-3">
+        <label for="division" class="form-label">Division</label>
+        <div class="dropdown-container">
+            <div class="dropdown-column">
+                <label for="division_bn" class="form-label">বাংলা</label>
+                <select class="form-select" id="division_bn" name="division_code">
+                    <option value="">বিভাগ নির্বাচন করুন</option>
+                    {% for division in divisions %}
+                        <option value="{{ division.division_code }}">{{ division.division_name_bn }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="dropdown-column">
+                <label for="division_en" class="form-label">English</label>
+                <select class="form-select" id="division_en" name="division_code">
+                    <option value="">Select Division</option>
+                    {% for division in divisions %}
+                        <option value="{{ division.division_code }}">{{ division.division_name_en }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- District Dropdown -->
+    <div class="mb-3">
+        <label for="district" class="form-label">District</label>
+        <div class="dropdown-container">
+            <div class="dropdown-column">
+                <label for="district_bn" class="form-label">বাংলা</label>
+                <select class="form-select" id="district_bn" name="district_code" disabled>
+                    <option value="">জেলা নির্বাচন করুন</option>
+                </select>
+            </div>
+            <div class="dropdown-column">
+                <label for="district_en" class="form-label">English</label>
+                <select class="form-select" id="district_en" name="district_code" disabled>
+                    <option value="">Select District</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- Upazila Dropdown -->
+    <div class="mb-3">
+        <label for="upazila" class="form-label">Upazila</label>
+        <div class="dropdown-container">
+            <div class="dropdown-column">
+                <label for="upazila_bn" class="form-label">বাংলা</label>
+                <select class="form-select" id="upazila_bn" name="upazila_code" disabled>
+                    <option value="">উপজেলা নির্বাচন করুন</option>
+                </select>
+            </div>
+            <div class="dropdown-column">
+                <label for="upazila_en" class="form-label">English</label>
+                <select class="form-select" id="upazila_en" name="upazila_code" disabled>
+                    <option value="">Select Upazila</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- Union Dropdown or Text Input -->
+    <div class="mb-3">
+        <label for="union" class="form-label">Union</label>
+        <div class="dropdown-container">
+            <div class="dropdown-column">
+                <label for="union_bn" class="form-label">বাংলা</label>
+                <div id="union_bn_container">
+                    <select class="form-select" id="union_bn" name="union_code" disabled>
+                        <option value="">ইউনিয়ন নির্বাচন করুন</option>
+                    </select>
+                </div>
+            </div>
+            <div class="dropdown-column">
+                <label for="union_en" class="form-label">English</label>
+                <div id="union_en_container">
+                    <select class="form-select" id="union_en" name="union_code" disabled>
+                        <option value="">Select Union</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Ward Dropdown or Dropdown with Options 1 to 10 -->
+    <div class="mb-3">
+        <label for="ward" class="form-label">Ward</label>
+        <div class="dropdown-container">
+            <div class="dropdown-column">
+                <label for="ward_bn" class="form-label">বাংলা</label>
+                <div id="ward_bn_container">
+                    <select class="form-select" id="ward_bn" name="ward_code" disabled>
+                        <option value="">ওয়ার্ড নির্বাচন করুন</option>
+                    </select>
+                </div>
+            </div>
+            <div class="dropdown-column">
+                <label for="ward_en" class="form-label">English</label>
+                <div id="ward_en_container">
+                    <select class="form-select" id="ward_en" name="ward_code" disabled>
+                        <option value="">Select Ward</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Village Dropdown or Text Input -->
+    <div class="mb-3">
+        <label for="village" class="form-label">Village</label>
+        <div class="dropdown-container">
+            <div class="dropdown-column">
+                <label for="village_bn" class="form-label">বাংলা</label>
+                <div id="village_bn_container">
+                    <input class="form-control" id="village_bn" name="village_code" placeholder="Enter Village Name" disabled>
+                </div>
+            </div>
+            <div class="dropdown-column">
+                <label for="village_en" class="form-label">English</label>
+                <div id="village_en_container">
+                    <input class="form-control" id="village_en" name="village_code" placeholder="Enter Village Name" disabled>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    $(document).ready(function () {
+        function resetDropdowns(startDropdown) {
+            let reset = false;
+            $('select').each(function () {
+                if (reset) {
+                    $(this).empty().prop('disabled', true).append('<option value="">Select</option>');
+                }
+                if ($(this).attr('id') === startDropdown) {
+                    reset = true;
+                }
+            });
+        }
+
+        // Dynamically load districts based on selected division
+        $('#division_bn, #division_en').change(function () {
+            const divisionCode = $(this).val();
+            resetDropdowns('division');
+            if (divisionCode) {
+                $.get('/geo/districts', { division_code: divisionCode }, function (data) {
+                    const districts = JSON.parse(data);
+                    $('#district_bn, #district_en').empty().append('<option value="">Select District</option>');
+                    districts.forEach(d => {
+                        $('#district_bn').append('<option value="' + d.district_code + '">' + d.district_name_bn + '</option>');
+                        $('#district_en').append('<option value="' + d.district_code + '">' + d.district_name_en + '</option>');
+                    });
+                    $('#district_bn, #district_en').prop('disabled', false);
+                });
+            } else {
+                $('#district_bn, #district_en').prop('disabled', true).empty().append('<option value="">Select District</option>');
+            }
+        });
+
+        // Dynamically load upazilas based on selected district
+        $('#district_bn, #district_en').change(function () {
+            const districtCode = $(this).val();
+            resetDropdowns('district');
+            if (districtCode) {
+                $.get('/geo/upazilas', { district_code: districtCode }, function (data) {
+                    const upazilas = JSON.parse(data);
+                    $('#upazila_bn, #upazila_en').empty().append('<option value="">Select Upazila</option>');
+                    upazilas.forEach(u => {
+                        $('#upazila_bn').append('<option value="' + u.upazila_code + '">' + u.upazila_name_bn + '</option>');
+                        $('#upazila_en').append('<option value="' + u.upazila_code + '">' + u.upazila_name_en + '</option>');
+                    });
+                    $('#upazila_bn, #upazila_en').prop('disabled', false);
+                });
+            } else {
+                $('#upazila_bn, #upazila_en').prop('disabled', true).empty().append('<option value="">Select Upazila</option>');
+            }
+        });
+
+        // Dynamically load unions based on selected upazila
+        $('#upazila_bn, #upazila_en').change(function () {
+            const upazilaCode = $(this).val();
+            resetDropdowns('upazila');
+            if (upazilaCode) {
+                $.get('/geo/unions', { upazila_code: upazilaCode }, function (data) {
+                    const unions = JSON.parse(data);
+                    if (unions.length > 0) {
+                        $('#union_bn_container').html('<select class="form-select" id="union_bn" name="union_code"></select>');
+                        $('#union_en_container').html('<select class="form-select" id="union_en" name="union_code"></select>');
+                        unions.forEach(u => {
+                            $('#union_bn').append('<option value="' + u.union_code + '">' + u.union_name_bn + '</option>');
+                            $('#union_en').append('<option value="' + u.union_code + '">' + u.union_name_en + '</option>');
+                        });
+                        $('#union_bn, #union_en').prop('disabled', false);
+                        $('#village_bn_container').html('<input class="form-control" id="village_bn" name="village_code" placeholder="Enter Village Name" disabled>');
+                        $('#village_en_container').html('<input class="form-control" id="village_en" name="village_code" placeholder="Enter Village Name" disabled>');
+                    } else {
+                        $('#union_bn_container').html('<input class="form-control" id="union_bn" name="union_code" placeholder="Enter Union Name" disabled>');
+                        $('#union_en_container').html('<input class="form-control" id="union_en" name="union_code" placeholder="Enter Union Name" disabled>');
+                    }
+                    $('#ward_bn_container').html('<select class="form-select" id="ward_bn" name="ward_code"></select>');
+                    $('#ward_en_container').html('<select class="form-select" id="ward_en" name="ward_code"></select>');
+                    for (let i = 1; i <= 10; i++) {
+                        $('#ward_bn').append('<option value="' + i + '">' + i + '</option>');
+                        $('#ward_en').append('<option value="' + i + '">' + i + '</option>');
+                    }
+                    $('#ward_bn, #ward_en').prop('disabled', false);
+                });
+            } else {
+                $('#union_bn_container').html('<input class="form-control" id="union_bn" name="union_code" placeholder="Enter Union Name" disabled>');
+                $('#union_en_container').html('<input class="form-control" id="union_en" name="union_code" placeholder="Enter Union Name" disabled>');
+                $('#ward_bn_container').html('<select class="form-select" id="ward_bn" name="ward_code"></select>');
+                $('#ward_en_container').html('<select class="form-select" id="ward_en" name="ward_code"></select>');
+                for (let i = 1; i <= 10; i++) {
+                    $('#ward_bn').append('<option value="' + i + '">' + i + '</option>');
+                    $('#ward_en').append('<option value="' + i + '">' + i + '</option>');
+                }
+                $('#ward_bn, #ward_en').prop('disabled', false);
+                $('#village_bn_container').html('<input class="form-control" id="village_bn" name="village_code" placeholder="Enter Village Name" disabled>');
+                $('#village_en_container').html('<input class="form-control" id="village_en" name="village_code" placeholder="Enter Village Name" disabled>');
+            }
+        });
+    });
+</script>
+
+</body>
+</html>

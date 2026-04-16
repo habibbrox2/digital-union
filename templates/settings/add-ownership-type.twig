@@ -1,0 +1,34 @@
+{# templates/settings/add-ownership-type.twig #}
+{% extends 'layout.twig' %}
+
+{% block title %}মালিকানার ধরণ যোগ করুন{% endblock %}
+{% block header_title %}{{ header_title|default('মালিকানার ধরণ যোগ করুন') }}{% endblock %}
+
+{% block content %}
+{% if not is_logged_in %}
+    {% set redirect = "<script>window.location.href='/#';</script>" %}
+    {{ redirect|raw }}
+{% endif %}
+
+    <h2>Add Ownership Type</h2>
+    {% if status %}
+        <div class="alert alert-{{ status == 'success' ? 'success' : 'danger' }}">
+            {{ message }}
+        </div>
+    {% endif %}
+
+    <form action="/settings/ownership-types/add" method="POST">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+        <div class="form-group">
+            <label for="ownership_type">Ownership Type</label>
+            <input type="text" id="ownership_type" name="ownership_type" class="form-control" required>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Add Ownership Type</button>
+    </form>
+    <a href="{{ previous_url }}" class="btn btn-secondary">Back</a>
+
+{% endblock %}
+
+

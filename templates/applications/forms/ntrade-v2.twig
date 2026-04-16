@@ -1,0 +1,152 @@
+{% extends "layout.twig" %}
+
+{% block title %}আবেদন ফরম{% endblock %}
+{% block header_title %}আবেদন ফরম{% endblock %}
+
+{% block content %}
+
+<link rel="stylesheet" href="/assets/css/forms.css">
+
+<div class="container mt-4 px-3">
+
+    <h2 class="text-center my-4 fw-bold">{{ certificate_type_bn }}</h2>
+
+    {# নিয়মাবলী ও সাবমিট #}
+    {% include 'partials/forms/rules.twig' %}
+
+    <form id="applicationForm" 
+          method="POST" 
+          action="{{ application ? '/applications/' ~ certificate_type ~ '/update/' ~ data.application_id : '/applications/' ~ certificate_type ~ '/insert' }}" 
+          enctype="multipart/form-data">
+
+        <input type="hidden" name="certificate_type" value="{{ certificate_type }}">
+        {% if application %}
+            <input type="hidden" name="application_id" value="{{ data.application_id }}">
+        {% endif %}
+        {% include 'partials/forms/union_selection.twig' %}
+
+        {# ================= ব্যবসায়িক তথ্য ================= #}
+        <fieldset class="border rounded p-3 mb-4">
+            <legend class="w-auto px-2">ব্যবসায়িক তথ্য</legend>
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="business_name_en" class="form-label">প্রতিষ্ঠানের নাম (ইংরেজিতে)</label>
+                    <input type="text" name="business_name_en" id="business_name_en" class="form-control" 
+                           placeholder="Business Name" value="{{ data.business_name_en ?? '' }}">
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="business_name_bn" class="form-label">প্রতিষ্ঠানের নাম (বাংলায়)</label>
+                    <input type="text" name="business_name_bn" id="business_name_bn" class="form-control" 
+                           placeholder="প্রতিষ্ঠানের নাম" value="{{ data.business_name_bn ?? '' }}">
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="business_ownership_type" class="form-label">প্রতিষ্ঠানের মালিকানার ধরণ *</label>
+                    <select name="business_ownership_type" id="business_ownership_type" class="form-control" required>
+                        <option value="">চিহ্নিত করুন</option>
+                        {% for type in ownership_types %}
+                            <option value="{{ type.id }}" {% if data.business_ownership_type == type.id %}selected{% endif %}>
+                                {{ type.ownership_name_bn }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="business_type" class="form-label">ব্যবসার ধরন *</label>
+                    <select name="business_type" id="business_type" class="form-control" required>
+                        <option value="">চিহ্নিত করুন</option>
+                        {% for type in business_types %}
+                            <option value="{{ type.id }}" {% if data.business_type == type.id %}selected{% endif %}>
+                                {{ type.business_name_bn }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="tin_no" class="form-label">টিআইএন (TIN) নম্বর</label>
+                    <input type="text" name="tin_no" id="tin_no" class="form-control" 
+                           value="{{ data.tin_no ?? '' }}">
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="vat_no" class="form-label">ভ্যাট (VAT) রেজিস্ট্রেশন নম্বর</label>
+                    <input type="text" name="vat_no" id="vat_no" class="form-control" 
+                           value="{{ data.vat_no ?? '' }}">
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="paid_up_capital" class="form-label">পরিশোধিত মূলধন *</label>
+                    <input type="text" name="paid_up_capital" id="paid_up_capital" class="form-control" 
+                           value="{{ data.paid_up_capital ?? '' }}">
+                </div>
+            </div>
+
+        </fieldset>
+
+        {# ================= ব্যক্তিগত তথ্য ================= #}
+        <fieldset class="border rounded p-3 mb-4">
+            <legend class="w-auto px-2">ব্যক্তিগত তথ্য</legend>
+            {% include 'partials/forms/personal_info.twig' with { data: data } %}
+        </fieldset>
+
+        {# ================= ঠিকানা তথ্য ================= #}
+        <fieldset class="border rounded p-3 mb-4">
+            <legend class="w-auto px-2">বর্তমান ঠিকানা</legend>
+            <div id="present_address_fields">
+                {% include 'partials/forms/address_fields.twig' with { prefix: 'present', data: data ?? null } %}
+            </div>
+        </fieldset>
+
+        <fieldset class="border rounded p-3 mb-4">
+            <legend class="w-auto px-2">স্থায়ী ঠিকানা</legend>
+            <div class="form-check mb-2">
+                <input class="form-check-input" type="checkbox" id="copy_present_to_permanent">
+                <label class="form-check-label" for="copy_present_to_permanent">
+                    বর্তমান ঠিকানা থেকে স্থায়ী ঠিকানা কপি করুন
+                </label>
+            </div>
+            <div id="permanent_address_fields">
+                {% include 'partials/forms/address_fields.twig' with { prefix: 'permanent', data: data ?? null } %}
+            </div>
+        </fieldset>
+
+        <fieldset class="border rounded p-3 mb-4">
+            <legend class="w-auto px-2">ব্যবসার ঠিকানা</legend>
+            <div class="form-check mb-2">
+                <input class="form-check-input" type="checkbox" id="copy_present_to_business">
+                <label class="form-check-label" for="copy_present_to_business">
+                    বর্তমান ঠিকানা থেকে ব্যবসায়িক ঠিকানা কপি করুন
+                </label>
+            </div>
+            <div id="business_address_fields">
+                {% include 'partials/forms/address_fields.twig' with { prefix: 'business', data: data ?? null } %}
+            </div>
+        </fieldset>
+
+        {# ================= Final Confirmation & Upload ================= #}
+        <div class="card p-3 mb-4 shadow-sm border-primary g-3">
+            {% include 'partials/forms/confirmation_upload.twig' with { data: data } %}
+        </div>
+        <div class="text-end mt-4">
+            <button type="submit" class="btn btn-success submit-button">
+                {{ application ? 'আপডেট করুন' : 'জমা দিন' }}
+            </button>
+        </div>
+
+    </form>
+
+</div>
+
+{% include 'partials/forms/success_modal.twig' %}
+
+
+
+{% endblock %}
+

@@ -1,0 +1,305 @@
+{% extends "layout.twig" %}
+
+{% block title %}{{ 'মাই প্রোফাইল' }} - {{ profileData.username }}{% endblock %}
+{% block header_title %}{{ header_title|default('মাই প্রোফাইল') }}{% endblock %}
+
+{% block content %}
+{% include 'components/sweetAlert.twig' %}
+
+{% if not is_logged_in %}
+<script>window.location.href='/login';</script>
+{% endif %}
+
+<div class="container-fluid mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-10 col-lg-9">
+            
+            <!-- Profile Header Card -->
+            <div class="card shadow-lg mb-4">
+                <div class="card-header bg-gradient text-white py-5">
+                    <div class="d-flex align-items-center gap-4">
+                        <div class="position-relative">
+                            {% if profileData.profile_picture_url %}
+                            <img src="{{ profileData.profile_picture_url }}" alt="Profile" 
+                                 class="rounded-circle shadow" width="120" height="120" style="object-fit: cover;">
+                            {% else %}
+                            <div class="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center shadow" 
+                                 style="width: 120px; height: 120px;">
+                                <i class="fas fa-user fs-1"></i>
+                            </div>
+                            {% endif %}
+                            {% if profileData.email_verified_at %}
+                            <div class="position-absolute bottom-0 end-0 bg-success rounded-circle p-2" title="{{ 'যাচাইকৃত' }}">
+                                <i class="fas fa-check text-white"></i>
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div>
+                            <h2 class="mb-1">{{ profileData.name_bn ?? profileData.name_en ?? profileData.username }}</h2>
+                            <p class="mb-2 text-light">
+                                <code>@{{ profileData.username }}</code>
+                            </p>
+                            <div class="d-flex gap-2 flex-wrap">
+                                <span class="badge bg-info">{{ profileData.role_name ?? 'সদস্য' }}</span>
+                                {% if profileData.union_name_bn %}
+                                <span class="badge bg-secondary">{{ profileData.union_name_bn }}</span>
+                                {% endif %}
+                                {% if profileData.email_verified_at %}
+                                <span class="badge bg-success">{{ 'যাচাইকৃত' }}</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="ms-auto">
+                            <a href="/profile/edit" class="btn btn-light btn-lg">
+                                <i class="fas fa-edit"></i> {{ 'সম্পাদনা' }}
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Personal Information -->
+            <div class="card shadow-lg mb-4">
+                <div class="card-header bg-primary text-white py-3">
+                    <h5 class="mb-0">
+                        <i class="fas fa-user-circle"></i> {{ 'ব্যক্তিগত তথ্য' }}
+                    </h5>
+                </div>
+                <div class="card-body p-4">
+                    <div class="row g-4">
+                        <div class="col-md-6">
+                            <small class="text-muted d-block mb-1">{{ 'ইমেইল' }}</small>
+                            <strong class="d-block fs-6">
+                                {{ profileData.email }}
+                                {% if profileData.email_verified_at %}
+                                <span class="badge bg-success ms-2">{{ 'যাচাইকৃত' }}</span>
+                                {% else %}
+                                <span class="badge bg-warning ms-2">{{ 'অনুমোদনযোগ্য' }}</span>
+                                {% endif %}
+                            </strong>
+                        </div>
+                        <div class="col-md-6">
+                            <small class="text-muted d-block mb-1">{{ 'ফোন নম্বর' }}</small>
+                            <strong class="d-block fs-6">
+                                {{ profileData.phone_number ?? '-' }}
+                                {% if profileData.phone_verified_at %}
+                                <span class="badge bg-success ms-2">{{ 'যাচাইকৃত' }}</span>
+                                {% endif %}
+                            </strong>
+                        </div>
+                        <div class="col-md-6">
+                            <small class="text-muted d-block mb-1">{{ 'ঠিকানা' }}</small>
+                            <strong class="d-block fs-6">{{ profileData.address ?? 'উল্লেখ নেই' }}</strong>
+                        </div>
+                        <div class="col-md-6">
+                            <small class="text-muted d-block mb-1">{{ 'সংক্ষিপ্ত পরিচয়' }}</small>
+                            <strong class="d-block fs-6">{{ profileData.bio ?? 'নির্দিষ্ট নেই' }}</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Account Information -->
+            <div class="card shadow-lg mb-4">
+                <div class="card-header bg-info text-white py-3">
+                    <h5 class="mb-0">
+                        <i class="fas fa-id-card"></i> {{ 'অ্যাকাউন্ট তথ্য' }}
+                    </h5>
+                </div>
+                <div class="card-body p-4">
+                    <div class="row g-4">
+                        <div class="col-md-6">
+                            <small class="text-muted d-block mb-1">{{ 'ব্যবহারকারী আইডি' }}</small>
+                            <strong class="d-block fs-6">#{{ profileData.user_id }}</strong>
+                        </div>
+                        <div class="col-md-6">
+                            <small class="text-muted d-block mb-1">{{ 'ভূমিকা' }}</small>
+                            <strong class="d-block fs-6">
+                                {% if profileData.role_id == 1 %}
+                                <span class="badge bg-danger">প্রশাসক</span>
+                                {% elseif profileData.role_id == 2 %}
+                                <span class="badge bg-primary">সচিব</span>
+                                {% elseif profileData.role_id == 3 %}
+                                <span class="badge bg-secondary">অফিসার</span>
+                                {% else %}
+                                <span class="badge bg-light text-dark">সদস্য</span>
+                                {% endif %}
+                            </strong>
+                        </div>
+                        <div class="col-md-6">
+                            <small class="text-muted d-block mb-1">{{ 'সদস্য যোগদান' }}</small>
+                            <strong class="d-block fs-6">{{ profileData.created_at|date('d F, Y') }}</strong>
+                        </div>
+                        <div class="col-md-6">
+                            <small class="text-muted d-block mb-1">{{ 'স্থিতি' }}</small>
+                            <strong class="d-block fs-6">
+                                {% if profileData.status == 'active' %}
+                                <span class="badge bg-success">সক্রিয়</span>
+                                {% else %}
+                                <span class="badge bg-danger">নিষ্ক্রিয়</span>
+                                {% endif %}
+                            </strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Organization Information -->
+            {% if profileData.union_name_bn or profileData.upazila_name_bn or profileData.district_name_bn %}
+            <div class="card shadow-lg mb-4">
+                <div class="card-header bg-warning text-dark py-3">
+                    <h5 class="mb-0">
+                        <i class="fas fa-building"></i> {{ 'সংস্থা তথ্য' }}
+                    </h5>
+                </div>
+                <div class="card-body p-4">
+                    <div class="row g-4">
+                        {% if profileData.division_name_bn %}
+                        <div class="col-md-6">
+                            <small class="text-muted d-block mb-1">{{ 'বিভাগ' }}</small>
+                            <strong class="d-block fs-6">
+                                {{ profileData.division_name_bn }}
+                                <span class="text-muted">({{ profileData.division_name_en }})</span>
+                            </strong>
+                        </div>
+                        {% endif %}
+                        {% if profileData.district_name_bn %}
+                        <div class="col-md-6">
+                            <small class="text-muted d-block mb-1">{{ 'জেলা' }}</small>
+                            <strong class="d-block fs-6">
+                                {{ profileData.district_name_bn }}
+                                <span class="text-muted">({{ profileData.district_name_en }})</span>
+                            </strong>
+                        </div>
+                        {% endif %}
+                        {% if profileData.upazila_name_bn %}
+                        <div class="col-md-6">
+                            <small class="text-muted d-block mb-1">{{ 'উপজেলা' }}</small>
+                            <strong class="d-block fs-6">
+                                {{ profileData.upazila_name_bn }}
+                                <span class="text-muted">({{ profileData.upazila_name_en }})</span>
+                            </strong>
+                        </div>
+                        {% endif %}
+                        {% if profileData.union_name_bn %}
+                        <div class="col-md-6">
+                            <small class="text-muted d-block mb-1">{{ 'ইউনিয়ন' }}</small>
+                            <strong class="d-block fs-6">
+                                {{ profileData.union_name_bn }}
+                                <span class="text-muted">({{ profileData.union_name_en }})</span>
+                            </strong>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Activity Log -->
+            <div class="card shadow-lg mb-4">
+                <div class="card-header bg-secondary text-white py-3">
+                    <h5 class="mb-0">
+                        <i class="fas fa-history"></i> {{ 'কার্যকলাপ ইতিহাস' }}
+                    </h5>
+                </div>
+                <div class="card-body p-4">
+                    <div class="row g-4">
+                        <div class="col-md-6">
+                            <small class="text-muted d-block mb-1">{{ 'শেষ লগইন' }}</small>
+                            <strong class="d-block fs-6">
+                                {% if profileData.last_login %}
+                                {{ profileData.last_login|date('d F Y, H:i') }}
+                                {% else %}
+                                <em class="text-muted">{{ 'কখনও' }}</em>
+                                {% endif %}
+                            </strong>
+                        </div>
+                        <div class="col-md-6">
+                            <small class="text-muted d-block mb-1">{{ 'শেষ লগইন IP' }}</small>
+                            <code class="d-block fs-6">{{ profileData.ip_address ?? '-' }}</code>
+                        </div>
+                        <div class="col-md-6">
+                            <small class="text-muted d-block mb-1">{{ 'শেষ পাসওয়ার্ড পরিবর্তন' }}</small>
+                            <strong class="d-block fs-6">
+                                {% if profileData.last_password_change %}
+                                {{ profileData.last_password_change|date('d F Y') }}
+                                {% else %}
+                                <em class="text-muted">{{ 'কখনও' }}</em>
+                                {% endif %}
+                            </strong>
+                        </div>
+                        <div class="col-md-6">
+                            <small class="text-muted d-block mb-1">{{ 'লগইন প্রচেষ্টা' }}</small>
+                            <strong class="d-block fs-6">
+                                <span class="badge bg-info">{{ profileData.login_attempts ?? '0' }}</span>
+                            </strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Preferences -->
+            <div class="card shadow-lg">
+                <div class="card-header bg-dark text-white py-3">
+                    <h5 class="mb-0">
+                        <i class="fas fa-cog"></i> {{ 'পছন্দসমূহ' }}
+                    </h5>
+                </div>
+                <div class="card-body p-4">
+                    <div class="row g-4">
+                        <div class="col-md-6">
+                            <small class="text-muted d-block mb-1">{{ 'ভাষা পছন্দ' }}</small>
+                            <strong class="d-block fs-6">
+                                {% if profileData.language_preference == 'en' %}
+                                {{ 'ইংরেজি' }}
+                                {% else %}
+                                {{ 'বাংলা' }}
+                                {% endif %}
+                            </strong>
+                        </div>
+                        <div class="col-md-6">
+                            <small class="text-muted d-block mb-1">{{ 'সময় অঞ্চল' }}</small>
+                            <strong class="d-block fs-6">{{ profileData.timezone ?? 'Asia/Dhaka' }}</strong>
+                        </div>
+                        <div class="col-md-6">
+                            <small class="text-muted d-block mb-1">{{ 'ইমেইল বিজ্ঞপ্তি' }}</small>
+                            <strong class="d-block fs-6">
+                                {% if profileData.is_email_notifications_enabled %}
+                                <span class="badge bg-success">{{ 'সক্ষম' }}</span>
+                                {% else %}
+                                <span class="badge bg-danger">{{ 'অক্ষম' }}</span>
+                                {% endif %}
+                            </strong>
+                        </div>
+                        <div class="col-md-6">
+                            <small class="text-muted d-block mb-1">{{ 'এসএমএস বিজ্ঞপ্তি' }}</small>
+                            <strong class="d-block fs-6">
+                                {% if profileData.is_sms_notifications_enabled %}
+                                <span class="badge bg-success">{{ 'সক্ষম' }}</span>
+                                {% else %}
+                                <span class="badge bg-danger">{{ 'অক্ষম' }}</span>
+                                {% endif %}
+                            </strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<style>
+.bg-gradient {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.text-gradient {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+</style>
+
+{% endblock %}

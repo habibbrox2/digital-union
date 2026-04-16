@@ -1,0 +1,208 @@
+{% extends "layout.twig" %}
+
+{% block title %}সাধারণ আবেদন ফরম{% endblock %}
+
+{% block header_title %}সাধারণ আবেদন ফরম{% endblock %}
+
+{% block content %}
+
+<link rel="stylesheet" href="/assets/css/forms.css">
+
+
+<div class="container mt-4 px-3">
+
+    <h2 id="formTitle" class="text-center my-4 fw-bold">আবেদন ফরম</h2>
+
+    {# নিয়মাবলী ও সাবমিট #}
+    {% include 'partials/forms/rules.twig' %} 
+
+        
+
+
+    <form id="applicationForm" method="POST" action="" enctype="multipart/form-data">
+        <input type="hidden" id="certificate_type" name="certificate_type" value="{{ certificate_type }}">
+        
+            <fieldset class="border rounded p-3 mb-4">
+                <legend class="w-auto px-2">ইউনিয়ন বাছাই করুন</legend>
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label for="district_dropdown" class="form-label">জেলা</label>
+                            <select id="district_dropdown" name="district" class="form-control" required>
+                            <option value="3026" selected data-geo-code="3026" data-name-en="DHAKA" data-name-bn="ঢাকা" data-geo-id="25">ঢাকা</option> 
+                            </select>
+                        </div>
+
+                        <div class="col-md-4 mb-3">
+                            <label for="upazila_dropdown" class="form-label">উপজেলা</label>
+                            <select id="upazila_dropdown" name="upazila" class="form-control" required>
+                                <option value="">উপজেলা নির্বাচন করুন</option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-4 mb-3">
+                            <label for="union_dropdown" class="form-label">ইউনিয়ন</label>
+                            <select id="union_dropdown" name="union_code" class="form-control" required>
+                                <option value="">ইউনিয়ন নির্বাচন করুন</option>
+                            </select>
+                        </div>
+                    </div>
+            </fieldset>
+
+
+        {# ব্যক্তিগত তথ্য অংশ #}
+        <fieldset class="border rounded p-3 mb-4">
+            <legend class="w-auto px-2">ব্যক্তিগত তথ্য</legend>
+            {% include 'partials/forms/personal_info.twig' %}
+        </fieldset>
+
+         {% if certificate_type == 'family' %}
+            <fieldset class="border rounded p-3 mb-4">
+            <legend class="w-auto px-2">পরিবারের সদস্যগণের তালিকা</legend>
+                <div class="row">
+                <div class="col-12">
+                    <div id="warishMember">
+                        <div class="row g-2 warish_entry border rounded p-3 mb-2">
+                            <!-- ক্রমিক -->
+                            <div class="col-md-1">
+                                <input type="number" name="serial_no[]" class="form-control" placeholder="ক্রমিক" value="1">
+                            </div>
+
+                            <!-- নাম (বাংলায়) -->
+                            <div class="col-md-2">
+                                <input type="text" name="warish_name_bn[]" class="form-control" placeholder="নাম (বাংলায়)">
+                            </div>
+
+                            <!-- নাম (ইংরেজিতে) -->
+                            <div class="col-md-2">
+                                <input type="text" name="warish_name_en[]" class="form-control" placeholder="নাম (ইংরেজিতে)" pattern="^[a-zA-Z. ]+$">
+                            </div>
+
+                            <!-- সম্পর্ক (এক সিলেক্ট থেকে বাংলা+ইংরেজি) -->
+                            <div class="col-md-3">
+                                <select name="relation[]" class="form-control">
+                                    <option value="">সম্পর্ক নির্বাচন করুন</option>
+                                    <option value="পিতা|Father">পিতা (Father)</option>
+                                    <option value="মাতা|Mother">মাতা (Mother)</option>
+                                    <option value="স্ত্রী|Wife">স্ত্রী (Wife)</option>
+                                    <option value="স্বামী|Husband">স্বামী (Husband)</option>
+                                    <option value="পুত্র|Son">পুত্র (Son)</option>
+                                    <option value="কন্যা|Daughter">কন্যা (Daughter)</option>
+                                    <option value="ভাই|Brother">ভাই (Brother)</option>
+                                    <option value="বোন|Sister">বোন (Sister)</option>
+                                    <option value="দাদা|Grandfather (Paternal)">দাদা (Grandfather - Paternal)</option>
+                                    <option value="দাদি|Grandmother (Paternal)">দাদি (Grandmother - Paternal)</option>
+                                    <option value="নানা|Grandfather (Maternal)">নানা (Grandfather - Maternal)</option>
+                                    <option value="নানি|Grandmother (Maternal)">নানি (Grandmother - Maternal)</option>
+                                    <option value="নাতি|Grandson (Son’s son)">নাতি (Grandson - Son’s son)</option>
+                                    <option value="নাতনি|Granddaughter (Son’s daughter)">নাতনি (Granddaughter - Son’s daughter)</option>
+                                    <option value="দৌহিত্র|Grandson (Daughter’s son)">দৌহিত্র (Grandson - Daughter’s son)</option>
+                                    <option value="দৌহিত্রি|Granddaughter (Daughter’s daughter)">দৌহিত্রি (Granddaughter - Daughter’s daughter)</option>
+                                    <option value="চাচা|Uncle (Paternal)">চাচা (Uncle - Paternal)</option>
+                                    <option value="ফুপু|Aunt (Paternal)">ফুপু (Aunt - Paternal)</option>
+                                    <option value="মামা|Uncle (Maternal)">মামা (Uncle - Maternal)</option>
+                                    <option value="খালা|Aunt (Maternal)">খালা (Aunt - Maternal)</option>
+                                    <option value="ভাতিজা|Nephew (Brother’s son)">ভাতিজা (Nephew - Brother’s son)</option>
+                                    <option value="ভাতিজি|Niece (Brother’s daughter)">ভাতিজি (Niece - Brother’s daughter)</option>
+                                    <option value="ভাগ্নে|Nephew (Sister’s son)">ভাগ্নে (Nephew - Sister’s son)</option>
+                                    <option value="ভাগ্নি|Niece (Sister’s daughter)">ভাগ্নি (Niece - Sister’s daughter)</option>
+                                    <option value="সৎভাই|Stepbrother">সৎভাই (Stepbrother)</option>
+                                    <option value="সৎবোন|Stepsister">সৎবোন (Stepsister)</option>
+                                    <option value="পালকপুত্র|Foster Son">পালকপুত্র (Foster Son)</option>
+                                    <option value="পালককন্যা|Foster Daughter">পালককন্যা (Foster Daughter)</option>
+                                </select>
+                            </div>
+
+                            <!-- জন্ম তারিখ -->
+                            <div class="col-md-1">
+                                <input type="text" name="member_birth_date[]" class="form-control" placeholder="বয়স/দিন-মাস-বছর (যেমন: 21/01-01-2004)">
+                            </div>
+
+                            <!-- জাতীয় পরিচয়পত্র -->
+                            <div class="col-md-2">
+                                <input type="text" name="relation_nid[]" class="form-control" placeholder="জাতীয় পরিচয়পত্র" pattern="^[0-9]+$">
+                            </div>
+
+                            <!-- বৈবাহিক অবস্থা -->
+                            <div class="col-md-2">
+                                <select name="marrage_state[]" class="form-control">
+                                    <option value="">বৈবাহিক অবস্থা</option>
+                                    <option value="অবিবাহিত">অবিবাহিত</option>
+                                    <option value="বিবাহিত">বিবাহিত</option>
+                                </select>
+                            </div>
+
+                            <!-- জীবিত/মৃত -->
+                            <div class="col-md-2">
+                                <select name="is_dead[]" class="form-control">
+                                    <option value="">জীবিত/মৃত</option>
+                                    <option value="0">জীবিত</option>
+                                    <option value="1">মৃত</option>
+                                </select>
+                            </div>
+
+                            <!-- মুছুন বাটন -->
+                            <div class="col-md-2 text-end">
+                                <button type="button" class="btn btn-danger remove_warish" style="display: none;">মুছুন</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- নতুন ওয়ারিশ বাটন -->
+                    <button type="button" id="add_warish" class="btn btn-info mt-2">নতুন ওয়ারিশ</button>
+
+                    <!-- ভ্যালিডেশন মেসেজ -->
+                    <div class="mt-2" id="emptyError" style="display: none;">
+                        <span class="text-danger">দুঃখিত! ওয়ারিশের অবশ্যই বাংলায় নাম এবং সম্পর্ক দিতে হবে।</span>
+                    </div>
+                </div>
+            </div>
+        </fieldset>
+
+         {% endif %}
+
+        {# বর্তমান ঠিকানা #}
+        <fieldset class="border rounded p-3 mb-4">
+            <legend class="w-auto px-2">বর্তমান ঠিকানা</legend>
+            <div id="present_address_fields">
+                {% include 'partials/forms/address_fields.twig' with { prefix: 'present' } %}
+            </div>
+        </fieldset>
+
+        {# স্থায়ী ঠিকানা #}
+        <fieldset class="border rounded p-3 mb-4">
+            <legend class="w-auto px-2">স্থায়ী ঠিকানা</legend>
+
+            <!-- Copy Present to Permanent Checkbox -->
+            <div class="form-check mb-2">
+                <input type="checkbox" id="copy_present_to_permanent" class="form-check-input">
+                <label for="copy_present_to_permanent" class="form-check-label">
+                    বর্তমান ঠিকানা এবং স্থায়ী ঠিকানা একই
+                </label>
+            </div>
+
+            <div id="permanent_address_fields">
+                {% include 'partials/forms/address_fields.twig' with { prefix: 'permanent' } %}
+            </div>
+        </fieldset>
+
+
+        {# সারসংক্ষেপ অংশ #}
+        <fieldset class="border rounded p-3 mb-4">
+            <legend class="w-auto px-2">সারসংক্ষেপ</legend>
+            {% include 'partials/forms/summary_section.twig' %}
+        </fieldset>
+
+        <div class="d-flex justify-content-center mt-4">
+            <button type="submit" class="btn btn-success submit-button">জমা দিন</button>
+        </div>
+    </form>
+</div>
+    {# ফর্ম সাবমিশন এবং সফল মডাল হ্যান্ডলিং #}
+    {% include '/partials/forms/success_modal.twig' %}
+
+<script src="/assets/js/dynamic-sonod.js?t={{ "now"|date("Hiss") }}"></script>
+<script src="/assets/js/forms.js?t={{ "now"|date("Hiss") }}"></script>
+
+
+{% endblock %}
+

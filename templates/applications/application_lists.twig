@@ -1,0 +1,702 @@
+{# applications/application_lists.twig #}
+
+{% extends "layout.twig" %}
+
+{% block title %}{{title}}{% endblock %}
+
+{% block header_title %}{{header_title}}{% endblock %}
+
+{% block content %}
+
+
+
+
+{% include 'components/sweetAlert.twig' %}
+<div class="container my-5 px-4">
+    <div id="message"></div>
+
+    <div class="card mb-4 shadow-sm">
+        <div class="card-body">
+            <form id="search-applicant-form" class="row g-2 align-items-center">
+                <div class="col-md-10">
+                    <div class="input-group">
+                        <span class="input-group-text bg-light"><i class="fas fa-search text-secondary"></i></span>
+                        <input type="text" id="applicant_id_search" class="form-control" placeholder="আবেদনকারীর আইডি লিখুন...">
+                    </div>
+                </div>
+                <div class="col-md-2 d-grid">
+                    <button type="submit" id="search-btn" class="btn btn-primary">
+                        <i class="fas fa-search me-1"></i> খুঁজুন
+                    </button>
+                </div>
+            </form>
+
+            <div id="reuse-options" class="mt-4" style="display:none;">
+                <div id="reuse-links" class="d-flex flex-wrap gap-2"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h3 class="fw-bold text-primary mb-0">
+            <i class="fas fa-file-alt me-2"></i> সকল {{certificate_type_bn}} 
+            <small id="totalCount" class="text-muted ms-2">(মোট: 0)</small>
+        </h3>
+        {% if is_superadmin %}
+        <div class="col-md-3">
+            <div class="input-group shadow-sm">
+                <label class="input-group-text bg-white" for="unionFilter">ইউনিয়ন</label>
+                <select class="form-select" id="unionFilter">
+                    <option value="">সকল</option>
+                    {% for u in unions %}
+                        <option value="{{ u.union_id }}">{{ u.union_name_bn }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+        {% endif %}
+
+        <a href="/{{ go_url }}/apply" class="btn btn-success px-4 shadow-sm">
+            <i class="fas fa-plus-circle me-1"></i> নতুন আবেদন
+        </a>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-md-6">
+            <div class="input-group shadow-sm">
+                <span class="input-group-text bg-light"><i class="fas fa-search text-secondary"></i></span>
+                <input type="text" id="liveSearch" class="form-control" placeholder="নাম বা সনদ/পরিচয়পত্র নং দিন...">
+            </div>
+        </div>
+        <div class="col-md-3 offset-md-3">
+            <div class="input-group shadow-sm">
+                <label class="input-group-text bg-white" for="recordsPerPage">রেকর্ড</label>
+                <select class="form-select" id="recordsPerPage">
+                    <option value="10" selected>10</option>
+                    <option value="25">25</option>
+                    <option value="50">50</option>
+                    <option value="100">100</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <div class="table-responsive shadow-sm rounded">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-primary text-center">
+                <tr>
+                    <th class="sortable" data-sort-by="application_id" data-sort-order="desc" aria-sort="none">
+                        সনদ/আবেদন নং <i class="fas fa-sort float-end"></i>
+                    </th>
+                    <th class="sortable" data-sort-by="apply_date" data-sort-order="asc" aria-sort="none">
+                        আবেদনের তারিখ <i class="fas fa-sort float-end"></i>
+                    </th>
+                    <th class="sortable" data-sort-by="name_bn" data-sort-order="asc" aria-sort="none">
+                        নাম <i class="fas fa-sort float-end"></i>
+                    </th>
+                    <th class="sortable" data-sort-by="identity_no" data-sort-order="asc" aria-sort="none">
+                        পরিচয়পত্র নং <i class="fas fa-sort float-end"></i>
+                    </th>
+                    <th class="sortable" data-sort-by="status" data-sort-order="asc" aria-sort="none">
+                        অবস্থা <i class="fas fa-sort float-end"></i>
+                    </th>
+                    <th>ঠিকানা</th>
+                    <th>অ্যাকশন</th>
+                </tr>
+            </thead>
+            <tbody id="sonodTableBody" class="text-center">
+                <tr>
+                    <td colspan="7" class="text-muted py-4" id="noDataRow" style="display: none;">
+                        <i class="fas fa-info-circle me-2 text-secondary fs-5"></i> কোনো তথ্য পাওয়া যায়নি。
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <nav class="mt-4" aria-label="Pagination">
+        <ul class="pagination justify-content-center" id="pagination"></ul>
+    </nav>
+</div>
+
+{% block scripts %}
+<script>
+$('#search-applicant-form').on('submit', function (e) {
+    e.preventDefault();
+
+    const applicantId = $('#applicant_id_search').val().trim();
+    const $reuseContainer = $('#reuse-options');
+    const $reuseLinks = $('#reuse-links');
+
+    if (!applicantId) {
+        $reuseContainer.hide();
+        displayMessage('error', 'Applicant ID is required.');
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('applicant_id', applicantId);
+
+    // ✅ CSRF TOKEN
+    const csrfToken = window.getCsrfToken?.();
+    if (csrfToken) {
+        formData.append('csrf_token', csrfToken);
+    }
+
+    const certificate_type = '{{ url_path|e('js') }}';
+
+    $.ajax({
+        url: `/api/applications/${certificate_type}/applicant`,
+        type: 'POST',
+        data: formData,
+        processData: false,
+        contentType: false,
+        dataType: "json",
+
+        success: function (data) {
+            if (data.success) {
+                $('.reuse-header-row').remove();
+
+                const headerRow = $(`
+                    <div class="d-flex justify-content-between align-items-center mb-2 reuse-header-row">
+                        <h6 class="fw-semibold text-muted mb-0">নতুন আবেদন তৈরি করুন:</h6>
+                        <a href="/applications/of/${applicantId}" 
+                           class="btn btn-sm btn-outline-primary">
+                            সকল আবেদন দেখুন
+                        </a>
+                    </div>
+                `);
+
+                $reuseLinks.empty();
+                $reuseLinks.before(headerRow);
+
+                data.certificate_types.forEach(function (type) {
+                    const link = $('<a>')
+                        .attr('href', `/applications/${type.type_url}/reapply/${applicantId}`)
+                        .addClass('btn btn-outline-secondary reuse-link')
+                        .text(type.name_bn);
+
+                    $reuseLinks.append(link);
+                });
+
+                $reuseContainer.show();
+
+            } else {
+                $reuseContainer.hide();
+                displayMessage('error', data.message || 'Applicant not found.');
+            }
+        },
+
+        error: function (xhr) {
+            $reuseContainer.hide();
+
+            let msg = 'Something went wrong.';
+            if (xhr.responseJSON && xhr.responseJSON.message) {
+                msg = xhr.responseJSON.message;
+            }
+
+            displayMessage('error', msg);
+            console.error('AJAX Error:', xhr);
+        }
+    });
+});
+</script>
+
+
+
+
+
+<script>
+$(document).ready(function () {
+
+    let currentPage = 1;
+    let currentSearch = '';
+    let currentSortBy = 'apply_date'; // Default sort column 'apply_date'
+    let currentSortOrder = 'desc'; // Default sort order
+    let recordsPerPage = $('#recordsPerPage').val(); 
+    let currentUnion = '';
+    /* ===============================
+       Bangla Helpers
+    =============================== */
+    function toBanglaNumber(input) {
+        if (input === null || input === undefined) return 'N/A';
+        const bnDigits = ['০','১','২','৩','৪','৫','৬','৭','৮','৯'];
+        return input.toString().replace(/\d/g, d => bnDigits[d]);
+    }
+
+    function formatDateBN(dateString) {
+        if (!dateString) return '—';
+        const date = new Date(dateString);
+        const months = [
+            'জানুয়ারি','ফেব্রুয়ারি','মার্চ','এপ্রিল','মে','জুন',
+            'জুলাই','আগস্ট','সেপ্টেম্বর','অক্টোবর','নভেম্বর','ডিসেম্বর'
+        ];
+        return `${toBanglaNumber(date.getDate())} ${months[date.getMonth()]}, ${toBanglaNumber(date.getFullYear())}`;
+    }
+
+    function fetchApplications(page = 1, search = '', sortBy = 'application_id', sortOrder = 'desc', limit = 10, union = '') {
+        var type = '{{ url_path |e('js') }}'; // সার্টিফিকেট টাইপ URL থেকে নেওয়া
+        var url = "/applications/" + type + "/fetch_all";
+
+        $.ajax({
+            type: "POST",
+            url: url,
+            data: {
+                page: page,
+                search: search,
+                sort_by: sortBy,
+                sort_order: sortOrder,
+                records_per_page: limit,
+                union_id: union
+            },
+            dataType: "json",
+            success: function (response) {
+                let tbody = $("#sonodTableBody");
+                tbody.empty();
+
+                // যদি কোনো ডেটা না থাকে
+                if (!response.data || response.data.length === 0) {
+                    tbody.append('<tr><td colspan="7" class="text-center">কোনো আবেদন পাওয়া যায়নি।</td></tr>');
+                    return;
+                }
+
+                // প্রতিটি আবেদন লুপ করা
+                $.each(response.data, function (index, application) {
+
+                    let address = formatAddress(application);
+                    let formattedDate = formatDateBN(application.apply_date);
+
+                    let shortApplicationId = toBanglaNumber(shortenNumber(application.application_id));
+                    let shortSonodNo = toBanglaNumber(shortenNumber(application.sonod_number));
+                    let shortApplicantId = application.applicant_id
+                        ? toBanglaNumber(shortenNumber(application.applicant_id))
+                        : '';
+
+                    let applicationSonodNo = `
+                        ${application.applicant_id ? `
+                        <small class="text-muted d-block mb-1">
+                            আবেদনকারী আইডি:
+                            <span style="max-width:80px;cursor:pointer"
+                                  class="text-truncate d-inline-block"
+                                  data-bs-toggle="tooltip"
+                                  title="${application.applicant_id}">
+                                ${shortApplicantId}
+                            </span>
+                        </small>` : ''}
+
+                        <small class="text-muted d-block mb-1">আবেদন আইডি:</small>
+
+                        <strong class="d-inline-block text-truncate"
+                                style="max-width:120px;cursor:pointer"
+                                data-bs-toggle="tooltip"
+                                title="${application.application_id}">
+                            ${shortApplicationId}
+                        </strong><br>
+
+                        <small class="d-inline-block text-truncate"
+                               style="max-width:70px;cursor:pointer"
+                               data-bs-toggle="tooltip"
+                               title="${application.sonod_number || 'N/A'}">
+                            সনদ নং:<br>${shortSonodNo}
+                        </small>
+                    `;
+
+                    let identityNoFull = application.nid || application.birth_id || application.passport_no || "N/A";
+                    let identityNo = `
+                        <span class="text-truncate d-inline-block"
+                              style="max-width:60px;cursor:pointer"
+                              data-bs-toggle="tooltip"
+                              title="${identityNoFull}">
+                            ${toBanglaNumber(shortenNumber(identityNoFull))}
+                        </span>
+                    `;
+
+                    let applicantFullName = '';
+                    let certificateType = '{{ url_path |e('js') }}';
+
+                    if (certificateType === 'trade' && application.business_name_bn) {
+                        applicantFullName = `
+                            <strong>${application.business_name_bn}</strong><br>
+                            <small>মালিকের নাম: ${application.name_bn}</small>
+                        `;
+                    } else {
+                        applicantFullName = `<strong>${application.name_bn}</strong>`;
+                    }
+
+                    if (application.father_name_bn)
+                        applicantFullName += `<br><small>পিতা: ${application.father_name_bn}</small>`;
+                    if (application.mother_name_bn)
+                        applicantFullName += `<br><small>মাতা: ${application.mother_name_bn}</small>`;
+
+                    let statusBadge = getStatusBadge(application.status);
+
+                    tbody.append(`
+                        <tr>
+                            <td>${applicationSonodNo}</td>
+                            <td>${formattedDate}</td>
+                            <td>${applicantFullName}</td>
+                            <td>${identityNo}</td>
+                            <td>${statusBadge}</td>
+                            <td>${address}</td>
+                            <td>${getActionButtons(application)}</td>
+                        </tr>
+                    `);
+                });
+
+
+
+
+                // পেজিনেশন আপডেট করা
+                updatePagination(response.total_pages, page);
+                $('[data-bs-toggle="tooltip"]').tooltip({
+                    trigger: 'hover click'
+                });
+                // মোট আবেদন সংখ্যা আপডেট করা
+                if (response.total_records !== undefined) {
+                    $('#totalCount').text(`(মোট: ${response.total_records})`);
+                } else {
+                    $('#totalCount').text('(মোট: 0)');
+                }
+
+                // Address expand/collapse with jQuery
+                $('.address-block').each(function(){
+                    var $block = $(this);
+                    $block.attr('aria-expanded', 'false');
+                    $block.css({height: '40px', overflow: 'hidden'});
+                });
+                function collapseAllAddress(except) {
+                    $('.address-block[aria-expanded="true"]').each(function(){
+                        if (!except || this !== except[0]) {
+                            $(this).attr('aria-expanded', 'false').stop().animate({height: '40px'}, 250).css('overflow', 'hidden');
+                        }
+                    });
+                }
+                $(document).off('click.addressblock').on('click.addressblock', '.address-block', function(e){
+                    if ($(e.target).is('a,button,input,select,textarea,label')) return;
+                    e.stopPropagation();
+                    var $block = $(this);
+                    var expanded = $block.attr('aria-expanded') === 'true';
+                    if (expanded) {
+                        $block.attr('aria-expanded', 'false').stop().animate({height: '40px'}, 250, function(){
+                            $block.css('overflow', 'hidden');
+                        });
+                    } else {
+                        collapseAllAddress($block);
+                        $block.css('height', 'auto');
+                        var fullHeight = $block.prop('scrollHeight');
+                        $block.css('height', '40px');
+                        $block.attr('aria-expanded', 'true').css('overflow', 'visible').stop().animate({height: fullHeight + 'px'}, 250, function(){
+                            $block.css('height', 'auto');
+                        });
+                    }
+                });
+                $(document).off('keydown.addressblock').on('keydown.addressblock', '.address-block', function(e){
+                    if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') {
+                        e.preventDefault();
+                        $(this).trigger('click');
+                    }
+                });
+                $(document).off('click.addressblockoutside').on('click.addressblockoutside', function(e){
+                    if (!$(e.target).closest('.address-block').length) {
+                        collapseAllAddress();
+                    }
+                });
+   
+
+            },
+            error: function (xhr, status, error) {
+                displayMessage('error', `আবেদন আনতে ব্যর্থ হয়েছে। ত্রুটি: ${xhr.responseText}`);
+            }
+        });
+    }
+    $("#unionFilter").on("change", function () {
+        currentUnion = $(this).val();
+        currentPage = 1;
+        fetchApplications(currentPage, currentSearch, currentSortBy, currentSortOrder, recordsPerPage, currentUnion);
+    });
+
+    function shortenNumber(num) {
+        if (!num) return 'N/A';
+        const str = num.toString();
+        if (str.length <= 10) return str;
+        return str.slice(0, 10) + '...';
+    }
+
+    // Function to format date (DD-MM-YYYY)
+    function formatDate(dateString) {
+        if (!dateString) return 'N/A';
+        const date = new Date(dateString);
+        const day = String(date.getDate()).padStart(2, '0');
+        const month = String(date.getMonth() + 1).padStart(2, '0'); // Months are 0-indexed
+        const year = date.getFullYear();
+        return `${day}-${month}-${year}`;
+    }
+
+    // Function to get status badge based on status
+    function getStatusBadge(status) {
+        let badgeClass = '';
+        let statusText = '';
+        switch (status.toLowerCase()) {
+            case 'pending':
+                badgeClass = 'bg-warning text-dark';
+                statusText = 'অপেক্ষমান';
+                break;
+            case 'approved':
+                badgeClass = 'bg-success text-white';
+                statusText = 'অনুমোদিত';
+                break;
+            case 'rejected':
+                badgeClass = 'bg-danger';
+                statusText = 'বাতিল';
+                break;
+            case 'on_hold':
+                badgeClass = 'bg-secondary';
+                statusText = 'স্থগিত';
+                break;
+            default:
+                badgeClass = 'bg-info';
+                statusText = status; // Fallback to raw status if not recognized
+        }
+        return `<span class="badge ${badgeClass}">${statusText}</span>`;
+    }
+
+    function getActionButtons(application) {
+        let buttons = "<div class='d-flex flex-wrap justify-content-center gap-1'>";
+        let type = '{{ go_url |e('js') }}'; 
+        buttons += `<a href="/applications/${type}/view/${application.application_id}" class="btn btn-info btn-sm me-1" title="আবেদন দেখুন" target="_blank" rel="noopener noreferrer">
+                <i class="fas fa-eye"></i></a>
+            <a href="/applications/${type}/edit/${application.application_id}" class="btn btn-warning btn-sm me-1" title="সম্পাদনা করুন" target="_blank" rel="noopener noreferrer">
+                <i class="fas fa-pencil-alt"></i></a>`;
+        if (application.status === "Approved") {
+            buttons += `<a href="/application/${type}/bangla/${application.sonod_number}" class="btn btn-success btn-sm ms-1" target="_blank" rel="noopener noreferrer" title="বাংলা সনদ ডাউনলোড">বাংলা</a>
+                <a href="/application/${type}/english/${application.sonod_number}" class="btn btn-warning btn-sm ms-1" target="_blank" rel="noopener noreferrer" title="English সনদ ডাউনলোড">English</a>`;
+            buttons += `<button class="btn btn-secondary btn-sm onHoldButton ms-1" data-id="${application.application_id}" title="স্থগিত করুন">
+                <i class="fas fa-pause-circle"></i></button>`;
+        } else if (application.status === "Pending") {
+            buttons += `<a href="/applications/${type}/approve/${application.application_id}" class="btn btn-success btn-sm ms-1" title="অনুমোদন করুন">
+                <i class="fas fa-check-circle"></i></a>
+            <a href="/applications/${type}/reject/${application.application_id}" class="btn btn-danger btn-sm ms-1" title="বাতিল করুন">
+                <i class="fas fa-times-circle"></i></a>`;
+        } else if (application.status === "On_Hold" || application.status === "on_hold") {
+            buttons += `<button class="btn btn-primary btn-sm reactivateButton ms-1" data-id="${application.application_id}" title="পুনরায় সক্রিয় করুন">
+                <i class="fas fa-play-circle"></i></button>`;
+        }
+
+
+
+        buttons += `<button class="btn btn-danger btn-sm deleteButton ms-1" data-id="${application.application_id}" title="মুছে ফেলুন">
+            <i class="fas fa-trash"></i></button>`;
+        buttons += `</div>`;
+
+        return buttons;
+    }
+
+
+    // On Hold button click handler
+    $(document).on("click", ".onHoldButton", function () {
+        let applicationId = $(this).data("id");
+        if (confirm("আপনি কি নিশ্চিতভাবে এই আবেদনটি স্থগিত করতে চান?")) {
+            $.ajax({
+                type: "POST",
+                url: "/applications/{{ url_path }}/on_hold",
+                data: { id: applicationId },
+                dataType: "json",
+                success: function (response) {
+                    displayMessage(response.status, response.message);
+                    if (response.status === "success") fetchApplications(currentPage, currentSearch, currentSortBy, currentSortOrder, recordsPerPage);
+                },
+                error: function (xhr, status, error) {
+                    displayMessage('error', `একটি ত্রুটি হয়েছে: ${xhr.responseText}`);
+                }
+            });
+        }
+    });
+
+    // Reactivate button click handler
+    $(document).on("click", ".reactivateButton", function () {
+        let applicationId = $(this).data("id");
+        if (confirm("আপনি কি নিশ্চিতভাবে এই আবেদনটি পুনরায় একটিভ করতে চান?")) {
+            $.ajax({
+                type: "POST",
+                url: "/applications/{{ url_path }}/reactivate",
+                data: { id: applicationId },
+                dataType: "json",
+                success: function (response) {
+                    displayMessage(response.status, response.message);
+                    if (response.status === "success") fetchApplications(currentPage, currentSearch, currentSortBy, currentSortOrder, recordsPerPage);
+                },
+                error: function (xhr, status, error) {
+                    displayMessage('error', `একটি ত্রুটি হয়েছে: ${xhr.responseText}`);
+                }
+            });
+        }
+    });
+
+    function formatAddress(application) {
+            // Present address
+            const present = [
+                '<strong>বর্তমান ঠিকানা:</strong>',
+                application.present_village_bn ? 'গ্রাম: ' + application.present_village_bn : '',
+                application.present_ward_no ? 'ওয়ার্ড: ' + application.present_ward_no : '',
+                application.present_postoffice_bn ? 'পোষ্ট: ' + application.present_postoffice_bn : '',
+                application.present_union_bn ? 'ইউনিয়ন: ' + application.present_union_bn : '',
+                application.present_upazila_bn ? 'উপজেলা: ' + application.present_upazila_bn : '',
+                application.present_district_bn ? 'জেলা: ' + application.present_district_bn : ''
+            ].filter(Boolean).join(', ');
+            // Permanent address
+            const permanent = [
+                '<strong>স্থায়ী ঠিকানা:</strong>',
+                application.permanent_village_bn ? 'গ্রাম: ' + application.permanent_village_bn : '',
+                application.permanent_ward_no ? 'ওয়ার্ড: ' + application.permanent_ward_no : '',
+                application.permanent_postoffice_bn ? 'পোষ্ট: ' + application.permanent_postoffice_bn : '',
+                application.permanent_union_bn ? 'ইউনিয়ন: ' + application.permanent_union_bn : '',
+                application.permanent_upazila_bn ? 'উপজেলা: ' + application.permanent_upazila_bn : '',
+                application.permanent_district_bn ? 'জেলা: ' + application.permanent_district_bn : ''
+            ].filter(Boolean).join(', ');
+            return `
+                <div class="address-block" tabindex="0" aria-expanded="false" style="cursor:pointer;overflow:hidden;height:40px;display:block;margin-bottom:8px;">${present}</div>
+                <hr style="margin:10px 0;">
+                <div class="address-block" tabindex="0" aria-expanded="false" style="cursor:pointer;overflow:hidden;height:40px;display:block;margin-bottom:2px;">${permanent}</div>
+            `;
+    }
+
+    function updatePagination(totalPages, page) {
+        let pagination = $("#pagination");
+        pagination.empty();
+
+        // Add Previous button
+        if (page > 1) {
+            pagination.append(`<li class="page-item"><button class="page-link" data-page="${page - 1}"><i class="fas fa-chevron-left"></i></button></li>`);
+        } else {
+            pagination.append(`<li class="page-item disabled"><span class="page-link"><i class="fas fa-chevron-left"></i></span></li>`);
+        }
+
+        // Add page numbers
+        const maxPagesToShow = 5; // Number of page buttons to show
+        let startPage = Math.max(1, page - Math.floor(maxPagesToShow / 2));
+        let endPage = Math.min(totalPages, startPage + maxPagesToShow - 1);
+
+        if (endPage - startPage + 1 < maxPagesToShow) {
+            startPage = Math.max(1, endPage - maxPagesToShow + 1);
+        }
+
+        if (startPage > 1) {
+            pagination.append(`<li class="page-item"><button class="page-link" data-page="1">1</button></li>`);
+            if (startPage > 2) {
+                pagination.append(`<li class="page-item disabled"><span class="page-link">...</span></li>`);
+            }
+        }
+
+        for (let i = startPage; i <= endPage; i++) {
+            let activeClass = i === page ? 'active' : '';
+            pagination.append(`<li class="page-item ${activeClass}"><button class="page-link" data-page="${i}">${i}</button></li>`);
+        }
+
+        if (endPage < totalPages) {
+            if (endPage < totalPages - 1) {
+                pagination.append(`<li class="page-item disabled"><span class="page-link">...</span></li>`);
+            }
+            pagination.append(`<li class="page-item"><button class="page-link" data-page="${totalPages}">${totalPages}</button></li>`);
+        }
+
+        // Add Next button
+        if (page < totalPages) {
+            pagination.append(`<li class="page-item"><button class="page-link" data-page="${page + 1}"><i class="fas fa-chevron-right"></i></button></li>`);
+        } else {
+            pagination.append(`<li class="page-item disabled"><span class="page-link"><i class="fas fa-chevron-right"></i></span></li>`);
+        }
+    }
+
+    $(document).on("click", ".page-link", function () {
+        let page = $(this).data("page");
+        currentPage = page;
+        fetchApplications(currentPage, currentSearch, currentSortBy, currentSortOrder, recordsPerPage);
+    });
+
+    $(document).on("click", ".deleteButton", function () {
+        let applicationId = $(this).data("id");
+
+        // if (!canDelete) { // Twig/JS থেকে পারমিশন চেক
+        //     displayMessage('error', 'আপনার অনুমতি নেই।');
+        //     return;
+        // }
+
+        if (confirm("আপনি কি নিশ্চিতভাবে এই আবেদনটি মুছে ফেলতে চান?")) {
+            $.ajax({
+                type: "POST",
+                url: "/applications/{{ url_path }}/delete",
+                data: { applicationId: applicationId },
+                dataType: "json",
+                success: function (response) {
+                    displayMessage(response.status, response.message);
+                    if (response.status === "success") {
+                        fetchApplications(currentPage, currentSearch, currentSortBy, currentSortOrder, recordsPerPage);
+                    }
+                },
+                error: function (xhr, status, error) {
+                    displayMessage('error', `একটি ত্রুটি হয়েছে: ${xhr.responseText}`);
+                }
+            });
+        }
+    });
+
+
+    function displayMessage(status, message) {
+        let messageDiv = $("#message");
+        messageDiv.html(`<div class="alert alert-${status === 'success' ? 'success' : 'danger'} alert-dismissible fade show" role="alert">
+                            ${message}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                         </div>`);
+        setTimeout(() => messageDiv.empty(), 5000);
+    }
+
+    $("#liveSearch").on("keyup", function () {
+        currentPage = 1;
+        currentSearch = $(this).val();
+        fetchApplications(currentPage, currentSearch, currentSortBy, currentSortOrder, recordsPerPage);
+    });
+
+    // Handle sortable header clicks
+    $(document).on("click", "th.sortable", function () {
+        const sortBy = $(this).data("sort-by");
+        let sortOrder = $(this).data("sort-order");
+
+        // Toggle sort order
+        if (sortBy === currentSortBy) {
+            sortOrder = (currentSortOrder === 'asc') ? 'desc' : 'asc';
+        } else {
+            // New column, reset to ascending
+            sortOrder = 'asc';
+        }
+
+        // Update data attributes for next click
+        $(this).data("sort-order", sortOrder);
+
+        // Update current sort states
+        currentSortBy = sortBy;
+        currentSortOrder = sortOrder;
+
+        // Reset all sort icons
+        $("th.sortable i").removeClass("fa-sort-up fa-sort-down").addClass("fa-sort");
+        // Update current column's icon
+        $(this).find("i").removeClass("fa-sort").addClass(sortOrder === 'asc' ? 'fa-sort-up' : 'fa-sort-down');
+
+        currentPage = 1;
+        fetchApplications(currentPage, currentSearch, currentSortBy, currentSortOrder, recordsPerPage);
+    });
+
+    // Handle records per page change
+    $("#recordsPerPage").on("change", function() {
+        recordsPerPage = $(this).val();
+        currentPage = 1;
+        fetchApplications(currentPage, currentSearch, currentSortBy, currentSortOrder, recordsPerPage);
+    });
+
+    fetchApplications(currentPage, currentSearch, currentSortBy, currentSortOrder, recordsPerPage); // Initial fetch
+});
+
+
+</script>
+{% endblock %}
+{% endblock %}
+

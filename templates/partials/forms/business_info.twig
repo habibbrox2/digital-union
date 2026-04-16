@@ -1,0 +1,68 @@
+{# partials/forms/business_info.twig #}
+
+<div class="row mb-3">
+    <div class="col-md-6">
+        <label for="business_name_en" class="form-label">প্রতিষ্ঠানের নাম (ইংরেজিতে)</label>
+        <input type="text" name="business_name_en" id="business_name_en" class="form-control"
+               placeholder="Enter business name in English"
+               value="{{ data.business_name_en ?? '' }}">
+    </div>
+    <div class="col-md-6">
+        <label for="business_name_bn" class="form-label">প্রতিষ্ঠানের নাম (বাংলায়)</label>
+        <input type="text" name="business_name_bn" id="business_name_bn" class="form-control"
+               placeholder="প্রতিষ্ঠানের নাম বাংলায় লিখুন"
+               value="{{ data.business_name_bn ?? '' }}">
+    </div>
+</div>
+
+<div class="row mb-3">
+    <div class="col-md-6">
+        <label for="business_ownership_type" class="form-label">প্রতিষ্ঠানের মালিকানার ধরণ *</label>
+        <select name="business_ownership_type" id="business_ownership_type" class="form-control" required
+                aria-placeholder="মালিকানার ধরন নির্বাচন করুন">
+            <option value="">চিহ্নিত করুন</option>
+            {% for type in data.ownership_types %}
+                <option value="{{ type.id }}" {% if data.ownership_type_id == type.id %}selected{% endif %}>
+                    {{ type.ownership_name_bn }}
+                </option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <div class="col-md-6">
+        <label for="business_type" class="form-label">ব্যবসার ধরন *</label>
+        <select name="business_type" id="business_type" class="form-control" required
+                aria-placeholder="ব্যবসার ধরন নির্বাচন করুন">
+            <option value="">চিহ্নিত করুন</option>
+            {% for type in data.business_types %}
+                <option value="{{ type.id }}" {% if data.business_type_id == type.id %}selected{% endif %}>
+                    {{ type.business_name_bn }}
+                </option>
+            {% endfor %}
+        </select>
+    </div>
+</div>
+
+<div class="row mb-3">
+    <div class="col-md-6">
+        <label for="tin_no" class="form-label">টিআইএন (TIN) নম্বর</label>
+        <input type="text" name="tin_no" id="tin_no" class="form-control"
+               placeholder="Enter TIN number"
+               value="{{ data.tin_no ?? '' }}">
+    </div>
+    <div class="col-md-6">
+        <label for="vat_no" class="form-label">ভ্যাট (VAT) রেজিস্ট্রেশন নম্বর</label>
+        <input type="text" name="vat_no" id="vat_no" class="form-control"
+               placeholder="Enter VAT registration number"
+               value="{{ data.vat_no ?? '' }}">
+    </div>
+</div>
+
+<div class="row mb-3">
+    <div class="col-md-6">
+        <label for="paid_up_capital" class="form-label">পরিশোধিত মূলধন *</label>
+        <input type="text" name="paid_up_capital" id="paid_up_capital" class="form-control"
+               placeholder="পরিশোধিত মূলধন লিখুন"
+               value="{{ data.paid_up_capital ?? '' }}">
+    </div>
+</div>

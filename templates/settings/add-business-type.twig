@@ -1,0 +1,74 @@
+{# templates/settings/add-business-type.twig #}
+{% extends 'layout.twig' %}
+
+{% block title %}ব্যবসার ধরণ যোগ করুন{% endblock %}
+{% block header_title %}{{ header_title|default('ব্যবসার ধরণ যোগ করুন') }}{% endblock %}
+
+{% block content %}
+
+{% if not is_logged_in %}
+    {% set redirect = "<script>window.location.href='/#';</script>" %}
+    {{ redirect|raw }}
+{% endif %}
+
+<h2>{{ header_title }}</h2>
+{% if status %}
+    <div class="alert alert-{{ status == 'success' ? 'success' : 'danger' }}">
+        {{ message }}
+    </div>
+{% endif %}
+
+<form action="/settings/business-types/add" method="POST">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+    <div class="form-group">
+        <label for="business_name_bn">Business Name (Bangla)</label>
+        <input type="text" id="business_name_bn" name="business_name_bn" class="form-control" required>
+    </div>
+
+    <div class="form-group">
+        <label for="business_name_en">Business Name (English)</label>
+        <input type="text" id="business_name_en" name="business_name_en" class="form-control" required>
+    </div>
+
+    <div class="form-group">
+        <label for="license_fee">License Fee</label>
+        <input type="number" id="license_fee" name="license_fee" class="form-control" required>
+    </div>
+
+    <div class="form-group">
+        <label for="vat_amount">VAT Amount</label>
+        <input type="number" id="vat_amount" name="vat_amount" class="form-control" required>
+    </div>
+
+    <div class="form-group">
+        <label for="occupation_tax">Occupation Tax</label>
+        <input type="number" id="occupation_tax" name="occupation_tax" class="form-control" required>
+    </div>
+
+    <div class="form-group">
+        <label for="income_tax">Income Tax</label>
+        <input type="number" id="income_tax" name="income_tax" class="form-control" required>
+    </div>
+
+    <div class="form-group">
+        <label for="signboard_tax">Signboard Tax</label>
+        <input type="number" id="signboard_tax" name="signboard_tax" class="form-control" required>
+    </div>
+
+    <div class="form-group">
+        <label for="surcharge">Surcharge</label>
+        <input type="number" id="surcharge" name="surcharge" class="form-control" required>
+    </div>
+
+    <div class="form-group">
+        <label for="union_id">Union ID</label>
+        <input type="number" id="union_id" name="union_id" class="form-control" required>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Add Business Type</button>
+</form>
+<a href="{{ previous_url }}" class="btn btn-secondary">Back</a>
+
+{% endblock %}
+

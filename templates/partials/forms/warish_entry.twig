@@ -1,0 +1,259 @@
+{# partials/forms/warish_list.twig #}
+<div class="row">
+    <div class="col-12">
+        <div id="warish_container">
+            {% if data.members is not empty %}
+                {% for w in data.members %}
+                <div class="row g-2 warish_entry border rounded p-3 mb-2">
+    <div class="col-md-1">
+        <input type="number" name="serial_no[]" class="form-control" value="{{ w.serial_no|e }}" placeholder="ক্রমিক">
+    </div>
+    <div class="col-md-2">
+        <input type="text" name="warish_name_bn[]" class="form-control" value="{{ w.name_bn|e }}" placeholder="নাম (বাংলায়)" required>
+    </div>
+    <div class="col-md-2">
+        <input type="text" name="warish_name_en[]" class="form-control" value="{{ w.name_en|e }}" placeholder="নাম (ইংরেজিতে)" pattern="^[a-zA-Z. ]+$">
+    </div>
+    <div class="col-md-3">
+        {% set rel = w.relation_bn ~ '|' ~ w.relation_en %}
+        <select name="relation[]" class="form-control" required>
+            <option value="">সম্পর্ক নির্বাচন করুন</option>
+            <option value="পিতা|Father" {{ rel=='পিতা|Father'?'selected' }}>পিতা (Father)</option>
+            <option value="মাতা|Mother" {{ rel=='মাতা|Mother'?'selected' }}>মাতা (Mother)</option>
+            <option value="স্ত্রী|Wife" {{ rel=='স্ত্রী|Wife'?'selected' }}>স্ত্রী (Wife)</option>
+            <option value="স্বামী|Husband" {{ rel=='স্বামী|Husband'?'selected' }}>স্বামী (Husband)</option>
+            <option value="পুত্র|Son" {{ rel=='পুত্র|Son'?'selected' }}>পুত্র (Son)</option>
+            <option value="কন্যা|Daughter" {{ rel=='কন্যা|Daughter'?'selected' }}>কন্যা (Daughter)</option>
+            <option value="ভাই|Brother" {{ rel=='ভাই|Brother'?'selected' }}>ভাই (Brother)</option>
+            <option value="বোন|Sister" {{ rel=='বোন|Sister'?'selected' }}>বোন (Sister)</option>
+            <option value="দাদা|Grandfather" {{ rel=='দাদা|Grandfather'?'selected' }}>দাদা (Grandfather)</option>
+            <option value="দাদী|Grandmother" {{ rel=='দাদী|Grandmother'?'selected' }}>দাদী (Grandmother)</option>
+            <option value="নানা|Maternal Grandfather" {{ rel=='নানা|Maternal Grandfather'?'selected' }}>নানা (Maternal Grandfather)</option>
+            <option value="নানী|Maternal Grandmother" {{ rel=='নানী|Maternal Grandmother'?'selected' }}>নানী (Maternal Grandmother)</option>
+            <option value="নাতি|Grandson" {{ rel=='নাতি|Grandson'?'selected' }}>নাতি (Grandson)</option>
+            <option value="নাতনী|Granddaughter" {{ rel=='নাতনী|Granddaughter'?'selected' }}>নাতনী (Granddaughter)</option>
+            <option value="চাচা|Uncle (Paternal)" {{ rel=='চাচা|Uncle (Paternal)'?'selected' }}>চাচা (Uncle – Paternal)</option>
+            <option value="ফুপু|Aunt (Paternal)" {{ rel=='ফুপু|Aunt (Paternal)'?'selected' }}>ফুপু (Aunt – Paternal)</option>
+            <option value="মামা|Uncle (Maternal)" {{ rel=='মামা|Uncle (Maternal)'?'selected' }}>মামা (Uncle – Maternal)</option>
+            <option value="খালা|Aunt (Maternal)" {{ rel=='খালা|Aunt (Maternal)'?'selected' }}>খালা (Aunt – Maternal)</option>
+        </select>
+    </div>
+
+    <div class="col-md-1">
+        <input type="text" name="member_birth_date[]" class="form-control" value="{{ w.birth_date|e }}" placeholder="জন্ম তারিখ">
+    </div>
+    <div class="col-md-2">
+        <input type="text" name="relation_nid[]" class="form-control" value="{{ w.nid|e }}" placeholder="জাতীয় পরিচয়পত্র" pattern="^[0-9]+$">
+    </div>
+    <div class="col-md-2">
+        <select name="marrage_state[]" class="form-control" required>
+            <option value="">বৈবাহিক অবস্থা</option>
+            <option value="অবিবাহিত" {{ w.marital_status=='অবিবাহিত'?'selected' }}>অবিবাহিত</option>
+            <option value="বিবাহিত" {{ w.marital_status=='বিবাহিত'?'selected' }}>বিবাহিত</option>
+        </select>
+    </div>
+    <div class="col-md-2">
+        <select name="is_dead[]" class="form-control" required>
+            <option value="">জীবিত/মৃত</option>
+            <option value="0" {{ w.is_dead=='0'?'selected' }}>জীবিত</option>
+            <option value="1" {{ w.is_dead=='1'?'selected' }}>মৃত</option>
+        </select>
+    </div>
+    <!-- মুছুন -->
+    <div class="col-md-2 text-end">
+        <button type="button" class="btn btn-danger remove_warish">মুছুন</button>
+    </div>
+</div>
+                {% endfor %}
+            {% else %}
+                {# যদি ডাটা না থাকে, ডিফল্ট খালি ইনপুট দেখাবে #}
+                <div class="row g-2 warish_entry border rounded p-3 mb-2">
+                    <div class="col-md-1">
+                        <input type="number" name="serial_no[]" class="form-control" value="1" placeholder="ক্রমিক">
+                    </div>
+                    <div class="col-md-2">
+                        <input type="text" name="warish_name_bn[]" class="form-control" placeholder="নাম (বাংলায়)">
+                    </div>
+                    <div class="col-md-2">
+                        <input type="text" name="warish_name_en[]" class="form-control" placeholder="নাম (ইংরেজিতে)" pattern="^[a-zA-Z. ]+$">
+                    </div>
+                    <div class="col-md-3">
+                    <select name="relation[]" class="form-control" required>
+                        <option value="">সম্পর্ক নির্বাচন করুন</option>
+                        <option value="পিতা|Father">পিতা (Father)</option>
+                        <option value="মাতা|Mother">মাতা (Mother)</option>
+                        <option value="স্ত্রী|Wife">স্ত্রী (Wife)</option>
+                        <option value="স্বামী|Husband">স্বামী (Husband)</option>
+                        <option value="পুত্র|Son">পুত্র (Son)</option>
+                        <option value="কন্যা|Daughter">কন্যা (Daughter)</option>
+                        <option value="ভাই|Brother">ভাই (Brother)</option>
+                        <option value="বোন|Sister">বোন (Sister)</option>
+                        <option value="দাদা|Grandfather">দাদা (Grandfather)</option>
+                        <option value="দাদী|Grandmother">দাদী (Grandmother)</option>
+                        <option value="নানা|Maternal Grandfather">নানা (Maternal Grandfather)</option>
+                        <option value="নানী|Maternal Grandmother">নানী (Maternal Grandmother)</option>
+                        <option value="নাতি|Grandson">নাতি (Grandson)</option>
+                        <option value="নাতনী|Granddaughter">নাতনী (Granddaughter)</option>
+                        <option value="চাচা|Uncle (Paternal)">চাচা (Uncle – Paternal)</option>
+                        <option value="ফুপু|Aunt (Paternal)">ফুপু (Aunt – Paternal)</option>
+                        <option value="মামা|Uncle (Maternal)">মামা (Uncle – Maternal)</option>
+                        <option value="খালা|Aunt (Maternal)">খালা (Aunt – Maternal)</option>
+                    </select>
+
+                    </div>
+                    <div class="col-md-1">
+                        <input type="text" name="member_birth_date[]" class="form-control" placeholder="জন্ম তারিখ">
+                    </div>
+                    <div class="col-md-2">
+                        <input type="text" name="relation_nid[]" class="form-control" placeholder="জাতীয় পরিচয়পত্র">
+                    </div>
+                    <div class="col-md-2">
+                        <select name="marrage_state[]" class="form-control">
+                            <option value="">বৈবাহিক অবস্থা</option>
+                            <option value="অবিবাহিত">অবিবাহিত</option>
+                            <option value="বিবাহিত">বিবাহিত</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <select name="is_dead[]" class="form-control">
+                            <option value="">জীবিত/মৃত</option>
+                            <option value="0">জীবিত</option>
+                            <option value="1">মৃত</option>
+                        </select>
+                    </div>
+                    <!-- মুছুন -->
+                    <div class="col-md-2 text-end">
+                        <button type="button" class="btn btn-danger remove_warish">মুছুন</button>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+
+        <button type="button" id="add_warish" class="btn btn-info mt-2">নতুন ওয়ারিশ</button>
+
+        <div class="mt-2" id="emptyError" style="display: none;">
+            <ul id="errorList" class="text-danger mb-0"></ul>
+        </div>
+    </div>
+</div>
+
+
+<script>
+$(function () {
+    // ----------------- Validation -----------------
+    function validateEntries($form) {
+        let isValid = true;
+        let messages = [];
+
+        $form.find('#warish_container .warish_entry').each((index, row) => {
+            const rowNum = index + 1;
+
+            const serial = $(row).find('input[name="serial_no[]"]');
+            const nameBn = $(row).find('input[name="warish_name_bn[]"]');
+            const relation = $(row).find('select[name="relation[]"]');
+            const marital = $(row).find('select[name="marrage_state[]"]');
+            const isDead = $(row).find('select[name="is_dead[]"]');
+
+            // Required validation
+            if (serial.prop('required') && !serial.val().trim()) {
+                isValid = false;
+                messages.push(`Row ${rowNum}: ক্রমিক নং দিতে হবে`);
+                serial.addClass('is-invalid');
+            } else { serial.removeClass('is-invalid'); }
+
+            if (nameBn.prop('required') && !nameBn.val().trim()) {
+                isValid = false;
+                messages.push(`Row ${rowNum}: নাম (বাংলায়) দিতে হবে`);
+                nameBn.addClass('is-invalid');
+            } else { nameBn.removeClass('is-invalid'); }
+
+            if (relation.prop('required') && !relation.val().trim()) {
+                isValid = false;
+                messages.push(`Row ${rowNum}: সম্পর্ক নির্বাচন করতে হবে`);
+                relation.addClass('is-invalid');
+            } else { relation.removeClass('is-invalid'); }
+
+            if (marital.prop('required') && !marital.val().trim()) {
+                isValid = false;
+                messages.push(`Row ${rowNum}: বৈবাহিক অবস্থা দিতে হবে`);
+                marital.addClass('is-invalid');
+            } else { marital.removeClass('is-invalid'); }
+
+            if (isDead.prop('required') && !isDead.val().trim()) {
+                isValid = false;
+                messages.push(`Row ${rowNum}: মৃত্যু অবস্থা নির্বাচন করতে হবে`);
+                isDead.addClass('is-invalid');
+            } else { isDead.removeClass('is-invalid'); }
+        });
+
+        const errorDiv = $form.find('#emptyError');
+        const errorList = $form.find('#errorList');
+        errorList.html('');
+
+        if (!isValid) {
+            messages.forEach(msg => {
+                errorList.append(`<li>${msg}</li>`);
+            });
+            errorDiv.show();
+            return false;
+        } else {
+            errorDiv.hide();
+            return true;
+        }
+    }
+
+    // ----------------- Apply to all forms -----------------
+    $('form').on('submit', function(e) {
+        const $form = $(this);
+        if (!validateEntries($form)) {
+            e.preventDefault();
+        }
+    });
+
+    // ----------------- Dynamic Rows -----------------
+    function updateRemoveButtons() {
+        if ($(".warish_entry").length > 1) {
+            $(".remove_warish").show();
+        } else {
+            $(".remove_warish").hide();
+        }
+    }
+
+    function reorderSerials() {
+        $(".warish_entry").each(function (index) {
+            $(this).find("input[name='serial_no[]']").val(index + 1);
+        });
+    }
+
+    function createNewEntry() {
+        const $clone = $(".warish_entry:first").clone();
+
+        $clone.find("input, select").each(function () {
+            const $input = $(this);
+            if ($input.attr("name") === "serial_no[]") {
+                $input.val($(".warish_entry").length + 1);
+            } else {
+                $input.val("");
+            }
+        });
+
+        return $clone;
+    }
+
+    $("#add_warish").click(function () {
+        $("#warish_container").append(createNewEntry());
+        updateRemoveButtons();
+        reorderSerials();
+    });
+
+    $(document).on("click", ".remove_warish", function () {
+        $(this).closest(".warish_entry").remove();
+        updateRemoveButtons();
+        reorderSerials();
+    });
+
+    updateRemoveButtons();
+    reorderSerials();
+});
+</script>
+

@@ -1,0 +1,881 @@
+{% extends "layout.twig" %}
+
+{% block title %}  {{ title }}{% endblock %}
+
+{% block header_title %} {{ header_title }}{% endblock %}
+
+{% block content %}
+<div class="container mt-5 mb-5">
+    <h2 class="text-center mb-5 fw-bold" style="font-size: 1.8rem;">
+        <i class="bi bi-file-check-fill text-primary me-2"></i>
+        {{ data.certificate_type_bn }} অনুমোদন
+    </h2>
+
+    <div class="card shadow-lg rounded-5 mb-5 border-0">
+        <div class="card-header bg-primary text-white rounded-top-5 d-flex align-items-center">
+            <i class="bi bi-journal-check me-3 fs-4"></i>
+            <h5 class="mb-0 fw-semibold">অনুমোদন তথ্য</h5>
+        </div>
+        <div class="card-body px-5 py-5">
+
+            <!-- ব্যক্তির তথ্য -->
+            <section class="mb-5 border rounded-4 p-4 shadow-sm bg-light">
+                <h6 class="text-success fw-bold mb-4 fs-5 d-flex align-items-center">
+                    <i class="bi bi-person-badge me-3 fs-4"></i>
+                    ব্যক্তির তথ্য
+                </h6>
+            {# ================= Mappings & Variables ================= #}
+
+            {# ================= Occupation Mapping ================= #}
+            {% set occupationMap = {
+                'teacher': 'শিক্ষক',
+                'engineer': 'ইঞ্জিনিয়ার',
+                'doctor': 'ডাক্তার',
+                'nurse': 'নার্স',
+                'farmer': 'কৃষক',
+                'business': 'ব্যবসায়ী',
+                'lawyer': 'আইনজীবী',
+                'police': 'পুলিশ',
+                'driver': 'ড্রাইভার',
+                'soldier': 'সেনা',
+                'scientist': 'বিজ্ঞানী',
+                'accountant': 'হিসাবরক্ষক',
+                'artist': 'শিল্পী',
+                'writer': 'লেখক',
+                'student': 'ছাত্র/ছাত্রী',
+                'shopkeeper': 'দোকানদার',
+                'worker': 'কর্মচারী',
+                'technician': 'প্রযুক্তিবিদ',
+                'manager': 'ম্যানেজার',
+                'housewife': 'গৃহিণী',
+                'labour': 'শ্রমিক',
+                'শিক্ষক': 'শিক্ষক',
+                'ইঞ্জিনিয়ার': 'ইঞ্জিনিয়ার',
+                'ডাক্তার': 'ডাক্তার',
+                'নার্স': 'নার্স',
+                'কৃষক': 'কৃষক',
+                'ব্যবসায়ী': 'ব্যবসায়ী',
+                'আইনজীবী': 'আইনজীবী',
+                'পুলিশ': 'পুলিশ',
+                'ড্রাইভার': 'ড্রাইভার',
+                'সেনা': 'সেনা',
+                'বিজ্ঞানী': 'বিজ্ঞানী',
+                'হিসাবরক্ষক': 'হিসাবরক্ষক',
+                'শিল্পী': 'শিল্পী',
+                'লেখক': 'লেখক',
+                'ছাত্র/ছাত্রী': 'ছাত্র/ছাত্রী',
+                'দোকানদার': 'দোকানদার',
+                'কর্মচারী': 'কর্মচারী',
+                'প্রযুক্তিবিদ': 'প্রযুক্তিবিদ',
+                'ম্যানেজার': 'ম্যানেজার',
+                'গৃহিণী': 'গৃহিণী',
+                'শ্রমিক': 'শ্রমিক',
+                'অন্যান্য': 'অন্যান্য'
+            } %}
+
+            {# ================= Occupation Bangla ================= #}
+            {% set occupationKey = data.occupation|lower %}
+            {% set occupationBangla = occupationMap[occupationKey]|default(data.occupation) %}
+            {% set occupationInfo = {
+                'label': 'পেশা',
+                'value': occupationBangla
+            } %}
+
+            {# ================= Info List ================= #}
+            {% set infoList = [
+                {'label':'নাম', 'value': data.name_bn},
+                {'label':'নাম (ইংরেজি)', 'value': data.name_en},
+                {'label': certificate_type == 'warish' ? 'মৃত্যু নিবন্ধন' : 'পরিচয়পত্র',  'value': data.nid ?: data.birth_id ?: data.passport_no},
+                {'label': certificate_type == 'warish' ? 'মৃত্যু তারিখ' : 'জন্ম তারিখ', 'value': data.birth_date|date('d-m-Y')|bn},
+                {'label':'লিঙ্গ', 'value': 
+                    data.gender|lower == 'male' ? 'পুরুষ' : 
+                    (data.gender|lower == 'female' ? 'মহিলা' : 'অন্যান্য')
+                },
+                {'label':'ধর্ম', 'value': 
+                    data.religion|lower == 'islam' ? 'ইসলাম' :
+                    (data.religion|lower == 'hindu' ? 'হিন্দু' :
+                    (data.religion|lower == 'christian' ? 'খ্রিস্টান' :
+                    (data.religion|lower == 'buddhism' ? 'বৌদ্ধ' :
+                    'অন্যান্য')))
+                },
+                {'label':'পিতা', 'value': data.father_name_bn ~ ' (' ~ data.father_name_en ~ ')'},
+                {'label':'মাতা', 'value': data.mother_name_bn ~ ' (' ~ data.mother_name_en ~ ')'},
+                {'label':'বাসিন্দার ধরন', 'value': data.resident == 'permanent' ? 'স্থায়ী' : 'অস্থায়ী'},
+                {'label':'শিক্ষাগত যোগ্যতা', 'value': data.educational_qualification},
+                occupationInfo,
+                {'label':'বৈবাহিক অবস্থা', 'value':
+                    data.marital_status|lower == 'single' ? 'অবিবাহিত' :
+                    (data.marital_status|lower == 'married' ? 'বিবাহিত' :
+                    (data.marital_status|lower == 'divorced' ? 'বিচ্ছিন্ন' :
+                    (data.marital_status|lower == 'widowed' ? 'বিধবা/বিধুর' :
+                    'অন্যান্য')))
+                }
+            ] %}
+
+            {# ================= Display ================= #}
+            <div class="row g-4">
+                {% for item in infoList %}
+                    <div class="col-lg-4 col-md-6 col-sm-12">
+                        <p class="mb-1 fw-semibold text-secondary">{{ item.label }}:</p>
+                        <p class="mb-3 fs-6 text-dark">{{ item.value ?: '—' }}</p>
+                    </div>
+                {% endfor %}
+                
+                {% if data.spouse_name_bn %}
+                    <div class="col-lg-6 col-md-12">
+                        <p class="mb-1 fw-semibold text-secondary">স্বামী/স্ত্রীর নাম:</p>
+                        <p class="mb-3 fs-6 text-dark">{{ data.spouse_name_bn }} ({{ data.spouse_name_en }})</p>
+                    </div>
+                {% endif %}
+            </div>
+
+
+
+            <!-- আবেদনকারীর ছবি -->
+            <div class="text-center mt-4">
+                <img src="{{ url }}/{{ data.applicant_photo ?: 'assets/images/default-user.png' }}" 
+                    alt="আবেদনকারীর ছবি" 
+                    class="rounded-circle border border-4 border-primary shadow" 
+                    style="max-width: 160px; height: auto; object-fit: cover;">
+            </div>
+
+            </section>
+
+
+
+            <!-- ঠিকানা -->
+            <section class="mb-5 border rounded-4 p-4 shadow-sm bg-light">
+                <h6 class="text-info fw-bold mb-3 fs-5 d-flex align-items-center">
+                    <i class="bi bi-geo-alt-fill me-3 fs-4"></i>
+                    বর্তমান ঠিকানা
+                </h6>
+                <p class="mb-2 fs-6 text-secondary">
+                    বাড়ি: <span class="text-dark">{{ data.present_holding_no ?: '—' }}</span> | 
+                    গ্রাম: <span class="text-dark">{{ data.present_village_bn ?: '—' }}</span> | 
+                    ওয়ার্ড: <span class="text-dark">    {{ data.present_ward_no ? (data.present_ward_no|bn) : '—' }} </span>
+                </p>
+                <p class="fs-6 text-secondary">
+                    পোস্ট অফিস: <span class="text-dark">{{ data.present_postoffice_bn ?: '—' }}</span> | 
+                    ইউনিয়ন: <span class="text-dark">{{ data.present_union_bn ?: '—' }}</span> | 
+                    উপজেলা: <span class="text-dark">{{ data.present_upazila_bn ?: '—' }}</span> | 
+                    জেলা: <span class="text-dark">{{ data.present_district_bn ?: '—' }}</span>
+                </p>
+            </section>
+
+            <section class="mb-5 border rounded-4 p-4 shadow-sm bg-light">
+                <h6 class="text-info fw-bold mb-3 fs-5 d-flex align-items-center">
+                    <i class="bi bi-house-fill me-3 fs-4"></i>
+                    স্থায়ী ঠিকানা
+                </h6>
+                <p class="mb-2 fs-6 text-secondary">
+                    বাড়ি: <span class="text-dark">{{ data.permanent_holding_no ?: '—' }}</span> | 
+                    গ্রাম: <span class="text-dark">{{ data.permanent_village_bn ?: '—' }}</span> | 
+                    ওয়ার্ড: <span class="text-dark">    {{ data.permanent_ward_no? (data.permanent_ward_no|bn) : '—' }} </span>
+                </p>
+                <p class="fs-6 text-secondary">
+                    পোস্ট অফিস: <span class="text-dark">{{ data.permanent_postoffice_bn ?: '—' }}</span> | 
+                    ইউনিয়ন: <span class="text-dark">{{ data.permanent_union_bn ?: '—' }}</span> | 
+                    উপজেলা: <span class="text-dark">{{ data.permanent_upazila_bn ?: '—' }}</span> | 
+                    জেলা: <span class="text-dark">{{ data.permanent_district_bn ?: '—' }}</span>
+                </p>
+            </section>
+
+            <!-- আবেদনকারীর তথ্য -->
+            <section class="mb-5 border rounded-4 p-4 shadow-sm bg-white">
+                <h6 class="text-primary fw-bold mb-4 fs-5 d-flex align-items-center">
+                    <i class="bi bi-person-lines-fill me-3 fs-4"></i>
+                    আবেদনকারীর তথ্য
+                </h6>
+                <p class="mb-2 fs-6"><strong>আবেদন আইডি:</strong> {{ data.application_id }}</p>
+                <p class="mb-2 fs-6"><strong>আবেদনকারীর নাম:</strong> {{ data.applicant_name ?: '—' }}</p>
+                <p class="fs-6"><strong>মোবাইল নম্বর:</strong> {{ data.applicant_phone ?: '—' }}</p>
+            </section>
+
+            {% include 'partials/certificate_fields.twig' %}
+            <!-- ডকুমেন্টস -->
+            <section class="mb-5 border rounded-4 p-4 shadow-sm bg-white">
+                <h6 class="fw-semibold fs-5 mb-4 d-flex align-items-center">
+                    <i class="bi bi-paperclip me-3 fs-4 text-primary"></i>
+                    সংযুক্ত ডকুমেন্টস
+                </h6>
+                {% if data.documents is empty %}
+                    <p class="text-muted fst-italic">কোনো ডকুমেন্ট আপলোড করা হয়নি।</p>
+                {% else %}
+                    <ul class="list-group list-group-flush">
+                        {% for doc_path in documents %}
+                            <li class="list-group-item d-flex justify-content-between align-items-center hover-shadow rounded-3 mb-2 px-3 py-2">
+                                <div class="d-flex align-items-center gap-3">
+                                    <i class="bi bi-file-earmark-text fs-5 text-primary"></i>
+                                    <span class="fw-medium text-truncate" style="max-width: 80vw;">{{ doc_path | split('/') | last }}</span>
+                                </div>
+                                <a href="{{ url }}/{{ doc_path }}" target="_blank" class="btn btn-sm btn-outline-primary px-3 py-1">
+                                    দেখুন
+                                </a>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+            </section>
+            <!-- অনুমোদন ফর্ম -->
+            <form id="approvalForm" method="POST" class="mb-4" autocomplete="on">
+                <input type="hidden" id="certificate_type" name="certificate_type" value="{{ data.certificate_type }}">
+                <input type="hidden" id="application_id" name="application_id" value="{{ data.application_id }}">
+
+                <hr class="my-5">
+
+                <!-- যাচাইকারীর তথ্য -->
+                <section class="mb-5 border rounded-4 p-4 shadow-sm bg-light">
+                    <h6 class="text-success fw-bold mb-4 fs-5 d-flex align-items-center">
+                        <i class="bi bi-shield-check me-3 fs-4"></i>
+                        তথ্য যাচাইকারীর তথ্য
+                    </h6>
+
+                    {% if union_members|length > 0 %}
+                    <div class="row g-3 mb-4">
+                        <div class="col-12">
+                            <div class="alert alert-info mb-3">
+                                <strong><i class="bi bi-info-circle"></i> সহায়তা:</strong> নীচের ড্রপডাউন থেকে যাচাইকারী নির্বাচন করুন। তথ্য স্বয়ংক্রিয়ভাবে পূরণ হবে।
+                            </div>
+                            <label for="verifier_select" class="form-label fw-semibold small mb-2">👤 যাচাইকারী নির্বাচন করুন:</label>
+                            <div class="row g-2 mb-3">
+                                <div class="col-lg-10">
+                                    <select id="verifier_select" class="form-select form-select-sm shadow-sm" onchange="selectVerifierFromDropdown()">
+                                        <option value="">-- যাচাইকারী নির্বাচন করুন --</option>
+                                        {% for designation, members in union_members %}
+                                            {% set desigLabels = {'chairman': 'চেয়ারম্যান', 'secretary': 'সচিব', 'officer': 'অফিসার', 'member': 'সদস্য', 'assistant': 'সহকারী'} %}
+                                            <optgroup label="{{ desigLabels[designation] | default(designation) }}">
+                                                {% for member in members %}
+                                                    <option value="{{ member.id }}|{{ member.name_bn }}|{{ member.name_en }}|{{ designation }}|{{ member.phone }}">
+                                                        {{ member.name_bn }} ({{ member.name_en }}) - 📱 {{ member.phone }}
+                                                    </option>
+                                                {% endfor %}
+                                            </optgroup>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-lg-2">
+                                    <button type="button" class="btn btn-sm btn-outline-danger w-100" onclick="clearVerifierSelection()" title="যাচাইকারী পরিষ্কার করুন">
+                                        <i class="bi bi-x-circle"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Hidden fields for verifier -->
+                    <input type="hidden" id="verifier_id" name="verifier_id" value="{{ approval.verifier_id|default('') }}">
+                    <input type="hidden" id="verifier_name_bn" name="verifier_name_bn" value="{{ approval.verifier_name_bn|default('') }}">
+                    <input type="hidden" id="verifier_name_en" name="verifier_name_en" value="{{ approval.verifier_name_en|default('') }}">
+
+                    <div class="row g-4">
+                        <div class="col-12">
+                            <label class="form-label fw-semibold small mb-2">📋 অথবা ম্যানুয়ালি যাচাইকারীর তথ্য পূরণ করুন:</label>
+                        </div>
+                        <div class="col-lg-6 col-md-6 col-sm-12">
+                            <label for="verifier_name" class="form-label fw-semibold small mb-1">যাচাইকারীর নাম (বাংলা):</label>
+                            <input type="text" id="verifier_name" name="verifier_name"
+                                class="form-control form-control-sm shadow-sm"
+                                placeholder="যাচাইকারীর নাম লিখুন"
+                                value="{{ approval.verifier_name|default('') }}">
+                        </div>
+                        <div class="col-lg-6 col-md-6 col-sm-12">
+                            <label for="verifier_name_en_display" class="form-label fw-semibold small mb-1">যাচাইকারীর নাম (ইংরেজি):</label>
+                            <input type="text" id="verifier_name_en_display" 
+                                class="form-control form-control-sm shadow-sm"
+                                placeholder="Verifier Name (English)"
+                                readonly>
+                        </div>
+                        <div class="col-lg-6 col-md-6 col-sm-12">
+                            <label for="verifier_designation" class="form-label fw-semibold small mb-1">যাচাইকারীর পদবি:</label>
+                            <select id="verifier_designation" name="verifier_designation"
+                                    class="form-select form-select-sm shadow-sm">
+                                <option value="">-- পদবি নির্বাচন করুন --</option>
+                                <option value="chairman"  {% if approval.verifier_designation=='chairman' %}selected{% endif %}>চেয়ারম্যান</option>
+                                <option value="secretary" {% if approval.verifier_designation=='secretary' %}selected{% endif %}>সচিব</option>
+                                <option value="member"    {% if approval.verifier_designation=='member' %}selected{% endif %}>সদস্য</option>
+                                <option value="officer"   {% if approval.verifier_designation=='officer' %}selected{% endif %}>অফিসার</option>
+                                <option value="assistant" {% if approval.verifier_designation=='assistant' %}selected{% endif %}>সহকারী</option>
+                            </select>
+                        </div>
+                        <div class="col-lg-6 col-md-6 col-sm-12">
+                            <label for="verifier_contact" class="form-label fw-semibold small mb-1">যোগাযোগ নম্বর:</label>
+                            <input type="text" id="verifier_contact" name="verifier_contact"
+                                class="form-control form-control-sm shadow-sm"
+                                placeholder="মোবাইল নম্বর লিখুন"
+                                value="{{ approval.verifier_contact|default('') }}">
+                        </div>
+                        <div class="col-lg-6 col-md-6 col-sm-12">
+                            <label for="verification_date" class="form-label fw-semibold small mb-1">যাচাই তারিখ:</label>
+                            <input type="text" id="verification_date" name="verification_date"
+                                class="form-control form-control-sm datepicker shadow-sm"
+                                placeholder="DD-MM-YYYY"
+                                value="{{ approval.verification_date|default('') }}">
+                        </div>
+                        <div class="col-12">
+                            <label for="verification_note" class="form-label fw-semibold small mb-1">যাচাই মন্তব্য:</label>
+                            <textarea id="verification_note" name="verification_note" rows="3"
+                                    class="form-control form-control-sm shadow-sm"
+                                    placeholder="যাচাই সংক্রান্ত মন্তব্য লিখুন">{{ approval.verification_note|default('') }}</textarea>
+                        </div>
+                    </div>
+                </section>
+
+                <hr class="my-5">
+
+                <!-- অনুমোদনকারী তথ্য -->
+                <section class="mb-5 border rounded-4 p-4 shadow-sm bg-light">
+                    <h6 class="text-danger fw-bold mb-4 fs-5 d-flex align-items-center">
+                        <i class="bi bi-pencil-square me-3 fs-4"></i>
+                        অনুমোদন তথ্য
+                    </h6>
+
+                    {% if union_members|length > 0 %}
+                    <div class="row g-3 mb-4">
+                        <div class="col-12">
+                            <div class="alert alert-warning mb-3">
+                                <strong><i class="bi bi-info-circle"></i> সহায়তা:</strong> নীচের ড্রপডাউন থেকে অনুমোদনকারী নির্বাচন করুন। তথ্য স্বয়ংক্রিয়ভাবে পূরণ হবে।
+                            </div>
+                            <label for="approver_select" class="form-label fw-semibold small mb-2">👤 অনুমোদনকারী নির্বাচন করুন:</label>
+                            <div class="row g-2 mb-3">
+                                <div class="col-lg-10">
+                                    <select id="approver_select" class="form-select form-select-sm shadow-sm" onchange="selectApproverFromDropdown()">
+                                        <option value="">-- অনুমোদনকারী নির্বাচন করুন --</option>
+                                        {% for designation, members in union_members %}
+                                            {% set desigLabels = {'chairman': 'চেয়ারম্যান', 'secretary': 'সচিব', 'officer': 'অফিসার', 'member': 'সদস্য', 'assistant': 'সহকারী'} %}
+                                            <optgroup label="{{ desigLabels[designation] | default(designation) }}">
+                                                {% for member in members %}
+                                                    <option value="{{ member.id }}|{{ member.name_bn }}|{{ member.name_en }}|{{ designation }}|{{ member.phone }}">
+                                                        {{ member.name_bn }} ({{ member.name_en }}) - 📱 {{ member.phone }}
+                                                    </option>
+                                                {% endfor %}
+                                            </optgroup>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-lg-2">
+                                    <button type="button" class="btn btn-sm btn-outline-danger w-100" onclick="clearApproverSelection()" title="অনুমোদনকারী পরিষ্কার করুন">
+                                        <i class="bi bi-x-circle"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Hidden fields for approver -->
+                    <input type="hidden" id="approver_id" name="approver_id" value="{{ approval.approver_id|default('') }}">
+                    <input type="hidden" id="approver_name_bn" name="approver_name_bn" value="{{ approval.approver_name_bn|default('') }}">
+                    <input type="hidden" id="approver_name_en" name="approver_name_en" value="{{ approval.approver_name_en|default('') }}">
+
+                    <div class="row g-4">
+                        <div class="col-12">
+                            <label class="form-label fw-semibold small mb-2">📋 অথবা ম্যানুয়ালি অনুমোদনকারীর তথ্য পূরণ করুন:</label>
+                        </div>
+                        <div class="col-lg-6 col-md-6 col-sm-12">
+                            <label for="approver_name" class="form-label fw-semibold small mb-1">অনুমোদনকারীর নাম (বাংলা):</label>
+                            <input type="text" id="approver_name" name="approver_name"
+                                class="form-control form-control-sm shadow-sm"
+                                placeholder="অনুমোদনকারীর নাম লিখুন"
+                                value="{{ approval.approver_name|default('') }}">
+                        </div>
+                        <div class="col-lg-6 col-md-6 col-sm-12">
+                            <label for="approver_name_en_display" class="form-label fw-semibold small mb-1">অনুমোদনকারীর নাম (ইংরেজি):</label>
+                            <input type="text" id="approver_name_en_display" 
+                                class="form-control form-control-sm shadow-sm"
+                                placeholder="Approver Name (English)"
+                                readonly>
+                        </div>
+                        <div class="col-lg-6 col-md-6 col-sm-12">
+                            <label for="approval_date" class="form-label fw-semibold small mb-1">অনুমোদনের তারিখ:</label>
+                            <input type="text" id="approval_date" name="approval_date"
+                                class="form-control form-control-sm datepicker shadow-sm"
+                                placeholder="DD-MM-YYYY"
+                                value="{{ approval.approval_date ? data.issue_date|date('d-m-Y') : '' }}">
+                        </div>
+                        <div class="col-12">
+                            <label for="approval_note" class="form-label fw-semibold small mb-1">মন্তব্য:</label>
+                            <textarea id="approval_note" name="approval_note" rows="3"
+                                    class="form-control form-control-sm shadow-sm"
+                                    placeholder="অনুমোদন সংক্রান্ত মন্তব্য লিখুন">{{ approval.approval_note|default('') }}</textarea>
+                        </div>
+                    </div>
+                </section>
+
+                {% if data.certificate_type == 'trade' %}
+                    {% include 'common/trade_extra.twig' %}
+                {% endif %}
+
+                <hr class="my-5">
+
+                <!-- সনদের ফি তথ্য -->
+                <section class="mb-5 border rounded-4 p-4 shadow-sm bg-light">
+                    <h6 class="text-warning fw-bold mb-4 fs-5 d-flex align-items-center">
+                        <i class="bi bi-cash-stack me-3 fs-4"></i>
+                        সনদ ফি তথ্য
+                    </h6>
+                    <div class="row g-4">
+                        <div class="col-lg-6 col-md-6 col-sm-12">
+                            <label for="certificate_fee" class="form-label fw-semibold small mb-1">সনদের ফি (টাকা):</label>
+                            <input type="number" id="certificate_fee" name="certificate_fee"
+                                class="form-control form-control-sm shadow-sm"
+                                placeholder="সনদের ফি লিখুন"
+                                value="{{ approval.certificate_fee|default('') }}"
+                                min="0" step="any" required>
+                        </div>
+                        <div class="col-lg-6 col-md-6 col-sm-12">
+                            <label for="payment_method" class="form-label fw-semibold small mb-1">পরিশোধের মাধ্যম:</label>
+                            <select id="payment_method" name="payment_method"
+                                    class="form-select form-select-sm shadow-sm" required>
+                                <option value="Cash"   {% if approval.payment_method=='Cash' %}selected{% endif %}>ক্যাশ</option>
+                                <option value="Bkash"  {% if approval.payment_method=='Bkash' %}selected{% endif %}>বিকাশ</option>
+                                <option value="Nagad"  {% if approval.payment_method=='Nagad' %}selected{% endif %}>নগদ</option>
+                                <option value="Rocket" {% if approval.payment_method=='Rocket' %}selected{% endif %}>রকেট</option>
+                            </select>
+                        </div>
+                        <div class="col-lg-6 col-md-6 col-sm-12">
+                            <label for="payment_status" class="form-label fw-semibold small mt-3 mb-1">পরিশোধের অবস্থা:</label>
+                            <select id="payment_status" name="payment_status"
+                                    class="form-select form-select-sm shadow-sm" required>
+                                <option value="Paid"   {% if approval.payment_status=='Paid' %}selected{% endif %}>পরিশোধিত</option>
+                                <option value="Unpaid" {% if approval.payment_status=='Unpaid' %}selected{% endif %}>অপরিশোধিত</option>
+                            </select>
+                        </div>
+                    </div>
+                </section>
+
+                <hr class="my-5">
+
+                <!-- Buttons -->
+                <div class="d-flex flex-wrap gap-3 justify-content-center align-items-center">
+                    <button type="submit" id="approve" class="btn btn-success btn-sm px-4 shadow-sm flex-grow-1 flex-md-grow-0">
+                        <i class="bi bi-check-circle me-2"></i> অনুমোদন করুন
+                    </button>
+                    <button type="reset" class="btn btn-warning btn-sm px-4 shadow-sm flex-grow-1 flex-md-grow-0">
+                        <i class="bi bi-arrow-clockwise me-2"></i> রিসেট করুন
+                    </button>
+                    <button type="button" id="reject" class="btn btn-danger btn-sm px-4 shadow-sm flex-grow-1 flex-md-grow-0">
+                        <i class="bi bi-x-circle me-2"></i> আবেদন বাতিল করুন
+                    </button>
+                    <a href="/{{ data.certificate_type }}_verify/application/{{ data.application_id }}/{{ union.union_code }}/0" 
+                    class="btn btn-primary btn-sm px-4 shadow-sm flex-grow-1 flex-md-grow-0">
+                        <i class="bi bi-files me-2"></i> আবেদন কপি
+                    </a>
+                    <button type="button" id="on_hold" class="btn btn-secondary btn-sm px-4 shadow-sm flex-grow-1 flex-md-grow-0">
+                        <i class="bi bi-pause-circle me-2"></i> অন-হোল্ড করুন
+                    </button>
+                    <button type="button" id="reactivate" class="btn btn-info btn-sm px-4 shadow-sm flex-grow-1 flex-md-grow-0">
+                        <i class="bi bi-arrow-repeat me-2"></i> পুনরায় চালু করুন
+                    </button>
+
+                    <!-- Fix Sonod Status -->
+                    <div class="position-relative d-inline-block">
+                        <button type="button" id="fix_sonod" class="btn btn-dark btn-sm px-4 shadow-sm flex-grow-1 flex-md-grow-0" 
+                                data-bs-toggle="tooltip" data-bs-placement="top" title="Click to fix Sonod number & status if inconsistent">
+                            <i class="bi bi-tools me-2"></i> Fix Sonod
+                        </button>
+                        <small id="fix_sonod_msg" class="text-success position-absolute mt-1" style="font-size:0.8rem; display:none;"></small>
+                    </div>
+                    {% if data.certificate_type == 'trade' %}
+                        <button type="button" id="renew" class="btn btn-info btn-sm px-4 shadow-sm flex-grow-1 flex-md-grow-0">
+                            <i class="bi bi-arrow-repeat me-2"></i> লাইসেন্স নবায়ন করুন
+                        </button>
+                    {% endif %}
+                </div>
+
+            </form>
+
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+{% block styles %}
+<style>
+    .list-group-item.hover-shadow:hover {
+        background-color: #e9f0ff;
+        box-shadow: 0 0 12px rgb(13 110 253 / 0.25);
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+
+    /* Input focus enhancement */
+    input.form-control:focus, select.form-select:focus, textarea.form-control:focus {
+        box-shadow: 0 0 8px rgba(13, 110, 253, 0.6);
+        border-color: #0d6efd;
+        outline: none;
+        transition: box-shadow 0.3s ease;
+    }
+
+    /* Text truncation for long file names */
+    .text-truncate {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+</style>
+{% endblock %}
+
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+
+    /* ===============================
+       Helpers
+    =============================== */
+
+    const $id = id => document.getElementById(id);
+    const on = (id, event, handler) => {
+        const el = $id(id);
+        if (el) el.addEventListener(event, handler);
+    };
+
+    const csrfToken = () => document.querySelector('input[name="csrf_token"]')?.value || '';
+    const certType  = () => $id('certificate_type')?.value || '';
+    const appId     = () => $id('application_id')?.value || '';
+
+    function getTodayDate() {
+        const t = new Date();
+        return `${String(t.getDate()).padStart(2,'0')}-${String(t.getMonth()+1).padStart(2,'0')}-${t.getFullYear()}`;
+    }
+
+    function displayMessage(status, message, licenseNumber = null) {
+        let fullMessage = message;
+        if (licenseNumber) fullMessage += `\n\n📜 লাইসেন্স নম্বর: ${licenseNumber}`;
+
+        Swal.fire({
+            icon: status === 'success' ? 'success' : 'error',
+            title: status === 'success' ? '✅ সফল হয়েছে!' : '❌ ব্যর্থ হয়েছে!',
+            text: fullMessage,
+            confirmButtonText: 'OK',
+            confirmButtonColor: status === 'success' ? '#28a745' : '#dc3545'
+        }).then(() => {
+            if (status === 'success') history.back();
+        });
+    }
+
+    function postData(url, body, onSuccess) {
+        fetch(url, {
+            method: 'POST',
+            headers: {'Content-Type':'application/x-www-form-urlencoded'},
+            body
+        })
+        .then(r => r.json())
+        .then(res => {
+            if (res.status === 'success') onSuccess(res);
+            else displayMessage('error', res.message || 'Unknown error');
+        })
+        .catch(() => displayMessage('error', '❌ কিছু ভুল হয়েছে, আবার চেষ্টা করুন।'));
+    }
+
+    /* ===============================
+       Init approval date
+    =============================== */
+
+    const approvalInput = $id('approval_date');
+    if (approvalInput && !approvalInput.value.trim()) {
+        approvalInput.value = getTodayDate();
+    }
+
+    const approvalForm = $id('approvalForm');
+
+    /* ===============================
+       Dropdown Selection Functions
+    =============================== */
+
+    window.selectVerifierFromDropdown = function() {
+        const select = $id('verifier_select');
+        const selectedValue = select.value;
+        
+        if (!selectedValue) {
+            clearVerifierSelection();
+            return;
+        }
+        
+        const parts = selectedValue.split('|');
+        if (parts.length === 5) {
+            selectVerifier(parts[0], parts[1], parts[2], parts[3], parts[4]);
+        }
+    };
+
+    window.clearVerifierSelection = function() {
+        $id('verifier_id').value = '';
+        $id('verifier_name').value = '';
+        $id('verifier_name_en_display').value = '';
+        $id('verifier_name_bn').value = '';
+        $id('verifier_name_en').value = '';
+        $id('verifier_designation').value = '';
+        $id('verifier_contact').value = '';
+        $id('verifier_select').value = '';
+        
+        Swal.fire({
+            icon: 'info',
+            title: 'পরিষ্কার করা হয়েছে',
+            text: 'যাচাইকারীর সমস্ত তথ্য পরিষ্কার করা হয়েছে।',
+            timer: 1500,
+            showConfirmButton: false
+        });
+    };
+
+    function selectVerifier(userId, nameBn, nameEn, designation, phone) {
+        $id('verifier_id').value = userId;
+        $id('verifier_name_bn').value = nameBn;
+        $id('verifier_name_en').value = nameEn;
+        $id('verifier_name').value = nameBn;
+        $id('verifier_name_en_display').value = nameEn;
+        $id('verifier_designation').value = designation;
+        $id('verifier_contact').value = phone || '';
+        
+        Swal.fire({
+            icon: 'success',
+            title: 'নির্বাচিত হয়েছে',
+            text: nameBn + ' (User ID: ' + userId + ') সফলভাবে নির্বাচিত হয়েছে।',
+            timer: 2000,
+            showConfirmButton: false
+        });
+    }
+
+    window.selectApproverFromDropdown = function() {
+        const select = $id('approver_select');
+        const selectedValue = select.value;
+        
+        if (!selectedValue) {
+            clearApproverSelection();
+            return;
+        }
+        
+        const parts = selectedValue.split('|');
+        if (parts.length === 5) {
+            selectApprover(parts[0], parts[1], parts[2], parts[3], parts[4]);
+        }
+    };
+
+    window.clearApproverSelection = function() {
+        $id('approver_id').value = '';
+        $id('approver_name').value = '';
+        $id('approver_name_en_display').value = '';
+        $id('approver_name_bn').value = '';
+        $id('approver_name_en').value = '';
+        $id('approver_select').value = '';
+        
+        Swal.fire({
+            icon: 'info',
+            title: 'পরিষ্কার করা হয়েছে',
+            text: 'অনুমোদনকারীর সমস্ত তথ্য পরিষ্কার করা হয়েছে।',
+            timer: 1500,
+            showConfirmButton: false
+        });
+    };
+
+    function selectApprover(userId, nameBn, nameEn, designation, phone) {
+        $id('approver_id').value = userId;
+        $id('approver_name_bn').value = nameBn;
+        $id('approver_name_en').value = nameEn;
+        $id('approver_name').value = nameBn;
+        $id('approver_name_en_display').value = nameEn;
+        
+        Swal.fire({
+            icon: 'success',
+            title: 'নির্বাচিত হয়েছে',
+            text: nameBn + ' (User ID: ' + userId + ') সফলভাবে অনুমোদনকারী হিসেবে নির্বাচিত হয়েছে।',
+            timer: 2000,
+            showConfirmButton: false
+        });
+    }
+
+    /* ===============================
+       Approve
+    =============================== */
+
+    on('approve', 'click', e => {
+        e.preventDefault();
+
+        if (!$id('approval_date')?.value.trim()) {
+            displayMessage('error', 'অনুগ্রহ করে অনুমোদনের তারিখ নির্বাচন করুন।');
+            return;
+        }
+
+        const verifierName = $('#verifier_name').val()?.trim();
+        const verifierDesignation = $('#verifier_designation').val();
+
+        if (verifierName && !verifierDesignation) {
+            Swal.fire('❌ ভুল হয়েছে!', 'যাচাইকারীর নাম দিলে পদবি নির্বাচন আবশ্যক।', 'error');
+            return;
+        }
+        if (!verifierName && verifierDesignation) {
+            Swal.fire('❌ ভুল হয়েছে!', 'পদবি নির্বাচন করলে যাচাইকারীর নাম আবশ্যক।', 'error');
+            return;
+        }
+
+        if (certType() === 'trade') {
+            Swal.fire({
+                title: 'লাইসেন্স নম্বর লিখুন',
+                input: 'text',
+                inputValue: $id('license_number')?.value || '',
+                showCancelButton: true,
+                confirmButtonText: '✅ OK',
+                cancelButtonText: '❌ বাতিল',
+                inputValidator: v => !v.trim() && 'লাইসেন্স নম্বর আবশ্যক!'
+            }).then(r => {
+                if (r.isConfirmed) processApproval(r.value.trim());
+            });
+        } else {
+            processApproval(null);
+        }
+    });
+
+    function processApproval(licenseNumber) {
+        if (!approvalForm) return;
+
+        const fd = new FormData(approvalForm);
+        fd.delete('license_number');
+        if (licenseNumber) fd.set('license_number', licenseNumber);
+
+        postData(
+            `/applications/${certType()}/approve/${appId()}`,
+            new URLSearchParams(fd).toString(),
+            res => displayMessage('success', res.message, licenseNumber)
+        );
+    }
+
+    /* ===============================
+       Reject
+    =============================== */
+
+    on('reject', 'click', e => {
+        e.preventDefault();
+
+        Swal.fire({
+            title: 'আবেদন বাতিল করবেন?',
+            icon: 'warning',
+            input: 'textarea',
+            inputPlaceholder: 'বাতিলের কারণ লিখুন...',
+            showCancelButton: true,
+            preConfirm: v => !v.trim() ? 'কারণ লিখতে হবে!' : v.trim()
+        }).then(r => {
+            if (!r.isConfirmed) return;
+
+            const body = new URLSearchParams({
+                reject_reason: r.value,
+                csrf_token: csrfToken()
+            }).toString();
+
+            postData(
+                `/applications/${certType()}/reject/${appId()}`,
+                body,
+                () => Swal.fire('❌ আবেদন বাতিল হয়েছে!', '', 'success').then(()=>history.back())
+            );
+        });
+    });
+
+    /* ===============================
+       Reset
+    =============================== */
+
+    const resetBtn = document.querySelector('button[type="reset"]');
+    if (resetBtn) {
+        resetBtn.addEventListener('click', () => {
+            const vd = $id('verifier_designation');
+            if (vd) vd.disabled = true;
+        });
+    }
+
+    /* ===============================
+       On Hold
+    =============================== */
+
+    on('on_hold', 'click', e => {
+        e.preventDefault();
+
+        Swal.fire({
+            title: 'অন-হোল্ড করুন',
+            input: 'textarea',
+            showCancelButton: true,
+            preConfirm: v => !v.trim() ? 'কারণ লিখুন!' : v.trim()
+        }).then(r => {
+            if (!r.isConfirmed) return;
+
+            const body = new URLSearchParams({
+                id: appId(),
+                note: r.value,
+                csrf_token: csrfToken()
+            }).toString();
+
+            postData(
+                `/applications/${certType()}/on_hold`,
+                body,
+                res => Swal.fire('✅ Success', res.message, 'success').then(()=>location.reload())
+            );
+        });
+    });
+
+    /* ===============================
+       Reactivate
+    =============================== */
+
+    on('reactivate', 'click', e => {
+        e.preventDefault();
+
+        const body = new URLSearchParams({
+            id: appId(),
+            csrf_token: csrfToken()
+        }).toString();
+
+        postData(
+            `/applications/${certType()}/reactivate`,
+            body,
+            res => Swal.fire('✅ Success', res.message, 'success').then(()=>location.reload())
+        );
+    });
+
+    /* ===============================
+       Fix Sonod
+    =============================== */
+
+    on('fix_sonod', 'click', e => {
+        e.preventDefault();
+
+        const msg = $id('fix_sonod_msg');
+        const body = new URLSearchParams({
+            application_id: appId(),
+            csrf_token: csrfToken()
+        }).toString();
+
+        postData(
+            `/applications/${certType()}/fix_sonod_status`,
+            body,
+            res => {
+                if (msg) {
+                    msg.textContent = `Updated! Sonod: ${res.sonod_number}, Status: ${res.status_val}`;
+                    msg.style.display = 'block';
+                    setTimeout(()=>msg.style.display='none',5000);
+                }
+            }
+        );
+    });
+
+    /* ===============================
+       Renew (trade only)
+    =============================== */
+
+    on('renew', 'click', e => {
+        e.preventDefault();
+        if (!approvalForm) return;
+
+        const fd = new FormData(approvalForm);
+        fd.set('csrf_token', csrfToken());
+
+        postData(
+            `/applications/${certType()}/renew/${appId()}`,
+            new URLSearchParams(fd).toString(),
+            () => Swal.fire('✅ লাইসেন্স নবায়ন সফল!', '', 'success').then(()=>location.reload())
+        );
+    });
+
+});
+</script>
+
+
+
+{% endblock %}

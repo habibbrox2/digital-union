@@ -1,0 +1,500 @@
+{% extends "layout.twig" %}
+
+{% block title %}ড্যাশবোর্ড{% endblock %}
+{% block header_title %}স্বাগতম আপনার ড্যাশবোর্ডে{% endblock %}
+
+{% block content %}
+{% include 'components/sweetAlert.twig' %}
+
+<!-- Libraries -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.13.2/jquery-ui.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.13.2/jquery-ui.min.css"/>
+
+<div class="container py-4">
+
+<style>
+/* ===============================
+   Global UI Enhancements
+================================= */
+
+.loading {
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #0d6efd;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    animation: spin 1s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.card:hover {
+    transform: translateY(-4px);
+    transition: 0.2s ease-in-out;
+    box-shadow: 0 4px 20px rgba(0,0,0,.12);
+}
+
+#certificateSearch { height: 45px; }
+
+/* ===============================
+   Autocomplete – Modern UI
+================================= */
+
+.ui-autocomplete {
+    max-height: 180px;
+    overflow-y: auto;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 12px 30px rgba(0,0,0,.15);
+    padding: 6px 0;
+    z-index: 1055;
+}
+.ui-autocomplete::-webkit-scrollbar { width: 6px; }
+.ui-autocomplete::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 10px;
+}
+
+.ui-menu-item-wrapper {
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    border-radius: 8px;
+    margin: 2px 6px;
+    transition: .2s;
+}
+.ui-menu-item-wrapper:hover,
+.ui-menu-item-wrapper.ui-state-active {
+    background: linear-gradient(135deg,#0d6efd,#0b5ed7);
+    color: #fff;
+    transform: translateX(4px);
+}
+
+/* ===============================
+   Search Result Cards
+================================= */
+
+.list-group-item.hover-shadow {
+    transition: .25s;
+}
+.list-group-item.hover-shadow:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 8px 25px rgba(0,0,0,.12);
+}
+.list-group-item pre {
+    background: #f8f9fa;
+    padding: 8px;
+    border-radius: 6px;
+    font-size: .85rem;
+}
+</style>
+
+<!-- ===============================
+     Search Bar
+================================= -->
+<div class="row mb-4">
+    <div class="col-md-6 offset-md-3">
+        <div class="position-relative w-100" style="max-width:500px;margin:auto;">
+            <input type="text" id="certificateSearch"
+                   class="form-control rounded-pill ps-4 pe-5 shadow-sm"
+                   placeholder="সনদ / আবেদন অনুসন্ধান করুন...">
+
+            <div id="searchLoader"
+                 class="loading position-absolute top-50 end-0 translate-middle-y me-5 d-none"></div>
+
+            <button id="searchIcon"
+                    class="btn position-absolute top-50 end-0 translate-middle-y me-2 bg-light rounded-circle shadow-sm">
+                <i class="fas fa-search text-muted"></i>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- ===============================
+     Search Results
+================================= -->
+<div class="row">
+    <div class="col-md-8 offset-md-2">
+        <div class="list-group"></div>
+    </div>
+</div>
+
+<!-- ===============================
+     Dashboard Widgets
+================================= -->
+<div class="row g-4 mt-5">
+    {% set cards = [
+        ['/analytics','chart-pie','বিশ্লেষণ','আপনার কর্মক্ষমতা ও পরিসংখ্যান দেখুন।'],
+        ['/users','user-friends','ব্যবহারকারী','ব্যবহারকারীর প্রোফাইল ও নিয়ন্ত্রণ করুন।'],
+        ['/reports','file-alt','রিপোর্টসমূহ','বিস্তারিত রিপোর্ট তৈরি ও দেখুন।'],
+        ['/settings','cogs','সেটিংস','সিস্টেমের পছন্দ ও অপশন নির্ধারণ করুন।'],
+        ['/applications','certificate','সকল সনদ','সমস্ত সনদ দেখুন ও পরিচালনা করুন।']
+    ] %}
+
+    {% for c in cards %}
+    <div class="col-md-3 col-sm-6">
+        <div class="card text-center p-3 h-100 shadow-sm" onclick="location.href='{{ c[0] }}'">
+            <i class="fas fa-{{ c[1] }} fa-2x text-success mb-2"></i>
+            <h5>{{ c[2] }}</h5>
+            <p class="small text-muted">{{ c[3] }}</p>
+        </div>
+    </div>
+    {% endfor %}
+
+    {% if is_superadmin %}
+    <div class="col-md-3 col-sm-6">
+        <div class="card text-center p-3 h-100 shadow-sm" onclick="location.href='/unions'">
+            <i class="fas fa-map-marker-alt fa-2x text-success mb-2"></i>
+            <h5>সকল ইউনিয়ন</h5>
+            <p class="small text-muted">সমস্ত ইউনিয়নের তথ্য ও ব্যবস্থাপনা।</p>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- ===============================
+     Charts Section
+================================= -->
+    <!-- মাসভিত্তিক মোট আবেদন চার্ট -->
+    <div class="row mt-5">
+        <div class="col-12">
+            <div class="card shadow-sm p-4">
+                <h5 class="mb-4">মাসভিত্তিক মোট আবেদন</h5>
+                <canvas id="monthlyChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- মাসভিত্তিক স্ট্যাটাস (Pending/Approved/Rejected/On Hold) -->
+    <div class="row mt-5">
+        <div class="col-12">
+            <div class="card shadow-sm p-4">
+                <h5 class="mb-4">মাসভিত্তিক আবেদন (স্ট্যাটাস অনুযায়ী)</h5>
+                <canvas id="statusChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- সার্টিফিকেট টাইপ অনুযায়ী মোট আবেদন -->
+    <div class="row mt-5">
+        <div class="col-12">
+            <div class="card shadow-sm p-4">
+                <h5 class="mb-4">সনদ প্রকার অনুযায়ী মোট আবেদন</h5>
+                <div style="position: relative; height: 400px;">
+                    <canvas id="certificateChart"></canvas>
+                </div>
+                <div id="chartLegend" class="mt-3 d-flex flex-wrap gap-3"></div>
+                <div id="chartLoader" class="text-center text-muted mt-3" style="display:none;">চার্ট ডেটা লোড হচ্ছে...</div>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+/* ===============================
+   Utility
+================================= */
+function toBn(v){
+    const d=['০','১','২','৩','৪','৫','৬','৭','৮','৯'];
+    return v? v.toString().replace(/\d/g,x=>d[x]):'—';
+}
+
+/* ===============================
+   Autocomplete Rendering
+================================= */
+$.ui.autocomplete.prototype._renderItem=function(ul,item){
+    return $("<li>").append(
+        `<div class="ui-menu-item-wrapper">
+            <strong>${item.data.name_bn}</strong>
+            <span class="badge bg-secondary ms-auto">${item.data.sonod_number}</span>
+        </div>`
+    ).appendTo(ul);
+};
+
+function renderResults(res) {
+    const $list = $('.list-group').empty();
+
+    if (!res.results || !res.results.length) {
+        $list.html('<div class="text-center text-muted my-3">কোন ফলাফল পাওয়া যায়নি</div>');
+        return;
+    }
+
+    res.results.forEach(certificate => {
+
+        /* Status class */
+        const statusClass =
+            certificate.approval_status === 'Approved' ? 'success' :
+            certificate.approval_status === 'Pending'  ? 'warning' :
+            certificate.approval_status === 'Rejected' ? 'danger'  :
+            'secondary';
+
+        /* Action buttons */
+        let buttons = `
+            <div class="d-flex flex-wrap gap-2">
+                <a href="/applications/${certificate.certificate_type}/view/${certificate.application_id}"
+                   class="btn btn-outline-info btn-sm" target="_blank" title="আবেদন দেখুন">
+                    <i class="fas fa-eye"></i>
+                </a>
+
+                <a href="/applications/${certificate.certificate_type}/edit/${certificate.application_id}"
+                   class="btn btn-outline-warning btn-sm" target="_blank" title="সম্পাদনা করুন">
+                    <i class="fas fa-pencil-alt"></i>
+                </a>
+        `;
+
+        if (certificate.approval_status === 'Approved') {
+            buttons += `
+                <a href="/application/${certificate.certificate_type}/bangla/${certificate.sonod_number}"
+                   class="btn btn-outline-success btn-sm" target="_blank">বাংলা</a>
+
+                <a href="/application/${certificate.certificate_type}/english/${certificate.sonod_number}"
+                   class="btn btn-outline-primary btn-sm" target="_blank">ইংরেজি</a>
+            `;
+        }
+
+        buttons += `</div>`;
+
+        /* Card render */
+        $list.append(`
+            <div class="list-group-item mb-4 p-4 rounded-4 shadow-sm border-0 bg-white hover-shadow">
+
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="fw-bold mb-0 text-primary">সনদ পত্রের বিবরণ</h5>
+                    <span class="badge bg-${statusClass} py-2 px-3 text-white text-uppercase">
+                        ${certificate.approval_status || 'N/A'}
+                    </span>
+                </div>
+
+                <div class="row g-2 mb-3">
+                    <div class="col-md-6"><strong>ট্রাকিং নং:</strong> ${toBn(certificate.application_id)}</div>
+                    <div class="col-md-6"><strong>আবেদনকারী নং:</strong> ${toBn(certificate.applicant_id)}</div>
+                    <div class="col-md-6"><strong>সনদ নং:</strong> ${toBn(certificate.sonod_number)}</div>
+                    <div class="col-md-6"><strong>সনদের ধরন (বাংলা):</strong> ${certificate.certificate_name_bn || '—'}</div>
+                    <div class="col-md-6"><strong>সনদের ধরন (ইংরেজি):</strong> ${certificate.certificate_name_bl || '—'}</div>
+                    <div class="col-md-6"><strong>আবেদনকারী (বাংলা):</strong> ${certificate.name_bn || '—'}</div>
+                    <div class="col-md-6"><strong>আবেদনকারী (ইংরেজি):</strong> ${certificate.name_en || '—'}</div>
+                    <div class="col-md-6"><strong>আবেদনের তারিখ:</strong>
+                        <span class="badge bg-light text-dark">${toBn(certificate.apply_date)}</span>
+                    </div>
+                    <div class="col-md-6"><strong>ইস্যুর তারিখ:</strong>
+                        <span class="badge bg-light text-dark">${toBn(certificate.issue_date)}</span>
+                    </div>
+                </div>
+
+                ${
+                    certificate.member_name_bn || certificate.member_name_en
+                    ? `<div class="border-top pt-2 mb-2 text-muted small">
+                        <strong>সদস্য:</strong>
+                        ${certificate.member_name_bn || certificate.member_name_en}
+                        (${certificate.relation_bn || certificate.relation_en || '—'},
+                        NID: ${toBn(certificate.member_nid)})
+                      </div>`
+                    : ''
+                }
+
+                ${
+                    certificate.business_name_bn || certificate.business_name_en
+                    ? `<div class="border-top pt-2 mb-2 text-muted small">
+                        <strong>ব্যবসা:</strong>
+                        ${certificate.business_name_bn || certificate.business_name_en}
+                        (VAT: ${toBn(certificate.vat_id)}, TAX: ${toBn(certificate.tax_id)})
+                      </div>`
+                    : ''
+                }
+
+                ${
+                    certificate.extra_data
+                    ? `<div class="border-top pt-2 mb-2 text-muted small">
+                        <strong>অতিরিক্ত তথ্য:</strong>
+                        <pre class="mb-0 p-2 bg-light rounded">
+${toBn(JSON.stringify(certificate.extra_data, null, 2))}
+                        </pre>
+                      </div>`
+                    : ''
+                }
+
+                <div class="mt-3">${buttons}</div>
+            </div>
+        `);
+    });
+}
+
+
+/* ===============================
+   Search Logic
+================================= */
+$(function(){
+    $("#certificateSearch").autocomplete({
+        appendTo: ".position-relative",
+        position:{ my:"left top+8", at:"left bottom" },
+        minLength:2,
+        source:function(req,res){
+            $('#searchLoader').removeClass('d-none');
+            $.getJSON('/certificate-search',{q:req.term},data=>{
+                $('#searchLoader').addClass('d-none');
+                res(data.results?.map(r=>({
+                    label:r.name_bn,value:r.name_bn,data:r
+                }))||[]);
+            });
+        },
+        select:(e,ui)=>renderResults({results:[ui.item.data]})
+    });
+});
+
+
+/* ===============================
+   Charts
+================================= */
+$(function () {
+
+    /**
+     * Load simple chart (line / bar)
+     */
+    function loadChart(url, chartId, type, titleText) {
+        fetch(url)
+            .then(res => {
+                if (!res.ok) throw new Error('Network error');
+                return res.json();
+            })
+            .then(data => {
+                new Chart(document.getElementById(chartId), {
+                    type: type,
+                    data: data,
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: { position: 'bottom' },
+                            title: {
+                                display: true,
+                                text: titleText
+                            }
+                        },
+                        scales: {
+                            y: { beginAtZero: true },
+                            x: {
+                                ticks: {
+                                    autoSkip: false,
+                                    maxRotation: 45
+                                }
+                            }
+                        }
+                    }
+                });
+            })
+            .catch(() => {
+                $('#' + chartId)
+                    .parent()
+                    .append('<div class="text-danger mt-2">চার্ট ডেটা লোড করতে ব্যর্থ হয়েছে।</div>');
+            });
+    }
+
+    /* ===============================
+       Monthly Charts
+    ================================= */
+    loadChart(
+        '/chart-data-monthly',
+        'monthlyChart',
+        'line',
+        'মাসভিত্তিক আবেদন সংখ্যা'
+    );
+
+    loadChart(
+        '/chart-data-monthly-status',
+        'statusChart',
+        'bar',
+        'মাসভিত্তিক আবেদন (স্ট্যাটাস অনুযায়ী)'
+    );
+
+    /* ===============================
+       Certificate-wise Chart
+    ================================= */
+    $('#chartLoader').show();
+
+    $.ajax({
+        url: '/chart-data',
+        method: 'GET',
+        dataType: 'json',
+        success: function (chartData) {
+            $('#chartLoader').hide();
+
+            /* Summary info */
+            const summaryHtml = `
+                <div class="mb-3">
+                    <strong>মোট সার্টিফিকেট:</strong> ${chartData.total_certificates}<br>
+                    <strong>মোট আবেদন:</strong> ${chartData.total_applications}
+                </div>
+            `;
+            $('#chartLegend').before(summaryHtml);
+
+            /* Chart */
+            const ctx = document.getElementById('certificateChart').getContext('2d');
+            const myChart = new Chart(ctx, {
+                type: 'bar',
+                data: chartData,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    layout: { padding: { bottom: 40 } },
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        x: {
+                            ticks: {
+                                autoSkip: false,
+                                maxRotation: 45
+                            }
+                        },
+                        y: { beginAtZero: true }
+                    }
+                }
+            });
+
+            /* Custom legend */
+            const legendContainer = $('#chartLegend').empty();
+
+            chartData.datasets.forEach((dataset, index) => {
+                const legendItem = $('<div>').css({
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    cursor: 'pointer',
+                    fontSize: '14px',
+                    userSelect: 'none'
+                });
+
+                const colorBox = $('<div>').css({
+                    width: '18px',
+                    height: '18px',
+                    backgroundColor: dataset.backgroundColor,
+                    border: `2px solid ${dataset.borderColor}`,
+                    borderRadius: '3px'
+                });
+
+                const labelText = $('<span>').text(dataset.label);
+
+                legendItem.append(colorBox).append(labelText);
+                legendContainer.append(legendItem);
+
+                legendItem.on('click', function () {
+                    const meta = myChart.getDatasetMeta(index);
+                    meta.hidden = !meta.hidden;
+                    myChart.update();
+                    $(this).css('opacity', meta.hidden ? 0.5 : 1);
+                });
+            });
+        },
+        error: function () {
+            $('#chartLoader').text('চার্ট ডেটা লোড করতে ব্যর্থ হয়েছে।');
+        }
+    });
+});
+
+
+</script>
+{% endblock %}

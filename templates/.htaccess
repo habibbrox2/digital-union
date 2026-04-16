@@ -1,0 +1,3 @@
+# Deny all HTTP access to this folder and its contents
+Order deny,allow
+Deny from all

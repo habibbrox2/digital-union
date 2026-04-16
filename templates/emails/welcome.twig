@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>স্বাগতম</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f4f4;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .email-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #ffffff;
+            padding: 40px 30px;
+            text-align: center;
+        }
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+        .header p {
+            font-size: 16px;
+            opacity: 0.95;
+        }
+        .content {
+            padding: 40px 30px;
+            color: #333333;
+        }
+        .content p {
+            margin-bottom: 15px;
+            font-size: 15px;
+        }
+        .alert {
+            background-color: #e7f3ff;
+            border-left: 4px solid #2196F3;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .alert strong {
+            display: block;
+            margin-bottom: 8px;
+            color: #1976D2;
+            font-size: 16px;
+        }
+        .alert code {
+            background-color: #fff;
+            padding: 3px 8px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            color: #d32f2f;
+        }
+        ul {
+            margin-left: 20px;
+            margin-bottom: 20px;
+        }
+        ul li {
+            margin-bottom: 8px;
+            font-size: 15px;
+        }
+        .button-container {
+            text-align: center;
+            margin: 30px 0;
+        }
+        .button {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #ffffff;
+            text-decoration: none;
+            padding: 14px 40px;
+            border-radius: 5px;
+            font-size: 16px;
+            font-weight: 600;
+            transition: transform 0.2s;
+        }
+        .button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+        .footer {
+            background-color: #f8f9fa;
+            padding: 20px 30px;
+            text-align: center;
+            border-top: 1px solid #e0e0e0;
+            color: #666666;
+            font-size: 13px;
+        }
+        .footer p {
+            margin-bottom: 5px;
+        }
+        .footer a {
+            color: #667eea;
+            text-decoration: none;
+        }
+        .divider {
+            height: 1px;
+            background-color: #e0e0e0;
+            margin: 25px 0;
+        }
+        @media only screen and (max-width: 600px) {
+            body {
+                padding: 10px;
+            }
+            .header {
+                padding: 30px 20px;
+            }
+            .header h1 {
+                font-size: 24px;
+            }
+            .content {
+                padding: 30px 20px;
+            }
+            .button {
+                padding: 12px 30px;
+                font-size: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <div class="header">
+            <h1>স্বাগতম! 🎉</h1>
+            <p>{{ mail_from_name | default('লগ ধাকা') }} এ আপনার যোগদনের জন্য ধন্যবাদ</p>
+        </div>
+
+        <div class="content">
+            <p>প্রিয় <strong>{{ username | default('ব্যবহারকারী') }}</strong>,</p>
+
+            <p>আপনার অ্যাকাউন্ট সফলভাবে তৈরি করা হয়েছে। আমরা আপনাকে আমাদের প্ল্যাটফর্মে স্বাগত জানাচ্ছি!</p>
+
+            <div class="alert">
+                <strong>আপনার লগইন তথ্য:</strong>
+                ইউজারনেম/ইমেইল: <code>{{ email }}</code><br>
+                আপনি এখন লগইন করতে পারেন।
+            </div>
+
+            <p><strong>আপনার অ্যাকাউন্ট সুরক্ষিত রাখতে:</strong></p>
+            <ul>
+                <li>শক্তিশালী পাসওয়ার্ড ব্যবহার করুন</li>
+                <li>কখনও আপনার লগইন তথ্য অন্যদের সাথে শেয়ার করবেন না</li>
+                <li>নিয়মিত আপনার পাসওয়ার্ড পরিবর্তন করুন</li>
+            </ul>
+
+            <div class="button-container">
+                <a href="{{ site_url | default('') }}/login" class="button">এখনই লগইন করুন</a>
+            </div>
+
+            <div class="divider"></div>
+
+            <p>কোনো প্রশ্ন থাকলে আমাদের সাথে যোগাযোগ করতে দ্বিধা করবেন না।</p>
+
+            <p style="margin-top: 20px;">
+                <strong>ধন্যবাদ,</strong><br>
+                {{ mail_from_name | default('লগ ধাকা') }} টিম
+            </p>
+        </div>
+
+        <div class="footer">
+            <p>&copy; {{ "now" | date("Y") }} {{ mail_from_name | default('লগ ধাকা') }}. সর্বস্বত্ব সংরক্ষিত।</p>
+            <p>আপনি এই ইমেইলটি পাচ্ছেন কারণ আপনি আমাদের প্ল্যাটফর্মে একটি অ্যাকাউন্ট তৈরি করেছেন।</p>
+        </div>
+    </div>
+</body>
+</html>

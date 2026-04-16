@@ -1,0 +1,205 @@
+
+
+    {# Name Fields #}
+    <div class="row mb-3">
+        <div class="col-md-6">
+            <label for="name_en" class="form-label">নাম (ইংরেজিতে)</label>
+            <input type="text" name="name_en" id="name_en" class="form-control" placeholder="Enter your name in English" value="{{ data.name_en|default('') }}">
+        </div>
+        <div class="col-md-6">
+            <label for="name_bn" class="form-label">নাম (বাংলায়) <span class="text-danger">*</span></label>
+            <input type="text" name="name_bn" id="name_bn" class="form-control bangla" placeholder="আপনার নাম বাংলায় লিখুন" required value="{{ data.name_bn|default('') }}">
+        </div>
+    </div>
+
+    {# ID Fields #}
+    <div class="row mb-3">
+        <div class="col-md-6">
+            <label for="nid" class="form-label">ন্যাশনাল আইডি</label>
+            <input type="text" name="nid" id="nid" class="form-control" placeholder="1616623458679011" value="{{ data.nid|default('') }}">
+        </div>
+        <div class="col-md-6">
+            <label for="birth_id" class="form-label">জন্ম নিবন্ধন নং</label>
+            <input type="text" name="birth_id" id="birth_id" class="form-control" placeholder="1919623458679011" value="{{ data.birth_id|default('') }}">
+        </div>
+    </div>
+
+    {# Passport & Birth Date #}
+    <div class="row mb-3">
+        <div class="col-md-6">
+            <label for="passport_no" class="form-label">পাসপোর্ট নং</label>
+            <input type="text" name="passport_no" id="passport_no" class="form-control" placeholder="Passport Number" value="{{ data.passport_no|default('') }}">
+        </div>
+        <div class="col-md-6">
+            <label for="birth_date" class="form-label">জন্ম তারিখ <span class="text-danger">*</span></label>
+            <input type="text" name="birth_date" id="birth_date" class="form-control datepicker" placeholder="দিন-মাস-বছর" required value="{{ data.birth_date ? data.birth_date|date('d-m-Y') : '' }}">
+        </div>
+    </div>
+
+    {# Parent Names #}
+    <div class="row mb-3">
+        <div class="col-md-6">
+            <label for="father_name_en" class="form-label">পিতার নাম (ইংরেজিতে)</label>
+            <input type="text" name="father_name_en" id="father_name_en" class="form-control" placeholder="Enter father's name in English" value="{{ data.father_name_en|default('') }}">
+        </div>
+        <div class="col-md-6">
+            <label for="father_name_bn" class="form-label">পিতার নাম (বাংলায়) <span class="text-danger">*</span></label>
+            <input type="text" name="father_name_bn" id="father_name_bn" class="form-control bangla" placeholder="পিতার নাম বাংলায় লিখুন" required value="{{ data.father_name_bn|default('') }}">
+        </div>
+    </div>
+
+    <div class="row mb-3">
+        <div class="col-md-6">
+            <label for="mother_name_en" class="form-label">মাতার নাম (ইংরেজিতে)</label>
+            <input type="text" name="mother_name_en" id="mother_name_en" class="form-control" placeholder="Enter mother's name in English" value="{{ data.mother_name_en|default('') }}">
+        </div>
+        <div class="col-md-6">
+            <label for="mother_name_bn" class="form-label">মাতার নাম (বাংলায়) <span class="text-danger">*</span></label>
+            <input type="text" name="mother_name_bn" id="mother_name_bn" class="form-control bangla" placeholder="মাতার নাম বাংলায় লিখুন" required value="{{ data.mother_name_bn|default('') }}">
+        </div>
+    </div>
+
+    {# Occupation & Education #}
+    <div class="row mb-3">
+        <div class="col-md-6">
+            <label for="occupation" class="form-label">পেশা</label>
+            <input type="text" name="occupation" id="occupation" class="form-control" placeholder="পেশা দিন" value="{{ data.occupation|default('') }}">
+        </div>
+        <div class="col-md-6">
+            <label for="educational_qualification" class="form-label">শিক্ষাগত যোগ্যতা</label>
+            <input type="text" name="educational_qualification" id="educational_qualification" class="form-control" placeholder="শিক্ষাগত যোগ্যতা দিন" value="{{ data.educational_qualification|default('') }}">
+        </div>
+    </div>
+
+    {# Resident & Religion #}
+    <div class="row mb-3">
+        <div class="col-md-6">
+            <label for="resident" class="form-label">বাসিন্দা <span class="text-danger">*</span></label>
+            <select name="resident" id="resident" class="form-control" required>
+                <option value="">চিহ্নিত করুন</option>
+                <option value="temporary" {% if data.resident == 'temporary' %}selected{% endif %}>অস্থায়ী</option>
+                <option value="permanent" {% if data.resident == 'permanent' %}selected{% endif %}>স্থায়ী</option>
+            </select>
+        </div>
+        <div class="col-md-6">
+            <label for="religion" class="form-label">ধর্ম <span class="text-danger">*</span></label>
+            <select name="religion" id="religion" class="form-control" required>
+                <option value="">চিহ্নিত করুন</option>
+                {% set religions = {'Islam':'ইসলাম','Hinduism':'হিন্দু','Buddhism':'বৌদ্ধ ধর্ম','Christianity':'খ্রিস্ট ধর্ম','Other':'অন্যান্য'} %}
+                {% for key, label in religions %}
+                    <option value="{{ key }}" {% if data.religion|default('')|lower == key|lower %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+    </div>
+
+    {# Gender & Marital Status #}
+    <div class="row mb-3">
+        <div class="col-md-6">
+            <label for="gender" class="form-label">লিঙ্গ <span class="text-danger">*</span></label>
+            <select name="gender" id="gender" class="form-control" required>
+                <option value="">-- লিঙ্গ নির্বাচন করুন --</option>
+                <option value="male" {% if data.gender == 'male' %}selected{% endif %}>পুরুষ</option>
+                <option value="female" {% if data.gender == 'female' %}selected{% endif %}>মহিলা</option>
+                <option value="other" {% if data.gender == 'other' %}selected{% endif %}>অন্যান্য</option>
+            </select>
+        </div>
+        <div class="col-md-6">
+            <label for="marital_status" class="form-label">
+                বৈবাহিক অবস্থা <span class="text-danger">*</span>
+            </label>
+            <select name="marital_status" id="marital_status" class="form-control" required>
+                <option value="">-- বৈবাহিক অবস্থা নির্বাচন করুন --</option>
+                {% set statuses = {'Single':'অবিবাহিত','Married':'বিবাহিত','Divorced':'তালাকপ্রাপ্ত','Widowed':'বিধবা/বিপত্নীক','Other':'অন্যান্য'} %}
+                {% for key, label in statuses %}
+                    <option value="{{ key }}" {% if data.marital_status == key %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+    </div>
+
+    {# Spouse Section (conditional) #}
+    <div class="row mb-3" id="spouse_section"
+        {% if data.marital_status not in ['Married','Divorced'] %}style="display:none;"{% endif %}>
+        <div class="col-md-6">
+            <label for="spouse_name_en" class="form-label">স্বামী/স্ত্রীর নাম (ইংরেজিতে)</label>
+            <input type="text" name="spouse_name_en" id="spouse_name_en" class="form-control"
+                placeholder="Enter spouse's name in English"
+                value="{{ data.spouse_name_en|default('') }}">
+        </div>
+        <div class="col-md-6">
+            <label for="spouse_name_bn" class="form-label">স্বামী/স্ত্রীর নাম (বাংলায়)</label>
+            <input type="text" name="spouse_name_bn" id="spouse_name_bn" class="form-control bangla"
+                placeholder="স্বামী/স্ত্রীর নাম বাংলায় লিখুন"
+                value="{{ data.spouse_name_bn|default('') }}">
+        </div>
+
+        <div class="col-md-6 mt-3" id="divorce_year_wrapper"
+            {% if data.marital_status != 'Divorced' %}style="display:none;"{% endif %}>
+            <label for="divorce_year" class="form-label">তালাকের বছর (ঐচ্ছিক)</label>
+            <input type="text" name="divorce_year" id="divorce_year" class="form-control"
+                value="{{ data.divorce_year|default('') }}">
+        </div>
+    </div>
+
+
+
+<script>
+(function () {
+    document.addEventListener('DOMContentLoaded', function () {
+
+        function ensureSpouseSection(){
+            if(document.getElementById('spouse_section')) return;
+            const maritalRow = document.getElementById('marital_status')?.closest?.('.row') || null;
+            const container = maritalRow || document.getElementById('applicationForm') || document.body;
+            const wrapper = document.createElement('div');
+            wrapper.id = 'spouse_section';
+            wrapper.className = 'row mb-3';
+            wrapper.style.display = 'none';
+            wrapper.innerHTML = `
+                <div class="col-md-6">
+                    <label for="spouse_name_en" class="form-label">Spouse Name (English)</label>
+                    <input type="text" name="spouse_name_en" id="spouse_name_en" class="form-control">
+                </div>
+                <div class="col-md-6">
+                    <label for="spouse_name_bn" class="form-label">স্বামী/স্ত্রীর নাম (বাংলায়)</label>
+                    <input type="text" name="spouse_name_bn" id="spouse_name_bn" class="form-control bangla">
+                </div>
+                <div class="col-md-6 mt-3" id="divorce_year_wrapper" style="display:none">
+                    <label for="divorce_year" class="form-label">Divorce Year (optional)</label>
+                    <input type="text" name="divorce_year" id="divorce_year" class="form-control">
+                </div>`;
+            container.appendChild(wrapper);
+        }
+
+        function toggleSpouseFields(){
+            const el = document.getElementById('marital_status');
+            if(!el) return;
+            ensureSpouseSection();
+            const spouse = document.getElementById('spouse_section');
+            const divorce = document.getElementById('divorce_year_wrapper');
+            if(!spouse || !divorce) return;
+            const status = (el.value || '').toLowerCase();
+            if(status === 'married'){ spouse.style.display = ''; divorce.style.display = 'none'; }
+            else if(status === 'divorced'){ spouse.style.display = ''; divorce.style.display = ''; }
+            else{ spouse.style.display = 'none'; divorce.style.display = 'none'; }
+
+            // Optional: prefill from extraData if edit form
+            if(window.extraData){
+                const sEn = document.getElementById('spouse_name_en');
+                const sBn = document.getElementById('spouse_name_bn');
+                const d = document.getElementById('divorce_year');
+                if(sEn && window.extraData.spouse_name_en) sEn.value = window.extraData.spouse_name_en;
+                if(sBn && window.extraData.spouse_name_bn) sBn.value = window.extraData.spouse_name_bn;
+                if(d && window.extraData.divorce_year) d.value = window.extraData.divorce_year;
+            }
+        }
+
+        const ms = document.getElementById('marital_status');
+        if(ms){ toggleSpouseFields(); ms.addEventListener('change', toggleSpouseFields); }
+
+        window.ensureSpouseSection = ensureSpouseSection;
+        window.toggleSpouseFields = toggleSpouseFields;
+    });
+})();
+</script>

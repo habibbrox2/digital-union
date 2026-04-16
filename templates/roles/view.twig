@@ -1,0 +1,28 @@
+{% extends 'layout.twig' %}
+
+{% block title %}Role: {{ role.role_name }}{% endblock %}
+{% block header_title %}{{ header_title|default(role.role_name) }}{% endblock %}
+
+{% block content %}
+{% include 'components/sweetAlert.twig' %}
+<div class="card">
+  <div class="card-header">
+    <h3>{{ role.role_name }}</h3>
+  </div>
+  <div class="card-body">
+    <p><strong>Description:</strong> {{ role.description|default('No description') }}</p>
+    <p><strong>Permissions ({{ permissionCount }}):</strong></p>
+    {% if permissions is empty %}
+      <p class="text-muted">No permissions assigned.</p>
+    {% else %}
+      <ul>
+        {% for p in permissions %}
+          <li>{{ p.module }} :: {{ p.name }} - <small>{{ p.description|default('') }}</small></li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+    <a href="/roles/{{ role.role_id }}/permissions" class="btn btn-primary">Manage Permissions</a>
+    <a href="/roles" class="btn btn-secondary">Back to Roles</a>
+  </div>
+</div>
+{% endblock %}

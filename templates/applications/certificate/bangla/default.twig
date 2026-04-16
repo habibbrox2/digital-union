@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ data.sonod_number }}</title>
+    <link href="https://fonts.maateen.me/solaiman-lipi/font.css" rel="stylesheet">
+    <style>
+        * {
+            font-family: "solaimanlipi", Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-print-color-adjust: exact;
+        }
+
+        @page {
+            size: A4;
+            margin: 0;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+        }
+
+        .content-wrapper {
+            background-image: url('{{ url }}/assets/bg.png');
+            background-size: cover;
+            background-repeat: no-repeat;
+            width: 209mm;
+            height: 297mm;
+            position: relative;
+            padding: 10mm;
+            overflow: hidden; /* ✅ এক পেইজের বাইরে যাবে না */
+        }
+
+        .header {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: center;
+            margin-bottom: 4pt; /* ছোট করা */
+        }
+        .header td {
+            vertical-align: middle;
+            padding: 2pt; /* ছোট করা */
+        }
+        .logo {
+            height: 55pt; /* সামান্য ছোট */
+            width: 55pt;
+        }
+        .bd-govt {
+            font-size: 9pt;
+            color: red;
+        }
+        .parishad-name {
+            color: #3c01c5;
+            font-size: 19.5pt;
+            font-weight: bold;
+            padding: 2pt 0; /* ছোট করা */
+        }
+        .sub-header {
+            font-size: 12pt;
+            color: black;
+            line-height: 1.4; /* ছোট করা */
+        }
+
+        .certificate-title {
+            text-align: center;
+            font-size: 19.5pt;
+            text-decoration: underline;
+            margin: 4pt;
+        }
+
+        .certificate-info {
+            width: 98%;
+            margin: 4pt;
+            border-collapse: collapse;
+        }
+
+        .person-info {
+            font-size: 11.5pt; /* সামান্য ছোট */
+            border-collapse: collapse;
+        }
+        .person-info td {
+            padding: 2pt 7.5pt; /* ছোট করা */
+            text-align: left;
+        }
+        .person-info td:first-child {
+            width: 30%;
+            font-weight: bold;
+        }
+        .person-info td:last-child {
+            width: 65%;
+        }
+
+        .paragraph {
+            width: 98%;
+            margin: 8pt auto;
+            line-height: 2;
+            text-indent: 37.5pt;
+            font-size: 12pt;
+        }
+
+        .instructions {
+            width: 98%;
+            margin: 10pt auto 0; /* ছোট করা */
+            border-collapse: collapse;
+        }
+        .instructions td {
+            font-size: 10.5pt;
+            padding: 5pt; /* ছোট করা */
+        }
+    </style>
+</head>
+<body>
+    <div class="content-wrapper">
+        <div class="content">
+
+            <!-- Header -->
+            <table class="header" width="100%">
+                <tr>
+                    <td width="20%">
+                        <img src="{{ url }}/assets/logo/logo.png" alt="Logo" class="logo">
+                    </td>
+                    <td width="60%">
+                        <div class="bd-govt">গণপ্রজাতন্ত্রী বাংলাদেশ সরকার</div>
+                        <div class="parishad-name">{{ union.union_name_bn }}</div>
+                        <div class="sub-header">
+                            {{ union.upazila_name_bn }},{{ union.district_name_bn }}-{{ union.postcode|bn }} <br>
+                            মোবাইল: {{ union.phone | bn }} | ই-মেইল: {{ union.email }}<br>
+                            ওয়েবসাইট: {{ union.website }}
+                        </div>
+                    </td>
+                    <td width="20%">
+                        <img src="{{ url }}/assets/img/band-cross.png" alt="X" class="logo">
+                    </td>
+                </tr>
+            </table>
+
+            <!-- Certificate Title & Sonod No -->
+            <table width="98%" cellspacing="0" style="border-collapse:collapse; margin: 0 auto;">
+                <tr>
+                    <td colspan="2" style="text-align:center; font-size:19.5pt; font-weight:bold; padding-top: 5pt; padding-bottom: 2pt;">
+                        <u>{{ data.certificate_type_bn }}</u>
+                    </td>
+                </tr>
+                <tr>
+                    <td style="width: 70%;">
+                        <table style="width: 450pt; border-color:black; border-collapse:collapse;">
+                            <tr>
+                                <td style="width:75pt; border: 0.75pt solid black; font-size:12pt; text-align: left;">সনদ নং :</td>
+                                {% set sonod_number_bn = data.sonod_number | bn_number %}
+                                {% for digit in sonod_number_bn | split('') %}
+                                    <td style="text-align:center; font-size:13.5pt; padding: 4.5pt; border: 0.75pt solid black;">{{ digit }}</td>
+                                {% endfor %}
+                            </tr>
+                        </table>
+                    </td>
+                    <td style="text-align: left; width: 22%; padding-right: 7.5pt;">
+                        <span style="font-size: 12pt;">তারিখ : {{ data.issue_date|date('d-m-Y')|bn }}</span>
+                    </td>
+                </tr>
+            </table>
+
+            <!-- প্রত্যয়ন শুরু -->
+            <table width="98%" cellspacing="0" style="border-collapse:collapse; margin-left:30px;">
+                <tr>
+                    <td colspan="2" style="padding: 5pt;">
+                        এই মর্মে প্রত্যয়ন পত্র প্রদান করা যাচ্ছে যে,
+                    </td>
+                </tr>
+            </table>
+
+            <!-- Person Info — height fixed নেই -->
+            <table align="center" border="0" width="99%" cellspacing="0" style="border-collapse:collapse; margin:0 auto; table-layout:fixed; margin-bottom: 8pt;">
+                <tr class="person-info">
+                    <td>নাম</td>
+                    <td>: {{ data.name_bn }}</td>
+                </tr>
+                <tr class="person-info">
+                    <td>পিতার নাম</td>
+                    <td>: {{ data.father_name_bn }}</td>
+                </tr>
+                <tr class="person-info">
+                    <td>মাতার নাম</td>
+                    <td>: {{ data.mother_name_bn }}</td>
+                </tr>
+                {% if citizen.marital_status == 'Married' %}
+                <tr class="person-info">
+                    <td>স্বামী/স্ত্রীর নাম</td>
+                    <td>: {{ data.spouse_name_bn }}</td>
+                </tr>
+                {% endif %}
+                <tr class="person-info">
+                    <td>বর্তমান ঠিকানা</td>
+                    <td>
+                        : গ্রাম/মহল্লা : {{ data.present_village_bn }},
+                        রাস্তা/ব্লক/সেক্টর : {{ data.present_rbs_bn }},
+                        ডাকঘর : {{ data.present_postoffice_bn }}, <br>
+                        &nbsp; উপজেলা : {{ data.present_upazila_bn }}, জেলা : {{ data.present_district_bn }}
+                    </td>
+                </tr>
+                <tr class="person-info">
+                    <td>স্থায়ী ঠিকানা</td>
+                    <td>
+                        : গ্রাম/মহল্লা : {{ data.permanent_village_bn }}, রাস্তা/ব্লক/সেক্টর : {{ data.permanent_rbs_bn }},
+                        ডাকঘর : {{ data.permanent_postoffice_bn }}, <br>
+                        &nbsp; উপজেলা : {{ data.permanent_upazila_bn }}, জেলা : {{ data.permanent_district_bn }}
+                    </td>
+                </tr>
+                {% if data.birth_id or data.nid or data.passport_no %}
+                <tr class="person-info">
+                    <td>
+                        {% if data.birth_id %}জন্ম নিবন্ধন নং
+                        {% elseif data.nid %}ন্যাশনাল আইডি নং
+                        {% else %}পার্সপোট নং{% endif %}
+                    </td>
+                    <td>:
+                        {% if data.birth_id %}{{ data.birth_id | bn }}
+                        {% elseif data.nid %}{{ data.nid | bn }}
+                        {% elseif data.passport_no %}{{ data.passport_no }}{% endif %}
+                    </td>
+                </tr>
+                {% endif %}
+                <tr class="person-info">
+                    <td>ধর্ম</td>
+                    <td>:
+                        {% set translations = {
+                            'Islam': 'ইসলাম',
+                            'Hinduism': 'হিন্দুধর্ম',
+                            'Christianity': 'খ্রিস্টধর্ম',
+                            'Buddhism': 'বৌদ্ধধর্ম',
+                            'Other': 'অন্যান্য'
+                        } %}
+                        {{ translations[data.religion] | default(data.religion) }}
+                    </td>
+                </tr>
+                <tr class="person-info">
+                    <td>ওয়ার্ড নং</td>
+                    <td>: {{ data.present_ward_no|bn }}</td>
+                </tr>
+                <tr class="person-info">
+                    <td>জন্ম তারিখ</td>
+                    <td>: {{ data.birth_date | date('d-m-Y') | bn_number }}</td>
+                </tr>
+            </table>
+
+            <!-- Paragraph (certificate_paragraph.twig include) -->
+            {% include 'applications/certificate_paragraph.twig' with { certificate_type: certificate_type, data: data } %}
+
+            <!-- Signature -->
+            <table style="width:100%; border-collapse:collapse; margin-top: 25pt; margin-bottom: 8pt;">
+                <tr>
+                    {% if approval.verifier_name_bn %}
+                    <td style="text-align: center; padding-right: 15pt; width: 50%;">
+                        <div style="border-top: 1px solid #000; display: inline-block; padding-top: 5px;">
+                            ইউপি সদস্য
+                        </div>
+                    </td>
+                    {% endif %}
+                    <td style="text-align: right; padding-right: 120px; width: 50%;">
+                        <div style="border-top: 1px solid #000; display: inline-block; padding-top: 5px;">
+                            চেয়ারম্যান স্বাক্ষর
+                        </div>
+                    </td>
+                </tr>
+            </table>
+
+            <!-- Instructions -->
+            <table class="instructions" style="margin-top: 10px; margin-bottom: 0;">
+                <tr>
+                    <td style="border-right:1px solid black; border-top:1px solid black; text-align:center;">
+                        <img src="https://quickchart.io/qr?text={{ url }}/verify/{{ data.certificate_type }}_bn/{{ data.sonod_number }}/{{ union.union_code }}/1&margin=1&size=300" height="100px" width="100px" style="padding:10px;">
+                    </td>
+                    <td style="padding-left:30px; border-bottom:1px solid black;">
+                        <b>নির্দেশাবলীঃ </b><br />
+                        ১] সার্টিফিকেট টি ১৭ ডিজিটের সনদ নাম্বার দিয়ে ওয়েবসাইট ({{ union.website }}) থেকে যাচাই করুন অথবা Play Store থেকে "স্মার্ট ইউপি, ঢাকা" Apps টি install করে QR code টি Scan করুন।<br />
+                        ২) যে কোন ধরনের তথ্য নেয়ার জন্য ফোন করুন অথবা ইমেইল করুন।
+                    </td>
+                </tr>
+                <tr>
+                    <td style="width: 25%; text-align:center;">
+                        <font style="font-size:8px;">Developed by Innovation IT</font><br/>
+                        <font style="font-size:8px;">www.innovationit.com.bd</font>
+                    </td>
+                    <td style="width: 75%; text-align:center;">
+                        <font style="font-size:8px;">
+                            অল্প সময়ে, স্বপ্ল খরচে সঠিক বিচার পেতে চলো যাই গ্রাম আদালতে। <br>
+                            {{ union.website }}- {{ union.email }}</font>
+                    </td>
+                </tr>
+            </table>
+
+        </div>
+    </div>
+</body>
+</html>

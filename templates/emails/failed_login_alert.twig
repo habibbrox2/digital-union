@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ব্যর্থ লগইন সতর্কতা</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f4f4;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .email-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        .header {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
+            color: #ffffff;
+            padding: 40px 30px;
+            text-align: center;
+        }
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+        .header p {
+            font-size: 16px;
+            opacity: 0.95;
+        }
+        .content {
+            padding: 40px 30px;
+            color: #333333;
+        }
+        .content p {
+            margin-bottom: 15px;
+            font-size: 15px;
+        }
+        .alert-danger {
+            background-color: #f8d7da;
+            border-left: 4px solid #dc3545;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .alert-danger strong {
+            display: block;
+            margin-bottom: 8px;
+            color: #721c24;
+            font-size: 16px;
+        }
+        .info-box {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .info-box .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #e9ecef;
+        }
+        .info-box .info-row:last-child {
+            border-bottom: none;
+        }
+        .info-box .info-label {
+            font-weight: 600;
+            color: #495057;
+        }
+        .info-box .info-value {
+            color: #6c757d;
+            text-align: right;
+            word-break: break-word;
+            max-width: 60%;
+        }
+        .attempts-badge {
+            display: inline-block;
+            background-color: #dc3545;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            margin: 5px 0;
+        }
+        ul {
+            margin-left: 20px;
+            margin-bottom: 20px;
+        }
+        ul li {
+            margin-bottom: 8px;
+            font-size: 15px;
+        }
+        .button-container {
+            text-align: center;
+            margin: 30px 0;
+        }
+        .button {
+            display: inline-block;
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
+            color: #ffffff;
+            text-decoration: none;
+            padding: 14px 40px;
+            border-radius: 5px;
+            font-size: 16px;
+            font-weight: 600;
+            transition: transform 0.2s;
+        }
+        .button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(255, 107, 107, 0.4);
+        }
+        .footer {
+            background-color: #f8f9fa;
+            padding: 20px 30px;
+            text-align: center;
+            border-top: 1px solid #e0e0e0;
+            color: #666666;
+            font-size: 13px;
+        }
+        .footer p {
+            margin-bottom: 5px;
+        }
+        .divider {
+            height: 1px;
+            background-color: #e0e0e0;
+            margin: 25px 0;
+        }
+        @media only screen and (max-width: 600px) {
+            body {
+                padding: 10px;
+            }
+            .header {
+                padding: 30px 20px;
+            }
+            .header h1 {
+                font-size: 24px;
+            }
+            .content {
+                padding: 30px 20px;
+            }
+            .button {
+                padding: 12px 30px;
+                font-size: 15px;
+            }
+            .info-box .info-row {
+                flex-direction: column;
+            }
+            .info-box .info-value {
+                text-align: left;
+                max-width: 100%;
+                margin-top: 5px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <div class="header">
+            <h1>🚨 নিরাপত্তা সতর্কতা</h1>
+            <p>একাধিক ব্যর্থ লগইন প্রচেষ্টা সনাক্ত করা হয়েছে</p>
+        </div>
+
+        <div class="content">
+            <p>প্রিয় <strong>{{ username | default('ব্যবহারকারী') }}</strong>,</p>
+
+            <div class="alert-danger">
+                <strong>⚠️ সন্দেহজনক কার্যকলাপ</strong>
+                আপনার অ্যাকাউন্টে একাধিক ব্যর্থ লগইন প্রচেষ্টা সনাক্ত করা হয়েছে।
+                <div style="margin-top: 10px;">
+                    ব্যর্থ প্রচেষ্টার সংখ্যা: <span class="attempts-badge">{{ failed_attempts | default('3') }} বার</span>
+                </div>
+            </div>
+
+            <p>যদি এটি আপনি হয়ে থাকেন এবং আপনার পাসওয়ার্ড ভুলে গিয়ে থাকেন, তাহলে অনুগ্রহ করে পাসওয়ার্ড রিসেট করুন।</p>
+
+            <div class="info-box">
+                <strong style="display: block; margin-bottom: 10px;">প্রচেষ্টার বিস্তারিত তথ্য:</strong>
+                <div class="info-row">
+                    <span class="info-label">⏰ সময়:</span>
+                    <span class="info-value">{{ attempted_at | default('now') }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">🌐 IP Address:</span>
+                    <span class="info-value">{{ ip_address | default('Unknown') }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">💻 Device/Browser:</span>
+                    <span class="info-value">{{ user_agent | default('Unknown') }}</span>
+                </div>
+            </div>
+
+            <div class="button-container">
+                <a href="{{ site_url | default('') }}/forgot-password" class="button">পাসওয়ার্ড রিসেট করুন</a>
+            </div>
+
+            <div class="divider"></div>
+
+            <p><strong>যদি এটি আপনি না হন:</strong></p>
+            <ul>
+                <li>অবিলম্বে আপনার পাসওয়ার্ড পরিবর্তন করুন</li>
+                <li>আপনার অ্যাকাউন্টের সাম্প্রতিক কার্যকলাপ পরীক্ষা করুন</li>
+                <li>Two-Factor Authentication (2FA) সক্রিয় করুন</li>
+                <li>আমাদের সাপোর্ট টিমের সাথে যোগাযোগ করুন</li>
+            </ul>
+
+            <p><strong>নিরাপত্তা টিপস:</strong></p>
+            <ul>
+                <li>শক্তিশালী এবং অনন্য পাসওয়ার্ড ব্যবহার করুন</li>
+                <li>পাবলিক WiFi ব্যবহার করার সময় সতর্ক থাকুন</li>
+                <li>ফিশিং ইমেইল এবং সন্দেহজনক লিঙ্ক এড়িয়ে চলুন</li>
+                <li>আপনার ডিভাইস আপডেট রাখুন</li>
+            </ul>
+
+            <p style="margin-top: 20px;">
+                <strong>ধন্যবাদ,</strong><br>
+                {{ mail_from_name | default('লগ ধাকা') }} নিরাপত্তা টিম
+            </p>
+        </div>
+
+        <div class="footer">
+            <p>&copy; {{ "now" | date("Y") }} {{ mail_from_name | default('লগ ধাকা') }}. সর্বস্বত্ব সংরক্ষিত।</p>
+            <p>এই ইমেইলটি আপনার অ্যাকাউন্ট সুরক্ষার জন্য স্বয়ংক্রিয়ভাবে পাঠানো হয়েছে।</p>
+        </div>
+    </div>
+</body>
+</html>

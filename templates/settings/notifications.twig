@@ -1,0 +1,79 @@
+{% extends "layout.twig" %}
+
+{% block title %}{{ header_title }}{% endblock %}
+
+{% block content %}
+{% include 'components/sweetAlert.twig' %}
+<div class="container mt-4">
+    <h2>{{ header_title }}</h2>
+
+    <form id="notificationSettingsForm" method="POST" action="/settings/notifications" class="mt-4">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+        <div class="mb-3 form-check">
+            <input
+                type="checkbox"
+                class="form-check-input"
+                id="email_notifications_enabled"
+                name="settings[email_notifications_enabled]"
+                value="1"
+                {% if notification_settings.email_notifications_enabled == '1' %}checked{% endif %}
+            >
+            <label class="form-check-label" for="email_notifications_enabled">Enable Email Notifications</label>
+        </div>
+
+        <div class="mb-3 form-check">
+            <input
+                type="checkbox"
+                class="form-check-input"
+                id="sms_notifications_enabled"
+                name="settings[sms_notifications_enabled]"
+                value="1"
+                {% if notification_settings.sms_notifications_enabled == '1' %}checked{% endif %}
+            >
+            <label class="form-check-label" for="sms_notifications_enabled">Enable SMS Notifications</label>
+        </div>
+
+        <div class="mb-3 form-check">
+            <input
+                type="checkbox"
+                class="form-check-input"
+                id="push_notifications_enabled"
+                name="settings[push_notifications_enabled]"
+                value="1"
+                {% if notification_settings.push_notifications_enabled == '1' %}checked{% endif %}
+            >
+            <label class="form-check-label" for="push_notifications_enabled">Enable Push Notifications</label>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Save Notification Settings</button>
+    </form>
+
+    <div id="notificationAlert" class="alert mt-3 d-none" role="alert"></div>
+</div>
+
+{% block javascripts %}
+<script>
+    $(function() {
+        $('#notificationSettingsForm').on('submit', function(e) {
+            e.preventDefault();
+
+            let $form = $(this);
+            let url = $form.attr('action');
+            let data = $form.serialize();
+
+            $.post(url, data, function(response) {
+                let $alert = $('#notificationAlert');
+                if (response.status === 'success') {
+                    $alert.removeClass('d-none alert-danger').addClass('alert-success').text(response.message);
+                } else {
+                    $alert.removeClass('d-none alert-success').addClass('alert-danger').text(response.message);
+                }
+            }, 'json').fail(function() {
+                $('#notificationAlert').removeClass('d-none alert-success').addClass('alert-danger').text('Something went wrong. Please try again.');
+            });
+        });
+    });
+</script>
+{% endblock %}
+{% endblock %}

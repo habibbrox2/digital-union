@@ -1,0 +1,202 @@
+<style type="text/css">
+    body {
+        font-family: 'Arial', sans-serif !important;
+        font-size: 10.5pt;
+    }
+
+    @media print {
+        * {
+            -webkit-print-color-adjust: exact;
+        }
+    }
+
+    @page {
+        header: page-header;
+        footer: page-footer;
+        margin: 20px 0px;
+        padding: 0px;
+    }
+    
+    .header-font { font-size: 18.75pt; font-weight: bold; color: blue; }
+    .subheader-font { font-size: 12pt; font-weight: bold; }
+    .title-text { font-size: 13.5pt; font-weight: bold; }
+    .label-text { font-size: 12pt; font-weight: bold; }
+    .value-text { font-size: 12pt; }
+    .intro-text { font-size: 12pt; text-indent: 37.5pt; line-height: 1.8; }
+</style>
+
+<section>
+    <div class="container">
+        <div class="card" style="margin:20px 0px; padding: 10px 0px 20px 0px">
+
+            <table border="0" width="98%" align="center" style="border-collapse:collapse; margin:2px auto; padding-top: 37.5pt">
+                <tr>
+                    <td style="width:1.5in; text-align:center;"></td>
+
+                    <td style="text-align:center;">
+                        <font class="header-font">{{ union.union_name_en|default(union.union_name_bn) }}</font>
+                        <br />
+                        <font class="subheader-font">
+                            {{ union.upazila_name_en|default(union.upazila_name_bn) }}, {{ union.district_name_en|default(union.district_name_bn) }}-{{ union.postcode }}<br>
+                            Mobile: {{ union.phone }}, Email: {{ union.email }} <br>
+                            Website: {{ union.website }}
+                        </font>
+                    </td>
+
+                    <td style="width:1.2in; text-align:left;"></td>
+                </tr>
+            </table>
+
+            <table border="0" width="98%" style="border-collapse:collapse;margin:2px auto;" cellspacing="0" cellpadding="0">
+                <tr>
+                    <td style="text-align:center;font-size:13.5pt;font-weight:bold;" height="38">
+                        <u>Inheritance Certificate</u>
+                    </td>
+                </tr>
+            </table>
+
+            <table border="1" align="left" style="width:100%; margin-left:48px;border-color:lightgray;margin-top:7.5pt;" cellpadding="0" cellspacing="0">
+                <tr>
+                    <td style="width:100px; text-align:center;font-size:13.5pt;">Certificate No:</td>
+                    
+                    {% set sonod_number = citizen.sonod_number %}
+                    {% for digit in sonod_number | split('') %}
+                        <td style="text-align:center; font-weight:bold; font-size:15pt; padding: 3.75pt;">{{ digit }}</td>
+                    {% endfor %}
+                    
+                    <td style="border: none;">
+                        <font style="font-size: 13.5pt">&nbsp;&nbsp;&nbsp;Date: {{ citizen.issue_date|date('d-m-Y') }}</font>
+                    </td>
+                </tr>
+            </table>
+
+            <table class="jolchap" align="center" border="0" width="99%" cellspacing="0" style="border-collapse:collapse;margin:0 auto;table-layout:fixed;">
+                <tr height="41.25pt" style="">
+                    <td colspan="2" style="font-size:13.5pt; text-indent:37.5pt;padding-left: 37.5pt; padding-top: 11.25pt; padding-bottom: 7.5pt;">This certificate is hereby issued for verification of inheritance.</td>
+                </tr>
+            </table>
+
+            <table border="0" width="99%" align="center" style="border-collapse:collapse; margin:1px auto;" cellspacing="0" cellpadding="0">
+                <tr>
+                    <td align="left" style="font-size:12pt;text-indent:41.25pt; width: 150px; padding-left: 37.5pt">Name</td>
+                    <td colspan="3"><font style="font-size:12pt;font-weight:bold;">: {{ citizen.name_en|default(citizen.name_bn) }}</font></td>
+                </tr>
+                <tr>
+                    <td align="left" style="font-size:12pt;text-indent:41.25pt; width: 150px; padding-left: 37.5pt">Father</td>
+                    <td style="width:260px;"><font style="font-size:12pt;font-weight:bold;">: {{ citizen.father_name_en|default(citizen.father_name_bn) }}</font></td>
+                    {% if citizen.mother_name_bn %}
+                        <td style="font-size:12pt; text-align:left;">Mother</td>
+                        <td><font style="font-size:12pt;font-weight:bold;">: {{ citizen.mother_name_en|default(citizen.mother_name_bn) }}</font></td>
+                    {% endif %}
+                </tr>
+                <tr>
+                    <td align="left" style="font-size:12pt;text-indent:41.25pt; width: 150px; padding-left: 37.5pt">National ID</td>
+                    <td style="font-size:11.25pt;font-weight:bold;">: {{ citizen.nid }}</td>
+                    <td valign="top" style="font-size:12pt;">Birth Registration</td>
+                    <td colspan="2" style="font-size:11.25pt;font-weight:bold;">: {{ citizen.birth_id }}</td>
+                </tr>
+                <tr height="15pt"></tr>
+                <tr>
+                    <td valign="top" style="font-size: 12pt; padding-left: 37.5pt;">Permanent Address</td>
+                    <td colspan="5">
+                        <p style="font-size:12pt;">
+                            : Village: {{ citizen.permanent_village_en|default(citizen.permanent_village_bn) }}, 
+                            Post Office: {{ citizen.permanent_postoffice_en|default(citizen.permanent_postoffice_bn) }}, 
+                            Ward No: {{ citizen.permanent_ward_no }},
+                            Upazila: {{ citizen.permanent_upazila_en|default(citizen.permanent_upazila_bn) }},
+                            District: {{ citizen.permanent_district_en|default(citizen.permanent_district_bn) }}
+                        </p>
+                    </td>
+                </tr>
+                <tr>
+                    <td valign="top" style="font-size: 12pt; padding-left: 37.5pt;">Present Address</td>
+                    <td colspan="5">
+                        <p style="font-size:12pt;">
+                            : Village: {{ citizen.present_village_en|default(citizen.present_village_bn) }}, 
+                            Post Office: {{ citizen.present_postoffice_en|default(citizen.present_postoffice_bn) }}, 
+                            Ward No: {{ citizen.present_ward_no }},
+                            Upazila: {{ citizen.present_upazila_en|default(citizen.present_upazila_bn) }},
+                            District: {{ citizen.present_district_en|default(citizen.present_district_bn) }}
+                        </p>
+                    </td>
+                </tr>
+            </table>
+
+            <table border="0" width="99%" align="center" style="border-collapse:collapse;margin:3pt auto;" cellspacing="0" cellpadding="0">
+                <tr>
+                    <td style="padding-left: 37.5pt; height: 18.75pt;">
+                        <font style="font-size:12pt; padding-left:22.5pt;">
+                            The above mentioned person was a permanent resident of {{ union.union_name_en|default(union.union_name_bn) }}. According to the information provided, the person died on {{ (citizen.extra.death_date ?? (citizen.birth_date ?? '')) | date('d-m-Y') }}. At the time of death, the following persons are the legal heirs:
+                        </font>
+                    </td>
+                </tr>
+            </table>
+
+            <table border="1" align="center" width="93%" style="border-collapse:collapse;" cellspacing="0" cellpadding="0">
+                <tr height="15pt">
+                    <th style="width:5%;font-size:10.5pt;">No.</th>
+                    <th style="width:20%;font-size:10.5pt;">Name</th>
+                    <th style="width:10%;font-size:10.5pt;">Relation</th>
+                    <th style="width:8%;font-size:10.5pt;">Age/DOB</th>
+                    <th style="width:15%;font-size:10.5pt;">NID/Birth</th>
+                    <th style="width:11%;font-size:10.5pt;">Marital Status</th>
+                    <th style="width:8%;font-size:10.5pt;">Status</th>
+                </tr>
+                
+                {% for member in citizen.warish_members %}
+                <tr height="">
+                    <td style="text-align:center;font-size:10.5pt;">{{ loop.index }}</td>
+                    <td style="text-align:center;font-size:10.5pt;">{{ member.name_en|default(member.name_bn) }}</td>
+                    <td style="text-align:center;font-size:10.5pt;">{{ member.relation_en|default(member.relation_bn) }}</td>
+                    <td style="text-align:center;font-size:10.5pt;">{{ member.birth_date }}</td>
+                    <td style="text-align:center;font-size:10.5pt;">{{ member.nid }}</td>
+                    <td style="text-align:center;font-size:10.5pt;">
+                        {% if member.marital_status %}
+                            {{ member.marital_status }}
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
+                    <td style="text-align:center;font-size:10.5pt;">
+                        {% if member.is_dead == "1" %}
+                            Deceased
+                        {% else %}
+                            Living
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+                
+                <tr>
+                    <td colspan="7" style="text-align:center; font-size:10.5pt; padding: 3.75pt;">
+                        Total Number of Heirs: {{ citizen.warish_members|length }} persons
+                    </td>
+                </tr>
+            </table>
+
+            <table width="93%" align="center" style="margin-top:15pt;">
+                <tr>
+                    <td style="font-size:11.25pt; text-indent: 15pt; line-height: 1.8; padding-top: 7.5pt;">
+                        This inheritance certificate is issued by the Union Parishad office based on information verified by the Ward Member. The applicant hereby declares that all information provided regarding the heirs is accurate and true. If any false information is found regarding the heirs, this certificate shall be considered null and void.
+                    </td>
+                </tr>
+                <tr>
+                    <td style="font-size:11.25pt; padding-top: 11.25pt;">
+                        Applicant: {{ citizen.applicant_name_en|default(citizen.applicant_name) }} <span style="margin-left: 37.5pt;">Guardian: {{ citizen.extra.applicant_name_father_en|default(citizen.extra.applicant_name_father_bn) }}</span>
+                    </td>
+                </tr>
+            </table>
+
+            <table border="0" width="93%" align="center" style="margin-top:22.5pt;">
+                <tr>
+                    <td style="font-size:11.25pt; text-align:right; padding-top: 15pt;">
+                        Issued by: {{ union.union_name_en|default(union.union_name_bn) }} <br>
+                        Authorized Officer: _________________ <br>
+                        Date: {{ 'now'|date('d-m-Y') }}
+                    </td>
+                </tr>
+            </table>
+
+        </div>
+    </div>
+</section>

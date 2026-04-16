@@ -1,0 +1,1103 @@
+{# New Voter applied form.twig #}
+{% extends "layout.twig" %}
+
+{% block title %}{{title}}{% endblock %}
+
+{% block header_title %}{{header_title}}{% endblock %}
+
+{% block content %}
+{% include 'components/sweetAlert.twig' %}
+
+        <style>
+        /* Updated Rules Section */
+        .rules {
+            background: #f8f9fa;
+            border-left: 5px solid #007bff;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .rules h5 {
+            color: #0056b3;
+            font-weight: bold;
+        }
+
+        .rules ul {
+            padding-left: 20px;
+        }
+
+        .rules li {
+            font-size: 16px;
+            color: #333;
+            line-height: 1.6;
+        }
+
+
+        .form-check-input {
+            border-color:rgb(0, 0, 0) !important;
+        }
+
+        .form-check-input:checked {
+            background-color: #28a745 !important; 
+            border-color: #28a745 !important;
+        }
+
+    </style>
+<style>
+    #applicationForm input.form-control,
+    #applicationForm select.form-control,
+    #applicationForm textarea.form-control {
+        font-size: 14px;
+        padding: 6px 10px;
+        height: 35px;
+    }
+
+    #applicationForm label.form-label {
+        font-size: 14px;
+        font-weight: 500;
+        margin-bottom: 4px;
+    }
+
+    #applicationForm .mb-3 {
+        margin-bottom: 10px;
+    }
+
+    #applicationForm .mb-6 {
+        margin-bottom: 15px;
+    }
+
+    /* Warish table spacing adjust */
+    #warish_container .form-control {
+        padding: 5px;
+        font-size: 13px;
+        height: 32px;
+    }
+
+    #applicationForm .btn {
+        font-size: 13px;
+        padding: 5px 10px;
+    }
+
+    #photo_preview {
+        max-height: 130px;
+    }
+
+    /* Optional: spacing fix between rows */
+    #applicationForm .row {
+        margin-bottom: 10px;
+    }
+
+    /* Radio and checkbox spacing */
+    #applicationForm .form-check-label {
+        margin-right: 15px;
+        font-size: 14px;
+    }
+
+    #applicationForm .form-check-input {
+        transform: scale(0.9);
+        margin-right: 5px;
+    }
+    .form-horizontal .form-group {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.form-horizontal .form-label {
+    width: 150px; /* লেবেলের প্রস্থ */
+    margin-bottom: 0;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.form-horizontal .form-control {
+    flex: 1;
+    font-size: 14px;
+    padding: 6px 10px;
+    height: 35px;
+}
+
+.form-horizontal select.form-control,
+.form-horizontal input[type="text"],
+.form-horizontal input[type="number"] {
+    max-width: 100%;
+}
+
+</style>
+
+    <div class="container mt-4">
+            {% if status == 'success' %}
+            <div class="alert alert-success">
+                {{ message }}
+            </div>
+            {% elseif status == 'error' %}
+                <div class="alert alert-danger">
+                    {{ message }}
+                </div>
+            {% endif %}
+
+        <h2 class="text-center" style="color: #007bff; font-weight: bold;">{{ title }}2</h2> <!-- কালার পরিবর্তন করা হয়েছে -->
+
+        <!-- নিয়মাবলিঃ -->
+        <div class="rules bg-light p-3 rounded mt-3"> 
+            <h5 class="text-center"><strong>নিয়মাবলি</strong></h5>
+            <ul>
+                <li><strong>বাংলায় সার্টিফিকেট পেতে শুধুমাত্র বাংলায় ঘর গুলো পূরণ করুন।</strong></li>
+                <li><strong>ইংরেজি সার্টিফিকেট পেতে বাংলা এবং ইংরেজি উভয় ঘর পূরণ করুন।</strong></li>
+                <li><strong>তথ্য সঠিকভাবে পূরণ করুন, ভুল তথ্যের জন্য কর্তৃপক্ষ দায়ী থাকবে না।</strong></li>
+                <li><strong>যে সকল ঘর (*) চিহ্নিত, তা অবশ্যই পূরণ করতে হবে।</strong></li>
+            </ul>
+        </div>
+        
+
+    
+        <form id="applicationForm" enctype="multipart/form-data" method="post">
+    <input type="hidden" name="certificate_type" value="{{ certificate_type }}">
+
+                    <div class="row"> 
+                        <div class="col-md-4 mb-3">
+                            <label for="district_dropdown" class="form-label">জেলা</label>
+                            <select id="district_dropdown" name="district" class="form-select"  required>
+                                <option value="">জেলা নির্বাচন করুন</option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-4 mb-3">
+                            <label for="upazila_dropdown" class="form-label">উপজেলা</label>
+                            <select id="upazila_dropdown" name="upazila" class="form-select" required>
+                                <option value="">উপজেলা নির্বাচন করুন</option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-4 mb-3">
+                            <label for="union_dropdown" class="form-label">ইউনিয়ন</label>
+                            <select id="union_dropdown" name="union_code" class="form-select" required>
+                                <option value="">ইউনিয়ন নির্বাচন করুন</option>
+                            </select>
+                        </div>
+                    </div>
+
+
+                <h4>ব্যক্তিগত তথ্য</h4>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="name_en" class="form-label">নাম (ইংরেজিতে)</label>
+                            <input type="text" name="name_en" id="name_en" class="form-control" placeholder="Full Name">
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="name_bn" class="form-label">নাম (বাংলায়) <span class="text-danger">*</span></label>
+                            <input type="text" name="name_bn" id="name_bn" class="form-control" placeholder="পূর্ণ নাম">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="nid" class="form-label">ন্যাশনাল আইডি</label>
+                            <input type="text" name="nid" id="nid" class="form-control" placeholder="1616623458679011">
+                        </div>
+                        <div class="mb-3">
+                            <label for="birth_id" class="form-label">জন্ম নিবন্ধন নং</label>
+                            <input type="text" name="birth_id" id="birth_id" class="form-control" placeholder="1919623458679011">
+                        </div>
+                        <div class="mb-3">
+                            <label for="father_name_en" class="form-label">পিতার নাম (ইংরেজিতে)</label>
+                            <input type="text" name="father_name_en" id="father_name_en" class="form-control" placeholder="Father's Name">
+                        </div>
+                        <div class="mb-3">
+                            <label for="mother_name_en" class="form-label">মাতার নাম (ইংরেজিতে)</label>
+                            <input type="text" name="mother_name_en" id="mother_name_en" class="form-control" placeholder="Mother's Name">
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="passport_no" class="form-label">পাসপোর্ট নং</label>
+                            <input type="text" name="passport_no" id="passport_no" class="form-control" placeholder="1616623458679011">
+                        </div>
+                        <div class="mb-3">
+                            <label for="birth_date" class="form-label">জন্ম তারিখ <span class="text-danger">*</span></label>
+                            <input type="text" name="birth_date" id="birth_date" class="form-control datepicker">
+                        </div>
+                        <div class="mb-3">
+                            <label for="father_name_bn" class="form-label">পিতার নাম (বাংলায়) <span class="text-danger">*</span></label>
+                            <input type="text" name="father_name_bn" id="father_name_bn" class="form-control" placeholder="পিতার নাম">
+                        </div>
+                        <div class="mb-3">
+                            <label for="mother_name_bn" class="form-label">মাতার নাম (বাংলায়) <span class="text-danger">*</span></label>
+                            <input type="text" name="mother_name_bn" id="mother_name_bn" class="form-control" placeholder="মাতার নাম">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="occupation" class="form-label">পেশা</label>
+                            <input type="text" name="occupation" id="occupation" class="form-control" placeholder="পেশা দিন">
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="educational_qualification" class="form-label">শিক্ষাগত যোগ্যতা</label>
+                            <input type="text" name="educational_qualification" id="educational_qualification" class="form-control" placeholder="শিক্ষাগত যোগ্যতা দিন">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="resident" class="form-label">বাসিন্দা <span class="text-danger">*</span></label>
+                            <select name="resident" id="resident" class="form-control">
+                                <option value="">চিহ্নিত করুন</option>
+                                <option value="temporary">অস্থায়ী</option>
+                                <option value="permanent">স্থায়ী</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="religion" class="form-label">ধর্ম <span class="text-danger">*</span></label>
+                            <select name="religion" id="religion" class="form-control">
+                                <option value="">চিহ্নিত করুন</option>
+                                <option value="Islam">ইসলাম</option>
+                                <option value="Hinduism">হিন্দু</option>
+                                <option value="Buddhism">বৌদ্ধ ধর্ম</option>
+                                <option value="Christianity">খ্রিস্ট ধর্ম</option>
+                                <option value="Other">অন্যান্য</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label">লিঙ্গ <span class="text-danger">*</span></label>
+                            <div>
+                                <label class="form-check-label me-2"><input type="radio" name="gender" value="Male" class="form-check-input"> পুরুষ</label>
+                                <label class="form-check-label me-2"><input type="radio" name="gender" value="Female" class="form-check-input"> মহিলা</label>
+                                <label class="form-check-label me-2"><input type="radio" name="gender" value="Other" class="form-check-input"> অন্যান্য</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="marital_status" class="form-label">বৈবাহিক সম্পর্ক <span class="text-danger">*</span></label>
+                            <select name="marital_status" id="marital_status" class="form-control">
+                                <option value="">চিহ্নিত করুন</option>
+                                <option value="Single">অবিবাহিত</option>
+                                <option value="Married">বিবাহিত</option>
+                                <option value="Divorced">তালাকপ্রাপ্ত</option>
+                                <option value="Widowed">বিধবা</option>
+                                <option value="Other">অন্যান্য</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row" id="spouse_name">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="spouse_name_en" class="form-label">স্বামী/স্ত্রীর নাম (ইংরেজিতে)</label>
+                            <input type="text" name="spouse_name_en" id="spouse_name_en" class="form-control" placeholder="স্বামী/স্ত্রীর নাম (ইংরেজিতে)">
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="spouse_name_bn" class="form-label">স্বামী/স্ত্রীর নাম (বাংলায়)</label>
+                            <input type="text" name="spouse_name_bn" id="spouse_name_bn" class="form-control" placeholder="স্বামী/স্ত্রীর নাম">
+                        </div>
+                    </div>
+                </div>
+
+                   
+
+                <h4 class="mt-4">বর্তমান ঠিকানা</h4>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="present_village_en" class="form-label">গ্রাম/মহল্লা (ইংরেজিতে)</label>
+                            <input type="text" name="present_village_en" id="present_village_en" class="form-control" placeholder="Village/Moholla (English)">
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="present_village_bn" class="form-label">গ্রাম/মহল্লা (বাংলায়) <span class="text-danger">*</span></label>
+                            <input type="text" name="present_village_bn" id="present_village_bn" class="form-control" placeholder="গ্রাম/মহল্লা (বাংলায়)">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="present_rbs_en" class="form-label">রোড/ব্লক/সেক্টর (ইংরেজিতে)</label>
+                            <input type="text" name="present_rbs_en" id="present_rbs_en" class="form-control" placeholder="Road/Block/Sector (English)">
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="present_rbs_bn" class="form-label">রোড/ব্লক/সেক্টর (বাংলায়)</label>
+                            <input type="text" name="present_rbs_bn" id="present_rbs_bn" class="form-control" placeholder="রোড/ব্লক/সেক্টর (বাংলায়)">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="present_holding_no" class="form-label">হোল্ডিং নং</label>
+                            <input type="text" name="present_holding_no" id="present_holding_no" class="form-control" placeholder="হোল্ডিং নং">
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="present_ward_no" class="form-label">ওয়ার্ড নং <span class="text-danger">*</span></label>
+                            <select name="present_ward_no" id="present_ward_no" class="form-control">
+                                <option value="">চিহ্নিত করুন</option>
+                                <option value="1">১</option>
+                                <option value="2">২</option>
+                                <option value="3">৩</option>
+                                <option value="4">৪</option>
+                                <option value="5">৫</option>
+                                <option value="6">৬</option>
+                                <option value="7">৭</option>
+                                <option value="8">৮</option>
+                                <option value="9">৯</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="present_district_id" class="form-label">জেলা (ইংরেজিতে) <span class="text-danger">*</span></label>
+                            <select name="present_district_en" id="present_district_id" class="form-control">
+                                <option value="">-আপনার জেলা নির্বাচন করুন-</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="present_district" class="form-label">জেলা (বাংলায়)</label>
+                            <input type="text" name="present_district_bn" id="present_district" class="form-control" placeholder="জেলা" readonly> 
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="present_upazila_id" class="form-label">উপজেলা/থানা (ইংরেজিতে)<span class="text-danger">*</span></label>
+                            <select name="present_upazila_en" id="present_upazila_id" class="form-control">
+                                <option value="">চিহ্নিত করুন</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="present_upazila" class="form-label">উপজেলা/থানা (বাংলায়)</label>
+                            <input type="text" name="present_upazila_bn" id="present_upazila" class="form-control" placeholder="উপজেলা/থানা" readonly>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="present_union_id" class="form-label">ইউনিয়ন (ইংরেজিতে) <span class="text-danger">*</span></label>
+                            <select name="present_union_en" id="present_union_id" class="form-control">
+                                <option value="">চিহ্নিত করুন</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="present_union" class="form-label">ইউনিয়ন (বাংলায়) </label>
+                            <input type="text" name="present_union_bn" id="present_union" class="form-control" placeholder="ইউনিয়ন" readonly>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="present_postoffice" class="form-label">পোষ্ট অফিস (ইংরেজিতে)</label>
+                            <input type="text" name="present_postoffice_en" id="present_postoffice" class="form-control" placeholder="পোষ্ট অফিস">
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="present_postoffice_bn" class="form-label">পোষ্ট অফিস (বাংলায়) <span class="text-danger">*</span></label>
+                            <input type="text" name="present_postoffice_bn" id="present_postoffice_bn" class="form-control" placeholder="পোষ্ট অফিস">
+                        </div>
+                    </div>
+                </div>
+
+                <h4 class="mt-4">স্থ্যায়ী ঠিকানা</h4>
+                <div class="form-check form-switch d-flex justify-content-center align-items-center">
+                    <p class="text-center" style="font-size:15px; font-weight:normal;padding-top:10px;" id="addressCheck">
+                        <input class="form-check-input" type="checkbox" name="permanentBtn" id="permanentBtn">
+                        ঠিকানা একই হলে টিক দিন
+                    </p>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="permanent_village_en" class="form-label">গ্রাম/মহল্লা (ইংরেজিতে)</label>
+                            <input type="text" name="permanent_village_en" id="permanent_village_en" class="form-control" placeholder="Village/Moholla (English)">
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="permanent_village_bn" class="form-label">গ্রাম/মহল্লা (বাংলায়) <span class="text-danger">*</span></label>
+                            <input type="text" name="permanent_village_bn" id="permanent_village_bn" class="form-control" placeholder="গ্রাম/মহল্লা (বাংলায়)">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="permanent_rbs_en" class="form-label">রোড/ব্লক/সেক্টর (ইংরেজিতে)</label>
+                            <input type="text" name="permanent_rbs_en" id="permanent_rbs_en" class="form-control" placeholder="Road/Block/Sector (English)">
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="permanent_rbs_bn" class="form-label">রোড/ব্লক/সেক্টর (বাংলায়)</label>
+                            <input type="text" name="permanent_rbs_bn" id="permanent_rbs_bn" class="form-control" placeholder="রোড/ব্লক/সেক্টর (বাংলায়)">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="permanent_holding_no" class="form-label">হোল্ডিং নং</label>
+                            <input type="text" name="permanent_holding_no" id="permanent_holding_no" class="form-control" placeholder="হোল্ডিং নং">
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="permanent_ward_no" class="form-label">ওয়ার্ড নং <span class="text-danger">*</span></label>
+                            <select name="permanent_ward_no" id="permanent_ward_no" class="form-control">
+                                <option value="">ওয়ার্ড নির্বাচন করুন</option>
+                                <option value="1">১</option>
+                                <option value="2">২</option>
+                                <option value="3">৩</option>
+                                <option value="4">৪</option>
+                                <option value="5">৫</option>
+                                <option value="6">৬</option>
+                                <option value="7">৭</option>
+                                <option value="8">৮</option>
+                                <option value="9">৯</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="permanent_district_id" class="form-label">জেলা <span class="text-danger">*</span></label>
+                            <select name="permanent_district_en" id="permanent_district_id" class="form-control">
+                                <option value="">-জেলা নির্বাচন করুন-</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="permanent_district" class="form-label">জেলা (বাংলায়)</label>
+                            <input type="text" name="permanent_district_bn" id="permanent_district" class="form-control" placeholder="জেলা (বাংলায়)" readonly>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="permanent_upazila_id" class="form-label">উপজেলা/থানা <span class="text-danger">*</span></label>
+                            <select name="permanent_upazila_en" id="permanent_upazila_id" class="form-control">
+                                <option value="">-উপজেলা নির্বাচন করুন-</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="permanent_upazila" class="form-label">উপজেলা/থানা (বাংলায়)</label>
+                            <input type="text" name="permanent_upazila_bn" id="permanent_upazila" class="form-control" placeholder="উপজেলা/থানা (বাংলায়)" readonly>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="permanent_union_id" class="form-label">ইউনিয়ন <span class="text-danger">*</span></label>
+                            <select name="permanent_union_en" id="permanent_union_id" class="form-control">
+                                <option value="">-ইউনিয়ন নির্বাচন করুন-</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="permanent_union" class="form-label">ইউনিয়ন (বাংলায়)</label>
+                            <input type="text" name="permanent_union_bn" id="permanent_union" class="form-control" placeholder="ইউনিয়ন (বাংলায়)" readonly>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="permanent_postoffice" class="form-label">পোষ্ট অফিস (ইংরেজিতে) <span class="text-danger">*</span></label>
+                            <input type="text" name="permanent_postoffice_en" id="permanent_postoffice" class="form-control" placeholder="Post Office (English)">
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="permanent_postoffice_bn" class="form-label">পোষ্ট অফিস (বাংলায়)</label>
+                            <input type="text" name="permanent_postoffice_bn" id="permanent_postoffice_bn" class="form-control" placeholder="পোষ্ট অফিস (বাংলায়)">
+                        </div>
+                    </div>
+                </div>
+
+
+
+
+
+                <h4>সারসংক্ষেপ</h4>
+                <p><strong>আপনার তথ্য নিশ্চিত করুন এবং জমা দিন।</strong></p>
+
+                <div class="row align-items-center">
+                    <!-- Applicant Photo Upload -->
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="applicant_photo" class="form-label">আবেদনকারীর ছবি আপলোড করুন</label>
+                            <input type="file" name="applicant_photo" id="applicant_photo" class="form-control" accept="image/*" onchange="previewPhoto(event)">
+                        </div>
+                    </div>
+
+                    <!-- Photo Preview -->
+                    <div class="col-md-6 text-center">
+                        <div class="mb-3">
+                            <img id="photo_preview" src="#" alt="ছবি প্রিভিউ" 
+                                class="img-thumbnail shadow-sm mt-2" 
+                                style="display:none; max-width: 150px; border: 2px solid #ddd; padding: 5px;">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <!-- Applicant Name Input -->
+
+                        <div class="mb-6">
+                            <label class="form-label">আবেদনকারীর নাম</label>
+                            <div class="form-check form-check-inline">
+                                <input type="radio" class="form-check-input" name="applicant_name_option" id="own_name">
+                                <label class="form-check-label" for="own_name">নিজ</label>
+                            </div>
+                            <div class="form-check form-check-inline">
+                                <input type="radio" class="form-check-input" name="applicant_name_option" id="other_name">
+                                <label class="form-check-label" for="other_name">অন্যান্য</label>
+                            </div>
+                            
+                            <input type="text" id="applicant_name" name="applicant_name" class="form-control mt-2" style="display:none;">
+                        </div>
+
+
+                    <!-- Applicant Phone Number Input -->
+
+                        <div class="mb-3">
+                            <label for="applicant_phone" class="form-label">আবেদনকারীর মোবাইল নম্বর</label>
+                            <input type="text" name="applicant_phone" id="applicant_phone" class="form-control" placeholder="আপনার মোবাইল নম্বর লিখুন">
+                        </div>
+
+                </div>
+
+                <!-- Multiple Document Upload -->
+                <div class="row">
+                    <div class="mb-3">
+                        <label class="form-label">প্রয়োজনীয় ডকুমেন্ট আপলোড করুন</label>
+                        <div id="documents_container">
+                            <div class="input-group mb-2">
+                                <input type="file" name="documents[]" class="form-control">
+                                <button type="button" class="btn btn-danger remove-file">X</button>
+                            </div>
+                        </div>
+                        <button type="button" class="btn btn-primary mt-2" id="add_document">নতুন ফাইল সংযুক্ত করুন</button>
+                    </div>
+                </div>
+             <button type="submit" class="btn btn-success">সাবমিট করুন</button>
+
+
+        </form>
+    </div>
+    
+    <!-- Success Popup Modal -->
+    <div id="successModal" class="custom-modal" style="display: none;">
+        <div class="custom-modal-content">
+            <div class="custom-modal-header">
+                <i class="fa fa-check-circle"></i> আবেদন সফল!
+            </div>
+            <div class="custom-modal-body">
+                <p>আপনার আবেদনটি সফলভাবে সাবমিট হয়েছে।</p>
+                <p><b>আপনার ট্র্যাকিং নম্বর:</b> <span id="application_id"></span></p>
+            </div>
+            <div class="custom-modal-footer">
+                <button class="btn-action" id="downloadCopy">আবেদন কপি ডাউনলোড</button>
+                <button class="btn-action" id="newApplication">নতুন আবেদন করুন</button>
+                <button class="btn-close-modal">বন্ধ করুন</button>
+            </div>
+        </div>
+    </div>
+
+
+
+
+
+    <script>
+
+        $(document).ready(function () {
+
+            // ===================== Auto-populate Applicant Name =====================
+            var nameBnField = $('#name_bn');
+            var applicantNameField = $('#applicant_name');
+
+            // Auto-sync name_bn to applicant_name
+            nameBnField.on('input', function() {
+                var value = $(this).val();
+                applicantNameField.val(value);
+            });
+
+            // Handle radio button selection
+            $('input[name="applicant_name_option"]').on('change', function() {
+                if($(this).val() === 'on' && $(this).attr('id') === 'own_name' && $(this).prop('checked')) {
+                    // "নিজ" (Own) selected
+                    applicantNameField.val(nameBnField.val());
+                    applicantNameField.hide();
+                } else if($(this).val() === 'on' && $(this).attr('id') === 'other_name' && $(this).prop('checked')) {
+                    // "অন্যান্য" (Other) selected
+                    applicantNameField.show();
+                    applicantNameField.val('');
+                }
+            });
+            // ===================================================================
+
+            // ডিফল্ট জেলা লোড ও callback ফাংশন সহ
+            fetchGeoData(1, 0, '#district_dropdown', function() {
+                $('#district_dropdown').val('3026').trigger('change');
+            });
+
+            // জেলা পরিবর্তনে উপজেলা লোড
+            $('#district_dropdown').on('change', function () {
+                const parentGeoId = $(this).find('option:selected').data('geo-id');
+                resetDropdown('#upazila_dropdown', 'উপজেলা নির্বাচন করুন');
+                resetDropdown('#union_dropdown', 'ইউনিয়ন নির্বাচন করুন');
+
+                if (parentGeoId) {
+                    fetchGeoData(2, parentGeoId, '#upazila_dropdown');
+                }
+            });
+
+            // উপজেলা পরিবর্তনে ইউনিয়ন লোড
+            $('#upazila_dropdown').on('change', function () {
+                const upazilaNameEn = $(this).find('option:selected').data('name-en');
+                const districtNameEn = $('#district_dropdown').find('option:selected').data('name-en');
+
+                resetDropdown('#union_dropdown', 'ইউনিয়ন নির্বাচন করুন');
+
+                if (districtNameEn && upazilaNameEn) {
+                    loadUnions(districtNameEn, upazilaNameEn, '#union_dropdown');
+                }
+            });
+
+            // AJAX দিয়ে ডাটা ফেচ ফাংশন, callback প্যারামিটার নিয়ে
+            function fetchGeoData(geoOrder, parentGeoId, dropdownSelector, callback) {
+                const dropdown = $(dropdownSelector);
+                dropdown.empty().append('<option value="">লোড হচ্ছে...</option>');
+
+                $.ajax({
+                    url: '/settings/geo/getdata',
+                    type: 'POST',
+                    dataType: 'json',
+                    data: `geo_order=${geoOrder}&parent_geo_id=${parentGeoId}`,
+                    contentType: 'application/x-www-form-urlencoded; charset=UTF-8',
+                    success: function (data) {
+                        dropdown.empty();
+                        let placeholder = 'Select option';
+                        if (dropdownSelector === '#district_dropdown') placeholder = 'জেলা নির্বাচন করুন';
+                        else if (dropdownSelector === '#upazila_dropdown') placeholder = 'উপজেলা নির্বাচন করুন';
+                        else if (dropdownSelector === '#union_dropdown') placeholder = 'ইউনিয়ন নির্বাচন করুন';
+
+                        dropdown.append(`<option value="">${placeholder}</option>`);
+
+                        $.each(data, function (index, item) {
+                            dropdown.append(
+                                $('<option></option>')
+                                    .val(item.geo_code)
+                                    .text(item.name_bn)
+                                    .attr('data-geo-code', item.geo_code)
+                                    .attr('data-name-en', item.name_en)
+                                    .attr('data-name-bn', item.name_bn)
+                                    .attr('data-geo-id', item.id)
+                            );
+                        });
+
+                        if (typeof callback === 'function') {
+                            callback();
+                        }
+                    },
+                    error: function (xhr, status, error) {
+                        dropdown.empty().append('<option value="">ডাটা লোডে সমস্যা হয়েছে</option>');
+                        console.error('Error loading geo data:', error);
+                    }
+                });
+            }
+
+            // ইউনিয়ন লোড ফাংশন
+            function loadUnions(districtNameEn, upazilaNameEn, dropdownSelector) {
+                const dropdown = $(dropdownSelector);
+                dropdown.empty().append('<option value="">লোড হচ্ছে...</option>');
+
+                $.ajax({
+                    url: '/geo/getUnion',
+                    type: 'POST',
+                    dataType: 'json',
+                    data: {
+                        district_name_en: districtNameEn,
+                        upazila_name_en: upazilaNameEn
+                    },
+                    success: function (data) {
+                        dropdown.empty();
+                        dropdown.append('<option value="">ইউনিয়ন নির্বাচন করুন</option>');
+
+                        $.each(data, function (index, item) {
+                            dropdown.append(
+                                $('<option></option>')
+                                    .val(item.union_code)
+                                    .text(item.union_name_bn)
+                                    .attr('data-name-en', item.union_name_en)
+                                    .attr('data-name-bn', item.union_name_bn)
+                                    .attr('data-union-id', item.union_id)
+                            );
+                        });
+                    },
+                    error: function (xhr, status, error) {
+                        dropdown.empty().append('<option value="">ডাটা লোডে সমস্যা হয়েছে</option>');
+                        console.error('Error loading unions:', error);
+                    }
+                });
+            }
+
+            // ড্রপডাউন রিসেট ফাংশন
+            function resetDropdown(selector, placeholder) {
+                $(selector).empty().append(`<option value="">${placeholder}</option>`);
+            }
+
+        });
+    </script>
+
+        <script>
+            function previewPhoto(event) {
+                const photoPreview = document.getElementById('photo_preview');
+                const file = event.target.files[0];
+
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        photoPreview.src = e.target.result;
+                        photoPreview.style.display = "block";
+                    };
+                    reader.readAsDataURL(file);
+                } else {
+                    photoPreview.style.display = "none";
+                }
+            }
+
+
+            document.querySelectorAll('input[name="applicant_name_option"]').forEach((radio) => {
+                radio.addEventListener('change', function () {
+                    const nameInput = document.getElementById('applicant_name');
+                    const originalName = document.getElementById('name_bn');
+                    if (document.getElementById('own_name').checked) {
+                        
+                        const ownName = originalName.value; 
+                        nameInput.value = ownName; 
+                        nameInput.readOnly = true;
+                        nameInput.style.display = "block";
+                        nameInput.style.backgroundColor = "#e9ecef"; 
+                    } else if (document.getElementById('other_name').checked) {
+                        nameInput.value = "";
+                        nameInput.readOnly = false;
+                        nameInput.style.display = "block";
+                        nameInput.style.backgroundColor = ""; 
+                    } else {
+                        nameInput.style.display = "none"; 
+                    }
+                });
+            });
+
+
+            document.getElementById('add_document').addEventListener('click', function () {
+                const container = document.getElementById('documents_container');
+                const fileInputGroup = document.createElement('div');
+                fileInputGroup.classList.add('input-group', 'mb-2');
+
+                fileInputGroup.innerHTML = `
+                    <input type="file" name="documents[]" class="form-control">
+                    <button type="button" class="btn btn-danger remove-file">X</button>
+                `;
+
+                container.appendChild(fileInputGroup);
+            });
+
+
+            document.addEventListener('click', function (event) {
+                if (event.target.classList.contains('remove-file')) {
+                    event.target.parentElement.remove();
+                }
+            });
+        </script>
+
+
+
+    <script>
+        $(document).ready(function () {
+            // Common function to populate dropdowns
+            function populateDropdown(selector, data, selectedValue) {
+                $(selector).empty().append('<option value="">চিহ্নিত করুন</option>');
+                $.each(data, function (index, item) {
+                    let isSelected = selectedValue == item.geo_code ? 'selected' : '';
+                    $(selector).append(`<option value="${item.name_en}" data-geo-code="${item.geo_code}" data-name-en="${item.name_en}" data-name-bn="${item.name_bn}" data-geo-id="${item.id}" ${isSelected}>${item.name_en}</option>`);
+                });
+            }
+
+            // Common function to reset dropdowns
+            function resetDropdown(selector) {
+                $(selector).empty().append('<option value="">চিহ্নিত করুন</option>');
+            }
+
+            // Function to fetch Geo data (district, upazila, union)
+            function fetchGeoData(geoOrder, parentGeoId, dropdownSelector, nextGeoOrder, nextGeoIdSelector) {
+                $.ajax({
+                    url: '/settings/geo/getdata',
+                    method: 'POST',
+                    data: { geo_order: geoOrder, parent_geo_id: parentGeoId },
+                    dataType: 'json',
+                    success: function (data) {
+                        populateDropdown(dropdownSelector, data);
+                        if (nextGeoOrder) {
+                            resetDropdown(nextGeoIdSelector);
+                        }
+                    },
+                    error: function (error) {
+                        console.error('Error fetching geo data', error);
+                    }
+                });
+            }
+
+            // Initial AJAX for default district (present and permanent)
+            $.ajax({
+                url: '/geo/getdata',
+                method: 'POST',
+                data: { geo_order: 1, parent_geo_id: 0 },
+                dataType: 'json',
+                success: function (data) {
+                    populateDropdown('#present_district_id', data);
+                    populateDropdown('#permanent_district_id', data);
+                },
+                error: function (error) {
+                    console.error('Error fetching districts', error);
+                }
+            });
+
+            // Present district change event
+            $('#present_district_id').change(function () {
+                const districtId = parseInt($(this).find('option:selected').attr('data-geo-id')) || 0;
+                const districtNameBn = $(this).find('option:selected').attr('data-name-bn') || '';
+                if (!districtId) return;
+                $('#present_district').val(districtNameBn);
+                fetchGeoData(2, districtId, '#present_upazila_id', 3, '#present_union_id');
+            });
+
+            // Present upazila change event
+            $('#present_upazila_id').change(function () {
+                const upazilaId = parseInt($(this).find('option:selected').attr('data-geo-id')) || 0;
+                const upazilaNameBn = $(this).find('option:selected').attr('data-name-bn') || '';
+                if (!upazilaId) return;
+                $('#present_upazila').val(upazilaNameBn);
+                fetchGeoData(3, upazilaId, '#present_union_id');
+            });
+
+            // Present union change event
+            $('#present_union_id').change(function () {
+                const unionNameBn = $(this).find('option:selected').attr('data-name-bn') || '';
+                $('#present_union').val(unionNameBn);
+            });
+
+            // Permanent district change event
+            $('#permanent_district_id').change(function () {
+                const districtId = parseInt($(this).find('option:selected').attr('data-geo-id')) || 0;
+                const districtNameBn = $(this).find('option:selected').attr('data-name-bn') || '';
+                if (!districtId) return;
+                $('#permanent_district').val(districtNameBn);
+                fetchGeoData(2, districtId, '#permanent_upazila_id', 3, '#permanent_union_id');
+            });
+
+            // Permanent upazila change event
+            $('#permanent_upazila_id').change(function () {
+                const upazilaId = parseInt($(this).find('option:selected').attr('data-geo-id')) || 0;
+                const upazilaNameBn = $(this).find('option:selected').attr('data-name-bn') || '';
+                if (!upazilaId) return;
+                $('#permanent_upazila').val(upazilaNameBn);
+                fetchGeoData(3, upazilaId, '#permanent_union_id');
+            });
+
+            // Permanent union change event
+            $('#permanent_union_id').change(function () {
+                const unionNameBn = $(this).find('option:selected').attr('data-name-bn') || '';
+                $('#permanent_union').val(unionNameBn);
+            });
+
+            // Permanent address toggle button
+            $("#permanentBtn").change(function () {
+            if ($(this).is(":checked")) {
+                // Copy simple text fields
+                $("#permanent_village_en").val($("#present_village_en").val());
+                $("#permanent_village_bn").val($("#present_village_bn").val());
+                $("#permanent_rbs_en").val($("#present_rbs_en").val());
+                $("#permanent_rbs_bn").val($("#present_rbs_bn").val());
+                $("#permanent_holding_no").val($("#present_holding_no").val());
+                $("#permanent_ward_no").val($("#present_ward_no").val());
+                $("#permanent_postoffice").val($("#present_postoffice").val());
+                $("#permanent_postoffice_bn").val($("#present_postoffice_bn").val());
+
+                // Copy District and trigger Upazila fetch
+                const districtGeoId = $("#present_district_id").find('option:selected').attr('data-geo-id');
+                $("#permanent_district_id").val($("#present_district_id").val()).attr('data-geo-id', districtGeoId).trigger("change");
+
+                // Fetch Upazila based on District
+                fetchGeoData(2, districtGeoId, "#permanent_upazila_id", 3, "#permanent_union_id");
+
+                // Delay to ensure Upazila dropdown updates before setting value
+                setTimeout(() => {
+                    const upazilaGeoId = $("#present_upazila_id").find('option:selected').attr('data-geo-id');
+                    $("#permanent_upazila_id").val($("#present_upazila_id").val()).attr('data-geo-id', upazilaGeoId).trigger("change");
+                    fetchGeoData(3, upazilaGeoId, "#permanent_union_id");
+                    setTimeout(() => {
+                        const unionGeoId = $("#present_union_id").find('option:selected').attr('data-geo-id');
+                        $("#permanent_union_id").val($("#present_union_id").val()).attr('data-geo-id', unionGeoId).trigger("change");
+                    }, 500);
+                }, 500);
+            } else {
+
+                $("#permanent_village_en, #permanent_village_bn, #permanent_rbs_en, #permanent_rbs_bn, #permanent_holding_no, #permanent_ward_no, #permanent_district_id, #permanent_upazila_id, #permanent_union_id,#permanent_district_bn, #permanent_upazila_bn, #permanent_union_bn, #permanent_postoffice, #permanent_postoffice_bn")
+                    .val("")
+                    .removeAttr('data-geo-id')
+                    .find('option')
+                    .prop('selected', false);
+            }
+        });
+
+
+    });
+    </script>
+
+<script>
+    $(document).ready(function () {
+        const form = $("#applicationForm");
+
+        form.submit(function (event) {
+            event.preventDefault();
+
+            var certificateType = "{{ certificate_type }}";
+            console.log("Submitting form with certificateType:", certificateType);
+
+            $.ajax({
+                type: "POST",
+                url: "/applications/" + certificateType + "/insert",
+                data: new FormData(this),
+                contentType: false,
+                processData: false,
+                dataType: "json",
+                beforeSend: function () {
+                    console.log("AJAX request started");
+                    $(".submit-button").text("Submitting...").prop("disabled", true);
+                },
+                success: function (response) {
+                    console.log("AJAX success response:", response);
+                    if (response.status === "success") {
+                        $("#application_id").text(response.application_id);
+                        $("#union_code").text(response.union_code);
+                        $("#rmo_code").text(response.rmo_code);
+                        $("#successModal").show();
+                    } else {
+                        alert("⚠️ কিছু সমস্যা হয়েছে: " + response.message);
+                    }
+                },
+                error: function (xhr) {
+                    console.error("AJAX error response:", xhr);
+
+                    let message = "⚠️ কিছু সমস্যা হয়েছে, আবার চেষ্টা করুন।";
+
+                    try {
+                        let response = JSON.parse(xhr.responseText);
+                        console.log("Parsed error response:", response);
+                        if (response.message) {
+                            message = "⚠️ " + response.message;
+                        }
+                    } catch (e) {
+                        console.warn("Error parsing JSON response:", e);
+                        if (xhr.responseText) {
+                            message = "⚠️ সার্ভার থেকে উত্তর: " + xhr.responseText;
+                        }
+                    }
+
+                    alert(message);
+                },
+                complete: function () {
+                    console.log("AJAX request completed");
+                    $(".submit-button").text("Submit").prop("disabled", false);
+                }
+            });
+        });
+
+        // Success Modal Actions
+        $("#newApplication").click(function () {
+            console.log("New Application clicked, resetting form");
+            $("#successModal").hide();
+            form[0].reset();
+            currentStep = 0;
+            showStep(currentStep);
+        });
+
+        $(".btn-close-modal").click(function () {
+            console.log("Modal close button clicked");
+            $("#successModal").hide();
+        });
+
+        $("#downloadCopy").click(function () {
+            let applicantId = $("#application_id").text();
+            let union_code = $("#union_code").text().trim() || "0";
+            let rmo_code = $("#rmo_code").text().trim() || "0";
+            console.log("Opening copy download link for:", applicantId, union_code, rmo_code);
+            window.open("/" + certificateType + "/_verify/application/" + applicantId + "/" + union_code + "/" + rmo_code, "_blank");
+        });
+    });
+</script>
+
+<script src="{{ url }}/assets/js/stepValidation.js?t={{ "now"|date("Hiss") }}"></script>
+
+
+{% endblock %}

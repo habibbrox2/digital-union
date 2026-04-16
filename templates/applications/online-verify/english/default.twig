@@ -1,0 +1,144 @@
+<style type="text/css">
+    body { font-family: 'Arial', sans-serif !important; font-size: 10.5pt; }
+    @media print { * { -webkit-print-color-adjust: exact; } }
+    @page { header: page-header; footer: page-footer; margin: 20px 0px; padding: 0px; }
+    .header-font { font-size: 18.75pt; font-weight: bold; color: blue; }
+    .subheader-font { font-size: 12pt; font-weight: bold; }
+    .title-text { font-size: 18.75pt; font-weight: bold; }
+    .label-text { font-size: 12pt; font-weight: 700; }
+    .value-text { font-size: 12pt; }
+</style>
+
+<section>
+    <div class="container">
+        <div class="card" style="margin:20px 0px; padding: 10px 0px 20px 0px">
+
+            <table border="0" width="98%" align="center" style="border-collapse:collapse; margin:2px auto; padding-top: 37.5pt">
+                <tr>
+                    <td style="width:1.5in; text-align:center;"></td>
+                    <td style="text-align:center;">
+                        <font class="header-font">{{ union.union_name_en|default(union.union_name_bn) }}</font>
+                        <br />
+                        <font class="subheader-font">
+                            {{ union.upazila_name_en|default(union.upazila_name_bn) }}, {{ union.district_name_en|default(union.district_name_bn) }}<br>
+                            Mobile: {{ union.phone }}, Email: {{ union.email }} <br>
+                            Website: {{ union.website }}
+                        </font>
+                    </td>
+                    <td style="width:1.2in; text-align:left;"></td>
+                </tr>
+            </table>
+
+            <table style="width:95%; margin-left:48px;border-color:lightgray;border-collapse:collapse;margin-top:7.5pt;" cellpadding="0" cellspacing="0">
+                <tr>
+                    <td colspan="2" style="text-align:center;font-size:18.75pt;font-weight:bold;padding-bottom: 3.75pt">
+                        <u>Citizen Certificate Verification</u>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <table border="1" style="width: 600px;border-color:lightgray;border-collapse:collapse;" cellpadding="0" cellspacing="0">
+                            <tr>
+                                <td style="width:97.5pt; text-align:center;font-weight:700;font-size:13.5pt;">Certificate No:</td>
+                                {% set sonod_number = citizen.sonod_number %}
+                                {% for digit in sonod_number | split('') %}
+                                    <td style="text-align:center; font-weight:bold; font-size:15pt; padding: 3.75pt;">{{ digit }}</td>
+                                {% endfor %}
+                            </tr>
+                        </table>
+                    </td>
+                    <td rowspan="2" valign="top" style="text-align: center; padding-left: 15pt;">
+                        {% if citizen.photo %}
+                            <img src="{{ citizen.photo }}" height="75pt" width="75pt" style="" alt="profile" />
+                        {% else %}
+                            <div style="height:75pt; width:75pt; background:#ccc; text-align:center; line-height:75pt; font-size:10.5pt;">No Photo</div>
+                        {% endif %}
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="1" style="font-size:13.5pt; text-indent:37.5pt; padding-top: 3.75pt; padding-bottom: 3.75pt;">This is to certify that,</td>
+                </tr>
+            </table>
+
+            <table class="jolchap" align="center" border="0" width="99%" cellspacing="0" style="border-collapse:collapse;margin:0 auto;table-layout:fixed;">
+                <tr>
+                    <td align="left" style="font-size:12pt;text-indent:41.25pt; width: 150px; padding-left: 37.5pt">Name</td>
+                    <td><font style="font-size:12pt;">: {{ citizen.name_en|default(citizen.name_bn) }}</font></td>
+                </tr>
+                <tr>
+                    <td align="left" style="font-size:12pt;text-indent:41.25pt; width: 150px; padding-left: 37.5pt">Father's Name</td>
+                    <td><font style="font-size:12pt;">: {{ citizen.father_name_en|default(citizen.father_name_bn) }}</font></td>
+                </tr>
+                <tr>
+                    <td align="left" style="font-size:12pt;text-indent:41.25pt; width: 150px; padding-left: 37.5pt">Mother's Name</td>
+                    <td><font style="font-size:12pt;">: {{ citizen.mother_name_en|default(citizen.mother_name_bn) }}</font></td>
+                </tr>
+                <tr>
+                    <td nowrap align="left" style="font-size:12pt;text-indent:41.25pt; width: 150px; padding-left: 37.5pt;vertical-align:top;">Present Address</td>
+                    <td style="vertical-align:top;">
+                        <p style="line-height:18.75pt;font-size:12pt;">
+                            : Village: {{ citizen.present_village_en|default(citizen.present_village_bn) }}
+                            <br> &nbsp; Post Office: {{ citizen.present_postoffice_en|default(citizen.present_postoffice_bn) }}
+                            <br> &nbsp; Upazila: {{ citizen.present_upazila_en|default(citizen.present_upazila_bn) }}
+                            <br> &nbsp; District: {{ citizen.present_district_en|default(citizen.present_district_bn) }}
+                        </p>
+                    </td>
+                </tr>
+                <tr>
+                    <td nowrap align="left" style="font-size:12pt;text-indent:41.25pt; width: 150px; padding-left: 37.5pt; vertical-align:top;">Permanent Address</td>
+                    <td style="vertical-align:top;">
+                        <p style="line-height:18.75pt;font-size:12pt;">
+                            : Village: {{ citizen.permanent_village_en|default(citizen.permanent_village_bn) }}
+                            <br> &nbsp; Post Office: {{ citizen.permanent_postoffice_en|default(citizen.permanent_postoffice_bn) }}
+                            <br> &nbsp; Upazila: {{ citizen.permanent_upazila_en|default(citizen.permanent_upazila_bn) }}
+                            <br> &nbsp; District: {{ citizen.permanent_district_en|default(citizen.permanent_district_bn) }}
+                        </p>
+                    </td>
+                </tr>
+                <tr>
+                    <td align="left" nowrap style="font-size:12pt;text-indent:41.25pt; width: 150px; padding-left: 37.5pt">Ward No</td>
+                    <td><font style="font-size:12pt;">: {{ citizen.permanent_ward_no }}</font></td>
+                </tr>
+                <tr>
+                    <td align="left" nowrap style="font-size:12pt;text-indent:41.25pt; width: 150px; padding-left: 37.5pt">National ID</td>
+                    <td><font style="font-size:12pt;">: {{ citizen.nid }}</font></td>
+                </tr>
+                <tr>
+                    <td align="left" nowrap style="font-size:12pt;text-indent:41.25pt; width: 150px; padding-left: 37.5pt">Birth Registration</td>
+                    <td><font style="font-size:12pt;">: {{ citizen.birth_id }}</font></td>
+                </tr>
+                <tr>
+                    <td align="left" nowrap style="font-size:12pt;text-indent:41.25pt; width: 150px; padding-left: 37.5pt">Date</td>
+                    <td><font style="font-size:12pt;">: {{ citizen.issue_date|date('d-m-Y') }}</font></td>
+                </tr>
+            </table>
+
+            <table border="0" width="98%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin:0 auto;padding-top:7.5pt;">
+                <tr>
+                    <td style="font-size:12pt; padding-left:37.5pt;" height="60pt">
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {{ citizen.name_en|default(citizen.name_bn) }} is a permanent resident of {{ union.union_name_en|default(union.union_name_bn) }}. To the best of my knowledge, this person has never been involved in any activities subversive to the state or detrimental to public order.
+                    </td>
+                </tr>
+                <tr>
+                    <td style="padding-left:54pt; font-size:12pt; height: 15pt">
+                        This certificate is issued for official use.
+                    </td>
+                </tr>
+            </table>
+
+            <table border="0" width="93%" align="center" style="margin-top:15pt;">
+                <tr>
+                    <td style="font-size:11.25pt; text-align:right; padding-top: 15pt;">
+                        Issued by: {{ union.union_name_en|default(union.union_name_bn) }} <br>
+                        Authorized Officer: _________________ <br>
+                        Date: {{ 'now'|date('d-m-Y') }}
+                    </td>
+                </tr>
+            </table>
+
+        </div>
+    </div>
+</section>
+
+
+

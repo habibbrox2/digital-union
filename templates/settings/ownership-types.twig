@@ -1,0 +1,73 @@
+{% extends "layout.twig" %}
+
+{% block title %}মালিকানা প্রকার{% endblock %}
+
+{% block header_title %}মালিকানা প্রকার পরিচালনা করুন{% endblock %}
+
+{% block content %}
+{% include 'components/sweetAlert.twig' %}
+{% if not is_logged_in %}
+    {% set redirect = "<script>window.location.href='/#';</script>" %}
+    {{ redirect|raw }}
+{% endif %}
+
+<div class="container mt-4">
+    <h3>{{ header_title }}</h3>
+    {% if status %}
+        <div class="alert alert-{{ status == 'success' ? 'success' : 'danger' }}">
+            {{ message }}
+        </div>
+    {% endif %}
+
+    <!-- মালিকানা প্রকার যোগ করুন ফর্ম -->
+    <form method="post" action="" class="mb-4">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        
+        <div class="form-group">
+            <label for="ownership_name_bn">মালিকানার নাম (বাংলা)</label>
+            <input type="text" class="form-control" id="ownership_name_bn" name="ownership_name_bn" placeholder="মালিকানার নাম লিখুন" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="ownership_name_en">মালিকানার নাম (ইংরেজি)</label>
+            <input type="text" class="form-control" id="ownership_name_en" name="ownership_name_en" placeholder="Ownership name in English">
+        </div>
+        
+        <button type="submit" class="btn btn-primary">মালিকানা প্রকার যোগ করুন</button>
+    </form>
+    
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>আইডি</th>
+                <th>মালিকানার নাম (বাংলা)</th>
+                <th>মালিকানার নাম (ইংরেজি)</th>
+                <th>অ্যাকশন</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for ownership in ownershipTypes %}
+            <tr>
+                <td>{{ ownership.id }}</td>
+                <td>{{ ownership.ownership_name_bn }}</td>
+                <td>{{ ownership.ownership_name_en }}</td>
+                <td>
+                    <!-- সম্পাদনা বোতাম -->
+                    <a href="/settings/ownership-types/edit/{{ ownership.id }}" class="d-inline btn btn-warning btn-sm">
+                            <i class="bi bi-pencil"></i> সম্পাদনা
+                    </a>
+                    <!-- মুছুন বোতাম -->
+                    <form method="post" action="/settings/ownership-types/delete" class="d-inline">
+                        <input type="hidden" name="id" value="{{ ownership.id }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                        <button type="submit" class="btn btn-danger btn-sm">
+                            <i class="bi bi-trash"></i> মুছুন
+                        </button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

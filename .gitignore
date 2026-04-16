@@ -1,0 +1,59 @@
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Composer
+vendor/
+composer.lock
+
+# Logs
+storage/logs/
+*.log
+
+# Cache
+cache/
+tmp/
+/tmp/
+
+# IDE
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Uploads
+public/uploads/*
+!public/uploads/.gitkeep
+
+# Backups
+*.bak
+*.backup
+*.old
+
+# Node modules
+node_modules/
+
+# Public assets (if minified/bundled)
+public/css/min/
+public/js/min/
+
+# Session files
+session/
+sessions/
+
+# Temporary files
+temp/
+tmp/
+*.tmp
+
+# Database backups
+*.sql
+!database_schema_email.sql

@@ -1,0 +1,46 @@
+{# SweetAlert Message Display Component #}
+{% if sweetAlert %}
+    <script>
+    (function(){
+        const alert = {{ sweetAlert | json_encode | raw }};
+
+        function tryShow() {
+            if (typeof Swal === 'undefined' || typeof window.SweetAlertUtil === 'undefined') {
+                // retry until 2 seconds total
+                if (!tryShow._start) tryShow._start = Date.now();
+                if (Date.now() - tryShow._start < 2000) {
+                    return setTimeout(tryShow, 50);
+                }
+                // fallback: if Swal exists but util missing, use Swal directly
+                if (typeof Swal !== 'undefined') {
+                    return Swal.fire({ icon: alert.type || 'info', title: alert.title || '', text: alert.message || '' });
+                }
+                return;
+            }
+
+            if (alert && alert.title) {
+                const options = alert.options || {};
+                const util = window.SweetAlertUtil;
+
+                if (alert.type === 'success') {
+                    util.success(alert.title, alert.message || '', options);
+                } else if (alert.type === 'error') {
+                    util.error(alert.title, alert.message || '', options);
+                } else if (alert.type === 'warning') {
+                    util.warning(alert.title, alert.message || '', options);
+                } else if (alert.type === 'question') {
+                    util.question(alert.title, alert.message || '', options);
+                } else {
+                    util.info(alert.title, alert.message || '', options);
+                }
+            }
+        }
+
+        if (document.readyState === 'complete' || document.readyState === 'interactive') {
+            tryShow();
+        } else {
+            document.addEventListener('DOMContentLoaded', tryShow);
+        }
+    })();
+    </script>
+{% endif %}

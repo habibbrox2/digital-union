@@ -1,0 +1,214 @@
+{% extends "layout.twig" %}
+
+{% block title %}{{ title|default('নতুন ইউনিয়ন যোগ করুন') }}{% endblock %}
+{% block header_title %}{{ header_title|default('নতুন ইউনিয়ন যোগ করুন') }}{% endblock %}
+
+{% block content %}
+{% include 'components/sweetAlert.twig' %}
+<div class="container">
+    <h2>{{ header_title }}</h2>
+
+    {% if message %}
+        <div class="alert alert-{{ status }}">{{ message }}</div>
+    {% endif %}
+
+    <form method="post">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+        <div class="form-group">
+            <label>ইউনিয়নের নাম (ইংরেজি)</label>
+            <input type="text" name="union_name_en" class="form-control">
+        </div>
+        <div class="form-group">
+            <label>ইউনিয়নের নাম (বাংলা)</label>
+            <input type="text" name="union_name_bn" class="form-control" required>
+        </div>
+
+        <div class="form-group">
+            <label>বিভাগ (ইংরেজি)</label>
+            <select id="division_en" name="division_name_en" class="form-control" required>
+                <option value="">Select</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>বিভাগ (বাংলা)</label>
+            <input type="text" id="division_name_bn" name="division_name_bn" class="form-control" readonly>
+        </div>
+
+        <div class="form-group">
+            <label>জেলা (ইংরেজি)</label>
+            <select id="district_en" name="district_name_en" class="form-control" required>
+                <option value="">Select</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>জেলা (বাংলা)</label>
+            <input type="text" id="district_name_bn" name="district_name_bn" class="form-control" readonly>
+        </div>
+
+        <div class="form-group">
+            <label>উপজেলা (ইংরেজি)</label>
+            <select id="upazila_en" name="upazila_name_en" class="form-control" required>
+                <option value="">Select</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>উপজেলা (বাংলা)</label>
+            <input type="text" id="upazila_name_bn" name="upazila_name_bn" class="form-control" readonly>
+        </div>
+
+        <div class="form-group">
+            <label>ওয়ার্ড সংখ্যা</label>
+            <input type="number" name="ward_count" class="form-control" value="9" required>
+        </div>
+
+        <div class="form-group">
+            <label>ইউনিয়ন কোড</label>
+            <input type="text" name="union_code" class="form-control">
+        </div>
+
+        <div class="form-group">
+            <label>ইমেইল</label>
+            <input type="text" name="email" class="form-control">
+        </div>
+
+        <div class="form-group">
+            <label>মোবাইল</label>
+            <input type="text" name="phone" class="form-control">
+        </div>
+
+        <div class="form-group">
+            <label>ওয়েবসাইট</label>
+            <input type="text" name="website" class="form-control">
+        </div>
+
+        <div class="form-group">
+            <label>পোস্ট কোড</label>
+            <input type="text" name="postcode" class="form-control">
+        </div>
+
+        <button type="submit" class="btn btn-success">সংরক্ষণ করুন</button>
+        <a href="/unions" class="btn btn-secondary">বাতিল</a>
+    </form>
+</div>
+
+<script>
+$(document).ready(function () {
+    const selectedDivision = "";
+    const selectedDistrict = "";
+    const selectedUpazila  = "";
+
+    $.ajax({
+        url: '/geo/getdata',
+        method: 'POST',
+        data: { geo_order: 0, parent_geo_id: 1 },
+        dataType: 'json',
+        success: function (divisions) {
+            populateDropdown('#division_en', divisions, selectedDivision);
+
+            const divisionId = divisions.find(d => d.name_en === selectedDivision)?.id;
+            if (!divisionId) return;
+
+            $.ajax({
+                url: '/geo/getdata',
+                method: 'POST',
+                data: { geo_order: 1, parent_geo_id: divisionId },
+                dataType: 'json',
+                success: function (districts) {
+                    populateDropdown('#district_en', districts, selectedDistrict);
+
+                    const districtId = districts.find(d => d.name_en === selectedDistrict)?.id;
+                    if (!districtId) return;
+
+                    $.ajax({
+                        url: '/geo/getdata',
+                        method: 'POST',
+                        data: { geo_order: 2, parent_geo_id: districtId },
+                        dataType: 'json',
+                        success: function (upazilas) {
+                            populateDropdown('#upazila_en', upazilas, selectedUpazila);
+                        }
+                    });
+                }
+            });
+        },
+        error: function (error) {
+            console.error('Error fetching divisions', error);
+        }
+    });
+
+    $('#division_en').on('change', function () {
+        const divisionId = $(this).find('option:selected').data('geo-id');
+        const bnName = $(this).find('option:selected').data('name-bn');
+        $('#division_name_bn').val(bnName);
+
+        if (!divisionId) return;
+
+        $.ajax({
+            url: '/geo/getdata',
+            method: 'POST',
+            data: { geo_order: 1, parent_geo_id: divisionId },
+            dataType: 'json',
+            success: function (districts) {
+                populateDropdown('#district_en', districts, '');
+                resetDropdown('#upazila_en');
+                $('#district_name_bn').val('');
+                $('#upazila_name_bn').val('');
+            }
+        });
+    });
+
+    $('#district_en').on('change', function () {
+        const districtId = $(this).find('option:selected').data('geo-id');
+        const bnName = $(this).find('option:selected').data('name-bn');
+        $('#district_name_bn').val(bnName);
+
+        if (!districtId) return;
+
+        $.ajax({
+            url: '/geo/getdata',
+            method: 'POST',
+            data: { geo_order: 2, parent_geo_id: districtId },
+            dataType: 'json',
+            success: function (upazilas) {
+                populateDropdown('#upazila_en', upazilas, '');
+                $('#upazila_name_bn').val('');
+            }
+        });
+    });
+
+    $('#upazila_en').on('change', function () {
+        const bnName = $(this).find('option:selected').data('name-bn');
+        $('#upazila_name_bn').val(bnName);
+    });
+
+    function populateDropdown(selector, data, selectedValue) {
+        $(selector).empty().append('<option value="">Select</option>');
+        $.each(data, function (index, item) {
+            const isSelected = selectedValue === item.name_en ? 'selected' : '';
+            $(selector).append(`
+                <option value="${item.name_en}"
+                        data-geo-id="${item.id}"
+                        data-name-bn="${item.name_bn}"
+                        data-geo-code="${String(item.geo_code).substr(2)}"
+                        ${isSelected}>
+                    ${item.name_bn} (${item.name_en})
+                </option>
+            `);
+        });
+
+        if (selectedValue) {
+            $(selector).val(selectedValue);
+            const bnName = data.find(d => d.name_en === selectedValue)?.name_bn || '';
+            if (selector === '#division_en') $('#division_name_bn').val(bnName);
+            else if (selector === '#district_en') $('#district_name_bn').val(bnName);
+            else if (selector === '#upazila_en') $('#upazila_name_bn').val(bnName);
+        }
+    }
+
+    function resetDropdown(selector) {
+        $(selector).empty().append('<option value="">Select</option>');
+    }
+});
+</script>
+{% endblock %}

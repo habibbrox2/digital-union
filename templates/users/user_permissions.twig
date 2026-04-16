@@ -1,0 +1,218 @@
+{% extends "layout.twig" %}
+
+{% block title %}{{ 'পারমিশন সেটিংস' }}{% endblock %}
+{% block header_title %}{{ header_title|default('পারমিশন ম্যানেজমেন্ট') }}{% endblock %}
+
+{% block content %}
+{% include 'components/sweetAlert.twig' %}
+
+<div class="container-fluid mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-10 col-lg-9">
+            <div class="card shadow-lg">
+                <div class="card-header bg-primary text-white py-3">
+                    <h3 class="mb-0">
+                        <i class="fas fa-shield-alt"></i> {{ 'পারমিশন ম্যানেজমেন্ট' }}
+                        <small class="d-block text-light mt-2">{{ user.name_bn }} ({{ user.name_en }})</small>
+                    </h3>
+                </div>
+                <div class="card-body p-4">
+                    {% if error %}
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                        <i class="fas fa-exclamation-circle"></i> {{ error }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                    {% endif %}
+
+                    <form method="POST" id="permissionsForm" novalidate>
+                        <!-- User Info Section -->
+                        <div class="card bg-light mb-4">
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <p class="mb-2">
+                                            <strong>{{ 'ব্যবহারকারী আইডি:' }}</strong> {{ user.user_id }}
+                                        </p>
+                                        <p class="mb-2">
+                                            <strong>{{ 'ব্যবহারকারীনাম:' }}</strong> {{ user.username }}
+                                        </p>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <p class="mb-2">
+                                            <strong>{{ 'ইমেইল:' }}</strong> {{ user.email }}
+                                        </p>
+                                        <p class="mb-2">
+                                            <strong>{{ 'অবস্থা:' }}</strong> 
+                                            {% if user.status == 'active' %}
+                                            <span class="badge bg-success">{{ 'সক্রিয়' }}</span>
+                                            {% else %}
+                                            <span class="badge bg-danger">{{ 'নিষ্ক্রিয়' }}</span>
+                                            {% endif %}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Role Assignment -->
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">
+                                <i class="fas fa-user-tag"></i> {{ 'ভূমিকা নির্বাচন' }}
+                            </label>
+                            <select name="role_id" class="form-select form-select-lg" required>
+                                <option value="">{{ '-- ভূমিকা চয়ন করুন --' }}</option>
+                                <option value="1" {% if user.role_id == 1 %}selected{% endif %}>{{ 'প্রশাসক (Admin)' }}</option>
+                                <option value="2" {% if user.role_id == 2 %}selected{% endif %}>{{ 'সচিব (Secretary)' }}</option>
+                                <option value="3" {% if user.role_id == 3 %}selected{% endif %}>{{ 'অফিসার (Officer)' }}</option>
+                                <option value="4" {% if user.role_id == 4 %}selected{% endif %}>{{ 'সদস্য (Member)' }}</option>
+                            </select>
+                            <small class="text-muted d-block mt-2">{{ 'সঠিক ভূমিকা বেছে নিন। ভূমিকা পরিবর্তনে সব পারমিশন রিসেট হতে পারে।' }}</small>
+                        </div>
+
+                        <!-- Permissions Section -->
+                        <div class="mb-4">
+                            <label class="form-label fw-bold d-flex align-items-center gap-2">
+                                <i class="fas fa-lock-open"></i> {{ 'পারমিশন সেটিংস' }}
+                            </label>
+                            <div class="alert alert-info alert-dismissible fade show mb-3">
+                                <i class="fas fa-info-circle"></i> 
+                                {{ 'নীচে সকল পারমিশন দেখুন। প্রয়োজনীয় পারমিশনগুলি চেক করুন।' }}
+                            </div>
+
+                            <div class="permissions-grid">
+                                {% if permissions %}
+                                    {% set categories = {} %}
+                                    {% for permission in permissions %}
+                                        {% set category = permission.category ?? 'অন্যান্য' %}
+                                        {% if categories[category] is not defined %}
+                                            {% set categories = categories|merge({(category): []}) %}
+                                        {% endif %}
+                                        {% set categories = categories|merge({(category): categories[category]|merge([permission])}) %}
+                                    {% endfor %}
+
+                                    {% for category, perms in categories %}
+                                    <div class="card mb-3">
+                                        <div class="card-header bg-light">
+                                            <h6 class="mb-0">
+                                                <i class="fas fa-folder-open"></i> {{ category }}
+                                            </h6>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="row g-3">
+                                                {% for permission in perms %}
+                                                <div class="col-md-6">
+                                                    <div class="form-check p-3 border rounded hover-bg">
+                                                        <input 
+                                                            class="form-check-input" 
+                                                            type="checkbox" 
+                                                            name="permissions[]" 
+                                                            id="perm_{{ permission.permission_id }}" 
+                                                            value="{{ permission.permission_id }}"
+                                                            {% if permission.permission_id in assigned_permissions %}checked{% endif %}
+                                                        >
+                                                        <label class="form-check-label w-100" for="perm_{{ permission.permission_id }}">
+                                                            <span class="fw-semibold">{{ permission.name }}</span>
+                                                            {% if permission.description %}
+                                                            <br><small class="text-muted">{{ permission.description }}</small>
+                                                            {% endif %}
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                {% else %}
+                                    <div class="alert alert-warning">
+                                        <i class="fas fa-exclamation-triangle"></i> {{ 'কোনো পারমিশন পাওয়া যায়নি।' }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="d-flex gap-2 mt-5">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-save"></i> {{ 'পারমিশন সংরক্ষণ' }}
+                            </button>
+                            <button type="reset" class="btn btn-outline-secondary btn-lg">
+                                <i class="fas fa-redo"></i> {{ 'রিসেট' }}
+                            </button>
+                            <a href="/users" class="btn btn-outline-dark btn-lg ms-auto">
+                                <i class="fas fa-arrow-left"></i> {{ 'ফিরুন' }}
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.permissions-grid {
+    max-height: 600px;
+    overflow-y: auto;
+}
+
+.form-check {
+    transition: background-color 0.2s ease;
+}
+
+.hover-bg:hover {
+    background-color: rgba(13, 110, 253, 0.05) !important;
+}
+
+.form-check-input {
+    width: 1.25rem;
+    height: 1.25rem;
+    cursor: pointer;
+    margin-top: 0.2rem;
+}
+
+.form-check-label {
+    cursor: pointer;
+    user-select: none;
+}
+</style>
+
+<script>
+document.getElementById('permissionsForm').addEventListener('submit', function(e) {
+    const selectedRole = this.querySelector('select[name="role_id"]').value;
+    if (!selectedRole) {
+        e.preventDefault();
+        alert('{{ "অনুগ্রহ করে একটি ভূমিকা নির্বাচন করুন" }}');
+    }
+});
+</script>
+
+{% endblock %}
+        margin-top: 4px;
+    }
+    
+    .form-check-input:checked {
+        background-color: #4f46e5;
+        border-color: #4f46e5;
+    }
+    
+    .text-gradient {
+        background: linear-gradient(135deg, #4f46e5, #3b82f6);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+    
+    .btn-gradient {
+        background: linear-gradient(90deg, #4f46e5, #3b82f6);
+        color: white;
+        border: none;
+    }
+    
+    .btn-gradient:hover {
+        background: linear-gradient(90deg, #4338ca, #2563eb);
+        color: white;
+    }
+</style>
+
+{% endblock %}

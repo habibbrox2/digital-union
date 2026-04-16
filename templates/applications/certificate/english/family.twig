@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ data.sonod_number }}</title>
+    <style>
+        * {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-print-color-adjust: exact;
+        }
+
+        @page {
+            size: A4;
+            margin: 0;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+        }
+
+        .content-wrapper {
+            background-image: url('{{ url }}/assets/bg.png');
+            background-size: cover;
+            background-repeat: no-repeat;
+            width: 209mm;
+            height: 297mm;
+            position: relative;
+            padding: 15mm;
+        }
+
+        /* Header */
+        .header {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: center;
+            margin-bottom: 7.5pt;
+        }
+        .header td {
+            vertical-align: middle;
+            padding: 3.75pt;
+        }
+        .logo {
+            height: 75pt;
+            width: 75pt;
+        }
+        .bd-govt {
+            font-size: 9pt;
+            color: red;
+        }
+        .parishad-name {
+            color: #3c01c5;
+            font-size: 19.5pt;
+            font-weight: bold;
+            padding: 3.75pt 0;
+        }
+        .sub-header {
+            font-size: 12pt;
+            color: black;
+            line-height: 1.5;
+        }
+
+
+        /* Instructions */
+        .instructions {
+            width: 98%;
+            margin: 22.5pt auto 0;
+            border-collapse: collapse;
+        }
+        .instructions td {
+            font-size: 10.5pt;
+            padding: 7.5pt;
+        }
+
+           
+
+/* Intro Text */
+.intro-text {
+    font-size: 10.5pt;
+    line-height: 1.2;
+    margin: 3pt 0;
+    font-weight: normal;
+    color: #000;
+}
+
+
+/* Personal Information Table */
+.personal-info {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 6pt 0 7.5pt 0;
+    font-size: 10.5pt;
+}
+
+.personal-info td {
+    padding: 2.25pt 3pt;
+    vertical-align: top;
+    color: #000;
+}
+
+.personal-info .info-label {
+    width: 75pt;
+}
+
+
+/* Warish Statement */
+.warish-statement {
+    font-size: 10.5pt;
+    line-height: 1.4;
+    margin: 3pt 0;
+    color: #000;
+}
+
+/* Warish Table */
+.warish-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 10.5pt;
+    margin-bottom: 3pt;
+    color: #000;
+    table-layout: fixed;
+}
+
+.warish-table th,
+.warish-table td {
+    border: 0.75pt solid #000;
+    padding: 1.5pt 1.5pt;
+    text-align: center;
+    word-wrap: break-word;
+}
+.warish-table th {
+    font-weight: normal;
+}
+    .indented-paragraph {
+        text-indent: 37.5pt;
+        line-height: 1.8;
+        margin: 7.5pt 0 9pt 0;
+        padding: 0;
+    word-wrap: break-word;
+    }
+
+    .no-border {
+        border: none;
+        padding: 7.5pt;
+        margin-top: 12pt;
+}
+
+    </style>
+</head>
+<body>
+    <div class="content-wrapper">
+
+            <!-- Header -->
+            <table class="header">
+                <tr>
+                    <td width="20%">
+                        {% if union.logo_url is defined and union.logo_url %}
+                            <img src="{{ url ~ union.logo_url }}" alt="Logo" class="logo">
+                        {% else %}
+                            <img src="{{ url }}/assets/logo/logo.png" alt="Logo" class="logo">
+                        {% endif %}
+                    </td>
+                    <td width="60%">
+                        <div class="bd-govt">Government of Bangladesh</div>
+                        
+                        {% if union.union_name_en is defined and union.union_name_en %}
+                            <div class="parishad-name">{{ union.union_name_en }}</div>
+                        {% else %}
+                            <div class="parishad-name">{{ union.union_name_bn }}</div>
+                        {% endif %}
+                        
+                        <div class="sub-header">
+                            {% if union.upazila_name_en is defined and union.upazila_name_en %}
+                                {{ union.upazila_name_en }},
+                            {% else %}
+                                {{ union.upazila_name_bn }},
+                            {% endif %}
+                            {% if union.district_name_en is defined and union.district_name_en %}
+                                {{ union.district_name_en }}
+                            {% else %}
+                                {{ union.district_name_bn }}
+                            {% endif %}
+                            {% if union.postcode is defined and union.postcode %}
+                                -{{ union.postcode }}
+                            {% endif %}
+                            <br>
+                            {% if union.phone is defined and union.phone %}
+                                Mobile: {{ union.phone }} <br>
+                            {% endif %}
+                            {% if union.email is defined and union.email %}
+                                 Email: {{ union.email }}
+                            {% endif %}
+                            <br>
+                            {% if union.website is defined and union.website %}
+                                Website: {{ union.website }}
+                            {% endif %}
+                        </div>
+                    </td>
+                    <td width="20%">
+                        {% if url is defined %}
+                            <img src="{{ url }}/assets/img/band-cross.png" alt="X" class="logo">
+                        {% endif %}
+                    </td>
+                </tr>
+            </table>
+
+
+
+
+            <!-- Certificate Section -->
+            <table width="98%" cellspacing="0" style="border-collapse:collapse; margin: 0 auto;">
+                <tr>
+                    <td colspan="2" style="text-align:center; font-size:19.5pt; font-weight:bold; padding-top: 7.5pt; padding-bottom: 3.75pt;">
+                        <font style="">
+                            <u>{{ certificate_type_en|default(certificate_type) }} </u>
+                        </font>
+                    </td>
+                </tr>
+                <tr>
+                    <td style="width: 78%;">
+                        <table style="width: 450pt; border-color:black; border-collapse:collapse;">
+                            <tr>
+                                <td style="width:75pt; text-align:center; border: 0.75pt solid black; font-size:12pt; text-align: left;">Certificate No:</td>
+                                {% set sonod_number_display = data.sonod_number %}
+                                {% for digit in sonod_number_display | split('') %}
+                                    <td style="text-align:center; font-size:12pt; padding: 3pt; border: 0.75pt solid black;">{{ digit }}</td>
+                                {% endfor %}
+                            </tr>
+                        </table>
+                    </td>
+                    <td style="text-align:right; font-size:12pt;">
+
+                            Date: {{ data.issue_date|date('d-m-Y') }}
+
+                    </td>
+                </tr>
+            </table>
+
+            <!-- Intro Text -->
+            <table><tr><td class="intro-text"> &nbsp; &nbsp;&nbsp; &nbsp;This is to certify that,</td></tr></table>
+
+            <!-- Personal Information Table -->
+            <table class="personal-info">
+                <tr>
+                    <td class="info-label">Name</td>
+                    <td>: {{ data.name_en|default(data.name_bn) }}</td>
+                </tr>
+
+                <tr>
+                    <td class="info-label">Father's Name</td>
+                    <td>: {{ data.father_name_en|default(data.father_name_bn) }}</td>
+                    <td class="info-label">Mother's Name</td>
+                    <td colspan="3">: {{ data.mother_name_en|default(data.mother_name_bn) }}</td>
+                </tr>
+                <tr>
+                    <td class="info-label">
+                        {% if data.nid is not empty %}
+                            National ID
+                        {% else %}
+                            Birth Registration
+                        {% endif %}
+                    </td>
+                    <td>: 
+                        {% if data.nid is not empty %}
+                            {{ data.nid }}
+                        {% else %}
+                            {{ data.birth_id }}
+                        {% endif %}
+                    </td>
+                </tr>
+                
+		<tr>
+		    <td class="info-label">Present Address</td>
+		    <td colspan="3">
+		        :
+		        {% if data.permanent_village_en %}Village: {{ data.permanent_village_en }}, {% elseif data.permanent_village_bn %}Village: {{ data.permanent_village_bn }}, {% endif %}
+		        {% if data.permanent_holding_no %}Holding No: {{ data.permanent_holding_no }}, {% endif %}
+		        {% if data.permanent_rbs_en %}Road/Block: {{ data.permanent_rbs_en }}, {% elseif data.permanent_rbs_bn %}Road/Block: {{ data.permanent_rbs_bn }}, {% endif %}
+		        {% if data.permanent_ward_no %}Ward: {{ data.permanent_ward_no }}, {% endif %}
+		        {% if data.permanent_postoffice_en %}Post Office: {{ data.permanent_postoffice_en }}, {% elseif data.permanent_postoffice_bn %}Post Office: {{ data.permanent_postoffice_bn }}, {% endif %}
+		        {% if data.permanent_upazila_en %}Upazila: {{ data.permanent_upazila_en }}, {% elseif data.permanent_upazila_bn %}Upazila: {{ data.permanent_upazila_bn }}, {% endif %}
+		        {% if data.permanent_district_en %}District: {{ data.permanent_district_en }}{% elseif data.permanent_district_bn %}District: {{ data.permanent_district_bn }}{% endif %}
+		    </td>
+		</tr>
+		<tr>
+		    <td class="info-label">Permanent Address</td>
+		    <td colspan="3">
+		        :
+		        {% if data.present_village_en %}Village: {{ data.present_village_en }}, {% elseif data.present_village_bn %}Village: {{ data.present_village_bn }}, {% endif %}
+		        {% if data.present_holding_no %}Holding No: {{ data.present_holding_no }}, {% endif %}
+		        {% if data.present_rbs_en %}Road/Block: {{ data.present_rbs_en }}, {% elseif data.present_rbs_bn %}Road/Block: {{ data.present_rbs_bn }}, {% endif %}
+		        {% if data.present_ward_no %}Ward: {{ data.present_ward_no }}, {% endif %}
+		        {% if data.present_postoffice_en %}Post Office: {{ data.present_postoffice_en }}, {% elseif data.present_postoffice_bn %}Post Office: {{ data.present_postoffice_bn }}, {% endif %}
+		        {% if data.present_upazila_en %}Upazila: {{ data.present_upazila_en }}, {% elseif data.present_upazila_bn %}Upazila: {{ data.present_upazila_bn }}, {% endif %}
+		        {% if data.present_district_en %}District: {{ data.present_district_en }}{% elseif data.present_district_bn %}District: {{ data.present_district_bn }}{% endif %}
+		    </td>
+		</tr>
+
+
+            </table>
+
+            <!-- Warish Statement -->
+            <table><tr><td class="warish-statement"> &nbsp; &nbsp;&nbsp; &nbsp; A permanent resident of this Union. The following members are the family members of the applicant:-</td></tr></table>
+
+            <!-- Warish List -->
+            <table class="warish-table">
+                <tr>
+                    <th>Serial No</th>
+                    <th>Name</th>
+                    <th>Relation</th>
+                    <th>Age/Date of Birth</th>
+                    <th>National ID/Birth Registration No</th>
+                    <th>Marital Status</th>
+                    <th>Alive/Deceased</th>
+                </tr>
+                {% for member in data.warish_members %}
+                    <tr>
+                        <td>{{ loop.index }}</td>
+                        <td>{{ member.name_en|default(member.name_bn) }}</td>
+                        <td>{{ member.relation_en|default(member.relation_bn) }}</td>
+                        <td>{{ member.birth_date }}</td>
+                        <td>{{ member.nid }}</td>
+                        <td>{{ member.marital_status }}</td>
+                        <td> {% if member.is_dead == "1" %}
+                            Deceased
+                        {% else %}
+                            Alive
+                        {% endif %}</td>
+                    </tr>
+                {% endfor %}
+                <tr>
+                    <td colspan="7"> Total Family Members: {{ data.warish_members|length }}</td>
+                </tr>
+            </table>
+
+
+            <table>
+            <tr>
+                <td colspan="4" class="indented-paragraph">
+                    &nbsp; &nbsp;&nbsp; &nbsp;This certificate is issued based on the verification of information provided by {{ approval.verifier_name }} of this Union. 
+                    Please note that if any false information is found in the application or during verification, both the applicant and the verifier shall be personally responsible and this certificate shall be cancelled.
+                </td>
+            </tr>
+            <tr>
+                <td class="no-border">Applicant: {{ data.applicant_name }}</td>
+                <td class="no-border" colspan="3" style="text-align: left;">Father/Husband: {{ data.extra.applicant_name_father_en|default(data.extra.applicant_name_father_bn) }}</td>
+            </tr>
+            </table>
+
+
+    <!-- mPDF Footer Section for Instructions -->
+<!-- Footer -->
+<htmlpagefooter name="MyFooter">
+    <table class="instructions" style="width: 94%; border-collapse: collapse;">
+        <tr>
+            <td style="border-right:0.75pt solid black; border-top:0.75pt solid black; text-align:center; width: 25%;">
+                <img src="https://quickchart.io/qr?text={{ url }}/verify/family_en/{{ data.sonod_number }}/{{ union.union_code }}/1&margin=1&size=300" height="82.5pt" width="82.5pt">
+            </td>
+            <td style="padding-left:22.5pt; border-bottom:0.75pt solid black; width: 75%;">
+                <b>Instructions:</b><br>
+                1) Verify this certificate using the 17-digit certificate number from the website ({{ union.website }}) or install "Smart UP, Dhaka" app from Play Store and scan the QR code.<br>
+                2) For any information, call or email us.
+            </td>
+        </tr>
+        <tr>
+            <td style="text-align:center;">
+                <font style="font-size:6pt;">Developed by Innovation IT</font><br>
+                <font style="font-size:6pt;">www.innovationit.com.bd</font>
+            </td>
+            <td style="text-align:center;">
+                <font style="font-size:6pt;">{{ union.website }} - {{ union.email }}</font>
+            </td>
+        </tr>
+    </table>
+</htmlpagefooter>
+
+<!-- Enable Footer -->
+<sethtmlpagefooter name="MyFooter" value="on" />
+
+    </div>
+</body>
+</html>
+        * {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-print-color-adjust: exact;
+        }
+
+        @page {
+            size: A4;
+            margin: 0;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+        }
+
+        .content-wrapper {
+            background-image: url('{{ url }}/assets/bg.png');
+            background-size: cover;
+            background-repeat: no-repeat;
+            width: 209mm;
+            height: 297mm;
+            position: relative;
+            padding: 15mm;
+        }
+
+        /* Header */
+        .header {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: center;
+            margin-bottom: 7.5pt;
+        }
+        .header td {
+            vertical-align: middle;
+            padding: 3.75pt;
+        }
+        .logo {
+            height: 75pt;
+            width: 75pt;
+        }
+        .bd-govt {
+            font-size: 9pt;
+            color: red;
+        }
+        .parishad-name {
+            color: #3c01c5;
+            font-size: 19.5pt;
+            font-weight: bold;
+            padding: 3.75pt 0;
+        }
+        .sub-header {
+            font-size: 12pt;
+            color: black;
+            line-height: 1.5;
+        }
+
+
+        /* Instructions */
+        .instructions {
+            width: 98%;
+            margin: 22.5pt auto 0;
+            border-collapse: collapse;
+        }
+        .instructions td {
+            font-size: 10.5pt;
+            padding: 7.5pt;
+        }
+
+           
+
+/* Intro Text */
+.intro-text {
+    font-size: 14px;
+    line-height: 1.2;   /* আগে 1.4 ছিল, কমিয়ে compact করা হলো */
+    margin: 4px 0;      /* আগে 10px ছিল, কমিয়ে 4px করা হলো */
+    font-weight: normal;
+    color: #000;
+}
+
+
+/* Personal Information Table */
+.personal-info {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 6pt 0 7.5pt 0;
+    font-size: 10.5pt;
+}
+
+.personal-info td {
+    padding: 2.25pt 3pt; /* প্যাডিং কমানো হয়েছে */
+    vertical-align: top;
+    color: #000;
+}
+
+.personal-info .info-label {
+    
+    width: 75pt;  /* লেবেলের জন্য ফিক্সড প্রস্থ */
+}
+
+
+/* Warish Statement */
+.warish-statement {
+    font-size: 14px;
+    line-height: 1.4;   /* আগে 1.8 ছিল, কমিয়ে compact করা হলো */
+    margin: 4px 0;      /* আগে 10px ছিল, কমানো হলো */
+    color: #000;
+}
+
+/* Warish Table */
+.warish-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 10.5pt;
+    margin-bottom: 3pt;  /* আগে 10px ছিল */
+    color: #000;
+    table-layout: fixed; /* columns remain stable */
+}
+
+.warish-table th,
+.warish-table td {
+    border: 0.75pt solid #000;
+    padding: 1.5pt 1.5pt;    /* আগে 6px 8px ছিল, কমানো হলো */
+    text-align: center;
+    word-wrap: break-word;
+}
+.warish-table th {
+    font-weight: normal;
+}
+    .indented-paragraph {
+        text-indent: 37.5pt;
+        line-height: 1.8;
+        margin: 7.5pt 0 9pt 0;
+        padding: 0;
+    word-wrap: break-word;
+    }
+
+    .no-border {
+        border: none;
+        padding: 7.5pt;
+        margin-top: 12pt;
+}
+
+    </style>
+</head>
+<body>
+    <div class="content-wrapper">
+        <div class="content">
+        <br>
+            <table class="header-table" border="0" width="98%" align="center" style="border-collapse: collapse;">
+                <tr>
+                    <td>
+                        <img src="{{ url }}/assets/logo/logo.png" alt="Logo" class="logo">
+                    </td>
+                    <td>
+                    <div class="gov-info">
+                        <div class="gov-title">GOVERNMENT OF THE PEOPLE'S REPUBLIC OF BANGLADESH</div>
+                        <div class="union-name">{{ union.union_name_en|default(union.union_name_bn) }}</div>
+                        <div class="union-address">
+                            {{ union.upazila_name_en|default(union.upazila_name_bn) }}, {{ union.district_name_en|default(union.district_name_bn) }}-{{ union.postcode }}<br>
+                            Email: {{ union.email }}<br>
+                            Website: {{ union.website }}
+                        </div>
+                    </div>
+
+                    </td>
+                    <td>
+                     <img src="{{ url }}/assets/img/band-cross.png" alt="X" class="logo">
+                    </td>
+                </tr>
+            </table>
+
+
+
+
+            <!-- Certificate Section -->
+            <table width="98%" cellspacing="0" style="border-collapse:collapse; margin: 0 auto;">
+                <tr>
+                    <td colspan="2" style="text-align:center; font-size:19.5pt; font-weight:bold; padding-top: 7.5pt; padding-bottom: 3.75pt;">
+                        <font style="">
+                            <u>FAMILY CERTIFICATE</u>
+                        </font>
+                    </td>
+                </tr>
+                <tr>
+                    <td style="width: 78%;">
+                        <table style="width: 450pt; border-color:black; border-collapse:collapse;">
+                            <tr>
+                                <td style="width:75pt; text-align:center; border: 0.75pt solid black; font-size:12pt; text-align: left;">Certificate No :</td>
+                                {% for digit in data.sonod_number | split('') %}
+                                    <td style="text-align:center; font-size:12pt; padding: 3pt; border: 0.75pt solid black;">{{ digit }}</td>
+                                {% endfor %}
+                            </tr>
+                        </table>
+                    </td>
+                    <td style="text-align:right; font-size:12pt;">
+
+                            Date: {{ data.issue_date|date('d-m-Y') }}
+
+                    </td>
+                </tr>
+            </table>
+
+            <!-- Intro Text -->
+            <table><tr><td class="intro-text"> &nbsp; &nbsp;&nbsp; &nbsp;This is to certify that,</td></tr></table>
+
+            <!-- Personal Information Table -->
+            <table class="personal-info">
+                <tr>
+                    <td class="info-label">Name</td>
+                    <td>: {{ data.name_en|default(data.name_bn) }}</td>
+                </tr>
+
+                <tr>
+                    <td class="info-label">Father's Name</td>
+                    <td>: {{ data.father_name_en|default(data.father_name_bn) }}</td>
+                    <td class="info-label">Mother's Name</td>
+                    <td colspan="3">: {{ data.mother_name_en|default(data.mother_name_bn) }}</td>
+                </tr>
+                <tr>
+                    <td class="info-label">
+                        {% if data.nid is not empty %}
+                            National ID
+                        {% else %}
+                            Birth Registration
+                        {% endif %}
+                    </td>
+                    <td>: 
+                        {% if data.nid is not empty %}
+                            {{ data.nid }}
+                        {% else %}
+                            {{ data.birth_id }}
+                        {% endif %}
+                    </td>
+                </tr>
+                
+		<tr>
+		    <td class="info-label">Present Address</td>
+		    <td colspan="3">
+		        :
+		        {% if data.permanent_village_en %}Village: {{ data.permanent_village_en }}, {% elseif data.permanent_village_bn %}Village: {{ data.permanent_village_bn }}, {% endif %}
+		        {% if data.permanent_holding_no %}Holding No.: {{ data.permanent_holding_no }}, {% endif %}
+		        {% if data.permanent_rbs_en %}Road/Block: {{ data.permanent_rbs_en }}, {% elseif data.permanent_rbs_bn %}Road/Block: {{ data.permanent_rbs_bn }}, {% endif %}
+		        {% if data.permanent_ward_no %}Ward: {{ data.permanent_ward_no }}, {% endif %}
+		        {% if data.permanent_postoffice_en %}Post Office: {{ data.permanent_postoffice_en }}, {% elseif data.permanent_postoffice_bn %}Post Office: {{ data.permanent_postoffice_bn }}, {% endif %}
+		        {% if data.permanent_upazila_en %}Upazila: {{ data.permanent_upazila_en }}, {% elseif data.permanent_upazila_bn %}Upazila: {{ data.permanent_upazila_bn }}, {% endif %}
+		        {% if data.permanent_district_en %}District: {{ data.permanent_district_en }}{% elseif data.permanent_district_bn %}District: {{ data.permanent_district_bn }}{% endif %}
+		    </td>
+		</tr>
+		<tr>
+		    <td class="info-label">Permanent Address</td>
+		    <td colspan="3">
+		        :
+		        {% if data.present_village_en %}Village: {{ data.present_village_en }}, {% elseif data.present_village_bn %}Village: {{ data.present_village_bn }}, {% endif %}
+		        {% if data.present_holding_no %}Holding No.: {{ data.present_holding_no }}, {% endif %}
+		        {% if data.present_rbs_en %}Road/Block: {{ data.present_rbs_en }}, {% elseif data.present_rbs_bn %}Road/Block: {{ data.present_rbs_bn }}, {% endif %}
+		        {% if data.present_ward_no %}Ward: {{ data.present_ward_no }}, {% endif %}
+		        {% if data.present_postoffice_en %}Post Office: {{ data.present_postoffice_en }}, {% elseif data.present_postoffice_bn %}Post Office: {{ data.present_postoffice_bn }}, {% endif %}
+		        {% if data.present_upazila_en %}Upazila: {{ data.present_upazila_en }}, {% elseif data.present_upazila_bn %}Upazila: {{ data.present_upazila_bn }}, {% endif %}
+		        {% if data.present_district_en %}District: {{ data.present_district_en }}{% elseif data.present_district_bn %}District: {{ data.present_district_bn }}{% endif %}
+		    </td>
+		</tr>
+
+
+            </table>
+
+            <!-- Family Statement -->
+            <table><tr><td class="warish-statement"> &nbsp; &nbsp;&nbsp; &nbsp; A permanent resident of this Union. The following members listed below are the members of his/her family:</td></tr></table>
+
+            <!-- Family List -->
+            <table class="warish-table">
+                <tr>
+                    <th>Serial</th>
+                    <th>Name</th>
+                    <th>Relation</th>
+                    <th>Age/DOB</th>
+                    <th>ID/Reg. No.</th>
+                    <th>Marital Status</th>
+                    <th>Alive/Deceased</th>
+                </tr>
+                {% for member in data.warish_members %}
+                    <tr>
+                        <td>{{ loop.index }}</td>
+                        <td>{{ member.name_en|default(member.name_bn) }}</td>
+                        <td>{{ member.relation_en|default(member.relation_bn) }}</td>
+                        <td>{{ member.birth_date }}</td>
+                        <td>{{ member.nid }}</td>
+                        <td>{{ member.marital_status }}</td>
+                        <td> {% if member.is_dead == "1" %}
+                            Deceased
+                        {% else %}
+                            Alive
+                        {% endif %}</td>
+                    </tr>
+                {% endfor %}
+                <tr>
+                    <td colspan="7"> Total Members: {{ data.warish_members|length }}</td>
+                </tr>
+            </table>
+
+
+            <table>
+            <tr>
+                <td colspan="4" class="indented-paragraph">
+                    &nbsp; &nbsp;&nbsp; &nbsp;Based on the information verified by Ward Member of this Union, this certificate is issued. 
+                    It is hereby noted that if the applicant or verifier provides any false information in the application, both will be personally liable and the certificate will be deemed cancelled.
+                </td>
+            </tr>
+            <tr>
+                <td class="no-border">Applicant: {{ data.applicant_name }}</td>
+                <td class="no-border" colspan="3" style="text-align: left;">Father/Husband: {{ data.extra.applicant_name_father_en|default(data.extra.applicant_name_father_bn) }}</td>
+            </tr>
+            </table>
+
+
+    <!-- mPDF Footer Section for Instructions -->
+<!-- Footer -->
+<htmlpagefooter name="MyFooter">
+    <table class="instructions" style="width: 94%; border-collapse: collapse;">
+        <tr>
+            <td style="border-right:0.75pt solid black; border-top:0.75pt solid black; text-align:center; width: 25%;">
+                <img src="https://quickchart.io/qr?text={{ url }}/verify/family_en/{{ data.sonod_number }}/{{ union.union_code }}/1&margin=1&size=300" height="110" width="110">
+            </td>
+            <td style="padding-left:22.5pt; border-bottom:0.75pt solid black; width: 75%;">
+                <b>Instructions:</b><br>
+                1) Verify the certificate using the 17-digit certificate number on the website ({{ union.website }}) or download the "Smart UP" app from Play Store and scan the QR code.<br>
+                2) Contact us by phone or email for any information.
+            </td>
+        </tr>
+        <tr>
+            <td style="text-align:center;">
+                <font style="font-size:8px;">Developed by Innovation IT</font><br>
+                <font style="font-size:8px;">www.innovationit.com.bd</font>
+            </td>
+            <td style="text-align:center;">
+                <font style="font-size:8px;">{{ union.website }} - {{ union.email }}</font>
+            </td>
+        </tr>
+    </table>
+</htmlpagefooter>
+
+<!-- Enable Footer -->
+<sethtmlpagefooter name="MyFooter" value="on" />
+
+    </div>
+</body>
+</html>

@@ -1,0 +1,97 @@
+{% extends "layout.twig" %}
+
+{% block title %}আবেদন ফরম{% endblock %}
+
+{% block header_title %}আবেদন ফরম{% endblock %}
+
+{% block content %}
+
+<link rel="stylesheet" href="/assets/css/forms.css">
+
+
+<div class="container mt-4 px-3">
+    <h2 class="text-center my-4 fw-bold">{{ certificate_type_bn }}</h2>
+    {# নিয়মাবলী ও সাবমিট #}
+    {% include 'common/rules.twig' %}
+
+    <form id="applicationForm" method="POST" action="" enctype="multipart/form-data">
+        <input type="hidden" name="certificate_type" value="{{ certificate_type }}">
+        <legend class="w-auto px-2">আবেদন ফর্ম</legend>
+
+        <fieldset class="border rounded p-3 mb-4">
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <label for="district_dropdown" class="form-label">জেলা</label>
+                    <select id="district_dropdown" name="district" class="form-control" required>
+                    <option value="3026" selected data-geo-code="3026" data-name-en="DHAKA" data-name-bn="ঢাকা" data-geo-id="25">ঢাকা</option> 
+                    </select>
+                </div>
+
+                <div class="col-md-4 mb-3">
+                    <label for="upazila_dropdown" class="form-label">উপজেলা</label>
+                    <select id="upazila_dropdown" name="upazila" class="form-control" required>
+                        <option value="">উপজেলা নির্বাচন করুন</option>
+                    </select>
+                </div>
+
+                <div class="col-md-4 mb-3">
+                    <label for="union_dropdown" class="form-label">ইউনিয়ন</label>
+                    <select id="union_dropdown" name="union_code" class="form-control" required>
+                        <option value="">ইউনিয়ন নির্বাচন করুন</option>
+                    </select>
+                </div>
+            </div>
+        </fieldset>
+
+
+
+        {# ব্যক্তিগত তথ্য অংশ #}
+        <fieldset class="border rounded p-3 mb-4">
+            <legend class="w-auto px-2">ব্যক্তিগত তথ্য</legend>
+            {% include 'common/personal_info.twig' %}
+        </fieldset>
+
+        {# ঠিকানা তথ্য অংশ #}
+
+        <!-- বর্তমান ঠিকানা -->
+        <fieldset class="border rounded p-3 mb-4">
+            <legend class="w-auto px-2">বর্তমান ঠিকানা</legend>
+            <div id="present_address_fields">
+                {% include 'common/address_fields.twig' with { prefix: 'present' } %}
+            </div>
+        </fieldset>
+
+        <!-- স্থায়ী ঠিকানা -->
+        <fieldset class="border rounded p-3 mb-4">
+            <legend class="w-auto px-2">স্থায়ী ঠিকানা</legend>
+            <!-- Copy Present to Permanent -->
+            <div class="form-check mb-2">
+                <input type="checkbox" id="copy_present_to_permanent" class="form-check-input">
+                <label for="copy_present_to_permanent" class="form-check-label">
+                    বর্তমান ঠিকানা থেকে স্থায়ী ঠিকানা কপি করুন
+                </label>
+            </div>
+            <div id="permanent_address_fields">
+                {% include 'common/address_fields.twig' with { prefix: 'permanent' } %}
+            </div>
+        </fieldset>
+
+
+        {# সারসংক্ষেপ অংশ #}
+        <fieldset class="border rounded p-3 mb-4">
+            <legend class="w-auto px-2">সারসংক্ষেপ</legend>
+            {% include 'common/summary_section.twig' %}
+        </fieldset>
+
+        <div class="d-flex justify-content-center mt-4">
+            <button type="submit" class="btn btn-success submit-button">জমা দিন</button>
+        </div>
+    </form>
+</div>
+    {# ফর্ম সাবমিশন এবং সফল মডাল হ্যান্ডলিং #}
+    {% include 'common/success_modal.twig' %}
+
+<script src="/assets/js/forms.js"></script>
+
+{% endblock %}
+

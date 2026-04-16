@@ -1,0 +1,342 @@
+<div class="row">
+    {% if data is defined and data[prefix~'_address_id'] is defined and data[prefix~'_address_id'] %}
+     
+    <script>
+        $(document).ready(function() {
+            var addressId = '{{ data[prefix~'_address_id'] }}';
+            if(addressId){
+                $.ajax({
+                    url: '/api/address/' + addressId,
+                    method: 'GET',
+                    dataType: 'json',
+                    success: function(addr){
+                        const fields = ['village_en','village_bn','rbs_en','rbs_bn','holding_no','ward_no','district_en','district_bn','upazila_en','upazila_bn','union_en','union_bn','postoffice_en','postoffice_bn'];
+                        fields.forEach(function(f){
+                            const el = $("#{{ prefix }}_"+f);
+                            if(el.length && addr[f] !== undefined){
+                                el.val(addr[f]);
+                            }
+                        });
+                        if(addr['district_en']){
+                            $("#{{ prefix }}_district_id").val(addr['district_en']).trigger('change');
+                        }
+                        if(addr['upazila_en']){
+                            setTimeout(()=>$("#{{ prefix }}_upazila_id").val(addr['upazila_en']).trigger('change'),500);
+                        }
+                        if(addr['union_en']){
+                            setTimeout(()=>$("#{{ prefix }}_union_id").val(addr['union_en']).trigger('change'),1000);
+                        }
+                    }
+                });
+            }
+        });
+    </script>
+
+    {% endif %}
+
+
+
+
+    {# Village/Mahalla #}
+    <div class="row mb-3"> <div class="col-md-6">
+            <label for="{{ prefix }}_village_en" class="form-label">গ্রাম/মহল্লা (ইংরেজিতে)</label>
+            <input type="text" name="{{ prefix }}_village_en" id="{{ prefix }}_village_en" class="form-control" placeholder="Enter village or neighborhood (English)" value="{{ data[prefix~'_village_en']|default('') }}">
+        </div>
+        <div class="col-md-6">
+            <label for="{{ prefix }}_village_bn" class="form-label">গ্রাম/মহল্লা (বাংলায়) <span class="text-danger">*</span></label>
+            <input type="text" name="{{ prefix }}_village_bn" id="{{ prefix }}_village_bn" class="form-control bangla" placeholder="গ্রামের নাম/মহল্লা লিখুন" required value="{{ data[prefix~'_village_bn']|default('') }}">
+        </div>
+    </div>
+
+    {# Road/Block/Sector #}
+    <div class="row mb-3">
+        <div class="col-md-6">
+            <label for="{{ prefix }}_rbs_en" class="form-label">রোড/ব্লক/সেক্টর (ইংরেজিতে)</label>
+            <input type="text" name="{{ prefix }}_rbs_en" id="{{ prefix }}_rbs_en" class="form-control" placeholder="Enter road/block/sector (English)" value="{{ data[prefix~'_rbs_en']|default('') }}">
+        </div>
+        <div class="col-md-6">
+            <label for="{{ prefix }}_rbs_bn" class="form-label">রোড/ব্লক/সেক্টর (বাংলায়)</label>
+            <input type="text" name="{{ prefix }}_rbs_bn" id="{{ prefix }}_rbs_bn" class="form-control" placeholder="রোড/ব্লক/সেক্টর লিখুন" value="{{ data[prefix~'_rbs_bn']|default('') }}">
+        </div>
+    </div>
+
+    {# Holding No & Ward #}
+    <div class="row mb-3">
+        <div class="col-md-6">
+            <label for="{{ prefix }}_holding_no" class="form-label">হোল্ডিং নং</label>
+            <input type="text" name="{{ prefix }}_holding_no" id="{{ prefix }}_holding_no" class="form-control" placeholder="হোল্ডিং নম্বর লিখুন" value="{{ data[prefix~'_holding_no']|default('') }}">
+        </div>
+        <div class="col-md-6">
+            <label for="{{ prefix }}_ward_no" class="form-label">ওয়ার্ড নং <span class="text-danger">*</span></label>
+            <select name="{{ prefix }}_ward_no" id="{{ prefix }}_ward_no" class="form-control" required>
+                <option value="">ওয়ার্ড নির্বাচন করুন</option>
+                {% for i in 1..9 %}
+                    <option value="{{ i }}" {% if data[prefix~'_ward_no'] == i %}selected{% endif %}>{{ i }}</option>
+                {% endfor %}
+            </select>
+        </div>
+    </div>
+
+    {# District #}
+    <div class="row mb-3">
+        <div class="col-md-6">
+            <label for="{{ prefix }}_district_id" class="form-label">জেলা (ইংরেজিতে) <span class="text-danger">*</span></label>
+            <select name="{{ prefix }}_district_en" id="{{ prefix }}_district_id" class="form-control" required data-selected="{{ data[prefix~'_district_en']|default('') }}">
+                <option value="">জেলা নির্বাচন করুন</option>
+            </select>
+        </div>
+        <div class="col-md-6">
+            <label for="{{ prefix }}_district" class="form-label">জেলা (বাংলায়)</label>
+            <input type="text" name="{{ prefix }}_district_bn" id="{{ prefix }}_district" class="form-control" readonly placeholder="স্বয়ংক্রিয়ভাবে পূরণ হবে" value="{{ data[prefix~'_district_bn']|default('') }}">
+        </div>
+    </div>
+
+    {# Upazila/Thana #}
+    <div class="row mb-3">
+        <div class="col-md-6">
+            <label for="{{ prefix }}_upazila_id" class="form-label">উপজেলা/থানা (ইংরেজিতে) <span class="text-danger">*</span></label>
+            <select name="{{ prefix }}_upazila_en" id="{{ prefix }}_upazila_id" class="form-control" required data-selected="{{ data[prefix~'_upazila_en']|default('') }}">
+                <option value="">উপজেলা নির্বাচন করুন</option>
+            </select>
+        </div>
+        <div class="col-md-6">
+            <label for="{{ prefix }}_upazila" class="form-label">উপজেলা/থানা (বাংলায়)</label>
+            <input type="text" name="{{ prefix }}_upazila_bn" id="{{ prefix }}_upazila" class="form-control" readonly placeholder="স্বয়ংক্রিয়ভাবে পূরণ হবে" value="{{ data[prefix~'_upazila_bn']|default('') }}">
+        </div>
+    </div>
+
+    {# Union #}
+    <div class="row mb-3">
+        <div class="col-md-6">
+            <label for="{{ prefix }}_union_id" class="form-label">ইউনিয়ন (ইংরেজিতে) <span class="text-danger">*</span></label>
+            <select name="{{ prefix }}_union_en" id="{{ prefix }}_union_id" class="form-control" data-selected="{{ data[prefix~'_union_en']|default('') }}">
+                <option value="">ইউনিয়ন নির্বাচন করুন</option>
+            </select>
+        </div>
+        <div class="col-md-6">
+            <label for="{{ prefix }}_union" class="form-label">ইউনিয়ন (বাংলায়)</label>
+            <input type="text" name="{{ prefix }}_union_bn" id="{{ prefix }}_union" class="form-control" readonly placeholder="স্বয়ংক্রিয়ভাবে পূরণ হবে" value="{{ data[prefix~'_union_bn']|default('') }}">
+        </div>
+    </div>
+
+    {# Post Office #}
+    <div class="row mb-3">
+        <div class="col-md-6">
+            <label for="{{ prefix }}_postoffice_en" class="form-label">পোষ্ট অফিস (ইংরেজিতে)</label>
+            <input type="text" name="{{ prefix }}_postoffice_en" id="{{ prefix }}_postoffice_en" class="form-control" placeholder="Enter post office name (English)" value="{{ data[prefix~'_postoffice_en']|default('') }}">
+        </div>
+        <div class="col-md-6">
+            <label for="{{ prefix }}_postoffice_bn" class="form-label">পোষ্ট অফিস (বাংলায়) <span class="text-danger">*</span></label>
+            <input type="text" name="{{ prefix }}_postoffice_bn" id="{{ prefix }}_postoffice_bn" class="form-control bangla" placeholder="পোষ্ট অফিসের নাম লিখুন" required value="{{ data[prefix~'_postoffice_bn']|default('') }}">
+        </div>
+    </div>
+
+
+
+<script>
+$(document).ready(function () {
+    const prefixes = ['business', 'present', 'permanent'];
+
+    function isPrefixAvailable(prefix) {
+        return $(`#${prefix}_district_id`).length > 0;
+    }
+
+    function populateDropdown(selector, data) {
+        if (!$(selector).length) return;
+
+        const selectedValue = $(selector).data('selected');
+        $(selector).empty().append('<option value="">চিহ্নিত করুন</option>');
+        const selectedValueNorm = selectedValue ? String(selectedValue).trim().toLowerCase() : null;
+
+        $.each(data, function (_, item) {
+            const itemIdNorm = String(item.id).trim().toLowerCase();
+            const itemNameEnNorm = String(item.name_en).trim().toLowerCase();
+            const isSelected = selectedValueNorm && (selectedValueNorm === itemIdNorm || selectedValueNorm === itemNameEnNorm) ? 'selected' : '';
+
+            $(selector).append(
+                `<option value="${item.name_en}" 
+                    data-geo-code="${item.geo_code}" 
+                    data-name-en="${item.name_en}" 
+                    data-name-bn="${item.name_bn}" 
+                    data-geo-id="${item.id}" ${isSelected}>${item.name_en} (${item.name_bn})</option>`
+            );
+        });
+    }
+
+    function resetDropdown(selector) {
+        if ($(selector).length)
+            $(selector).empty().append('<option value="">চিহ্নিত করুন</option>');
+    }
+
+    function fetchGeoData(geoOrder, parentGeoId, dropdownSelector, nextGeoOrder = null, nextGeoIdSelector = null, callback = null) {
+        if (!dropdownSelector || !$(dropdownSelector).length) return;
+
+        $.ajax({
+            url: '/geo/getdata',
+            method: 'POST',
+            data: { geo_order: geoOrder, parent_geo_id: parentGeoId },
+            dataType: 'json',
+            success: function (data) {
+                populateDropdown(dropdownSelector, data);
+                if (nextGeoOrder && nextGeoIdSelector) resetDropdown(nextGeoIdSelector);
+                if (callback) callback();
+            },
+            error: function (err) {
+                console.error('Geo fetch error:', err);
+            }
+        });
+    }
+
+    // ✅ Initial District Load for available prefixes
+    $.ajax({
+        url: '/geo/getdata',
+        method: 'POST',
+        data: { geo_order: 1, parent_geo_id: 0 },
+        dataType: 'json',
+        success: function (data) {
+            prefixes.forEach(prefix => {
+                if (isPrefixAvailable(prefix)) {
+                    populateDropdown(`#${prefix}_district_id`, data);
+                    // Trigger change if a value is pre-selected
+                    const selected = $(`#${prefix}_district_id`).data('selected');
+                    if (selected) {
+                        $(`#${prefix}_district_id`).val(selected).trigger('change');
+                    }
+                }
+            });
+
+            // Auto-check after initial data load
+            setTimeout(() => {
+                if (addressesMatch('business', 'present')) $('#same_as_business_address').prop('checked', true);
+                if (addressesMatch('present', 'permanent')) $('#permanentBtn').prop('checked', true);
+                if (addressesMatch('present', 'business')) $('#copy_present_to_business').prop('checked', true);
+            }, 500);
+        },
+        error: function (error) {
+            console.error('Error loading districts:', error);
+        }
+    });
+
+    // ✅ Bind dropdown change events
+    prefixes.forEach(prefix => {
+        if (!isPrefixAvailable(prefix)) return;
+
+        $(`#${prefix}_district_id`).change(function () {
+            const id = $(this).find('option:selected').data('geo-id') || 0;
+            const nameBn = $(this).find('option:selected').data('name-bn') || '';
+            if (!id) return;
+            $(`#${prefix}_district`).val(nameBn);
+            fetchGeoData(2, id, `#${prefix}_upazila_id`, 3, `#${prefix}_union_id`, function() {
+                // Set upazila if pre-selected
+                const selectedUpazila = $(`#${prefix}_upazila_id`).data('selected');
+                if (selectedUpazila) {
+                    $(`#${prefix}_upazila_id`).val(selectedUpazila).trigger('change');
+                }
+            });
+        });
+
+        $(`#${prefix}_upazila_id`).change(function () {
+            const id = $(this).find('option:selected').data('geo-id') || 0;
+            const nameBn = $(this).find('option:selected').data('name-bn') || '';
+            if (!id) return;
+            $(`#${prefix}_upazila`).val(nameBn);
+            fetchGeoData(3, id, `#${prefix}_union_id`, null, null, function() {
+                // Set union if pre-selected
+                const selectedUnion = $(`#${prefix}_union_id`).data('selected');
+                if (selectedUnion) {
+                    $(`#${prefix}_union_id`).val(selectedUnion).trigger('change');
+                }
+            });
+        });
+
+        $(`#${prefix}_union_id`).change(function () {
+            const nameBn = $(this).find('option:selected').data('name-bn') || '';
+            $(`#${prefix}_union`).val(nameBn);
+        });
+    });
+
+    // ✅ Generic address copy function
+    function copyAddress(from, to) {
+        if (!isPrefixAvailable(from) || !isPrefixAvailable(to)) return;
+
+        const fields = ['village_en', 'village_bn', 'rbs_en', 'rbs_bn', 'holding_no', 'ward_no', 'postoffice_en', 'postoffice_bn'];
+        fields.forEach(field => {
+            $(`#${to}_${field}`).val($(`#${from}_${field}`).val());
+        });
+
+        const districtId = $(`#${from}_district_id`).val();
+        const districtName = $(`#${from}_district`).val();
+        const districtGeoId = $(`#${from}_district_id option:selected`).data('geo-id');
+
+        $(`#${to}_district_id`).val(districtId);
+
+        fetchGeoData(2, districtGeoId, `#${to}_upazila_id`, 3, `#${to}_union_id`, function () {
+            $(`#${to}_district`).val(districtName);
+
+            const upazilaId = $(`#${from}_upazila_id`).val();
+            const upazilaName = $(`#${from}_upazila`).val();
+            const upazilaGeoId = $(`#${from}_upazila_id option:selected`).data('geo-id');
+
+            $(`#${to}_upazila_id`).val(upazilaId);
+
+            fetchGeoData(3, upazilaGeoId, `#${to}_union_id`, null, null, function () {
+                const unionId = $(`#${from}_union_id`).val();
+                const unionName = $(`#${from}_union`).val();
+
+                $(`#${to}_upazila`).val(upazilaName);
+                $(`#${to}_union_id`).val(unionId);
+                $(`#${to}_union`).val(unionName);
+            });
+        });
+    }
+
+    // ✅ Compare two addresses
+    function addressesMatch(prefix1, prefix2) {
+        const fields = [
+            'village_en', 'village_bn', 'rbs_en', 'rbs_bn',
+            'holding_no', 'ward_no', 'postoffice_en', 'postoffice_bn',
+            'district_id', 'district', 'upazila_id', 'upazila',
+            'union_id', 'union'
+        ];
+        return fields.every(field => {
+            return $(`#${prefix1}_${field}`).val() === $(`#${prefix2}_${field}`).val();
+        });
+    }
+
+    // ✅ Bind address copy + auto check/uncheck
+    function bindAddressSync(from, to, checkboxSelector) {
+        $(checkboxSelector).change(function () {
+            if ($(this).is(":checked")) {
+                copyAddress(from, to);
+            } else {
+                $(`#${to}_address_fields input, #${to}_address_fields select`).val('');
+            }
+        });
+
+        $(`#${to}_address_fields input, #${to}_address_fields select`).on('input change', function () {
+            if (!addressesMatch(from, to)) {
+                $(checkboxSelector).prop('checked', false);
+            }
+        });
+
+        $(`#${from}_address_fields input, #${from}_address_fields select`).on('input change', function () {
+            if (addressesMatch(from, to)) {
+                $(checkboxSelector).prop('checked', true);
+            } else {
+                $(checkboxSelector).prop('checked', false);
+            }
+        });
+    }
+
+    // ✅ Call sync bindings
+    bindAddressSync('business', 'present', '#same_as_business_address');
+    bindAddressSync('present', 'permanent', '#permanentBtn');
+    bindAddressSync('present', 'business', '#copy_present_to_business');
+
+    // ✅ Manual button to copy present to permanent
+    $("#copy_present_to_permanent").click(function () {
+        copyAddress('present', 'permanent');
+    });
+
+});
+</script>

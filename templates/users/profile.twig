@@ -1,0 +1,205 @@
+{% extends "layout.twig" %}
+
+{% block title %}প্রোফাইল - {{ profileData.username }}{% endblock %}
+{% block header_title %}{{ header_title|default('প্রোফাইল') }}{% endblock %}
+
+{% block content %}
+{% include 'components/sweetAlert.twig' %}
+{% if not is_logged_in %}
+    <script>window.location.href='/'</script>
+{% endif %}
+
+<div class="container my-5">
+    <div class="profile-wrapper mx-auto" style="max-width: 960px;">
+
+        {# SweetAlert component handles all messages #}
+
+        <div class="card border-0 shadow-lg rounded-4 overflow-hidden">
+
+            <!-- Header -->
+            <div class="profile-header text-center text-white py-5">
+                <div class="profile-avatar mx-auto mb-3">
+                    {% if profileData.profile_picture_url %}
+                        <img src="{{ profileData.profile_picture_url }}" alt="Profile">
+                    {% else %}
+                        <i class="fas fa-user"></i>
+                    {% endif %}
+                </div>
+
+                <h3 class="fw-bold mb-1">
+                    {{ profileData.name_bn }} {{ profileData.name_en }}
+                </h3>
+                <span class="badge bg-light text-dark px-3 py-1">
+                    @{{ profileData.username }}
+                </span>
+            </div>
+
+            <!-- Body -->
+            <div class="card-body p-4 p-md-5">
+
+                <h5 class="section-title mb-4">👤 User Information / ব্যবহারকারীর তথ্য</h5>
+
+                <div class="row g-3 info-grid">
+                    <div>
+                        <span>User ID / ব্যবহারকারী আইডি</span>
+                        {{ profileData.user_id|bn }}
+                    </div>
+
+                    <div>
+                        <span>Email / ই-মেইল</span>
+                        {{ profileData.email }}
+                    </div>
+
+                    <div>
+                        <span>Phone / ফোন</span>
+                        {{ profileData.phone_number ? profileData.phone_number|bn : 'উল্লেখ নেই' }}
+                    </div>
+
+                    <div>
+                        <span>Address / ঠিকানা</span>
+                        {{ profileData.address ?: 'উল্লেখ নেই' }}
+                    </div>
+
+                    <div>
+                        <span>Bio / জীবনবৃত্তান্ত</span>
+                        {{ profileData.bio ?: 'উল্লেখ নেই' }}
+                    </div>
+
+                    <div>
+                        <span>Union ID / ইউনিয়ন আইডি</span>
+                        {{ profileData.union_id ? profileData.union_id|bn : '-' }}
+                    </div>
+
+                    <div>
+                        <span>Role / ভূমিকা</span>
+                        {{ profileData.role_name ? profileData.role_name|bn : (getRoleName(profileData.role_id) ?: '-') }}
+                    </div>
+
+                    <div>
+                        <span>Last Login / সর্বশেষ লগইন</span>
+                        {{ profileData.last_login
+                            ? profileData.last_login|date("Y-m-d H:i")|bn
+                            : '-' }}
+                    </div>
+
+                    <div>
+                        <span>Created At / অ্যাকাউন্ট তৈরি</span>
+                        {{ profileData.created_at
+                            ? profileData.created_at|date("Y-m-d H:i")|bn
+                            : '-' }}
+                    </div>
+                </div>
+
+                <div class="text-end mt-4">
+                    <a href="/profile/update"
+                       class="btn btn-primary rounded-pill px-4 shadow-sm">
+                        ✏️ প্রোফাইল হালনাগাদ
+                    </a>
+                </div>
+
+                {% if unionInfo %}
+                <hr class="my-5">
+
+                <h5 class="section-title mb-4">🏛️ Union Information / ইউনিয়ন পরিষদের তথ্য</h5>
+
+                <div class="row g-3 info-grid">
+                    <div>
+                        <span>Union Name</span>
+                        {{ unionInfo.union_name_en ?: '-' }}
+                        <small class="text-muted">({{ unionInfo.union_name_bn ?: '-' }})</small>
+                    </div>
+
+                    <div>
+                        <span>Upazila / উপজেলা</span>
+                        {{ unionInfo.upazila_name_en ?: '-' }}
+                        <small class="text-muted">({{ unionInfo.upazila_name_bn ?: '-' }})</small>
+                    </div>
+
+                    <div>
+                        <span>District / জেলা</span>
+                        {{ unionInfo.district_name_en ?: '-' }}
+                        <small class="text-muted">({{ unionInfo.district_name_bn ?: '-' }})</small>
+                    </div>
+
+                    <div>
+                        <span>Division / বিভাগ</span>
+                        {{ unionInfo.division_name_en ?: '-' }}
+                        <small class="text-muted">({{ unionInfo.division_name_bn ?: '-' }})</small>
+                    </div>
+
+                    <div>
+                        <span>Ward Count / ওয়ার্ড সংখ্যা</span>
+                        {{ unionInfo.ward_count ? unionInfo.ward_count|bn : '-' }}
+                    </div>
+
+                    <div>
+                        <span>Union Code / ইউনিয়ন কোড</span>
+                        {{ unionInfo.union_code ? unionInfo.union_code|bn : '-' }}
+                    </div>
+
+                    <div>
+                        <span>Email / ই-মেইল</span>
+                        {{ unionInfo.email ?: '-' }}
+                    </div>
+
+                    <div>
+                        <span>Phone / ফোন</span>
+                        {{ unionInfo.phone ? unionInfo.phone|bn : '-' }}
+                    </div>
+
+                    <div>
+                        <span>Website / ওয়েবসাইট</span>
+                        {% if unionInfo.website %}
+                            <a href="{{ unionInfo.website }}" target="_blank">
+                                {{ unionInfo.website|replace({'https://':'','http://':''}) }}
+                            </a>
+                        {% else %}
+                            উল্লেখ নেই
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.profile-header{
+    background: linear-gradient(135deg,#0d6efd,#6610f2);
+}
+.profile-avatar{
+    width:140px;
+    height:140px;
+    border-radius:50%;
+    background:rgba(255,255,255,.25);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:4rem;
+    overflow:hidden;
+}
+.profile-avatar img{
+    width:100%;
+    height:100%;
+    object-fit:cover;
+}
+.section-title{
+    font-weight:700;
+    color:#495057;
+}
+.info-grid > div{
+    background:#f8f9fa;
+    padding:14px 18px;
+    border-radius:14px;
+    display:flex;
+    flex-direction:column;
+    font-size:.95rem;
+}
+.info-grid span{
+    font-size:.75rem;
+    color:#6c757d;
+    text-transform:uppercase;
+}
+</style>
+{% endblock %}

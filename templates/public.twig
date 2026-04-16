@@ -1,0 +1,777 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta name="author" content="Innovation IT">
+    <meta name="district_id" content="55">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="csrf_token" content="{{ csrf_token }}">
+
+    <title>ক্যাশলেস স্মার্ট ইউপি, ঢাকা</title>
+
+    <link rel="shortcut icon" href="{{ url }}/assets/images/icon/favicon.png" type="image/png">
+    <link rel="stylesheet" href="{{ url }}/assets/css/other/bootstrap.min.css">
+    <link rel="stylesheet" href="{{ url }}/assets/css/other/bootstrap-v3.1.0.min.css">
+    <link rel="stylesheet" href="{{ url }}/assets/css/other/font-awesome.min.css">
+    <link rel="stylesheet" href="https://pro.fontawesome.com/releases/v5.10.0/css/all.css">
+    <link rel="stylesheet" href="{{ url }}/assets/css/other/combined.public.css?t={{ "now"|date("Hiss") }}">
+
+</head>
+
+<body class="body-bg">
+    <div id="wrapper">
+
+
+	<header class="site-header py-3 shadow-sm bg-white">
+	    <div class="container-fluid">
+	        <div class="row align-items-center g-2">
+	            
+	            <div class="col-4 col-md-4 text-start text-md-center">
+	                <a href="https://lgdhaka.com">
+	                    <img class="site-logo img-fluid" 
+	                         src="{{ url }}/assets/images/dijital union logo.png" 
+	                         alt="Logo">
+	                </a>
+	            </div>
+	
+	            <div class="col-4 col-md-4 text-center">
+	                <h3 class="site-title mb-0 fw-bold d-none d-sm-block" style="font-size: calc(1.2rem + 0.5vw);">
+	                    স্মার্ট ইউপি, ঢাকা
+	                </h3>
+	                <h6 class="site-title mb-0 fw-bold d-block d-sm-none">স্মার্ট ইউপি</h6>
+	            </div>
+	
+	            <div class="col-4 col-md-4 text-end text-md-center">
+	                {% if auth_user %}
+	                    <div class="user-profile d-flex align-items-center justify-content-end justify-content-md-center">
+	                        <div class="user-info d-none d-md-block me-2">
+	                            <span class="user-name d-block fw-bold text-dark">
+	                                {{ auth_user.name_bn ?: auth_user.name_en }}
+	                            </span>
+	                            <div class="user-links small">
+	                                <a href="/dashboard" class="text-decoration-none">ড্যাশবোর্ড</a> |
+	                                <a href="/logout" class="text-decoration-none text-danger">লগআউট</a>
+	                            </div>
+	                        </div>
+	                        
+	                        <div class="dropdown">
+	                            <img class="user-avatar rounded-circle border border-2 border-primary p-1 shadow-sm" 
+	                                 src="{% if is_superadmin %}{{ auth_user.profile_picture_url ?: '/assets/images/administrator.png' }}{% else %}{{ auth_user.profile_picture_url ?: '/assets/images/default.png' }}{% endif %}" 
+                                     alt="{{ auth_user.name_bn ?: auth_user.name_en }}"
+	                                 style="width: 45px; height: 45px; cursor: pointer; object-fit: cover;"
+	                                 data-bs-toggle="dropdown">
+	                            
+	                            <ul class="dropdown-menu dropdown-menu-end d-md-none">
+	                                <li class="dropdown-header">{{ auth_user.name_bn ?: auth_user.name_en }}</li>
+	                                <li><a class="dropdown-item" href="/dashboard">ড্যাশবোর্ড</a></li>
+	                                <li><hr class="dropdown-divider"></li>
+	                                <li><a class="dropdown-item text-danger" href="/logout">লগআউট</a></li>
+	                            </ul>
+	                        </div>
+	                    </div>
+	                {% else %}
+	                    <a href="/login" class="btn btn-primary btn-sm px-4 rounded-pill shadow-sm">লগইন</a>
+	                {% endif %}
+	            </div>
+	
+	        </div>
+	    </div>
+	</header>
+
+        <section id="page-body">
+            
+            <div class="container">
+                <div class="panel panel-info mt-4">
+                    <div class="panel-body">
+                        <div id="carouselIndicators" class="carousel slide" data-bs-ride="carousel" data-bs-interval="3000">
+                            <div class="carousel-indicators">
+                                <button type="button" data-bs-target="#carouselIndicators" data-bs-slide-to="0" class="active"></button>
+                                <button type="button" data-bs-target="#carouselIndicators" data-bs-slide-to="1"></button>
+                                <button type="button" data-bs-target="#carouselIndicators" data-bs-slide-to="2"></button>
+                                <button type="button" data-bs-target="#carouselIndicators" data-bs-slide-to="3"></button>
+                                <button type="button" data-bs-target="#carouselIndicators" data-bs-slide-to="4"></button>
+                                <button type="button" data-bs-target="#carouselIndicators" data-bs-slide-to="5"></button>
+                            </div>
+                            <div class="carousel-inner">
+                                <div class="carousel-item active"><img src="{{ url }}/assets/images/1.png" class="d-block w-100"></div>
+                                <div class="carousel-item"><img src="{{ url }}/assets/images/2.png" class="d-block w-100"></div>
+                                <div class="carousel-item"><img src="{{ url }}/assets/images/3.png" class="d-block w-100"></div>
+                                <div class="carousel-item"><img src="{{ url }}/assets/images/4.png" class="d-block w-100"></div>
+                                <div class="carousel-item"><img src="{{ url }}/assets/images/5.png" class="d-block w-100"></div>
+                                <div class="carousel-item"><img src="{{ url }}/assets/images/6.png" class="d-block w-100"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="container">
+                <div class="panel panel-info mt-4">
+                    <div class="panel-heading text-center">
+                        <h4>সিটিজেন আইডি ও ইউপি ট্যাক্স যাচাই</h4>
+                    </div>
+                    <div class="panel-body">
+                        <form id="tax-verification-form">
+                            <div class="row form-group">
+                                <label class="col-sm-3">জেলা</label>
+                                <div class="col-sm-3">
+                                    <select name="app_district_id" id="app_district_id" class="form-control" disabled>
+                                        <option value="">জেলা নির্বাচন করুন-</option>
+                                    </select>
+                                </div>
+                                <label class="col-md-3">উপজেলা</label>
+                                <div class="col-md-3">
+                                    <select name="app_upazila_id" id="app_upazila_id" class="form-control">
+                                        <option value="">চিহ্নিত করুন</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="row form-group">
+                                <label class="col-md-3">ইউনিয়ন</label>
+                                <div class="col-md-3">
+                                    <select name="union_id" id="union_id" class="form-control">
+                                        <option value="">চিহ্নিত করুন</option>
+                                    </select>
+                                </div>
+                                <label class="col-md-3">ওয়ার্ড নং</label>
+                                <div class="col-md-3">
+                                    <select name="ward_id" id="ward_id" class="form-control">
+                                        <option value="">চিহ্নিত করুন</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="row form-group">
+                                <label class="col-md-3">মহল্লা</label>
+                                <div class="col-md-3">
+                                    <select name="moholla" id="moholla" class="form-control">
+                                        <option value="">চিহ্নিত করুন</option>
+                                    </select>
+                                </div>
+                                <label class="col-md-3">হোল্ডিং নং</label>
+                                <div class="col-md-3">
+                                    <input type="text" id="holding_no" name="holding_no" class="form-control" placeholder="হোল্ডিং নং দিন...">
+                                </div>
+                            </div>
+                            <button class="btn btn-success btn-sm btn-block" type="submit">সার্চ করুন</button>
+                        </form>
+                         <div id="tax-verification-info" class="mt-5"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="container">
+                <div class="panel panel-info mt-4">
+                    <div class="panel-heading text-center">
+                        <h4>আবেদন ও সনদ যাচাই করুন</h4>
+                        <p class="text-danger">নোটঃ আবেদন যাচাইয়ের জন্য পিন নং অথবা সনদ যাচাইয়ের জন্য সনদ নং দিয়ে সার্চ করুন।</p>
+                    </div>
+                    <div class="panel-body">
+                        <div class="row">
+                            <div class="col-md-3 col-sm-12"><label>ধরন</label><select class="form-control" id="appType"><option value="">নির্বাচন করুন</option><option value="1">আবেদন যাচাই</option><option value="2">সনদ যাচাই</option></select></div>
+                            <div class="col-md-4 col-sm-12"><label>সনদের ধরন</label><select class="form-control" id="type">
+
+
+                                            <option value="">নির্বাচন করুন</option>
+                                            <option value="1">নাগরিক</option>
+                                            
+                                            <option value="3">অবিবাহিত </option>
+                                            <option value="4">পূনঃবিবাহ না হওয়া</option>
+                                            <option value="5">একই নামের প্রত্যয়ন</option>
+                                            <option value="6">সনাতন ধর্ম অবলম্বি</option>
+                                            <option value="7">প্রত্যয়ন পত্র</option>
+                                            <option value="8">নদী ভাঙনের</option>
+                                            <option value="9">চারিত্রিক</option>
+                                            <option value="10">ভূমিহীন</option>
+                                            <option value="11">বার্ষিক আয়ের প্রত্যয়ন</option>
+                                            <option value="12">প্রতিবন্ধি</option>
+                                            <option value="13">অনুমতি পত্র</option>
+                                            <option value="14">ভোটার আইডি স্থানান্তর</option>
+                                            <option value="33">নতুন ভোটার</option>
+                                            <option value="17">ওয়ারিশ</option>
+                                            <option value="18">পারিবারিক</option>
+                                            <option value="19">ট্রেড লাইসেন্স</option>
+                                            <option value="20">বিবাহিত</option>
+
+                                        </select>
+                                
+                                
+                                </select></div>
+                            <div class="col-md-3 col-sm-12"><label>সার্চ বক্স</label><input type="text" id="search-data" class="form-control" placeholder="এখানে সার্চ দিন..."></div>
+                            <div class="col-md-2 col-sm-12"><label>&nbsp;</label><button type="button" id="search" class="btn btn-info btn-block">সার্চ করুন</button></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="container">
+                <section id="union-introduction" class="mt-4">
+                    <div class="panel panel-info">
+                        <div class="panel-heading text-center">
+                            <h4 class="partner-title d-inline-block px-3">ইউনিয়ন পরিচিতি</h4>
+                        </div>
+            
+                        <div class="panel-body">
+                            <div class="row row-cols-2 row-cols-sm-3 row-cols-md-6 g-3 text-center">
+                                
+                                <div class="col col-sm-2">
+                                    <a href="https://lgdhaka.com/chairman">
+                                        <div class="service-box">
+                                            <img src="https://lgdhaka.com/assets/images/default.png" alt="Chairman">
+                                            <div class="section-title">চেয়ারম্যান</div>
+                                        </div>
+                                    </a>
+                                </div>
+            
+                                <div class="col col-sm-2">
+                                    <a href="https://lgdhaka.com/secretary">
+                                        <div class="service-box">
+                                            <img src="https://lgdhaka.com/assets/images/default.png" alt="Secretary">
+                                            <div class="section-title">ইউপি প্রশাসনিক কর্মকর্তা</div>
+                                        </div>
+                                    </a>
+                                </div>
+            
+                                <div class="col col-sm-2">
+                                    <a href="https://lgdhaka.com/computer_operator">
+                                        <div class="service-box">
+                                            <img src="https://lgdhaka.com/assets/images/default.png" alt="Accountant">
+                                            <div class="section-title" style="font-size: 15px;">হিসাব সহকারী</div>
+                                        </div>
+                                    </a>
+                                </div>
+            
+                                <div class="col col-sm-2">
+                                    <a href="https://lgdhaka.com/member">
+                                        <div class="service-box">
+                                            <img src="https://lgdhaka.com/assets/images/default.png" alt="Member">
+                                            <div class="section-title">মেম্বার</div>
+                                        </div>
+                                    </a>
+                                </div>
+            
+                                <div class="col col-sm-2">
+                                    <a href="https://lgdhaka.com/village_police">
+                                        <div class="service-box">
+                                            <img src="https://lgdhaka.com/assets/images/default.png" alt="Village Police">
+                                            <div class="section-title">গ্রামপুলিশ</div>
+                                        </div>
+                                    </a>
+                                </div>
+            
+                                <div class="col col-sm-2">
+                                    <a href="https://lgdhaka.com/udc">
+                                        <div class="service-box">
+                                            <img src="https://lgdhaka.com/assets/images/default.png" alt="Entrepreneur">
+                                            <div class="section-title">উদ্যোক্তা</div>
+                                        </div>
+                                    </a>
+                                </div>
+            
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+            <div class="container">
+    <section id="e-services" class="mt-4">
+        <div class="panel panel-info">
+            <div class="panel-heading text-center">
+                <h4 class="partner-title d-inline-block px-3">ই-সেবা সমূহের আবেদন</h4>
+            </div>
+
+            <div class="panel-body">
+                <div class="row row-cols-2 row-cols-sm-3 row-cols-md-6 g-3 text-center">
+                    
+                    {% set services = [
+                        {'name': 'নাগরিক সনদ', 'icon': url ~ '/assets/images/icon/nagorik.png', 'url': '/nagorik-sonod/apply'},
+                        {'name': 'ট্রেড লাইসেন্স', 'icon': url ~ '/assets/images/icon/Trade License.png', 'url': '/trade-license/apply'},
+                        {'name': 'ওয়ারিশ সনদ', 'icon': url ~ '/assets/images/icon/owaris.png', 'url': '/warish-sonod/apply'},
+                        {'name': 'চারিত্রিক সনদ', 'icon': url ~ '/assets/images/icon/character certificate.png', 'url': '/character-sonod/apply'},
+                        {'name': 'নতুন ভোটার', 'icon': url ~ '/assets/images/icon/votar id.png', 'url': '/new-voter/apply'},
+                        {'name': 'ভূমিহীন সনদ', 'icon': url ~ '/assets/images/icon/landscape.png', 'url': '/vumihin-sonod/apply'},
+                        {'name': 'মৃত্যু প্রত্যয়ন', 'icon': url ~ '/assets/images/icon/death.png', 'url': '/mrityu-sonod/apply'},
+                        {'name': 'বার্ষিক আয়', 'icon': url ~ '/assets/images/icon/yearly income.png', 'url': '/barshik-aye-sonod/apply'},
+                        {'name': 'অবিবাহিত সনদ', 'icon': 'https://lgdhaka.com/assets/images/icon/unmarrage.png', 'url': '/obibahito-sonod/apply'},
+                        {'name': 'বিবাহিত সনদ', 'icon': 'https://lgdhaka.com/assets/images/icon/bibahito.png', 'url': '/bibahito-sonod/apply'},
+                        {'name': 'একই নামের প্রত্যয়ন', 'icon': 'https://lgdhaka.com/assets/images/icon/akenamercertificate.png', 'url': '/eko-namiyo-sonod/apply'},
+                        {'name': 'পুনঃ বিবাহ না হওয়া সনদ', 'icon': 'https://lgdhaka.com/assets/images/icon/punno_bibaho.png', 'url': '/punobibaho-sonod/apply'},
+                        {'name': 'প্রকৃত বাকঁ ও শ্রবন প্রতিবন্ধী', 'icon': 'https://lgdhaka.com/assets/images/icon/potibondi.png', 'url': '/protibondhi-sonod/apply'},
+                        {'name': 'পারিবারিক সনদ', 'icon': url ~ '/assets/images/icon/family.png', 'url': '/poribar-sodosso-sonod/apply'},
+                        {'name': 'প্রত্যয়নপত্র', 'icon': url ~ '/assets/images/icon/pottoyon.png', 'url': '/prottyon-potro/apply'},
+                        {'name': 'অনুমতি পত্র', 'icon': url ~ '/assets/images/icon/permission.png', 'url': '/onumoti-potro/apply'},
+                        {'name': 'ভোটার স্থানান্তর', 'icon': url ~ '/assets/images/icon/votar id.png', 'url': '/voter-sonod/apply'},
+                        {'name': 'রাস্তা খনন', 'icon': url ~ '/assets/images/icon/roadexcavation.png', 'url': '/rasta-khonon-onapotti/apply'},
+                        {'name': 'সনাতন ধর্ম', 'icon': url ~ '/assets/images/icon/swastika.png', 'url': '/sonaton-dhormio-sonod/apply'},
+                        {'name': 'নদী ভাঙন', 'icon': url ~ '/assets/images/icon/river.png', 'url': '/nodibhanga-sonod/apply'},
+                        {'name': 'বয়স প্রত্যয়ন', 'icon': url ~ '/assets/images/icon/character certificate.png', 'url': '/anumanik-boyosh-protyon/apply'},
+                        {'name': 'প্রত্যয়ন (অন্যান্য)', 'icon': url ~ '/assets/images/icon/pottoyon.png', 'url': '/protyonpotro-onnanno/apply'}
+                    ] %}
+
+                    {% for service in services %}
+                    <div class="col col-sm-2 mb-3">
+                        <a href="{{ service.url }}" class="text-decoration-none">
+                            <div class="service-box">
+                                <img src="{{ service.icon }}" alt="{{ service.name }}">
+                                <div class="section-title">{{ service.name }}</div>
+                            </div>
+                        </a>
+                    </div>
+                    {% endfor %}
+
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+
+            <div class="container">
+                <section id="features-section" class="mt-4">
+                    <div class="panel panel-info">
+                        <div class="panel-heading text-center">
+                            <h4 class="partner-title d-inline-block px-3">সুবিধাসমূহ</h4>
+                        </div>
+            
+                        <div class="panel-body">
+                            <div class="row row-cols-2 row-cols-md-4 g-4 text-center">
+                                
+                                {% set features = [
+                                    {'title': 'অনলাইনে আবেদন ও সনদ যাচাই', 'icon': 'jacai.png'},
+                                    {'title': 'সনদ বাংলা ও ইংরেজী প্রদান', 'icon': 'certificate.png'},
+                                    {'title': 'সকল সনদ স্টোরেজ সুবিধা', 'icon': 'folder.png'},
+                                    {'title': 'সনদ তৈরীর এসএমএস প্রেরণ', 'icon': 'text-message.png'},
+                                    {'title': 'মোবাইল অ্যাপসের মাধ্যমে আবেদন ও সনদ যাচাই', 'icon': 'smartphone.png'},
+                                    {'title': 'বিশ্বের যে কোনো স্থান থেকে আবেদন ও সনদ যাচাই', 'icon': 'magnifying-lens.png'},
+                                    {'title': 'প্রত্যয়নপত্র যাচাই সুবিধা', 'icon': 'id-card.png'},
+                                    {'title': 'ওয়ার্ড ভিত্তিক হোল্ডিং ট্যাক্স ব্যবস্থাপনা', 'icon': 'house.png'},
+                                    {'title': 'ট্রেড লাইসেন্স রিনিউয়াল এসএমএস অ্যালার্ট', 'icon': 'expired.png'},
+                                    {'title': 'হারানো সনদ সহজে প্রাপ্তি সুবিধা', 'icon': 'diploma.png'},
+                                    {'title': 'আয়-ব্যয় ও অডিট রিপোর্ট ব্যবস্থাপনা', 'icon': 'salary.png'},
+                                    {'title': 'সরকারের ডিজিটাল আর্কিটেকচার উপযোগী এবং উন্নত ডিজিটাল নিরাপত্তা ব্যবস্থা ও তথ্যের গোপনীয়তা রক্ষায়তা', 'icon': 'shield.png'}
+                                ] %}
+            
+                                {% for feature in features %}
+                                <div class="col-md-3 col-sm-12">
+                                    <div class="feature-box p-3 h-100 border-0 shadow-sm">
+                                        <div class="icon-wrapper mb-3">
+                                            <img src="{{ url }}/assets/images/{{ feature.icon }}" 
+                                                 class="img-fluid mx-auto d-block feature-icon" 
+                                                 alt="{{ feature.title }}">
+                                        </div>
+                                        <h5>{{ feature.title }}</h5>
+                                    </div>
+                                </div>
+                                {% endfor %}
+            
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+
+            <div class="container">
+                <section class="admin-services-section mt-5">
+                    <div class="row g-4">
+                        <div class="col-12">
+                            <div class="panel panel-info shadow-sm border-0">
+                                <div class="panel-heading text-center py-3">
+                                    <h4 class="m-0 fw-bold">ঢাকা স্থানীয় সরকার প্রশাসন</h4>
+                                </div>
+                                <div class="panel-body">
+                                    <div class="row align-items-center text-center justify-content-center">
+                                        
+                                        <div class="col-md-5 mb-4 mb-md-0">
+                                            <div class="profile-card">
+                                                <img src="{{ url }}/assets/images/profile/21726722267.jpg"
+                                                     class="img-fluid rounded-circle border border-3 border-info p-1 profile-image shadow-sm"
+                                                     style="width: 150px; height: 150px; object-fit: cover;"
+                                                     alt="তানভীর আহমেদ">
+                                                <div class="profile-info mt-3">
+                                                    <h5 class="profile-name mb-1 fs-1"><strong>তানভীর আহমেদ</strong></h5>
+                                                    <p class="fs-2 text-primary">জেলা প্রশাসক ও জেলা ম্যাজিস্ট্রেট, ঢাকা</p>
+                                                </div>
+                                            </div>
+                                        </div>
+            
+                                        <div class="col-md-2 d-none d-md-flex justify-content-center">
+                                            <div class="vr bg-info opacity-25" style="width: 2px; height: 120px;"></div>
+                                        </div>
+            
+                                        <div class="col-md-5">
+                                            <div class="profile-card">
+                                                <img src="{{ url }}/assets/images/profile/31745403197.jpg"
+                                                     class="img-fluid rounded-circle border border-3 border-info p-1 profile-image shadow-sm"
+                                                     style="width: 150px; height: 150px; object-fit: cover;"
+                                                     alt="মোঃ ইকবাল হোসেন">
+                                                <div class="profile-info mt-3">
+                                                    <h5 class="profile-name mb-1 fs-1"><strong>মোঃ ইকবাল হোসেন</strong></h5>
+                                                    <p class="fs-2 text-primary">উপপরিচালক স্থানীয় সরকার, ঢাকা</p>
+                                                </div>
+                                            </div>
+                                        </div>
+            
+                                    </div>
+                                </div>
+                            </div>
+                        </div>                        
+                        <div class="col-12">
+                            <div class="panel panel-info shadow-sm border-0">
+                                <div class="panel-heading text-center py-3">
+                                    <h4 class="m-0 fw-bold">ইউনিয়ন পরিষদ সেবা ব্যবস্থাপনা, ঢাকা</h4>
+                                </div>
+                                <div class="panel-body p-4">
+                                    <div class="row align-items-center">
+                                        <div class="col-md-7 text-justify">
+                                            <h5 class="lead-text lh-base">
+                                                স্মার্ট বাংলাদেশ বিনির্মাণে ঢাকা জেলার সকল ইউনিয়ন পরিষদকে ডিজিটাল সেবার আওতায় আনা হয়েছে। এর মাধ্যমে নাগরিকরা ঘরে বসেই বিভিন্ন সনদপত্র আবেদন এবং হোল্ডিং ট্যাক্স প্রদান করতে পারছেন।
+                                            </h5>
+                                        </div>
+                                        <div class="col-md-5 mt-3 mt-md-0">
+                                            <img class="img-fluid rounded shadow-sm digital-img w-100" 
+                                                 src="{{ url }}/assets/images/digital_union.jpg" 
+                                                 alt="ডিজিটাল ইউনিয়ন ছবি">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+            
+            
+        </section>
+
+
+	    <section class="bg-white py-5">
+	    <div class="container">
+	        <div class="partner">
+	            <div class="partner-text text-center mb-4">
+	                <h4 class="partner-title d-inline-block px-3">মোবাইল অ্যাপ্লিকেশন</h4>
+	                <div class="partner-underline mx-auto"></div>
+	            </div>
+	
+	            <div class="row align-items-center g-3">
+	                <div class="col-md-8">
+	                    <div class="row row-cols-3 row-cols-md-5 g-2 text-center">
+	                        {% for i in 1..5 %}
+	                        <div class="col">
+	                            <div class="app-screenshot-card">
+	                                <img src="{{ url }}/assets/images/apps/app{{ i }}.png" 
+	                                     class="img-fluid rounded shadow-sm app-thumb" 
+	                                     alt="App Screen {{ i }}">
+	                            </div>
+	                        </div>
+	                        {% endfor %}
+	                    </div>
+	                </div>
+	
+	                <div class="col-md-4 text-center mt-4 mt-md-0">
+	                    <div class="download-box p-3 border rounded bg-light">
+	                        <h5 class="mb-3 fw-bold" style="font-size: 16px;">ডাউনলোড করতে গুগল প্লেতে ক্লিক করুন</h5>
+	                        <a href="https://play.google.com/store/apps/details?id=com.dhaka.smartUnion" target="_blank">
+	                            <img src="{{ url }}/assets/images/apps/playstore.png" 
+	                                 class="img-fluid playstore-btn" 
+	                                 style="max-width: 180px;" 
+	                                 alt="Google Play Store">
+	                        </a>
+	                    </div>
+	                </div>
+	            </div>
+	        </div>
+	    </div>
+	</section>
+	
+	    <footer class="footer-bg py-5 border-top">
+	    <div class="container">
+	        <div class="row g-4">
+	            
+	            <div class="col-md-4 col-sm-6">
+	                <div class="footer-item d-flex align-items-start text-start">
+	                    <img src="{{ url }}/assets/images/union_logo.png" alt="Logo" class="footer-logo-small me-3" style="width: 50px; height: auto;">
+	                    <div class="footer-text">
+	                        <p class="mb-1 text-light fw-bold">পরিকল্পনা ও বাস্তবায়নে:</p>
+	                        <p class="mb-0 text-light opacity-75">জেলা প্রশাসন, ঢাকা।</p>
+	                    </div>
+	                </div>
+	            </div>
+	
+	            <div class="col-md-4 col-sm-6">
+	                <div class="footer-item d-flex align-items-start text-start">
+	                    <img src="{{ url }}/assets/images/union_logo.png" alt="Logo" class="footer-logo-small me-3" style="width: 50px; height: auto;">
+	                    <div class="footer-text">
+	                        <p class="mb-1 text-light fw-bold">ব্যবস্থাপনা ও তত্ত্বাবধানে:</p>
+	                        <p class="mb-0 text-light opacity-75">জেলা প্রশাসন, ঢাকা।</p>
+	                    </div>
+	                </div>
+	            </div>
+	
+	            <div class="col-md-4 col-sm-12">
+	                <div class="footer-item d-flex align-items-start text-start">
+	                    <a href="http://innovationit.com.bd/" target="_blank" class="me-3">
+	                        <img src="{{ url }}/assets/images/logo_iit.png" alt="Innovation IT" class="footer-logo-large" style="width: 65px; height: auto;">
+	                    </a>
+	                    <div class="footer-text">
+	                        <p class="mb-1 text-light fw-bold">কারিগরি সহায়তায়:</p>
+	                        <p class="mb-0">
+	                            <a href="http://innovationit.com.bd/" target="_blank" class="text-decoration-none text-light opacity-75">ইনোভেশন আইটি</a>
+	                        </p>
+	                    </div>
+	                </div>
+	            </div>
+	
+	        </div>
+	    </div>
+	</footer>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"
+        integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo="
+        crossorigin="anonymous"></script>
+<!-- SweetAlert2 CSS -->
+<link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
+    <script src="{{ url }}/assets/js/csrf.js?t={{ "now"|date("Hiss") }}"></script>
+
+<!-- SweetAlert2 JS -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+// ===============================
+// Global Base URL
+// ===============================
+var BASE_URL     = 'https://lgdhaka.co';
+var BASE_API_URL = 'https://lgdhaka.com';
+
+jQuery(document).ready(function ($) {
+
+    // ===============================
+    // জেলা List (Script থেকে)
+    // ===============================
+    var districts = [
+        {id:9,name:'কুমিল্লা'}, {id:10,name:'ফেনী'}, {id:11,name:'ব্রাহ্মণবাড়িয়া'}, {id:12,name:'রাঙ্গামাটি'},
+        {id:13,name:'নোয়াখালী'}, {id:14,name:'চাঁদপুর'}, {id:15,name:'লক্ষ্মীপুর'}, {id:16,name:'চট্টগ্রাম'},
+        {id:17,name:'কক্সবাজার'}, {id:19,name:'বান্দরবান'}, {id:20,name:'সিরাজগঞ্জ'}, {id:21,name:'পাবনা'},
+        {id:22,name:'বগুড়া'}, {id:23,name:'রাজশাহী'}, {id:24,name:'নাটোর'}, {id:25,name:'জয়পুরহাট'},
+        {id:26,name:'চাঁপাইনবাবগঞ্জ'}, {id:27,name:'নওগাঁ'}, {id:28,name:'যশোর'}, {id:29,name:'সাতক্ষীরা'},
+        {id:30,name:'মেহেরপুর'}, {id:31,name:'নড়াইল'}, {id:32,name:'চুয়াডাঙ্গা'}, {id:33,name:'কুষ্টিয়া'},
+        {id:34,name:'মাগুরা'}, {id:35,name:'খুলনা'}, {id:36,name:'বাগেরহাট'}, {id:37,name:'ঝিনাইদহ'},
+        {id:38,name:'ঝালকাঠি'}, {id:39,name:'পটুয়াখালী'}, {id:40,name:'পিরোজপুর'}, {id:41,name:'বরিশাল'},
+        {id:42,name:'ভোলা'}, {id:43,name:'বরগুনা'}, {id:44,name:'সিলেট'}, {id:45,name:'মৌলভীবাজার'},
+        {id:46,name:'হবিগঞ্জ'}, {id:47,name:'সুনামগঞ্জ'}, {id:48,name:'নরসিংদী'}, {id:49,name:'গাজীপুর'},
+        {id:50,name:'শরীয়তপুর'}, {id:51,name:'নারায়ণগঞ্জ'}, {id:52,name:'টাঙ্গাইল'}, {id:53,name:'কিশোরগঞ্জ'},
+        {id:54,name:'মানিকগঞ্জ'}, {id:55,name:'ঢাকা'}, {id:56,name:'মুন্সিগঞ্জ'}, {id:57,name:'রাজবাড়ী'},
+        {id:58,name:'মাদারীপুর'}, {id:59,name:'গোপালগঞ্জ'}, {id:60,name:'ফরিদপুর'}, {id:61,name:'পঞ্চগড়'},
+        {id:62,name:'দিনাজপুর'}, {id:63,name:'লালমনিরহাট'}, {id:64,name:'নীলফামারী'}, {id:65,name:'গাইবান্ধা'},
+        {id:66,name:'ঠাকুরগাঁও'}, {id:67,name:'রংপুর'}, {id:68,name:'কুড়িগ্রাম'}, {id:69,name:'শেরপুর'},
+        {id:70,name:'ময়মনসিংহ'}, {id:71,name:'জামালপুর'}, {id:72,name:'নেত্রকোণা'}, {id:5114,name:'খাগড়াছড়ি'},
+        {id:6366,name:'খাগড়াছড়ি'}, {id:6660,name:'তুরাগ'}
+    ];
+
+    // জেলা option যোগ করা
+    let districtOptions = '';
+    districts.forEach(function(d){
+        let selected = (d.id == 55) ? 'selected' : '';
+        districtOptions += `<option value="${d.id}" ${selected}>${d.name}</option>`;
+    });
+    $('#app_district_id').html(districtOptions);
+    $('#app_district_id').prop('disabled', true);
+
+    // ===============================
+    // Load Upazila by District (on load)
+    // ===============================
+    let district_id = $('#app_district_id').val();
+    if (district_id) {
+        $.get(BASE_API_URL + '/geo/code/get', {id: district_id, type: 3}, function (data) {
+            let option = "<option value=''>চিহ্নিত করুন</option>";
+            data.upzilla.forEach(function (el) {
+                option += `<option value="${el.id}">${el.bn_name}</option>`;
+            });
+            $('#app_upazila_id').html(option);
+        });
+    }
+
+    // ===============================
+    // Upazila → Union
+    // ===============================
+    $('#app_upazila_id').on('change', function () {
+        let upazila_id = $(this).val();
+        $('#union_id, #ward_id, #moholla').html("<option value=''>চিহ্নিত করুন</option>");
+        if (!upazila_id) return;
+        $.get(BASE_API_URL + '/geo/code/get_union', { id: upazila_id }, function (data) {
+            let option = "<option value=''>চিহ্নিত করুন</option>";
+            data.union.forEach(function (item) {
+                option += `<option value="${item.union_code}">${item.bn_name}</option>`;
+            });
+            $('#union_id').html(option);
+        });
+    });
+
+    // ===============================
+    // Union → Ward
+    // ===============================
+    $('#union_id').on('change', function () {
+        let union_id = $(this).val();
+        $('#ward_id, #moholla').html("<option value=''>চিহ্নিত করুন</option>");
+        if (!union_id) return;
+        $.get(BASE_API_URL + '/geo/code/get_word_no', { id: union_id }, function (data) {
+            let option = "<option value=''>চিহ্নিত করুন</option>";
+            data.word.forEach(function (item) {
+                option += `<option value="${item.ward_no}">${item.ward_no}</option>`;
+            });
+            $('#ward_id').html(option);
+        });
+    });
+
+    // ===============================
+    // Ward → Moholla
+    // ===============================
+    $('#ward_id').on('change', function () {
+        let ward_id = $(this).val();
+        let union_id = $('#union_id').val();
+        $('#moholla').html("<option value=''>চিহ্নিত করুন</option>");
+        if (!ward_id || !union_id) return;
+        $.get(BASE_API_URL + '/geo/code/get_moholla', { id: ward_id, union_id: union_id }, function (data) {
+            let option = "<option value=''>চিহ্নিত করুন</option>";
+            data.moholla.forEach(function (item) {
+                option += `<option value="${item.id}">${item.name}</option>`;
+            });
+            $('#moholla').html(option);
+        });
+    });
+
+    // ===============================
+    // Tax Verification Submit
+    // ===============================
+    $('#tax-verification-form').on('submit', function (e) {
+        e.preventDefault();
+        let formData = $(this).serialize();
+        let btn = $(this).find('button[type=submit]');
+        let output = $('#tax-verification-info');
+
+        $.ajax({
+            type: 'GET',
+            url: BASE_API_URL + '/verify/get_verify_tax',
+            data: formData,
+            beforeSend: function () {
+                btn.prop('disabled', true);
+                output.html('');
+            },
+            success: function (res) {
+                output.html(res);
+            },
+            complete: function () {
+                btn.prop('disabled', false);
+            },
+            error: function () {
+                alert('কিছু সমস্যা হয়েছে!');
+            }
+        });
+    });
+
+    // ===============================
+    // Check Existing Application
+    // ===============================
+    let TypeApplication = ['nagorik', 'death', 'obibahito', 'punobibaho', 'ekoinam', 'sonaton', 'prottyon', 'nodibanga', 'character', 'vumihin', 'yearlyincome', 'protibondi', 'onumoti', 'voter', 'onapotti', 'rastakhonon', 'warish', 'family', 'trade', 'bibahito'];
+
+    $('#search').on('click', function () {
+        let searchData = $('#search-data').val();
+        let applicationType = $('#appType').val();
+        let Type = $('#type').val();
+
+        if (!searchData || !applicationType || !Type) {
+            Swal.fire({
+                icon: 'error',
+                title: 'দুঃখিত...',
+                text: 'সব তথ্য পূরণ করুন!',
+                confirmButtonText: 'ঠিক আছে'
+            });
+            return;
+        }
+
+        // Map numeric Type to string
+        const postType = TypeApplication[parseInt(Type) - 1];
+
+        // Payload
+        const payload = { searchData, applicationType, type: postType, call_from: 'web' };
+
+        // Handle AJAX response
+        function handleResponse(res) {
+            let info = '';
+            if (res.data && res.data.sonod_no && parseInt(applicationType) === 2) {
+                info = 'পিন নং : <b>' + res.data.pin + '</b> এবং সনদ নং <b>' + res.data.sonod_no + '</b>' +
+                       '<br/><br/><a href="' + BASE_API_URL + '/verify/' + postType + '_bn/' + res.data.sonod_no + '/' + res.data.union_id + '/' + res.data.type + '" class="btn btn-info" target="_blank">সনদটি বাংলায় প্রিন্ট করুন</a>' +
+                       '<br/><br/><a href="' + BASE_API_URL + '/verify/' + postType + '_en/' + res.data.sonod_no + '/' + res.data.union_id + '/' + res.data.type + '" class="btn btn-info" target="_blank">সনদটি ইংরেজিতে প্রিন্ট করুন</a>';
+                showSweetAlert(res.status, info);
+
+            } else if (res.data && res.data.tracking && parseInt(applicationType) === 1) {
+                info = 'পিন নং : <b>' + res.data.pin + '</b> এবং ট্র্যাকিং নং <b>' + res.data.tracking + '</b>' +
+                       '<br/><br/><a href="' + BASE_API_URL + '/verify/' + postType + '_application/' + res.data.tracking + '/' + res.data.union_id + '/' + res.data.type + '" class="btn btn-info" target="_blank">আবেদনটি প্রিন্ট করুন</a>';
+                showSweetAlert('এই সনদ এর আবেদন ইতিঃপূর্বে করা হয়েছে!', info);
+
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'দুঃখিত...',
+                    text: res.message || 'দুঃখিত! আপনার আবেদনটি পাওয়া যায়নি।',
+                    confirmButtonText: 'ঠিক আছে'
+                });
+            }
+        }
+
+        // ------------------------------
+        // Main API call with CSRF support
+        // ------------------------------
+    $.ajax({
+        type: 'POST',
+        url: BASE_URL + '/api/check/existing/application',
+        contentType: 'application/json',
+        data: JSON.stringify({ searchData, applicationType, type: Type, call_from: 'web' }),
+        success: function(res) {
+            handleResponse(res);
+        },
+        error: function() {
+            // ------------------------------
+            // Fallback: proxy route
+            // ------------------------------
+            $.ajax({
+                type: 'POST',
+                url: BASE_URL + '/api2/check/existing/application',
+                data: { searchData, applicationType, type: Type, call_from: 'web' },
+                success: function(res) {
+                    handleResponse(res);
+                },
+                error: function() {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'দুঃখিত...',
+                        text: 'দুঃখিত! সার্ভার উপলব্ধ নয়।',
+                        confirmButtonText: 'ঠিক আছে'
+                    });
+                }
+            });
+        }
+    });
+
+        // SweetAlert helper
+        function showSweetAlert(title, htmlContent) {
+            Swal.fire({
+                title: '<strong>' + title + '</strong>',
+                icon: 'success',
+                html: htmlContent,
+                showConfirmButton: true,
+                confirmButtonText: 'ঠিক আছে!'
+            });
+        }
+
+    });
+
+});
+</script>
+
+
+
+
+</body>
+</html>

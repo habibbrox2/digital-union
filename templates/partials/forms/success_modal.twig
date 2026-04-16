@@ -1,0 +1,197 @@
+{# partials/forms/success_modal.twig #}
+
+<!-- ================= Success Modal ================= -->
+<div id="successModal" class="custom-modal fade" tabindex="-1">
+    <div class="custom-modal-dialog">
+        <div class="custom-modal-content shadow-lg rounded-3 p-4">
+            <div class="custom-modal-header d-flex align-items-center border-bottom pb-3 mb-3">
+                <i class="fa fa-check-circle text-success fs-2 me-2"></i>
+                <h5 class="modal-title m-0">আবেদন সফল!</h5>
+                <button type="button" class="btn-close ms-auto btn-close-modal" aria-label="Close"></button>
+            </div>
+            <div class="custom-modal-body mb-3">
+                <p class="mb-2">আপনার আবেদনটি সফলভাবে সাবমিট হয়েছে।</p>
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item"><b>আপনার ট্র্যাকিং নম্বর:</b> <span id="application_id"></span></li>
+                    <li class="list-group-item"><b>ইউনিয়ন কোড:</b> <span id="union_code"></span></li>
+                    <li class="list-group-item"><b>RMO কোড:</b> <span id="rmo_code"></span></li>
+                </ul>
+            </div>
+            <div class="custom-modal-footer d-flex justify-content-end gap-2">
+                <button class="btn btn-success btn-sm" id="downloadCopy"><i class="fa fa-download me-1"></i> আবেদন কপি ডাউনলোড</button>
+                <button class="btn btn-primary btn-sm" id="newApplication"><i class="fa fa-plus me-1"></i> নতুন আবেদন করুন</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ================= Update Modal ================= -->
+<div id="updateModal" class="custom-modal fade" tabindex="-1">
+    <div class="custom-modal-dialog">
+        <div class="custom-modal-content shadow-lg rounded-3 p-4">
+            <div class="custom-modal-header d-flex align-items-center border-bottom pb-3 mb-3">
+                <i class="fa fa-check-circle text-info fs-2 me-2"></i>
+                <h5 class="modal-title m-0">আবেদন আপডেট সফল!</h5>
+                <button type="button" class="btn-close ms-auto btn-close-modal" aria-label="Close"></button>
+            </div>
+            <div class="custom-modal-body mb-3">
+                <p class="mb-2">আপনার আবেদনটি সফলভাবে আপডেট হয়েছে।</p>
+                <ul id="updateChangeList" class="list-group list-group-flush mb-3"></ul>
+                <div id="updateLinks" class="d-flex gap-2 flex-wrap">
+                    <a href="#" id="downloadCertificate" class="btn btn-info btn-sm" target="_blank"><i class="fa fa-download me-1"></i> সার্টিফিকেট ডাউনলোড করুন</a>
+                    <a href="/applications/{{ certificate_type|default('application') }}" class="btn btn-secondary btn-sm"><i class="fa fa-list me-1"></i> সকল আবেদন দেখুন</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* ===== Modern Modal Styling ===== */
+.custom-modal {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(0,0,0,0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1050;
+    opacity: 0;          /* default hidden */
+    pointer-events: none; /* prevent clicks when hidden */
+    transition: opacity 0.3s ease;
+}
+
+.custom-modal.show {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+
+.custom-modal-dialog {
+    max-width: 500px;
+    width: 90%;
+}
+
+.btn-close-modal {
+    background: none;
+    border: none;
+    font-size: 1.2rem;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+.btn-close-modal:hover {
+    transform: rotate(90deg);
+}
+
+.list-group-item {
+    border: none;
+    padding: 0.25rem 0;
+}
+</style>
+
+
+<!-- ================= JS Handling ================= -->
+<script>
+$(document).ready(function () {
+    const form = $("#applicationForm");
+    const submitButton = form.find("button[type='submit']");
+    const certificateType = "{{ certificate_type|default('application') }}";
+
+    // ===== Form Submit (Ajax) =====
+    form.submit(function (event) {
+        event.preventDefault();
+
+        const isUpdate = Boolean($("input[name='application_id']").val());
+        const url = form.attr("action");
+
+        $.ajax({
+            type: "POST",
+            url: url,
+            data: new FormData(this),
+            contentType: false,
+            processData: false,
+            dataType: "json",
+            beforeSend: function () {
+                submitButton.text("জমা দেওয়া হচ্ছে...").prop("disabled", true);
+            },
+            success: function (response) {
+                if (response.status === "success") {
+
+                    if (isUpdate) {
+                        // ===== Update Modal =====
+                        const changes = Array.isArray(response.changes) ? response.changes : [];
+                        if (changes.length > 0) {
+                            const listHtml = changes.map(item => `<li>${item}</li>`).join('');
+                            $("#updateChangeList").html(listHtml).show();
+                        } else {
+                            $("#updateChangeList").hide();
+                        }
+
+                        // ===== Certificate / Approve Link =====
+                        const certLink = $("#downloadCertificate");
+                        if (response.sonod_number) {
+                            const certUrl = `/application/${certificateType}/bangla/${response.sonod_number}`;
+                            certLink.attr("href", certUrl).text('সার্টিফিকেট ডাউনলোড করুন').show();
+                        } else if (response.application_id) {
+                            const approveUrl = `/applications/${certificateType}/approve/${response.application_id}`;
+                            certLink.attr("href", approveUrl).text('অনুমোদন দিন / দেখুন').show();
+                        } else {
+                            certLink.hide();
+                        }
+
+                        $("#updateModal").addClass('show');
+
+                    } else {
+                        // ===== Success Modal =====
+                        $("#application_id").text(response.application_id || 'N/A');
+                        $("#union_code").text(response.union_code || 'N/A');
+                        $("#rmo_code").text(response.rmo_code || 'N/A');
+                        $("#successModal").addClass('show');
+                    }
+
+                } else {
+                    alert("⚠️ কিছু সমস্যা হয়েছে: " + (response.message || 'Unknown error'));
+                }
+            },
+            error: function (xhr) {
+                let message = "⚠️ কিছু সমস্যা হয়েছে, আবার চেষ্টা করুন।";
+                try {
+                    const response = JSON.parse(xhr.responseText);
+                    if (response.message) message = "⚠️ " + response.message;
+                } catch (e) {
+                    if (xhr.responseText) message = "⚠️ সার্ভার থেকে উত্তর: " + xhr.responseText;
+                }
+                alert(message);
+            },
+            complete: function () {
+                submitButton.text("জমা দিন").prop("disabled", false);
+            }
+        });
+    });
+
+    // ===== New Application Reset =====
+    $("#newApplication").click(function () {
+        $("#successModal").removeClass('show');
+        form[0].reset();
+    });
+
+    // ===== Close Modal =====
+    $(document).on('click', '.btn-close-modal', function () {
+        $(this).closest('.custom-modal').removeClass('show');
+    });
+
+    // ===== Download Copy =====
+    $("#downloadCopy").click(function () {
+        const applicantId = $("#application_id").text().trim() || '0';
+        const union_code = $("#union_code").text().trim() || '0';
+        const rmo_code = $("#rmo_code").text().trim() || '0';
+
+        window.open(
+            `/${certificateType}_verify/application/${applicantId}`,
+            "_blank"
+        );
+    });
+});
+
+</script>

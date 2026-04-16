@@ -1,0 +1,90 @@
+# ============================================================
+# Clean & Optimized .htaccess for Apache 2.4+ / cPanel
+# ============================================================
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /
+
+    # --- Remove double or multiple slashes from URL ---
+    RewriteCond %{REQUEST_URI} ^//+(.*)$
+    RewriteRule .* /%1 [R=301,L,NE]
+
+    # --- Redirect requests with double slashes in raw HTTP request ---
+    RewriteCond %{THE_REQUEST} //+
+    RewriteRule .* %{REQUEST_URI} [R=301,L]
+
+    # --- Send all other requests to index.php if not file or directory ---
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^(.*)$ index.php [L,QSA]
+</IfModule>
+
+# ============================================================
+# PHP Handler (Use your server's default or latest version)
+# ============================================================
+
+# Use cPanel-generated PHP handler (recommended)
+<IfModule mime_module>
+    AddHandler application/x-httpd-ea-php81 .php .php8 .phtml
+</IfModule>
+
+# If your hosting supports mod_php and you want a custom version, uncomment below:
+# <IfModule mod_php.c>
+#     AddHandler application/x-httpd-php82 .php
+# </IfModule>
+
+# ============================================================
+# Security & Access Control
+# ============================================================
+
+# Disable directory listing
+Options -Indexes
+
+# Deny direct access to .htaccess and sensitive files
+<FilesMatch "^(?:\.htaccess|composer\.(json|lock))$">
+    Require all denied
+</FilesMatch>
+
+# Deny access to PHP, template, and config files inside specific directories
+<If "%{REQUEST_URI} =~ m#/(vendor|config|cache|classes)/#">
+    <FilesMatch "\.(php|inc|tpl|twig|yaml)$">
+        Require all denied
+    </FilesMatch>
+</If>
+
+
+
+# ============================================================
+# Security Headers (Basic, tweak as needed)
+# ============================================================
+
+<IfModule mod_headers.c>
+    Header always append X-Frame-Options SAMEORIGIN
+    Header set X-XSS-Protection "1; mode=block"
+    Header set X-Content-Type-Options nosniff
+    # Header set Content-Security-Policy "default-src 'self';"
+    # Header set Cache-Control "no-store, no-cache, must-revalidate"
+</IfModule>
+
+# ============================================================
+# Error Handling
+# ============================================================
+
+ErrorDocument 403 /error?code=403
+
+ErrorDocument 500 /error?code=500
+
+# ============================================================
+# MIME Types
+# ============================================================
+
+AddType application/pdf .pdf
+AddType application/pdf pdf
+
+# php -- BEGIN cPanel-generated handler, do not edit
+# Set the “ea-php82” package as the default “PHP” programming language.
+<IfModule mime_module>
+  AddHandler application/x-httpd-ea-php82 .php .php8 .phtml
+</IfModule>
+# php -- END cPanel-generated handler, do not edit

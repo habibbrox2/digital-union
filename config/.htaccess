@@ -1,0 +1,8 @@
+# Deny all HTTP access to this folder and its contents
+Require all denied
+
+<FilesMatch "^(config\.php|db\.php)$">
+    Require all denied
+</FilesMatch>
+
+

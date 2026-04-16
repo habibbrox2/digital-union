@@ -1,0 +1,15 @@
+{# login/error.twig #}
+
+
+{% extends "layout.twig" %}
+
+{% block title %}Error{% endblock %}
+
+{% block header_title %}An Error Occurred{% endblock %}
+
+{% block content %}
+<div class="alert alert-danger text-center">
+    {{ message }}
+</div>
+{% endblock %}
+

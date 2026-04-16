@@ -1,0 +1,76 @@
+{% extends "layout.twig" %}
+
+{% block title %}Email Templates{% endblock %}
+{% block header_title %}{{ header_title|default('Email Templates') }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="h3">Email Templates</h1>
+    <p class="text-muted">Edit email message bodies used by the system. Use Twig placeholders (e.g. {{ username }}) where appropriate.</p>
+
+    <form id="emailTemplatesForm" method="post" action="/settings/email-templates">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+        {% for t in ['welcome','email_verification','password_reset','password_changed','failed_login_alert','new_device_login'] %}
+        <div class="mb-3">
+            <label class="form-label">Template: {{ t }}</label>
+            <div class="d-flex mb-2">
+                <button type="button" class="btn btn-sm btn-outline-secondary me-2 preview-btn" data-template="{{ t }}">Preview</button>
+                <small class="text-muted align-self-center">If left empty, the default Twig file at templates/emails/{{ t }}.twig will be used.</small>
+            </div>
+            <textarea name="templates[{{ t }}]" class="form-control" rows="8">{{ system_settings['email_template_' ~ t] | default('') }}</textarea>
+        </div>
+        {% endfor %}
+
+        <button class="btn btn-primary" type="submit">Save Templates</button>
+    </form>
+
+    <script>
+        document.getElementById('emailTemplatesForm').addEventListener('submit', async function(e){
+        e.preventDefault();
+        const form = e.target;
+        const data = new FormData(form);
+        const resp = await fetch(form.action, {method:'POST', body: data});
+        const json = await resp.json();
+        if (json.status === 'success') alert('Saved'); else alert('Error: '+(json.alert?.message||'Failed'));
+    });
+
+        // Preview handler
+        document.querySelectorAll('.preview-btn').forEach(btn => {
+                btn.addEventListener('click', async function(){
+                        const template = this.getAttribute('data-template');
+                        const fd = new FormData();
+                        fd.append('name', template);
+                        fd.append('csrf_token', '{{ csrf_token }}');
+
+                        const res = await fetch('/settings/email-templates/preview', { method: 'POST', body: fd });
+                        const json = await res.json();
+                        if (json.success) {
+                                const modal = document.getElementById('emailPreviewModal');
+                                document.getElementById('emailPreviewTitle').innerText = template + ' (Preview)';
+                                document.getElementById('emailPreviewBody').innerHTML = json.html;
+                                // show bootstrap modal
+                                const bsModal = new bootstrap.Modal(modal);
+                                bsModal.show();
+                        } else {
+                                alert('Preview error: ' + (json.message || 'Failed'));
+                        }
+                });
+        });
+    </script>
+
+        <!-- Preview Modal -->
+        <div class="modal fade" id="emailPreviewModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-xl modal-dialog-scrollable">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="emailPreviewTitle">Preview</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body" id="emailPreviewBody" style="min-height:200px;">
+                    </div>
+                </div>
+            </div>
+        </div>
+</div>
+{% endblock %}

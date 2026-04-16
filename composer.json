@@ -1,0 +1,10 @@
+{
+    "require": {
+        "twig/twig": "3.5",
+        "mpdf/mpdf": "^8.2",
+        "picqer/php-barcode-generator": "^3.2",
+        "chillerlan/php-qrcode": "^5.0",
+        "phpmailer/phpmailer": "^7.0",
+        "vlucas/phpdotenv": "^5.6"
+    }
+}

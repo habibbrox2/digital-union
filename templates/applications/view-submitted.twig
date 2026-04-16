@@ -1,0 +1,248 @@
+{% extends "layout.twig" %}
+
+{% block title %}{{ title }}{% endblock %}
+{% block header_title %}{{ header_title }}{% endblock %}
+
+{% import 'components/macros.twig' as ui %}
+
+{% block content %}
+{% include 'components/sweetAlert.twig' %}
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/uikit@3.16.23/dist/css/uikit.min.css" />
+<style>
+.uk-container-small {
+    max-width: 900px;  /* আপনার পছন্দমতো ছোট মান */
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: 15px;
+    padding-right: 15px;
+}
+
+    </style>
+
+<div class="uk-container uk-margin-large-top uk-container-small">
+
+    <h2 class="uk-heading-line"><span>{{ title }}</span></h2>
+    <h4 class="uk-text-muted uk-margin-medium-bottom">{{ header_title }}</h4>
+
+    <div class="uk-card uk-card-default uk-card-body uk-box-shadow-small">
+
+
+                {# আবেদনকারীর ছবি প্রিভিউ (যদি থাকে) #}
+                {% if application_details.applicant_photo %}
+                <div class="uk-margin-top uk-text-center">
+                    <img src="{{ application_details.applicant_photo }}" alt="Applicant Photo" class="uk-border-circle" style="max-width:150px; max-height:150px;">
+                </div>
+                {% endif %}
+        {# দুই কলামে বাংলা ও ইংরেজি তথ্য #}
+        <div uk-grid class="uk-child-width-1-2@s uk-grid-small uk-grid-match">
+
+            <div>
+                <h5 class="uk-heading-line uk-text-center"><span>Basic Info (বাংলা)</span></h5>
+                {% set basic_info_bn = {
+                    "নাম": application_details.name_bn,
+                    "পিতার নাম": application_details.father_name_bn,
+                    "মাতার নাম": application_details.mother_name_bn,
+                    "জন্ম তারিখ": application_details.birth_date,
+                    "লিঙ্গ": application_details.gender,
+                    "বৈবাহিক অবস্থা": application_details.marital_status,
+                    "স্বামী/স্ত্রীর নাম": application_details.spouse_name_bn ?: 'N/A',
+                    "পেশা": application_details.occupation ?: 'N/A'
+                } %}
+                {{ ui.display_info_block(basic_info_bn) }}
+            </div>
+
+            <div>
+                <h5 class="uk-heading-line uk-text-center"><span>Basic Info (English)</span></h5>
+                {% set basic_info_en = {
+                    "Name": application_details.name_en,
+                    "Father's Name": application_details.father_name_en,
+                    "Mother's Name": application_details.mother_name_en,
+                    "Resident Type": application_details.resident ?: 'N/A',
+                    "Religion": application_details.religion ?: 'N/A',
+                    "Spouse Name": application_details.spouse_name_en ?: 'N/A',
+                    "Educational Qualification": application_details.educational_qualification ?: 'N/A'
+                } %}
+                {{ ui.display_info_block(basic_info_en) }}
+            </div>
+        </div>
+
+        <hr class="uk-divider-icon uk-margin-medium">
+ 
+        <div uk-grid class="uk-child-width-1-2@s uk-grid-small uk-grid-match">
+            <div>
+                <h5 class="uk-heading-line uk-text-center"><span>Present Address (বাংলা)</span></h5>
+                {% set present_address_bn = {
+                    "হোল্ডিং নম্বর": application_details.present_holding_no,
+                    "রোড/ব্লক/সেক্টর": application_details.rbs_bn,
+                    "গ্রাম": application_details.present_village_bn,
+                    "ওয়ার্ড নম্বর": application_details.present_ward_no,
+                    "ডাকঘর": application_details.present_postoffice_bn,
+                    "ইউনিয়ন": application_details.present_union_bn,
+                    "উপজেলা": application_details.present_upazila_bn,
+                    "জেলা": application_details.present_district_bn
+                } %}
+                {{ ui.display_info_block(present_address_bn) }}
+            </div>
+
+            <div>
+                <h5 class="uk-heading-line uk-text-center"><span>Present Address (English)</span></h5>
+                {% set present_address_en = {
+                    "Holding No": application_details.present_holding_no,
+                    "Road/Block/Sector": application_details.rbs_en,
+                    "Village": application_details.present_village_en,
+                    "Ward No": application_details.present_ward_no,
+                    "Post Office": application_details.present_postoffice_en,
+                    "Union": application_details.present_union_en,
+                    "Upazila": application_details.present_upazila_en,
+                    "District": application_details.present_district_en
+                } %}
+                {{ ui.display_info_block(present_address_en) }}
+            </div>
+        </div>
+
+        <hr class="uk-divider-icon uk-margin-medium">
+
+        <div uk-grid class="uk-child-width-1-2@s uk-grid-small uk-grid-match">
+            <div>
+                <h5 class="uk-heading-line uk-text-center"><span>Permanent Address (বাংলা)</span></h5>
+                {% set permanent_address_bn = {
+                    "হোল্ডিং নম্বর": application_details.permanent_holding_no,
+                    "রোড/ব্লক/সেক্টর": application_details.rbs_bn,
+                    "গ্রাম": application_details.permanent_village_bn,
+                    "ওয়ার্ড নম্বর": application_details.permanent_ward_no,
+                    "ডাকঘর": application_details.permanent_postoffice_bn,
+                    "ইউনিয়ন": application_details.permanent_union_bn,
+                    "উপজেলা": application_details.permanent_upazila_bn,
+                    "জেলা": application_details.permanent_district_bn
+                } %}
+                {{ ui.display_info_block(permanent_address_bn) }}
+            </div>
+
+            <div>
+                <h5 class="uk-heading-line uk-text-center"><span>Permanent Address (English)</span></h5>
+                {% set permanent_address_en = {
+                    "Holding No": application_details.permanent_holding_no,
+                    "Road/Block/Sector": application_details.rbs_en,
+                    "Village": application_details.permanent_village_en,
+                    "Ward No": application_details.permanent_ward_no,
+                    "Post Office": application_details.permanent_postoffice_en,
+                    "Union": application_details.permanent_union_en,
+                    "Upazila": application_details.permanent_upazila_en,
+                    "District": application_details.permanent_district_en
+                } %}
+                {{ ui.display_info_block(permanent_address_en) }}
+            </div>
+        </div>
+        <hr class="uk-divider-icon uk-margin-medium">
+
+                {# Certificate Type অনুযায়ী আলাদা তথ্য দেখানো #}
+                {% if application_details.certificate_type == 'trade' %}
+                    <h4>ব্যবসার তথ্য (Business Details)</h4>
+                    {% if application_details.business_meta is defined and application_details.business_meta is not empty %}
+                        <ul>
+                            <li>ব্যবসার নাম: {{ application_details.business_meta.business_name_bn }}</li>
+                            <li>ব্যবসার ধরণ: {{ application_details.business_meta.business_type_bn }}</li>
+                            <li>মালিকানার ধরণ: {{ application_details.business_meta.ownership_type_bn }}</li>
+                            
+                            {# Full Business Address (Bangla) #}
+                            <li>ঠিকানা:
+                                {{ application_details.business_meta.holding_no }},
+                                {{ application_details.business_meta.business_rbs_bn }},
+                                {{ application_details.business_meta.business_village_bn }},
+                                ওয়ার্ড নং: {{ application_details.business_meta.business_ward_no }},
+                                {{ application_details.business_meta.business_postoffice_bn }},
+                                {{ application_details.business_meta.business_union_bn }},
+                                {{ application_details.business_meta.business_upazila_bn }},
+                                {{ application_details.business_meta.business_district_bn }}
+                            </li>
+                        
+                            {# Full Business Address (English) #}
+                            <li>Address (English):
+                                {{ application_details.business_meta.holding_no }},
+                                {{ application_details.business_meta.business_rbs_en }},
+                                {{ application_details.business_meta.business_village_en }},
+                                Ward No: {{ application_details.business_meta.business_ward_no }},
+                                {{ application_details.business_meta.business_postoffice_en }},
+                                {{ application_details.business_meta.business_union_en }},
+                                {{ application_details.business_meta.business_upazila_en }},
+                                {{ application_details.business_meta.business_district_en }}
+                            </li>
+                        </ul>
+
+                    {% else %}
+                        <p>ব্যবসার তথ্য পাওয়া যায়নি।</p>
+                    {% endif %}
+
+        {% elseif application_details.certificate_type == 'warish' %}
+        <h4>ওয়ারিশ সদস্যদের তালিকা (Warish Members List)</h4>
+
+
+        {% if application_details.warish_members is defined and application_details.warish_members is not empty %}
+                <table class="uk-table uk-table-divider uk-table-hover">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>নাম (Name)</th>
+                            <th>সম্পর্ক (Relation)</th>
+                            <th>জন্ম তারিখ/বয়স (Date of Birth/Age)</th>
+                            <th>এনআইডি (Nid)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for member in application_details.warish_members %}
+                            <tr>
+                                <td>{{ loop.index }}</td>
+                                <td>{{ member.name_bn ?: member.name_en ?: 'N/A' }}</td>
+                                <td>{{ member.relation_bn ?: member.relation_en ?: 'N/A' }}</td>
+                                <td>{{ member.birth_date ?: 'N/A' }}</td>
+                                <td>{{ member.nid ?: 'N/A' }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <p>ওয়ারিশ সদস্যদের তথ্য পাওয়া যায়নি।</p>
+            {% endif %}
+
+        {% else %}
+            <p>এই সনদের জন্য বিশেষ তথ্য নেই।</p>
+        {% endif %}
+
+
+        <hr class="uk-divider-icon uk-margin-medium">
+
+        <h5 class="uk-heading-line uk-text-center"><span>Applicant Details</span></h5>
+        {% set applicant_info = {
+            "Applicant Name": application_details.applicant_name,
+            "Applicant Phone": application_details.applicant_phone,
+            "Tracking Number": application_details.application_id,
+            "Sonod Number": application_details.sonod_number ?: 'N/A',
+            "Birth Certificate": application_details.birth_id ?: 'N/A',
+            "National ID": application_details.nid ?: 'N/A',
+            "Passport No": application_details.passport_no ?: 'N/A',
+            "Apply Date": application_details.apply_date|date("d M Y"),
+            "Status": ui.display_status_badge(application_details.status) | raw
+        } %}
+        <div class="uk-width-1-1 uk-margin">
+            {{ ui.display_info_block(applicant_info) }}
+        </div>
+        
+        <hr class="uk-divider-icon uk-margin-medium">
+
+        <h5 class="uk-heading-line uk-text-center"><span>Attached Documents</span></h5>
+        {{ ui.display_documents_table(documents) }}
+
+        <div class="uk-flex uk-flex-wrap uk-flex-between uk-margin-large-top uk-gap-small">
+            <a href="/applications/{{ go_url }}/" class="uk-button uk-button-default">Back to List</a>
+            <a href="/{{ application_details.certificate_type }}_verify/application/{{ application_details.application_id }}/{{ application_details.union_id }}/0" class="uk-button uk-button-primary">Application Copy</a>
+            <a href="/applications/{{ go_url }}/edit/{{ application_details.application_id }}" class="uk-button uk-button-primary">Edit</a>
+            <a href="/applications/{{ go_url }}/approve/{{ application_details.application_id }}" class="uk-button uk-button-success">Approve</a>
+            <a href="/applications/{{ go_url }}/delete/{{ application_details.application_id }}" class="uk-button uk-button-danger" onclick="return confirm('Are you sure you want to delete this record?')">Delete</a>
+        </div>
+
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/uikit@3.16.23/dist/js/uikit.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/uikit@3.16.23/dist/js/uikit-icons.min.js"></script>
+{% endblock %}

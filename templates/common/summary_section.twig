@@ -1,0 +1,127 @@
+{# common/summary_section.twig #}
+
+<p><strong>আপনার তথ্য নিশ্চিত করুন এবং জমা দিন।</strong></p>
+
+<div class="row align-items-center">
+    <div class="col-md-6">
+        <div class="mb-3">
+            <label for="photo" class="form-label">মালিকের ছবি আপলোড করুন</label>
+            <input type="file" name="photo" id="photo" class="form-control" accept="image/*">
+        </div>
+    </div>
+    <div class="col-md-6 text-center">
+        <div class="mb-3">
+            {% if reuse_data.applicant_photo is defined and reuse_data.applicant_photo %}
+                <img id="photo_preview" src="{{ reuse_data.applicant_photo }}" alt="ছবি প্রিভিউ"
+                     class="img-thumbnail shadow-sm mt-2"
+                     style="display:inline-block; width: 150px; height: 150px; object-fit: cover; border: 2px solid #ddd; padding: 5px;">
+            {% else %}
+                <img id="photo_preview" src="#" alt="ছবি প্রিভিউ"
+                     class="img-thumbnail shadow-sm mt-2"
+                     style="display:none; width: 150px; height: 150px; object-fit: cover; border: 2px solid #ddd; padding: 5px;">
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<div class="mb-6">
+    <label class="form-label">আবেদনকারীর নাম</label>
+    <div class="form-check form-check-inline">
+        <input type="radio" class="form-check-input" name="applicant_name_option" id="own_name" value="own"
+        {% if reuse_data.applicant_name is defined and reuse_data.name_bn is defined and reuse_data.applicant_name == reuse_data.name_bn %}checked{% endif %}>
+        <label class="form-check-label" for="own_name">নিজ</label>
+    </div>
+    <div class="form-check form-check-inline">
+        <input type="radio" class="form-check-input" name="applicant_name_option" id="other_name" value="other"
+        {% if reuse_data.applicant_name is defined and reuse_data.name_bn is defined and reuse_data.applicant_name != reuse_data.name_bn %}checked{% endif %}>
+        <label class="form-check-label" for="other_name">অন্যান্য</label>
+    </div>
+    <input type="text" id="applicant_name" name="applicant_name" class="form-control mt-2" style="display:none;"
+        value="{{ reuse_data.applicant_name is defined and reuse_data.applicant_name ? reuse_data.applicant_name : (reuse_data.name_bn is defined ? reuse_data.name_bn : '') }}"
+        {% if reuse_data.applicant_name is defined and reuse_data.name_bn is defined and reuse_data.applicant_name == reuse_data.name_bn %}readonly{% endif %}>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="mb-3">
+
+
+
+        {% if reuse_data.applicant_phone is defined and reuse_data.applicant_phone %}
+            <label for="applicant_phone" class="form-label">আবেদনকারীর মোবাইল নম্বর</label>
+            <input type="text" name="applicant_phone" id="applicant_phone" class="form-control" placeholder="আপনার মোবাইল নম্বর লিখুন" value="{{ reuse_data.applicant_phone }}">
+        {% else %}
+        <label for="applicant_phone" class="form-label">আবেদনকারীর মোবাইল নম্বর</label>
+            <input type="text" name="applicant_phone" id="applicant_phone" class="form-control" placeholder="আপনার মোবাইল নম্বর লিখুন">
+        {% endif %}
+        </div>
+    </div>
+    
+</div>
+
+<div class="mb-3 mt-4">
+    <label class="form-label">প্রয়োজনীয় ডকুমেন্ট আপলোড করুন</label>
+    <div id="documents_container">
+        <div class="row align-items-center document-row mb-2">
+            <div class="col-md-5">
+                <input type="file" name="documents[]" class="form-control file-input">
+            </div>
+            <div class="col-md-5 preview-area"></div>
+            <div class="col-md-2">
+                <button type="button" class="btn btn-danger remove-file">X</button>
+            </div>
+        </div>
+    </div>
+    <button type="button" class="btn btn-primary mt-2" id="add_document">নতুন ফাইল সংযুক্ত করুন</button>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-populate applicant_name from name_bn field
+    const nameBnField = document.getElementById('name_bn');
+    const applicantNameField = document.getElementById('applicant_name');
+    const ownNameRadio = document.getElementById('own_name');
+    
+    if (nameBnField && applicantNameField) {
+        // Initial setup: if applicant_name is empty or equals name_bn, mark as "own"
+        if (!applicantNameField.value || applicantNameField.value === nameBnField.value) {
+            if (ownNameRadio) {
+                ownNameRadio.checked = true;
+            }
+            applicantNameField.value = nameBnField.value;
+            if (applicantNameField.hasAttribute('readonly') === false) {
+                applicantNameField.style.display = 'none';
+            }
+        }
+        
+        // When name_bn changes, update applicant_name automatically
+        nameBnField.addEventListener('input', function() {
+            applicantNameField.value = this.value;
+            
+            // If applicant_name is not readonly (meaning they chose "own_name")
+            if (!applicantNameField.hasAttribute('readonly')) {
+                if (ownNameRadio && ownNameRadio.checked) {
+                    // Keep it in sync with name_bn
+                    applicantNameField.value = this.value;
+                }
+            }
+        });
+        
+        // When radio button changes
+        const applicantNameOptions = document.querySelectorAll('input[name="applicant_name_option"]');
+        applicantNameOptions.forEach(radio => {
+            radio.addEventListener('change', function() {
+                if (this.value === 'own') {
+                    // "নিজ" selected - use name_bn value and make readonly
+                    applicantNameField.value = nameBnField.value;
+                    applicantNameField.removeAttribute('readonly');
+                    applicantNameField.style.display = 'none';
+                } else {
+                    // "অন্যান্য" selected - allow custom input
+                    applicantNameField.style.display = 'block';
+                }
+            });
+        });
+    }
+});
+</script>

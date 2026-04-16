@@ -1,0 +1,418 @@
+{% extends "layout.twig" %}
+
+{% block title %}সাধারণ আবেদন ফরম{% endblock %}
+{% block header_title %}সাধারণ আবেদন ফরম{% endblock %}
+
+{% block content %}
+{% include 'components/sweetAlert.twig' %}
+<link rel="stylesheet" href="/assets/css/forms.css?t={{ "now"|date("Hiss") }}">
+
+<div class="container my-5">
+
+
+
+    <!-- ================= Rules Section ================= -->
+    <fieldset class="card shadow-sm border-primary mb-4 p-4">
+        <!-- ================= Form Title ================= -->
+        <h2 id="formTitle" class="text-center mb-5 fw-bold">
+            {{ certificate_type_bn ?? 'আবেদন ফরম' }}
+        </h2>
+        <legend class="w-auto px-2 fw-bold">
+            <i class="fas fa-info-circle me-2"></i> নির্দেশাবলী
+        </legend>
+        {% include 'partials/forms/rules.twig' %}
+    </fieldset>
+
+    <!-- ================= Application Form ================= -->
+    <form id="applicationForm" method="POST"
+        action="{% if reuse_mode %}/applications/{{ certificate_type }}/apply{% elseif data is defined and data.application_id is defined %}/applications/{{ certificate_type }}/edit/{{ data.application_id }}{% else %}/applications/{{ certificate_type }}/apply{% endif %}"
+        enctype="multipart/form-data">
+
+        <!-- Hidden Inputs -->
+        <input type="hidden" name="certificate_type" value="{{ certificate_type }}">
+
+        {# Only show application_id if not reuse_mode and data exists #}
+        {% if data.application_id is defined and not reuse_mode %}
+            <input type="hidden" name="application_id" value="{{ data.application_id }}">
+        {% endif %}
+
+
+        <fieldset class="card shadow-sm border-primary mb-4 p-4">
+            {% if data.application_id is defined and not reuse_mode %}
+                {# Edit mode: show union name + full address #}
+                <legend class="w-auto px-2 fw-bold">
+                    <i class="fas fa-university me-2"></i> ইউনিয়ন
+                </legend>
+                <div class="row mb-3">
+                    <div class="col-12">
+                        <div class="p-3 border rounded bg-light text-primary fw-bold" style="font-size: 1.1rem;">
+                            {{ union.union_name_bn ?? '—' }}
+                            {% if union.upazila_name_bn is defined and union.upazila_name_bn %}
+                                , {{ union.upazila_name_bn }}
+                            {% endif %}
+                            {% if union.district_name_bn is defined and union.district_name_bn %}
+                                , {{ union.district_name_bn }}
+                            {% endif %}
+                            {% if union.postcode is defined and union.postcode %}
+                                - {{ union.postcode|bn }}
+                            {% endif %}
+                        </div>
+                        {# Hidden input to preserve union_code on form submit #}
+                        <input type="hidden" name="union_code" value="{{ union.union_code ?? '' }}">
+                    </div>
+                </div>
+            {% else %}
+                {# Apply / reuse mode: show the selection dropdown #}
+                <legend class="w-auto px-2 fw-bold">
+                    <i class="fas fa-university me-2"></i> ইউনিয়ন বাছাই করুন
+                </legend>
+                {% include 'partials/forms/union_selection.twig' with { data: data } %}
+            {% endif %}
+        </fieldset>
+
+
+
+
+
+
+
+        {% if certificate_type == 'trade' %}
+        <!-- ================= Business Info ================= -->
+        <fieldset class="card shadow-sm border-primary mb-4 p-4">
+            <legend class="w-auto px-2 fw-bold">
+                <i class="fas fa-briefcase me-2"></i> ব্যবসায়িক তথ্য
+            </legend>
+            {% include 'partials/forms/business_info.twig' with { data: data } %}
+        </fieldset>
+        {% endif %}
+
+        <!-- ================= Personal Info ================= -->
+        <fieldset class="card shadow-sm border-primary mb-4 p-4">
+            <legend class="w-auto px-2 fw-bold">
+                <i class="fas fa-user me-2"></i> ব্যক্তিগত তথ্য
+            </legend>
+            {% include 'partials/forms/personal_info.twig' with { data: data } %}
+        </fieldset>
+
+        <!-- ================= Warish/Family Members ================= -->
+        {% if certificate_type in ['family', 'warish'] %}
+        <fieldset class="card shadow-sm border-primary mb-4 p-4">
+            <legend class="w-auto px-2 fw-bold">
+                <i class="fas fa-users me-2"></i> পরিবারের সদস্যগণের তালিকা
+            </legend>
+            {% include 'partials/forms/warish_entry.twig' %}
+        </fieldset>
+        {% endif %}
+
+        <!-- ================= Present Address ================= -->
+        <fieldset class="card shadow-sm border-primary mb-4 p-4">
+            <legend class="w-auto px-2 fw-bold">
+                <i class="fas fa-map-marker-alt me-2"></i> বর্তমান ঠিকানা
+            </legend>
+            <div id="present_address_fields">
+                {% include 'partials/forms/address_fields.twig' with { prefix: 'present', data: data } %}
+            </div>
+        </fieldset>
+
+        <!-- ================= Permanent Address ================= -->
+        <fieldset class="card shadow-sm border-primary mb-4 p-4">
+            <legend class="w-auto px-2 fw-bold">
+                <i class="fas fa-map-pin me-2"></i> স্থায়ী ঠিকানা
+            </legend>
+            <div class="form-check mb-3">
+                <input type="checkbox" class="form-check-input" id="copy_present_to_permanent">
+                <label for="copy_present_to_permanent" class="form-check-label">
+                    বর্তমান ঠিকানা এবং স্থায়ী ঠিকানা একই
+                </label>
+            </div>
+            <div id="permanent_address_fields">
+                {% include 'partials/forms/address_fields.twig' with { prefix: 'permanent', data: data } %}
+            </div>
+        </fieldset>
+        
+        {% if certificate_type == 'trade' %}
+            <!-- ব্যবসার ঠিকানা -->
+            <fieldset class="border rounded p-3 mb-4">
+                <legend class="w-auto px-2">ব্যবসার ঠিকানা</legend>
+                <!-- Copy Present to Business -->
+                <div class="form-check mb-2">
+                    <input class="form-check-input" type="checkbox" id="copy_present_to_business">
+                    <label class="form-check-label" for="copy_present_to_business">
+                        বর্তমান ঠিকানা থেকে ব্যবসায়িক ঠিকানা কপি করুন
+                    </label>
+                </div>
+                <div id="business_address_fields">
+                    {% include 'common/address_fields.twig' with { prefix: 'business' } %}
+                </div>
+            </fieldset>
+        {% endif %}
+        <!-- ================= Confirmation & Upload ================= -->
+        <fieldset class="card shadow-sm border-primary mb-4 p-4">
+            <legend class="w-auto px-2 fw-bold">
+                <i class="fas fa-upload me-2"></i> ছবি ও ডকুমেন্ট আপলোড
+            </legend>
+            {% include 'partials/forms/confirmation_upload.twig' with { data: data } %}
+
+            <button type="submit" class="text-center btn btn-success btn-lg px-5 shadow">
+                <i class="fas fa-paper-plane me-2"></i>
+                {{ application ? 'আপডেট করুন' : 'জমা দিন' }}
+            </button>
+        </fieldset>
+    </form>
+</div>
+
+<!-- ================= Success Modal ================= -->
+{% include 'partials/forms/success_modal.twig' %}
+
+
+
+<script>
+(function () {
+    document.addEventListener('DOMContentLoaded', function () {
+
+        // ---------------- extraData init ----------------
+        try {
+            window.extraData = {{ extra_data|default({})|json_encode|raw }};
+        } catch(e) {
+            window.extraData = {};
+        }
+
+        // ---------------- helper ----------------
+        const escapeHtml = str => str == null ? '' : String(str).replace(/[&<>"']/g,
+            m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])
+        );
+        const updateLabelAndPlaceholder = (labelEl, inputEl, text) => {
+            if (!labelEl) return;
+            const span = labelEl.querySelector('span');
+            labelEl.textContent = text;
+            if (span) labelEl.appendChild(span);
+            if (inputEl) inputEl.placeholder = text;
+        };
+
+        // ---------------- fetch extra fields ----------------
+        async function fetchExtraFields(){
+            if (window.extraFieldsCache) return window.extraFieldsCache;
+            try {
+                const res = await fetch('/api/v2/extra-fields/json', {cache:'no-store'});
+                if (!res.ok) throw new Error('HTTP '+res.status);
+                const data = await res.json();
+                window.extraFieldsCache = data;
+                return data;
+            } catch(err){
+                console.error(err);
+                return {};
+            }
+        }
+
+        // ---------------- datepicker init ----------------
+        function initDatepickers(root=document){
+            root.querySelectorAll('.datepicker').forEach(input=>{
+                if (window.jQuery && typeof $(input).datepicker==='function'){
+                    $(input).datepicker({
+                        format:'dd-mm-yyyy',
+                        autoclose:true,
+                        todayHighlight:true
+                    });
+                } else {
+                    input.placeholder = input.placeholder || 'দিন-মাস-বছর';
+                    input.setAttribute('inputmode','numeric');
+                }
+            });
+        }
+
+        // ---------------- create field HTML ----------------
+        function createFieldHTML(field, data={}){
+            const val = escapeHtml(data[field.id] || '');
+            const placeholder = escapeHtml(field.placeholder || field.label || '');
+            const label = escapeHtml(field.label || field.label_en || '');
+            const markDynamic = ' data-extra-field="1"'; // ডাইনামিক ফিল্ড চিহ্নিত করতে
+
+            if (field.count === 2){
+                const bnVal = escapeHtml(data[field.id+'_bn'] || '');
+                const enVal = escapeHtml(data[field.id+'_en'] || '');
+                const labelBn = escapeHtml(field.label_bn || field.label || '');
+                const labelEn = escapeHtml(field.label_en || field.label || '');
+                return `<div class="row mb-3">
+                    <div class="col-md-6">
+                        <label for="${field.id}_en" class="form-label">${labelEn} (ইংরেজিতে)</label>
+                        <input type="text" name="${field.id}_en" id="${field.id}_en" class="form-control"${markDynamic} value="${enVal}" placeholder="${placeholder} (ইংরেজিতে)">
+                    </div>
+                    <div class="col-md-6">
+                        <label for="${field.id}_bn" class="form-label">${labelBn} (বাংলায়) <span class="text-danger">*</span></label>
+                        <input type="text" name="${field.id}_bn" id="${field.id}_bn" class="form-control bangla"${markDynamic} value="${bnVal}" placeholder="${placeholder} (বাংলায়)" required>
+                    </div>
+
+                </div>`;
+            }
+
+            switch(field.type){
+                case 'text':
+                case 'number':
+                case 'date':
+                    const inputClass = field.type==='date' ? 'form-control datepicker' : 'form-control';
+                    return `<div class="row mb-3">
+                        <div class="col-md-12">
+                            <label for="${field.id}" class="form-label">${label} <span class="text-danger">*</span></label>
+                            <input type="${field.type==='date'?'text':field.type}" name="${field.id}" id="${field.id}" class="${inputClass}"${markDynamic} value="${val}" placeholder="${placeholder}">
+                        </div>
+                    </div>`;
+                case 'textarea':
+                    return `<div class="row mb-3">
+                        <div class="col-md-12">
+                            <label for="${field.id}" class="form-label">${label} <span class="text-danger">*</span></label>
+                            <textarea name="${field.id}" id="${field.id}" class="form-control"${markDynamic} rows="4" placeholder="${placeholder}">${val}</textarea>
+                        </div>
+                    </div>`;
+                case 'select':
+                    const options = (field.options||[])
+                        .map(opt => `<option value="${opt.value}" ${val==opt.value?'selected':''}>${opt.text}</option>`).join('');
+                    return `<div class="row mb-3">
+                        <div class="col-md-12">
+                            <label for="${field.id}" class="form-label">${label} <span class="text-danger">*</span></label>
+                            <select name="${field.id}" id="${field.id}" class="form-control"${markDynamic}>
+                                <option value="">Select</option>${options}
+                            </select>
+                        </div>
+                    </div>`;
+                case 'label':
+                    return `<div class="col-md-12 mb-2"><span id="${field.id}" class="form-label">${label}</span></div>`;
+                default:
+                    return `<div class="row mb-3">
+                        <div class="col-md-12">
+                            <label for="${field.id}" class="form-label">${label} <span class="text-danger">*</span></label>
+                            <input type="text" name="${field.id}" id="${field.id}" class="form-control"${markDynamic} value="${val}" placeholder="${placeholder}">
+                        </div>
+                    </div>`;
+            }
+        }
+
+        // ---------------- init extra fields ----------------
+        async function initExtraFields(){
+            const extraFields = await fetchExtraFields();
+            const certInput = document.querySelector('input[name="certificate_type"]');
+            const certificateType = certInput ? certInput.value : null;
+            if (!certificateType || !extraFields[certificateType]) return extraFields;
+
+            const fragment = document.createDocumentFragment();
+            extraFields[certificateType].forEach(field=>{
+                if (field.type==='label') return;
+                const html = createFieldHTML(field, window.extraData);
+                const container = document.createElement('div');
+                container.innerHTML = html;
+                const target = document.getElementById(field.orderAfter) || document.querySelector(`[name="${field.orderAfter}"]`);
+                if (target){
+                    const baseRow = target.closest('.row') || target;
+                    baseRow.insertAdjacentElement('afterend', container);
+                } else {
+                    fragment.appendChild(container);
+                }
+            });
+
+            const form = document.getElementById('applicationForm') || document.body;
+            form.appendChild(fragment);
+            initDatepickers();
+            return extraFields;
+        }
+
+        // ---------------- form submit ----------------
+        function initFormSubmit(){
+            const form = document.getElementById('applicationForm');
+            if (!form) return;
+
+            form.addEventListener('submit', function (e) {
+                try {
+                    const payload = {};
+                    const dynamicInputs = form.querySelectorAll('[data-extra-field="1"]');
+                    dynamicInputs.forEach(input=>{
+                        if (input.name) payload[input.name] = input.value;
+                    });
+                    let hidden = form.querySelector('input[name="extra_data"]');
+                    if (!hidden) {
+                        hidden = document.createElement('input');
+                        hidden.type = 'hidden';
+                        hidden.name = 'extra_data';
+                        form.appendChild(hidden);
+                    }
+                    hidden.value = JSON.stringify(payload);
+                } catch(err){ console.error(err); }
+            }, {capture:true}); // capture=true so it fires early
+        }
+
+        function updateLabelsByCertificateType(extraFields, certType){
+            if (!extraFields[certType]) return;
+            extraFields[certType].forEach(field=>{
+                if (field.type!=='label') return;
+                if (field.count===2){
+                    const enLabelEl = document.querySelector('label[for="'+field.id+'_en"]');
+                    const bnLabelEl = document.querySelector('label[for="'+field.id+'_bn"]');
+                    const enInput = document.getElementById(field.id+'_en');
+                    const bnInput = document.getElementById(field.id+'_bn');
+
+                    // ইংরেজি
+                    updateLabelAndPlaceholderSafe(enLabelEl, enInput, (field.label_en || field.label || '') + ' (ইংরেজিতে)');
+
+                    // বাংলা
+                    updateLabelAndPlaceholderSafe(bnLabelEl, bnInput, (field.label_bn || field.label || '') + ' (বাংলায়)');
+                } else {
+                    const labelEl = document.querySelector('label[for="'+field.id+'"]');
+                    const inputEl = document.getElementById(field.id);
+
+                    updateLabelAndPlaceholderSafe(labelEl, inputEl, field.label || '');
+                }
+            });
+        }
+        function updateLabelAndPlaceholderSafe(labelEl, inputEl, text){
+            if(labelEl) labelEl.textContent = text;
+
+            if(inputEl){
+                if(inputEl.classList.contains('datepicker')){
+                    // datepicker হলে placeholder update করব না
+                } else {
+                    inputEl.placeholder = text;
+                }
+            }
+        }
+
+
+        // ---------------- initialize ----------------
+        (async ()=>{
+            const extraFields = await initExtraFields();
+            window.extraFieldsCache = extraFields;
+            initFormSubmit();
+
+            const certificateTypeInput = document.querySelector('input[name="certificate_type"]');
+            if (certificateTypeInput){
+                updateLabelsByCertificateType(extraFields, certificateTypeInput.value);
+                certificateTypeInput.addEventListener('change', async e=>{
+                    window.extraFieldsCache = await initExtraFields();
+                    if (window.toggleSpouseFields) window.toggleSpouseFields();
+                    updateLabelsByCertificateType(extraFields, e.target.value);
+                });
+            }
+        })();
+    });
+})();
+</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+{% endblock %}
+

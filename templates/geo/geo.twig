@@ -1,0 +1,139 @@
+{% extends "layout.twig" %}
+
+{% block title %}Geo{% endblock %}
+
+{% block header_title %}Geo{% endblock %}
+
+{% block content %}
+{% include 'components/sweetAlert.twig' %}
+{% if not is_logged_in %}
+    {% set redirect = "<script>window.location.href='/#';</script>" %}
+    {{ redirect|raw }}
+{% endif %}
+
+<div class="container mt-5">
+    <h1 class="text-center my-4">Geo Locations</h1>
+    
+    <div class="row">
+        <!-- Left Side (Bangla) -->
+        <div class="col-md-6">
+            <h4>বাংলা</h4>
+            
+            <!-- Division Dropdown -->
+            <div class="mb-3">
+                <label for="division_name_bn" class="form-label">বিভাগ</label>
+                <select class="form-select" id="division_name_bn" name="division_code">
+                    <option value="">বিভাগ নির্বাচন করুন</option>
+                </select>
+            </div>
+
+            <!-- District Dropdown -->
+            <div class="mb-3">
+                <label for="district_name_bn" class="form-label">জেলা</label>
+                <select class="form-select" id="district_name_bn" name="district_code" >
+                    <option value="">জেলা নির্বাচন করুন</option>
+                </select>
+            </div>
+
+            <!-- Upazila Dropdown -->
+            <div class="mb-3">
+                <label for="upazila_name_bn" class="form-label">উপজেলা</label>
+                <select class="form-select" id="upazila_name_bn" name="upazila_code" >
+                    <option value="">উপজেলা নির্বাচন করুন</option>
+                </select>
+            </div>
+
+            <div class="mb-3">
+                <label for="rmo_name_bn" class="form-label">আর.এম.ও</label>
+                <select class="form-select" id="rmo_name_bn" name="rmo_code">
+                    <option value="">আর.এম.ও নির্বাচন করুন</option>
+                </select>
+            </div>
+
+
+            <!-- Union Dropdown -->
+            <div class="mb-3">
+                <label for="union_name_bn" class="form-label">ইউনিয়ন</label>
+                <select class="form-select" id="union_name_bn" name="union_code" >
+                    <option value="">ইউনিয়ন নির্বাচন করুন</option>
+                </select>
+            </div>
+
+            <!-- Ward Dropdown -->
+            <div class="mb-3">
+                <label for="ward_name_bn" class="form-label">ওয়ার্ড</label>
+                <select class="form-select" id="ward_name_bn" name="ward_code_bn" >
+                    <option value="">ওয়ার্ড নির্বাচন করুন</option>
+                </select>
+            </div>
+
+           
+            <div class="mb-3">
+                <label for="village_name_bn" class="form-label">গ্রাম</label>
+                <input type="text" class="form-control" id="village_name_bn" name="village_name_bn" placeholder="গ্রামের নাম লিখুন">
+            </div>
+        </div>
+
+        <!-- Right Side (English) -->
+        <div class="col-md-6">
+            <h4>English</h4>
+
+            <!-- Division Dropdown -->
+            <div class="mb-3">
+                <label for="division_name_en" class="form-label">Division</label>
+                <select class="form-select" id="division_name_en" name="division_code">
+                    <option value="">Select Division</option>
+                </select>
+            </div>
+
+            <!-- District Dropdown -->
+            <div class="mb-3">
+                <label for="district_name_en" class="form-label">District</label>
+                <select class="form-select" id="district_name_en" name="district_code" >
+                    <option value="">Select District</option>
+                </select>
+            </div>
+
+            <!-- Upazila Dropdown -->
+            <div class="mb-3">
+                <label for="upazila_name_en" class="form-label">Upazila</label>
+                <select class="form-select" id="upazila_name_en" name="upazila_code" >
+                    <option value="">Select Upazila</option>
+                </select>
+            </div>
+
+             <div class="mb-3">
+                <label for="rmo_name_en" class="form-label">RMO Type</label>
+                <select class="form-select" id="rmo_name_en" name="rmo_code">
+                    <option value="">Select RMO Type</option>
+                </select>
+            </div>
+
+            <!-- Union Dropdown -->
+            <div class="mb-3">
+                <label for="union_name_en" class="form-label">Union</label>
+                <select class="form-select" id="union_name_en" name="union_code" >
+                    <option value="">Select Union</option>
+                </select>
+            </div>
+
+            <!-- Ward Dropdown -->
+            <div class="mb-3">
+                <label for="ward_name_en" class="form-label">Ward</label>
+                <select class="form-select" id="ward_name_en" name="ward_code" >
+                    <option value="">Select Ward</option>
+                </select>
+            </div>
+
+            <!-- Village Dropdown -->
+            <div class="mb-3">
+                <label for="village_name_en" class="form-label">Village</label>
+                <input type="text" class="form-control" id="village_name_en" name="village_name_en" placeholder="Village">
+        </div>
+    </div>
+</div>
+
+<script>
+// Synchronization and handling logic will be added here
+</script>
+{% endblock %}

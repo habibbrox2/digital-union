@@ -1,0 +1,104 @@
+{# partials/forms/summary_section.twig #}
+
+<div class="card p-3 mb-4 shadow-sm border-primary g-3">
+    <h5 class="card-title text-center mb-3">আপনার তথ্যের সারসংক্ষেপ</h5>
+    
+    <div class="row mb-2">
+        <div class="col-md-6"><strong>আবেদনকারীর নাম:</strong></div>
+        <div class="col-md-6">{{ data.applicant_name|default(data.name_bn|default('-')) }}</div>
+    </div>
+
+    <div class="row mb-2">
+        <div class="col-md-6"><strong>মোবাইল নম্বর:</strong></div>
+        <div class="col-md-6">{{ data.applicant_phone|default('-') }}</div>
+    </div>
+
+    <div class="row mb-2">
+        <div class="col-md-6"><strong>জেলা:</strong></div>
+        <div class="col-md-6">{{ data.district_name|default('-') }}</div>
+    </div>
+
+    <div class="row mb-2">
+        <div class="col-md-6"><strong>উপজেলা:</strong></div>
+        <div class="col-md-6">{{ data.upazila_name|default('-') }}</div>
+    </div>
+
+    <div class="row mb-2">
+        <div class="col-md-6"><strong>ইউনিয়ন:</strong></div>
+        <div class="col-md-6">{{ data.union_name|default('-') }}</div>
+    </div>
+
+    <div class="row mb-2">
+        <div class="col-md-6"><strong>বর্তমান ঠিকানা:</strong></div>
+        <div class="col-md-6">
+            {% if data.present_address is defined %}
+                {{ data.present_address.house_no|default('') }},
+                {{ data.present_address.road_no|default('') }},
+                {{ data.present_address.area|default('') }},
+                {{ data.present_address.post_code|default('') }}
+            {% else %}
+                -
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="row mb-2">
+        <div class="col-md-6"><strong>স্থায়ী ঠিকানা:</strong></div>
+        <div class="col-md-6">
+            {% if data.permanent_address is defined %}
+                {{ data.permanent_address.house_no|default('') }},
+                {{ data.permanent_address.road_no|default('') }},
+                {{ data.permanent_address.area|default('') }},
+                {{ data.permanent_address.post_code|default('') }}
+            {% else %}
+                -
+            {% endif %}
+        </div>
+    </div>
+
+    {% if data.members is defined and data.members|length %}
+    <div class="mt-3">
+        <h6>পরিবারের সদস্যগণ:</h6>
+        <table class="table table-bordered table-sm">
+            <thead class="table-light">
+                <tr>
+                    <th>ক্রমিক</th>
+                    <th>নাম (বাংলা)</th>
+                    <th>নাম (English)</th>
+                    <th>সম্পর্ক</th>
+                    <th>জন্ম তারিখ</th>
+                    <th>NID</th>
+                    <th>বৈবাহিক অবস্থা</th>
+                    <th>জীবিত/মৃত</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for member in data.members %}
+                <tr>
+                    <td>{{ member.serial_no|default(loop.index) }}</td>
+                    <td>{{ member.name_bn|default('-') }}</td>
+                    <td>{{ member.name_en|default('-') }}</td>
+                    <td>{{ member.relation_bn|default('-') }}</td>
+                    <td>{{ member.birth_date|default('-') }}</td>
+                    <td>{{ member.nid|default('-') }}</td>
+                    <td>{{ member.marital_status|default('-') }}</td>
+                    <td>{{ member.is_dead == '1' ? 'মৃত' : 'জীবিত' }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+
+    {% if data.documents is defined and data.documents|length %}
+    <div class="mt-3">
+        <h6>আপলোড করা ডকুমেন্টসমূহ:</h6>
+        <ul>
+            {% for doc in data.documents %}
+            <li><a href="{{ doc }}" target="_blank">ডকুমেন্ট {{ loop.index }}</a></li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
+</div>

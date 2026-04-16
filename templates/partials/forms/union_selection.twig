@@ -1,0 +1,420 @@
+{# partials/forms/union_selection.twig #}
+
+    <div class="row md-3">
+        <div class="col-md-4">
+            <label for="select_district_id" class="form-label">জেলা</label>
+            <select id="select_district_id" name="district" class="form-control" required>
+            </select>
+        </div>
+        <div class="col-md-4">
+            <label for="select_upazila_id" class="form-label">উপজেলা</label>
+            <select id="select_upazila_id" name="upazila" class="form-control" required>
+                <option value="">উপজেলা নির্বাচন করুন</option>
+            </select>
+        </div>
+        <div class="col-md-4">
+            <label for="union_id" class="form-label">ইউনিয়ন</label>
+            <select id="union_id" name="union_code" class="form-control" required>
+                <option value="">ইউনিয়ন নির্বাচন করুন</option>
+            </select>
+        </div>
+    </div>
+
+<div class="row mb-3">
+    <div class="col-12">
+        <label for="search-data" class="form-label">তথ্য অনুসন্ধান</label>
+        <div class="input-group">
+            <input type="search" 
+                id="search-data"
+                name="search-data" 
+                class="form-control" 
+                placeholder="ন্যাশনাল আইডি নং অথবা জন্ম নিবন্ধন নং অথবা পাসপোর্ট নং অথবা পিন নং দিন ইংরেজিতে">
+            <button type="button" id="search-btn" class="btn btn-primary">
+                অনুসন্ধান
+            </button>
+        </div>
+    </div>
+    <div id="search-message" style="margin-top:5px; font-size: 0.9em;"></div>
+</div>
+
+
+
+<script>
+$(document).ready(function () {
+
+    function populateDropdown(selector, data, placeholder = "চিহ্নিত করুন") {
+        if (!$(selector).length) return;
+        const select = $(selector);
+        select.empty().append(`<option value="">${placeholder}</option>`);
+        $.each(data, function (_, item) {
+            select.append(
+                `<option value="${item.union_code || item.name_en}" 
+                    data-geo-id="${item.id || item.union_id}" 
+                    data-name-en="${item.name_en || item.union_name_en}" 
+                    data-name-bn="${item.name_bn || item.union_name_bn}" 
+                    data-union-code="${item.union_code || ''}">
+                    ${item.name_en || item.union_name_en} (${item.name_bn || item.union_name_bn})
+                </option>`
+            );
+        });
+    }
+
+    // ========================
+    // Fetch Districts
+    // ========================
+    function fetchDistricts(callback) {
+        $.ajax({
+            url: '/geo/getdata',
+            method: 'POST',
+            data: { geo_order: 1, parent_geo_id: 0 },
+            dataType: 'json',
+            success: function(data) {
+                const select = $('#select_district_id');
+                select.empty();
+                $.each(data, function(_, district) {
+                    select.append(
+                        `<option value="${district.name_en}" 
+                            data-geo-id="${district.id}" 
+                            data-name-en="${district.name_en}" 
+                            data-name-bn="${district.name_bn}">
+                            ${district.name_en} (${district.name_bn})
+                        </option>`
+                    );
+                });
+                if (callback) callback();
+            },
+            error: function(err) { console.error('District fetch error:', err); }
+        });
+    }
+
+    // ========================
+    // Fetch Upazilas
+    // ========================
+    function fetchUpazilas(districtId, preselectUpazilaId = null, callback = null) {
+        $.ajax({
+            url: '/geo/getdata',
+            method: 'POST',
+            data: { geo_order: 2, parent_geo_id: districtId },
+            dataType: 'json',
+            success: function(data) {
+                const select = $('#select_upazila_id');
+                select.empty().append('<option value="">উপজেলা নির্বাচন করুন</option>');
+
+                let firstUpazilaId = null;
+                $.each(data, function(_, item) {
+                    if (!firstUpazilaId) firstUpazilaId = item.id;
+                    const selected = (item.id == preselectUpazilaId) ? 'selected' : '';
+                    select.append(
+                        `<option value="${item.name_en}" data-geo-id="${item.id}" data-name-bn="${item.name_bn}" ${selected}>
+                            ${item.name_en} (${item.name_bn})
+                        </option>`
+                    );
+                });
+
+                // auto-select first if nothing pre-selected
+                if (!preselectUpazilaId && firstUpazilaId) {
+                    select.val(select.find(`option[data-geo-id="${firstUpazilaId}"]`).val());
+                    preselectUpazilaId = firstUpazilaId;
+                }
+
+                $('#union_id').empty().append('<option value="">ইউনিয়ন নির্বাচন করুন</option>');
+                if (callback) callback(preselectUpazilaId);
+            },
+            error: function(err) { console.error('Upazila fetch error:', err); }
+        });
+    }
+
+    // ========================
+    // Fetch Unions
+    // ========================
+    function fetchUnions(upazilaId, preselectUnionCode = null) {
+        if (!upazilaId) return;
+        $.ajax({
+            url: '/geo/geoUnion',
+            method: 'POST',
+            data: { upazila_id: upazilaId },
+            dataType: 'json',
+            success: function(res) {
+                if (res.status === 'success') {
+                    populateDropdown('#union_id', res.data, 'ইউনিয়ন নির্বাচন করুন');
+                    // auto-select union
+                    if (preselectUnionCode) {
+                        $('#union_id').val(preselectUnionCode);
+                    } else if (res.data.length) {
+                        $('#union_id').val(res.data[0].union_code);
+                    }
+                    // Save union in localStorage
+                    const currentUnion = $('#union_id').val();
+                    if (currentUnion) localStorage.setItem('unionCode', currentUnion);
+                }
+            },
+            error: function(err) { console.error('Union fetch error:', err); }
+        });
+    }
+
+    // ========================
+    // Load saved selections
+    // ========================
+    const savedDistrictId = parseInt(localStorage.getItem('districtId')) || 25; // DHAKA default
+    const savedUpazilaId = parseInt(localStorage.getItem('upazilaId')) || null;
+    const savedUnionCode = localStorage.getItem('unionCode') || null;
+
+    // ========================
+    // Initial Load
+    // ========================
+    fetchDistricts(function() {
+        // select district
+        $('#select_district_id option').each(function() {
+            if (parseInt($(this).data('geo-id')) === savedDistrictId) {
+                $(this).prop('selected', true);
+            }
+        });
+
+        fetchUpazilas(savedDistrictId, savedUpazilaId, function(upazilaId) {
+            fetchUnions(upazilaId, savedUnionCode);
+        });
+    });
+
+    // ========================
+    // Bind Change Events
+    // ========================
+    $('#select_district_id').change(function () {
+        const districtId = parseInt($(this).find('option:selected').data('geo-id')) || 0;
+        localStorage.setItem('districtId', districtId);
+        localStorage.removeItem('upazilaId');
+        localStorage.removeItem('unionCode');
+        fetchUpazilas(districtId, null, function(upazilaId) {
+            fetchUnions(upazilaId);
+        });
+    });
+
+    $('#select_upazila_id').change(function () {
+        const upazilaId = parseInt($(this).find('option:selected').data('geo-id')) || 0;
+        localStorage.setItem('upazilaId', upazilaId);
+        localStorage.removeItem('unionCode');
+        fetchUnions(upazilaId);
+    });
+
+    $('#union_id').change(function () {
+        const unionCode = $(this).val();
+        localStorage.setItem('unionCode', unionCode);
+    });
+
+});
+</script>
+
+
+
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+
+    // ================= Form & Search Elements =================
+    const form = document.getElementById('applicationForm');
+    const searchBtn = document.getElementById('search-btn');
+    const searchInput = document.getElementById('search-data');
+    const searchMsg = document.getElementById('search-message');
+    const addressPrefixes = ['business','present','permanent'];
+
+    // ================= Search Button Click =================
+    searchBtn?.addEventListener('click', async () => {
+        const query = searchInput.value.trim();
+        searchMsg.textContent = '';
+        if (!query) return;
+
+        try {
+            const formData = new URLSearchParams();
+            formData.append('query', query);
+
+            const res = await fetch('/api/applications/search', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: formData.toString()
+            });
+
+            const response = await res.json();
+
+            if (response.status === 'success') {
+                fillForm(response.data);
+                searchInput.style.backgroundColor = 'green';
+                searchInput.style.border = '2px solid green';
+                searchInput.style.color = 'white';
+            } else {
+                preserveAndResetForm();
+                searchInput.style.backgroundColor = '#ff7f7f';
+                searchInput.style.border = '2px solid #ff7f7f';
+                searchInput.style.color = 'white';
+                searchMsg.textContent = response.message;
+                searchMsg.style.color = '#ff7f7f';
+            }
+        } catch (err) {
+            console.error(err);
+            searchMsg.textContent = 'সার্ভারে সমস্যা হয়েছে।';
+            searchMsg.style.color = 'red';
+            form.querySelectorAll('input, select, textarea').forEach(el => el.style.borderColor = '#ff7f7f');
+        }
+    });
+
+    // ================= Preserve & Reset Form =================
+    function preserveAndResetForm() {
+        const state = {
+            district: document.getElementById('district_select_dropdown')?.value,
+            upazila: document.getElementById('upazila_select_dropdown')?.value,
+            union: document.getElementById('union_select_dropdown')?.value,
+            search: searchInput?.value
+        };
+
+        form.reset();
+
+        if (state.district) document.getElementById('district_select_dropdown').value = state.district;
+        if (state.upazila) document.getElementById('upazila_select_dropdown').value = state.upazila;
+        if (state.union) document.getElementById('union_select_dropdown').value = state.union;
+        if (state.search) searchInput.value = state.search;
+
+        form.querySelectorAll('input, select, textarea').forEach(el => {
+            el.readOnly = false;
+            el.disabled = false;
+            el.style.backgroundColor = '';
+            el.style.color = '';
+            el.style.border = '';
+        });
+    }
+
+    // ================= Fill Form =================
+    function fillForm(data) {
+
+        for (const key in data) {
+            if (!data.hasOwnProperty(key)) continue;
+            const el = form.querySelector(`[name="${key}"]`);
+            if (!el) continue;
+
+            if (el.tagName === 'SELECT') el.value = data[key] ?? '';
+            else if (el.type === 'checkbox') el.checked = !!data[key];
+            else if (el.type === 'radio') {
+                const radio = form.querySelector(`[name="${key}"][value="${data[key]}"]`);
+                if (radio) radio.checked = true;
+            } else if (el.type === 'file' && key === 'photo') {
+                document.getElementById('photo_preview').src = data[key] ?? '';
+            } else el.value = data[key] ?? '';
+
+            // ====== readonly logic for non-checkbox/radio =====
+            if (el.type !== 'checkbox' && el.type !== 'radio') {
+                el.readOnly = el.value ? true : false;
+                el.style.backgroundColor = el.value ? '#e0e0e0' : '';
+                el.style.color = el.value ? '#000' : '';
+            }
+        }
+
+        // Birth date DD-MM-YYYY
+        if (data.birth_date) {
+            const parts = data.birth_date.split('-');
+            if (parts.length === 3) {
+                const bd = document.getElementById('birth_date');
+                bd.value = `${parts[2].padStart(2,'0')}-${parts[1].padStart(2,'0')}-${parts[0]}`;
+                bd.readOnly = true;
+                bd.style.backgroundColor = '#e0e0e0';
+            }
+        }
+
+        // Marital status toggle
+        const marital = form.querySelector('[name="marital_status"]')?.value;
+        const spouseSection = document.getElementById('spouse_section');
+        if (spouseSection) spouseSection.style.display = (marital && marital.toLowerCase() === 'married') ? 'block' : 'none';
+
+        // Address prefill + sync
+        addressPrefixes.forEach(prefix => {
+            prefillAddress(prefix, data);
+            bindAddressSync(prefix);
+        });
+    }
+
+    // ================= Prefill Address =================
+    function prefillAddress(prefix, data) {
+        const fields = ['village_en','village_bn','rbs_en','rbs_bn','holding_no','ward_no',
+                        'postoffice_en','postoffice_bn','district_en','district_bn','upazila_en','upazila_bn','union_en','union_bn'];
+
+        fields.forEach(f => {
+            const el = document.getElementById(`${prefix}_${f}`);
+            if (!el) return;
+            el.value = data[`${prefix}_${f}`] ?? '';
+            el.readOnly = el.value ? true : false;
+            el.style.backgroundColor = el.value ? '#e0e0e0' : '';
+        });
+
+        const districtId = document.getElementById(`${prefix}_district_id`);
+        const upazilaId = document.getElementById(`${prefix}_upazila_id`);
+        const unionId = document.getElementById(`${prefix}_union_id`);
+
+        if (districtId && data[`${prefix}_district_en`]) {
+            districtId.value = data[`${prefix}_district_en`];
+            districtId.dispatchEvent(new Event('change'));
+        }
+        if (upazilaId && data[`${prefix}_upazila_en`]) {
+            setTimeout(() => { upazilaId.value = data[`${prefix}_upazila_en`]; upazilaId.dispatchEvent(new Event('change')); }, 500);
+        }
+        if (unionId && data[`${prefix}_union_en`]) {
+            setTimeout(() => { unionId.value = data[`${prefix}_union_en`]; unionId.dispatchEvent(new Event('change')); }, 1000);
+        }
+
+        if (data[`${prefix}_ward_no`] !== undefined) {
+            const wardEl = document.getElementById(`${prefix}_ward_no`);
+            if (wardEl) wardEl.value = data[`${prefix}_ward_no`];
+        }
+    }
+
+    // ================= Address Copy & Sync =================
+    function bindAddressSync(prefix) {
+        const copyMap = {
+            business: 'same_as_business_address',
+            present: 'permanentBtn',
+            permanent: 'copy_present_to_business'
+        };
+
+        Object.keys(copyMap).forEach(from => {
+            const checkbox = document.getElementById(copyMap[from]);
+            if (!checkbox) return;
+
+            checkbox.disabled = true;
+            const to = from === 'business' ? 'present' : (from === 'present' ? 'permanent' : 'business');
+
+            checkbox.addEventListener('change', () => {
+                if (checkbox.checked) copyAddress(from,to);
+                else document.querySelectorAll(`#${to}_address_fields input,#${to}_address_fields select`).forEach(el=>el.value='');
+            });
+
+            document.querySelectorAll(`#${to}_address_fields input,#${to}_address_fields select`).forEach(el=>{
+                el.addEventListener('input',()=>{if(!addressesMatch(from,to)) checkbox.checked=false;});
+            });
+            document.querySelectorAll(`#${from}_address_fields input,#${from}_address_fields select`).forEach(el=>{
+                el.addEventListener('input',()=>{checkbox.checked=addressesMatch(from,to);});
+            });
+        });
+    }
+
+    function copyAddress(from,to){
+        const fields = ['village_en','village_bn','rbs_en','rbs_bn','holding_no','ward_no',
+                        'postoffice_en','postoffice_bn','district_id','upazila_id','union_id'];
+        fields.forEach(f=>{
+            const fromEl=document.getElementById(`${from}_${f}`);
+            const toEl=document.getElementById(`${to}_${f}`);
+            if(fromEl&&toEl){toEl.value=fromEl.value; toEl.dispatchEvent(new Event('change'));}
+        });
+    }
+
+    function addressesMatch(p1,p2){
+        const fields = ['village_en','village_bn','rbs_en','rbs_bn','holding_no','ward_no',
+                        'postoffice_en','postoffice_bn','district_id','upazila_id','union_id'];
+        return fields.every(f=>{
+            const el1=document.getElementById(`${p1}_${f}`);
+            const el2=document.getElementById(`${p2}_${f}`);
+            return el1 && el2 && el1.value===el2.value;
+        });
+    }
+
+});
+</script>
+
+
+
+
+

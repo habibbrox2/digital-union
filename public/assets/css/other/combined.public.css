@@ -1,0 +1,337 @@
+/* ==== Google font & External Libraries ==== */
+@import url('https://fonts.googleapis.com/css?family=Roboto:100,300,300i,400,500&subset=latin-ext');
+@import url('https://fonts.maateen.me/kalpurush/font.css');
+
+/* --------- 1. Custom Scrollbar Style --------- */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+::-webkit-scrollbar-thumb {
+    background: #42B6F3;
+    border-radius: 10px;
+    transition: background 0.3s ease;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: #007bff;
+}
+
+/* --------- 2. Core Reset & Typography --------- */
+*, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    border: 0;
+}
+
+body {
+    overflow-x: hidden;
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    font-family: 'Kalpurush', 'Roboto', sans-serif !important;
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 1.6em;
+    color: #656565;
+    background: #f7f7f7;
+}
+
+.body-bg {
+    background-image: url('/assets/images/bg_main2.gif');
+    background-repeat: repeat-y;
+    background-position: center top;
+    background-attachment: fixed;
+    background-color: #fff;
+}
+
+
+p { margin-bottom: 1em; color: #656565; }
+
+a {
+    color: #007bff;
+    text-decoration: none;
+    transition: all 0.3s ease;
+}
+a:hover {
+    text-decoration: none;
+}
+
+
+
+img { max-width: 100%; height: auto; }
+
+
+/* --------- Form Elements --------- */
+input, select, textarea {
+    font-family: inherit;
+    font-size: inherit;
+    padding: 0.5em;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    width: 100%;
+    margin-bottom: 1em;
+}
+
+input:focus, select:focus, textarea:focus {
+    border-color: #46a835;
+    outline: none;
+    box-shadow: 0 0 4px rgba(70,168,53,0.3);
+}
+
+button {
+    all: revert;
+    appearance: auto;
+}
+
+/* Remove hover effects too */
+button:hover {
+    background-color: transparent;
+    opacity: 1;
+}
+
+.search-btn { color: #00A5FF; font-family: 'Kalpurush', sans-serif; }
+.search-btn .search-btn-text { color: #fff; }
+
+/* --------- Header --------- */
+.site-header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 80px;
+    background: #fff;
+    border-bottom: solid 1px #c5d6de;
+    padding: 10px 10px 0 0;
+    z-index: 1000;
+}
+
+.site-header .site-logo {
+    display: block;
+    float: left;
+    height: 40px;
+    color: #343434;
+    line-height: 40px;
+}
+
+.site-header .site-logo img {
+    float: left;
+    height: 50px;
+    position: relative;
+    top: -5px;
+}
+
+
+
+section#page-body { margin-top: 90px; }
+
+/* --------- Panels --------- */
+.panel-body {
+    padding: 15px;
+    width: 90%;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+/* --------- Section Title --------- */
+.section-title {
+    font-size: calc(1.5rem + 1vw);
+    text-align: center;
+    transition: color 0.3s ease;
+    margin-bottom: 10px;
+    font-weight: 600;
+}
+
+
+
+
+.service-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    margin: 10px auto;
+    padding: 20px 15px;
+    height: 160px;
+
+    width: 220px; /* desktop */
+    max-width: 100%;
+    background: #FFF;
+    border-radius: 12px;
+    border: 1px solid #eee;
+    cursor: pointer;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.service-box:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 15px 30px rgba(0,0,0,0.1) !important;
+    border-color: #007bff !important;
+}
+
+.service-box .section-title {
+    font-size: 18px;
+    margin: 0;
+    line-height: 1.3;
+}
+
+.service-box img {
+    width: 80px;
+    height: 80px;
+    object-fit: contain;
+    margin-bottom: 12px;
+    transition: transform 0.3s ease;
+}
+
+.service-box:hover img { transform: scale(1.1); }
+
+/* --- Mobile service image --- */
+@media (max-width: 767px) {
+
+    .service-box .section-title {
+        font-size: 16px;
+    }
+}
+
+/* --------- Features --------- */
+.feature-icon {
+    max-width: 70px;
+    padding: 8px 0;
+    display: inline-block;
+}
+
+.feature-box {
+    margin: auto;
+    width: 100%;
+    max-width: 220px;
+    text-align: center;
+}
+
+.feature-box h5 {
+    font-size: 17px;
+    line-height: 23px;
+    margin-top: 10px;
+}
+
+/* --------- User Profile --------- */
+.user-profile {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    font-family: 'Kalpurush', sans-serif;
+}
+
+.user-avatar {
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid #007bff;
+}
+
+.user-name {
+    font-weight: 600;
+    font-size: 14px;
+    color: #1a1a1a;
+}
+
+/* --------- Admin Images --------- */
+.profile-image, .dc_image, .ddlg_image {
+    width: 160px;
+    height: 160px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid #f0f0f0;
+}
+
+.profile-name, .dc_name h4, .ddlg_name h4 {
+    color: #00A5FF;
+    font-family: 'Kalpurush', sans-serif;
+    line-height: 1.4;
+}
+
+.vertical-divider, .borderdc {
+    width: 1px;
+    height: 200px;
+    background-color: #e0e0e0;
+}
+
+/* --------- Footer --------- */
+footer {
+    padding: 40px 15px;
+    color: #fff;
+    background: #42B6F3;
+}
+
+.flex-center-li { display: flex; justify-content: center; align-items: center; }
+.footer-logo-small { width: 40px !important; }
+.footer-logo-large { width: 80px !important; }
+.footer-text { color: #fff; padding: 0 15px; font-size: 16px; }
+
+/* --------- Partners --------- */
+.partner-title {
+    border-bottom: 4px solid #4DBAF5;
+    font-family: 'Kalpurush', sans-serif;
+    display: inline-block;
+    padding-bottom: 5px;
+}
+.partner-row { margin-top: 15px; }
+
+/* --------- Media Queries --------- */
+@media (max-width: 767px) {
+    .site-header { height: auto; padding: 10px; }
+    .site-header .site-logo img { height: 40px; top: 0; }
+    .site-header .site-logo-text { width: 180px; font-size: 1rem; }
+    section#page-body { margin-top: 100px; }
+
+
+
+    .profile-image, .dc_image, .ddlg_image {
+        width: 130px;
+        height: 130px;
+    }
+
+    .vertical-divider { display: none; }
+
+    .user-profile {
+        flex-direction: column;
+        gap: 5px;
+        text-align: center;
+    }
+
+    .footer-text { font-size: 14px; text-align: center; }
+}
+
+
+
+/* --------- Utilities --------- */
+.text-center { text-align: center !important; }
+.text-center img, .text-center .btn {
+    display: inline-block;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.carousel-indicators button {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background-color: rgba(255, 255, 255, 0.5);
+    border: none;
+    margin: 0 5px;
+    transition: all 0.3s ease;
+}
+
+.carousel-indicators .active {
+    background-color: #0d6efd; /* Bootstrap primary */
+    width: 14px;
+    height: 14px;
+}

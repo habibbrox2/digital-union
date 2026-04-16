@@ -1,0 +1,31 @@
+<table style="width:98%; border-collapse:collapse; margin:0px auto;padding-top:10px;">
+    <tr height="60px">
+        <td style="font-size:16px; padding-left:30px;">
+            {% if certificate_type == 'nagorik' %}
+                &nbsp; &nbsp;&nbsp; &nbsp; This is to certify that the above-mentioned person is a permanent resident of this Union and is a citizen of Bangladesh. His/Her conduct and character is good.
+            {% elseif certificate_type == 'trade' %}
+                &nbsp; &nbsp;&nbsp; &nbsp; This is to certify that the above-mentioned person operates a business in this Union and regularly renews his Trade License.
+            {% elseif certificate_type == 'warish' %}
+                &nbsp; &nbsp;&nbsp; &nbsp; This is to certify that the above-mentioned person is the heir of the deceased person and the legal successor of the related property.
+            {% elseif certificate_type == 'character' %}
+                &nbsp; &nbsp;&nbsp; &nbsp; His/Her conduct and character is good. He/She is not involved in any immoral activities.
+            {% elseif certificate_type == 'new-voter-' or certificate_type == 'new-voter' %}
+                &nbsp; &nbsp;&nbsp; &nbsp; He/She is a permanent resident of this Union. He/She is a natural-born citizen of Bangladesh and is known to me. He/She could not be included in the voter list as he/she was not present during the preparation and updating of the voter list. I recommend him/her for being a new voter. I wish for his/her overall welfare and progress.
+            {% elseif certificate_type == 'voter' %}
+                &nbsp; &nbsp;&nbsp; &nbsp; He/She desires to transfer his/her voter status from this Union to another place. Therefore, this certification is being provided for the transfer of his/her voter ID.
+            {% elseif certificate_type == 'vumihin' %}
+                &nbsp; &nbsp;&nbsp; &nbsp; The above-mentioned person is a landless citizen. A request is being made to the Government for his/her rehabilitation.
+            {% elseif certificate_type == 'death' %}
+                &nbsp; &nbsp;&nbsp; &nbsp; It is hereby certified that the above-mentioned person, {{ data.deceased_name }}, died. Date of death: {{ data.death_date | date('d-m-Y') }}. This certification is provided for appropriate use.
+            {% elseif certificate_type == 'yearlyincome' %}
+                &nbsp; &nbsp;&nbsp; &nbsp; This is to certify that the annual income of the above-mentioned person is Taka {{ data.yearly_income | number_format(0, '.', ',') }}.
+            {% elseif certificate_type == 'disability' %}
+                &nbsp; &nbsp;&nbsp; &nbsp; This is to certify that the above-mentioned person is disabled and is entitled to disabled person facilities as per government rules.
+            {% elseif certificate_type == 'student' %}
+                &nbsp; &nbsp;&nbsp; &nbsp; This is to certify that the above-mentioned person is a bonafide student of our Union area.
+            {% else %}
+                &nbsp; &nbsp;&nbsp; &nbsp; This is to certify that the above-mentioned person is known to me.
+            {% endif %}
+        </td>
+    </tr>
+</table>

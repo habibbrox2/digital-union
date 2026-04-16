@@ -1,0 +1,325 @@
+{% extends "layout.twig" %}
+
+{% block content %}
+<div class="container my-5">
+    <!-- Header Section -->
+    <div class="row mb-4">
+        <div class="col-lg-8 mx-auto">
+            <div class="page-header-gradient">
+                <div class="page-header-content">
+                    <h1 class="page-header-title">{{ 'পারমিশন প্রত্যাহার করুন'|trans }}</h1>
+                    <p class="page-header-subtitle">{{ 'অনুমতি সম্পূর্ণভাবে সরিয়ে ফেলুন'|trans }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <!-- Confirmation Card -->
+            <div class="card shadow-lg border-0 mb-4 revoke-card">
+                <div class="card-header revoke-header">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-exclamation-triangle me-2" style="color: #f39c12;"></i>
+                        <h5 class="mb-0">{{ 'নিশ্চিত করুন'|trans }}</h5>
+                    </div>
+                </div>
+
+                <div class="card-body p-4">
+                    <!-- Role Information -->
+                    <div class="mb-4">
+                        <h6 class="text-muted mb-2">{{ 'ভূমিকা (Role)'|trans }}</h6>
+                        <div class="role-badge">
+                            <i class="fas fa-user-shield me-2"></i>
+                            <span class="role-name">{{ role.role_name }}</span>
+                        </div>
+                        {% if role.description %}
+                            <small class="text-muted d-block mt-2">{{ role.description }}</small>
+                        {% endif %}
+                    </div>
+
+                    <!-- Permission Information -->
+                    <div class="mb-4">
+                        <h6 class="text-muted mb-2">{{ 'প্রত্যাহার করার পারমিশন'|trans }}</h6>
+                        <div class="permission-card">
+                            <div class="d-flex align-items-start">
+                                <div class="permission-icon">
+                                    <i class="fas fa-key"></i>
+                                </div>
+                                <div class="permission-details">
+                                    <h6 class="mb-1 permission-name">{{ permission.name }}</h6>
+                                    <p class="mb-0 text-muted permission-description">{{ permission.description }}</p>
+                                    <div class="mt-2">
+                                        <span class="badge bg-secondary">{{ permission.module }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Warning Message -->
+                    <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>{{ 'সতর্কতা!'|trans }}</strong> {{ 'এই ক্রিয়াটি আপস্পন্ন হতে পারে না। এই ভূমিকা বর্তমানে এই অনুমতি হারাবে।'|trans }}
+                    </div>
+                </div>
+
+                <div class="card-footer bg-transparent border-top-0 p-4">
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-lg btn-danger" onclick="confirmRevoke()">
+                            <i class="fas fa-trash-alt me-2"></i>
+                            {{ 'নিশ্চিত - প্রত্যাহার করুন'|trans }}
+                        </button>
+                        <a href="/permissions/assign" class="btn btn-lg btn-secondary">
+                            <i class="fas fa-times me-2"></i>
+                            {{ 'বাতিল করুন'|trans }}
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Revoke Form (Hidden) -->
+<form id="revokeForm" action="/permissions/revoke/{{ role.role_id }}/{{ permission.id }}" method="POST" style="display: none;">
+    @csrf
+</form>
+
+<style>
+.page-header-gradient {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 2rem 1.5rem;
+    border-radius: 0.5rem;
+    margin-bottom: 2rem;
+}
+
+.page-header-content {
+    text-align: center;
+}
+
+.page-header-title {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+}
+
+.page-header-subtitle {
+    font-size: 1.1rem;
+    opacity: 0.9;
+    margin: 0;
+}
+
+.revoke-card {
+    border-radius: 0.75rem;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.revoke-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15) !important;
+}
+
+.revoke-header {
+    background: linear-gradient(90deg, #f39c12 0%, #e74c3c 100%);
+    color: white;
+    border: none;
+    font-weight: 600;
+    padding: 1.25rem 1.5rem;
+}
+
+.role-badge {
+    display: inline-flex;
+    align-items: center;
+    background: #e8f4f8;
+    color: #0c5460;
+    padding: 0.75rem 1.25rem;
+    border-radius: 0.5rem;
+    font-weight: 500;
+    border-left: 4px solid #0c5460;
+}
+
+.role-name {
+    font-weight: 600;
+}
+
+.permission-card {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 0.5rem;
+    padding: 1.25rem;
+    transition: background-color 0.3s ease;
+}
+
+.permission-card:hover {
+    background-color: #f0f1f3;
+}
+
+.permission-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 50px;
+    height: 50px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 0.5rem;
+    margin-right: 1rem;
+    flex-shrink: 0;
+}
+
+.permission-icon i {
+    font-size: 1.5rem;
+}
+
+.permission-details {
+    flex: 1;
+}
+
+.permission-name {
+    color: #333;
+    font-weight: 600;
+}
+
+.permission-description {
+    font-size: 0.9rem;
+}
+
+.alert {
+    background-color: #fff3cd;
+    border-color: #ffeaa7;
+    border-radius: 0.5rem;
+}
+
+.btn-danger {
+    background: linear-gradient(135deg, #f39c12 0%, #e74c3c 100%);
+    border: none;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.btn-danger:hover {
+    background: linear-gradient(135deg, #e67e22 0%, #c0392b 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 5px 15px rgba(231, 76, 60, 0.3);
+}
+
+.btn-secondary {
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.btn-secondary:hover {
+    transform: translateY(-1px);
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+    .page-header-gradient {
+        background: linear-gradient(135deg, #4a5568 0%, #2d3748 100%);
+    }
+
+    .revoke-card {
+        background: #2d3748;
+        border-color: #4a5568;
+    }
+
+    .card-body {
+        color: #e2e8f0;
+    }
+
+    .text-muted {
+        color: #a0aec0 !important;
+    }
+
+    .role-badge {
+        background: #2d3748;
+        color: #90cdf4;
+        border-left-color: #90cdf4;
+    }
+
+    .permission-card {
+        background: #4a5568;
+        border-color: #718096;
+    }
+
+    .permission-name {
+        color: #e2e8f0;
+    }
+
+    .alert-warning {
+        background-color: #744210;
+        border-color: #975a16;
+        color: #fed7aa;
+    }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .page-header-title {
+        font-size: 1.75rem;
+    }
+
+    .page-header-subtitle {
+        font-size: 0.95rem;
+    }
+
+    .btn-lg {
+        padding: 0.75rem 1.5rem;
+        font-size: 0.95rem;
+    }
+
+    .d-flex.gap-2 {
+        flex-direction: column;
+    }
+
+    .permission-icon {
+        width: 40px;
+        height: 40px;
+    }
+
+    .permission-icon i {
+        font-size: 1.25rem;
+    }
+}
+</style>
+
+<script>
+function confirmRevoke() {
+    const permissionName = '{{ permission.name }}';
+    const roleName = '{{ role.role_name }}';
+
+    Swal.fire({
+        title: '{{ "নিশ্চিত করুন"|trans }}',
+        html: `<p>আপনি কি নিশ্চিত যে আপনি <strong>${roleName}</strong> থেকে <strong>${permissionName}</strong> প্রত্যাহার করতে চান?</p>
+               <p style="color: #e74c3c; font-weight: 500; margin-top: 1rem;">এই ক্রিয়াটি পূর্বাবাস যোগ্য নয়।</p>`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#e74c3c',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: '{{ "প্রত্যাহার করুন"|trans }}',
+        cancelButtonText: '{{ "বাতিল করুন"|trans }}',
+        allowOutsideClick: false,
+        allowEscapeKey: false
+    }).then((result) => {
+        if (result.isConfirmed) {
+            // Submit the form
+            document.getElementById('revokeForm').submit();
+        }
+    });
+}
+
+// Show confirmation on page load
+document.addEventListener('DOMContentLoaded', function() {
+    Swal.fire({
+        title: '{{ "আপনি কি নিশ্চিত?"|trans }}',
+        html: `<p>আপনি এই পারমিশন প্রত্যাহার করতে চলেছেন।</p>`,
+        icon: 'question',
+        confirmButtonColor: '#667eea',
+        confirmButtonText: '{{ "বুঝেছি"|trans }}'
+    });
+});
+</script>
+{% endblock %}

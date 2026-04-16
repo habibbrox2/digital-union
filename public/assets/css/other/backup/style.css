@@ -1,0 +1,134 @@
+/* Backup of style.css */
+/* ==== Google font ==== */
+@import url('https://fonts.googleapis.com/css?family=Roboto:100,300,300i,400,500&subset=latin-ext');
+
+
+/* ===================================
+1. General
+==================================== */
+html, body {
+  overflow-x: hidden;
+}
+
+body {
+  font-family: 'Roboto', sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.6em;
+  color: #656565;
+  background: #f7f7f7;
+}
+
+/* Anchor fix */
+a:active {
+  outline: 0;
+}
+
+.clear {
+  clear: both;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Roboto', sans-serif;
+  font-weight: 500;
+  line-height: 1.1em;
+  color: #333;
+  margin-bottom: 20px;
+}
+
+/* =============================
+   Container - keep Bootstrap intact
+   ============================= */
+.container {
+  max-width: 1320px;
+  margin: 0 auto;
+  padding-left: 15px;
+  padding-right: 15px;
+}
+
+/* =============================
+   Panel and Section Adjustments
+   ============================= */
+.panel {
+  border-radius: 6px;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  margin-bottom: 30px;
+}
+
+.panel-heading {
+  background-color: #f9f9f9;
+  padding: 15px;
+  border-bottom: 1px solid #ddd;
+}
+
+.panel-body {
+  padding: 20px;
+}
+
+/* =============================
+   Utility classes
+   ============================= */
+.mt-4 {
+  margin-top: 1.5rem !important;
+}
+
+.text-center {
+  text-align: center !important;
+}
+
+.btn-block {
+  display: block;
+  width: 100%;
+}
+
+/* =============================
+   Responsive tweaks
+   ============================= */
+@media (max-width: 768px) {
+  body {
+    font-size: 13px;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    margin-bottom: 15px;
+  }
+
+  .panel-body {
+    padding: 10px;
+  }
+}
+
+/* for headerwidth */
+.headwidth{
+  width: 100%;
+  background: linear-gradient(0deg, rgba(255,255,255,1) 0%, rgba(238,246,227,1) 100%); 
+}
+.extrawidth{
+  padding-left: 15px;
+  padding-right: 15px;
+  width:95%;
+}
+/* for seba col-md-6 */
+.smallwidth{
+	padding-bottom:20px;
+}
+
+/* for onnano seba */
+.rowextra{
+	padding-bottom: 25px;
+}
+.rowextra .upimage img{
+	width: 100px;
+    height: 100px;
+}
+.removeshadow{
+	background: #fff;
+    margin: 20px;
+    padding: 30px;
+}
+. #wrapper{
+ 	width:100%;
+ 	margin:0;    
+ 	padding:0;
+ }

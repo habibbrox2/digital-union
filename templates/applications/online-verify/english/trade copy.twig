@@ -1,0 +1,413 @@
+<link rel="stylesheet" href="/assets/css/certificate-online-verify.css">
+<style>
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+    
+    body {
+        font-family: Arial, sans-serif;
+        background: #f5f5f5;
+        padding: 15pt;
+    }
+    
+    .certificate-container {
+        max-width: 525pt;
+        margin: 0 auto;
+        background: white;
+        padding: 60pt;
+        box-shadow: 0 0 10pt rgba(0, 0, 0, 0.1);
+        border: 1pt solid #ddd;
+    }
+    
+    .certificate-header {
+        text-align: center;
+        margin-bottom: 37.5pt;
+        border-bottom: 2pt solid #333;
+        padding-bottom: 15pt;
+    }
+    
+    .header-title {
+        font-size: 18.75pt;
+        font-weight: bold;
+        color: #1a1a1a;
+        margin-bottom: 10.5pt;
+    }
+    
+    .header-subtitle {
+        font-size: 12.75pt;
+        color: #333;
+        margin-bottom: 7.5pt;
+    }
+    
+    .union-name {
+        font-size: 12pt;
+        font-weight: bold;
+        color: #0066cc;
+        margin-bottom: 10.5pt;
+    }
+    
+    .certificate-number {
+        font-size: 12pt;
+        font-weight: bold;
+        margin-bottom: 10.5pt;
+    }
+    
+    .cert-no-label {
+        display: inline-block;
+        width: 100pt;
+        font-weight: bold;
+    }
+    
+    .cert-no-value {
+        display: inline-block;
+        padding-bottom: 1pt;
+        border-bottom: 1pt solid #333;
+        width: 250pt;
+        text-align: left;
+    }
+    
+    .info-section {
+        margin-bottom: 30pt;
+    }
+    
+    .section-title {
+        font-size: 12.75pt;
+        font-weight: bold;
+        background: #e8f0f7;
+        padding: 7.5pt;
+        margin-bottom: 12pt;
+        border-left: 3pt solid #0066cc;
+    }
+    
+    .info-row {
+        display: flex;
+        margin-bottom: 12pt;
+        font-size: 11.25pt;
+    }
+    
+    .info-label {
+        font-weight: bold;
+        width: 120pt;
+        color: #333;
+    }
+    
+    .info-value {
+        flex: 1;
+        padding-left: 15pt;
+        color: #1a1a1a;
+        word-break: break-word;
+    }
+    
+    .info-value.underline {
+        border-bottom: 1pt solid #666;
+        padding-bottom: 3pt;
+    }
+    
+    .two-column {
+        display: flex;
+        gap: 30pt;
+    }
+    
+    .column {
+        flex: 1;
+    }
+    
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 20pt;
+        font-size: 10.5pt;
+    }
+    
+    table thead {
+        background: #d9e8f5;
+        border: 1pt solid #999;
+    }
+    
+    table th {
+        padding: 7.5pt;
+        text-align: left;
+        font-weight: bold;
+        border: 1pt solid #999;
+        font-size: 10.5pt;
+    }
+    
+    table td {
+        padding: 7.5pt;
+        border: 1pt solid #ccc;
+        font-size: 10.5pt;
+    }
+    
+    table tbody tr:nth-child(odd) {
+        background: #f9f9f9;
+    }
+    
+    table tbody tr:nth-child(even) {
+        background: white;
+    }
+    
+    .tax-section {
+        margin-top: 20pt;
+        background: #f5f5f5;
+        padding: 12pt;
+        border: 1pt solid #ddd;
+    }
+    
+    .tax-row {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 7.5pt;
+        font-size: 11.25pt;
+    }
+    
+    .tax-label {
+        font-weight: bold;
+        color: #333;
+    }
+    
+    .tax-value {
+        text-align: right;
+        width: 100pt;
+        border-bottom: 1pt dotted #999;
+    }
+    
+    .total-row {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 12pt;
+        padding-top: 12pt;
+        border-top: 2pt solid #333;
+        font-size: 12pt;
+        font-weight: bold;
+    }
+    
+    .total-label {
+        color: #1a1a1a;
+    }
+    
+    .total-value {
+        text-align: right;
+        width: 100pt;
+    }
+    
+    .certificate-footer {
+        margin-top: 40pt;
+        text-align: center;
+        font-size: 10.5pt;
+        color: #666;
+        border-top: 1pt solid #ccc;
+        padding-top: 15pt;
+    }
+    
+    .signature-section {
+        margin-top: 30pt;
+        display: flex;
+        justify-content: space-between;
+    }
+    
+    .signature-box {
+        width: 120pt;
+        text-align: center;
+        border-top: 1pt solid #333;
+        padding-top: 10pt;
+        font-size: 10.5pt;
+    }
+    
+    .empty-row {
+        height: 25pt;
+        border: 1pt dashed #ddd;
+        background: #fafafa;
+        padding: 3pt;
+        margin-bottom: 10pt;
+        font-size: 10.5pt;
+        color: #999;
+    }
+    
+    .verification-badge {
+        background: #e8f5e9;
+        border: 2pt solid #4caf50;
+        padding: 12pt;
+        border-radius: 4pt;
+        text-align: center;
+        margin-bottom: 20pt;
+    }
+    
+    .verification-badge .badge-title {
+        font-weight: bold;
+        color: #2e7d32;
+        font-size: 12pt;
+    }
+    
+    .verification-badge .badge-date {
+        color: #558b2f;
+        font-size: 10.5pt;
+        margin-top: 3pt;
+    }
+</style>
+
+<div class="certificate-container">
+    <div class="verification-badge">
+        <div class="badge-title">✓ Online Verified Certificate</div>
+        <div class="badge-date">Verified on: {{ 'now'|date('d M Y H:i:s') }}</div>
+    </div>
+    
+    <div class="certificate-header">
+        <div class="header-title">Trade License Certificate</div>
+        <div class="header-subtitle">Online Verification</div>
+        <div class="union-name">{{ union.union_name_en|default(union.union_name_bn) }}</div>
+        <div class="certificate-number">
+            <span class="cert-no-label">Certificate No:</span>
+            <span class="cert-no-value">{{ application.application_code }}</span>
+        </div>
+    </div>
+    
+    <div class="info-section">
+        <div class="section-title">Business Information</div>
+        
+        <div class="info-row">
+            <div class="info-label">Business Name</div>
+            <div class="info-value underline">{{ application.business_name_en|default(application.business_name_bn) }}</div>
+        </div>
+        
+        <div class="info-row">
+            <div class="info-label">Type</div>
+            <div class="info-value underline">{{ application.business_type_en|default(application.business_type_bn) }}</div>
+        </div>
+        
+        <div class="info-row">
+            <div class="info-label">Issue Date</div>
+            <div class="info-value underline">{{ application.issue_date|date('d M Y') }}</div>
+        </div>
+        
+        <div class="info-row">
+            <div class="info-label">Expiry Date</div>
+            <div class="info-value underline">{{ application.expiry_date|date('d M Y') }}</div>
+        </div>
+    </div>
+    
+    <div class="info-section">
+        <div class="section-title">Contact Information</div>
+        
+        <div class="info-row">
+            <div class="info-label">Mobile</div>
+            <div class="info-value underline">{{ application.mobile_number }}</div>
+        </div>
+        
+        <div class="info-row">
+            <div class="info-label">Email</div>
+            <div class="info-value underline">{{ application.email }}</div>
+        </div>
+        
+        <div class="info-row">
+            <div class="info-label">Address</div>
+            <div class="info-value underline">{{ application.address_en|default(application.address_bn) }}</div>
+        </div>
+    </div>
+    
+    <div class="info-section">
+        <div class="section-title">Proprietor Information</div>
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 40pt;">Serial</th>
+                    <th style="width: 150pt;">Name</th>
+                    <th style="width: 100pt;">Relation</th>
+                    <th style="width: 80pt;">ID Number</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% set proprietors = application.proprietors|default([]) %}
+                {% if proprietors is iterable %}
+                    {% for proprietor in proprietors %}
+                        <tr>
+                            <td>{{ loop.index }}</td>
+                            <td>{{ proprietor.name_en|default(proprietor.name_bn)|default('N/A') }}</td>
+                            <td>{{ proprietor.relation_en|default(proprietor.relation_bn)|default('Proprietor') }}</td>
+                            <td>{{ proprietor.id_number|default('') }}</td>
+                        </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td>1</td>
+                        <td class="empty-row">Proprietor Name</td>
+                        <td class="empty-row">Relation</td>
+                        <td class="empty-row">ID Number</td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+    
+    <div class="info-section">
+        <div class="section-title">Financial Summary</div>
+        
+        <div class="tax-section">
+            {% if application.trade_license_fee %}
+                <div class="tax-row">
+                    <span class="tax-label">Trade License Fee</span>
+                    <span class="tax-value">{{ application.trade_license_fee }}</span>
+                </div>
+            {% endif %}
+            
+            {% if application.vat %}
+                <div class="tax-row">
+                    <span class="tax-label">VAT</span>
+                    <span class="tax-value">{{ application.vat }}</span>
+                </div>
+            {% endif %}
+            
+            {% if application.occupation_tax %}
+                <div class="tax-row">
+                    <span class="tax-label">Occupation Tax</span>
+                    <span class="tax-value">{{ application.occupation_tax }}</span>
+                </div>
+            {% endif %}
+            
+            {% if application.income_tax %}
+                <div class="tax-row">
+                    <span class="tax-label">Income Tax</span>
+                    <span class="tax-value">{{ application.income_tax }}</span>
+                </div>
+            {% endif %}
+            
+            {% if application.signboard_tax %}
+                <div class="tax-row">
+                    <span class="tax-label">Signboard Tax</span>
+                    <span class="tax-value">{{ application.signboard_tax }}</span>
+                </div>
+            {% endif %}
+            
+            {% if application.surcharge %}
+                <div class="tax-row">
+                    <span class="tax-label">Surcharge</span>
+                    <span class="tax-value">{{ application.surcharge }}</span>
+                </div>
+            {% endif %}
+            
+            <div class="total-row">
+                <span class="total-label">Total</span>
+                <span class="total-value">{{ application.total_amount|default('0') }}</span>
+            </div>
+        </div>
+    </div>
+    
+    <div class="signature-section">
+        <div class="signature-box">
+            <div style="margin-bottom: 5pt;">Office Seal</div>
+            <div style="height: 36pt; border: 1pt dashed #999;"></div>
+        </div>
+        <div class="signature-box">
+            <div style="margin-bottom: 5pt;">Authorized Officer</div>
+            <div style="height: 36pt; border: 1pt dashed #999;"></div>
+        </div>
+    </div>
+    
+    <div class="certificate-footer">
+        <p>This is a digitally verified certificate. Verification code: {{ application.verification_code|default('') }}</p>
+        <p style="margin-top: 7.5pt; font-size: 10pt;">Printed on: {{ 'now'|date('d M Y H:i:s') }}</p>
+    </div>
+</div>
+
+</section>
