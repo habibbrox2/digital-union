@@ -8,14 +8,31 @@ This guide covers automatic deployment from git to your web hosting using webhoo
 
 ### 1. Upload Files to Web Hosting
 
-Upload these files to your web hosting server:
-- `deploy.sh` → Root directory
-- `deploy.php` → Root directory (or web-accessible folder)
-
-```bash
-# Make deploy.sh executable
-chmod +x deploy.sh
+Your web hosting has this directory structure:
 ```
+project-root/
+├── deploy.sh              (in project root)
+├── deploy.php             (COPY TO public/)
+├── public/
+│   ├── deploy.php         (web-accessible copy)
+│   ├── index.php
+│   └── assets/
+├── storage/
+├── config/
+└── .env
+```
+
+**Upload to hosting:**
+1. Upload entire project to server (the directory above `public`)
+2. Copy `deploy.php` to the `public/` folder:
+   ```bash
+   cp deploy.php public/deploy.php
+   ```
+3. Make deploy.sh executable:
+   ```bash
+   chmod +x deploy.sh
+   chmod +x deploy.php
+   ```
 
 ### 2. Configure Deployment Token
 
@@ -41,13 +58,13 @@ define('DEPLOY_TOKEN', 'your-super-secret-token-here');
 Test that deployment works manually:
 
 ```bash
-# Direct script execution
+# SSH into your hosting and run directly
 ssh user@yourhost.com
-cd /path/to/digital-union
+cd /path/to/project-root  # NOT the public folder
 ./deploy.sh production
 
-# Or via HTTP webhook endpoint
-curl "http://yoursite.com/deploy.php?token=your-secret-token&env=production"
+# Or via HTTP webhook endpoint (uses public/deploy.php)
+curl "https://yoursite.com/deploy.php?token=your-secret-token&env=production"
 ```
 
 ### 4. Configure GitHub Webhook
@@ -56,9 +73,9 @@ Go to your GitHub repository:
 
 1. **Settings** → **Webhooks** → **Add webhook**
 
-2. **Payload URL**: `http://yoursite.com/deploy.php`
-   - Use HTTPS if possible: `https://yoursite.com/deploy.php`
-   - Ensure deploy.php is web-accessible
+2. **Payload URL**: `http://yoursite.com/deploy.php` or `https://yoursite.com/deploy.php`
+   - Since `public/` is your web root, deploy.php will be at: `https://yourdomain.com/deploy.php`
+   - Make sure you copied deploy.php to the public/ folder
 
 3. **Content type**: `application/json`
 
