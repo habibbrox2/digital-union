@@ -329,14 +329,18 @@ function execute_deployment($environment, $webhook_data = null)
         ];
     }
 
-    // Parse output JSON
+    // Parse output JSON - look for the last valid JSON object (skip git errors)
     if ($output) {
         $lines = array_reverse(explode("\n", trim($output)));
         foreach ($lines as $line) {
-            if (trim($line) && $line[0] === '{') {
-                $result = json_decode($line, true);
-                if ($result) {
-                    return $result;
+            if (trim($line)) {
+                // Try to find any valid JSON, starting from the end
+                $trimmed_line = trim($line);
+                if ($trimmed_line && $trimmed_line[0] === '{') {
+                    $result = json_decode($trimmed_line, true);
+                    if ($result) {
+                        return $result;
+                    }
                 }
             }
         }
@@ -344,8 +348,12 @@ function execute_deployment($environment, $webhook_data = null)
 
     return [
         'status' => 'error',
-        'message' => 'Deployment execution failed',
-        'output' => $output,
+        'message' => 'Deployment execution failed - could not parse response',
+        'output' => substr($output, -1000), // Last 1000 chars for debugging
+        'debug' => [
+            'output_length' => strlen($output),
+            'contains_json' => strpos($output, '{') !== false,
+        ],
     ];
 }
 

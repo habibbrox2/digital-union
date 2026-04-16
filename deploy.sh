@@ -239,6 +239,18 @@ fi
 
 # Step 4: Git pull
 log "Step 4: Pulling latest changes from git..."
+
+# Check for git index corruption and fix it
+if git fsck --full &>/dev/null; then
+    log "Git index check passed"
+else
+    warning "Git index corrupted, attempting to fix..."
+    if [ -f ".git/index" ]; then
+        rm -f ".git/index"
+        log "Removed corrupted git index, git will regenerate it"
+    fi
+fi
+
 CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
 log "Current branch: $CURRENT_BRANCH"
 
