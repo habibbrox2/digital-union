@@ -82,8 +82,37 @@ public/tmp/*
 *.old
 *.sql.bak
 *.database.backup
+*.sql
 db_backups/
 backups/
+
+# ============================================
+# Documentation & Audit Files
+# ============================================
+AUDIT_AND_REPAIR_REPORT.md
+TRADE_LICENSE_EXPIRY_FEATURE.md
+*_REPORT.md
+*_FEATURE.md
+
+# ============================================
+# Migration & Database Scripts
+# ============================================
+migrate.php
+database_migration_safe.sql
+database_fixes.sql
+tdhuedhn_lgdhaka.sql
+*_migration*.sql
+*_fixes.sql
+
+# ============================================
+# Archive Files
+# ============================================
+classes.zip
+*.zip
+*.rar
+*.7z
+*.tar
+*.tar.gz
 
 # ============================================
 # Compiled & Minified Assets
