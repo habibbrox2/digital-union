@@ -231,6 +231,50 @@ function parse_webhook_payload()
 }
 
 /**
+ * Execute command using proc_open (more reliable on restricted hosting like LiteSpeed)
+ */
+function execute_with_proc_open($command, $timeout)
+{
+    if (!function_exists('proc_open')) {
+        return null;
+    }
+
+    $descriptors = [
+        0 => ['pipe', 'r'],
+        1 => ['pipe', 'w'],
+        2 => ['pipe', 'w'],
+    ];
+
+    $process = @proc_open($command, $descriptors, $pipes);
+
+    if (!is_resource($process)) {
+        return null;
+    }
+
+    $output = '';
+    $start_time = time();
+
+    while (!feof($pipes[1])) {
+        if (time() - $start_time > $timeout) {
+            @proc_terminate($process);
+            break;
+        }
+
+        $line = fgets($pipes[1], 4096);
+        if ($line !== false) {
+            $output .= $line;
+        }
+    }
+
+    @fclose($pipes[0]);
+    @fclose($pipes[1]);
+    @fclose($pipes[2]);
+    @proc_close($process);
+
+    return $output;
+}
+
+/**
  * Execute deployment
  */
 function execute_deployment($environment, $webhook_data = null)
@@ -254,7 +298,7 @@ function execute_deployment($environment, $webhook_data = null)
 
     // Build command
     $command = "cd " . escapeshellarg($config['path']) . " && ";
-    $command .= "bash " . escapeshellarg($script) . " ";
+    $command .= "/bin/bash " . escapeshellarg($script) . " ";
     $command .= escapeshellarg($environment) . " ";
     $command .= "--webhook 2>&1";
 
@@ -264,8 +308,28 @@ function execute_deployment($environment, $webhook_data = null)
         'webhook' => $webhook_data,
     ]);
 
-    // Execute with timeout
-    $output = shell_exec("timeout {$config['timeout']} $command");
+    // Try proc_open first (more reliable on LiteSpeed)
+    $output = execute_with_proc_open($command, $config['timeout']);
+
+    if ($output === null || $output === '') {
+        // Fallback to shell_exec
+        $output = @shell_exec("timeout {$config['timeout']} $command");
+    }
+
+    if ($output === null || trim($output) === '') {
+        log_webhook("Deployment script execution failed", [
+            'script' => $script,
+            'environment' => $environment,
+            'php_function_shell_exec' => function_exists('shell_exec'),
+            'php_function_proc_open' => function_exists('proc_open'),
+            'script_exists' => file_exists($script),
+        ]);
+
+        return [
+            'status' => 'error',
+            'message' => 'Deployment execution failed - script did not produce output. Verify bash is available.',
+        ];
+    }
 
     // Parse output JSON
     if ($output) {
