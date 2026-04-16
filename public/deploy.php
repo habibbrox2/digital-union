@@ -21,8 +21,28 @@
 // CONFIGURATION
 // ============================================================================
 
-// Deployment token - CHANGE THIS!
-define('DEPLOY_TOKEN', getenv('DEPLOY_TOKEN') ?: 'your-super-secret-token-here');
+// Load .env file from project root
+$env_file = dirname(__DIR__) . '/.env';
+$env_vars = [];
+if (file_exists($env_file)) {
+    $lines = file($env_file);
+    foreach ($lines as $line) {
+        $line = trim($line);
+        if (empty($line) || strpos($line, '#') === 0) continue;
+        if (strpos($line, '=') !== false) {
+            list($key, $value) = explode('=', $line, 2);
+            $env_vars[trim($key)] = trim($value);
+        }
+    }
+}
+
+// Get deployment token from .env or environment
+define(
+    'DEPLOY_TOKEN',
+    $env_vars['DEPLOY_TOKEN'] ??
+        getenv('DEPLOY_TOKEN') ?:
+        'your-super-secret-token-here'
+);
 
 // Allow deployments from these IPs (GitHub, GitLab, etc)
 define('ALLOWED_IPS', [
@@ -104,9 +124,7 @@ function log_webhook($message, $data = [])
     file_put_contents(WEBHOOK_LOG, $log_message . "\n", FILE_APPEND | LOCK_EX);
 }
 
-/**
- * Verify client IP
- */
+// Verify client IP
 function verify_client_ip()
 {
     $client_ip = $_SERVER['REMOTE_ADDR'] ?? null;
@@ -271,6 +289,38 @@ function execute_deployment($environment, $webhook_data = null)
 // MAIN
 // ============================================================================
 
+// Check for test/debug endpoint
+if (isset($_GET['test']) || isset($_GET['debug'])) {
+    header('Content-Type: application/json');
+
+    // Only allow from localhost
+    if (!in_array($_SERVER['REMOTE_ADDR'], ['127.0.0.1', '::1'])) {
+        http_response_code(403);
+        echo json_encode([
+            'status' => 'error',
+            'message' => 'Test endpoint only accessible from localhost',
+            'your_ip' => $_SERVER['REMOTE_ADDR'],
+        ]);
+        exit;
+    }
+
+    echo json_encode([
+        'status' => 'success',
+        'message' => 'Configuration test',
+        'config' => [
+            'token_length' => strlen(DEPLOY_TOKEN),
+            'token_first_chars' => substr(DEPLOY_TOKEN, 0, 8) . '...',
+            'token_empty' => empty(DEPLOY_TOKEN),
+            'project_root' => dirname(__DIR__),
+            'env_file_exists' => file_exists(dirname(__DIR__) . '/.env'),
+            'env_vars_loaded' => count($env_vars),
+            'php_version' => phpversion(),
+            'script_dir' => __DIR__,
+        ],
+    ], JSON_PRETTY_PRINT);
+    exit;
+}
+
 // Verify deployment token
 $token = $_GET['token'] ?? $_POST['token'] ?? null;
 $environment = $_GET['env'] ?? $_POST['env'] ?? 'production';
@@ -301,8 +351,14 @@ if ($is_webhook) {
         $gitlab_valid = isset($_SERVER['HTTP_X_GITLAB_EVENT']) && verify_gitlab_signature();
 
         if (!$github_valid && !$gitlab_valid) {
-            log_webhook("Signature verification failed");
-            json_response('error', 'Webhook signature invalid');
+            log_webhook("Signature verification failed", [
+                'has_github_signature' => isset($_SERVER['HTTP_X_HUB_SIGNATURE_256']),
+                'has_gitlab_token' => isset($_SERVER['HTTP_X_GITLAB_TOKEN']),
+                'github_event' => $_SERVER['HTTP_X_GITHUB_EVENT'] ?? 'none',
+                'gitlab_event' => $_SERVER['HTTP_X_GITLAB_EVENT'] ?? 'none',
+                'token_configured' => !empty(DEPLOY_TOKEN),
+            ]);
+            json_response('error', 'Webhook signature invalid - check GitHub secret matches DEPLOY_TOKEN in .env');
         }
     }
 

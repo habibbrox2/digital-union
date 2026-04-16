@@ -21,8 +21,28 @@
 // CONFIGURATION
 // ============================================================================
 
-// Deployment token - CHANGE THIS!
-define('DEPLOY_TOKEN', getenv('DEPLOY_TOKEN') ?: 'your-super-secret-token-here');
+// Load .env file
+$env_file = __DIR__ . '/.env';
+$env_vars = [];
+if (file_exists($env_file)) {
+    $lines = file($env_file);
+    foreach ($lines as $line) {
+        $line = trim($line);
+        if (empty($line) || strpos($line, '#') === 0) continue;
+        if (strpos($line, '=') !== false) {
+            list($key, $value) = explode('=', $line, 2);
+            $env_vars[trim($key)] = trim($value);
+        }
+    }
+}
+
+// Get deployment token from .env or environment
+define(
+    'DEPLOY_TOKEN',
+    $env_vars['DEPLOY_TOKEN'] ??
+        getenv('DEPLOY_TOKEN') ?:
+        'your-super-secret-token-here'
+);
 
 // Allow deployments from these IPs (GitHub, GitLab, etc)
 define('ALLOWED_IPS', [
