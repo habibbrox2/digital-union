@@ -8,7 +8,7 @@
 <div class="container my-5">
     <h1 class="mb-4 text-center">{{ header_title ?? (birth.id ? 'জন্ম নিবন্ধন (সম্পাদনা)' : 'নতুন জন্ম নিবন্ধন') }}</h1>
 
-    <a href="/birth" class="btn btn-secondary text-end mb-3">
+    <a href="{{ url }}/birth" class="btn btn-secondary text-end mb-3">
         <i class="bi bi-arrow-left"></i> ফিরে যান / Back to List
     </a>
 
@@ -110,7 +110,7 @@
 
 <!-- ================= Main Birth Form ================= -->
 
-        <form id="birthForm" action="/birth/save" method="post" class="needs-validation" novalidate>
+        <form id="birthForm" action="{{ url }}/birth/save" method="post" class="needs-validation" novalidate>
             <input type="hidden" name="id" value="{{ birth.id ?? '' }}">
             <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
 
@@ -449,6 +449,7 @@
   const serverTokenField = document.getElementById('server_token');
   const captchaDeField = document.getElementById('captcha_de_text');
   const alertBox = document.getElementById('alertBox');
+  const BASE_URL = '{{ url|e('js') }}';
 
   // ===================== Helpers =====================
   function getLocalCsrf() {
@@ -474,7 +475,7 @@
   // ===================== CAPTCHA INIT =====================
   async function initCaptcha() {
     try {
-      const res = await fetch('/birth/bdris/init');
+      const res = await fetch(BASE_URL + '/birth/bdris/init', { credentials: 'same-origin' });
       const j = await res.json();
       if (!j.ok) return showAlert('⚠️ Captcha লোড করা যায়নি।');
 
@@ -554,7 +555,7 @@
       payload.append('captcha_de_text', captchaDeField.value);
       payload.append('local_csrf', getLocalCsrf());
 
-      const r = await fetch('/birth/bdris/submit', { method: 'POST', body: payload });
+      const r = await fetch(BASE_URL + '/birth/bdris/submit', { method: 'POST', body: payload, credentials: 'same-origin' });
       const j = await r.json();
 
       if (j.ok) {

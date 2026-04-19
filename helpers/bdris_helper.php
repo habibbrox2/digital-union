@@ -1,4 +1,5 @@
 <?php
+
 /**
  * helpers/bdris_helper.php
  */
@@ -7,15 +8,55 @@
  * Convert number to Bengali words (handles up to 9999)
  */
 if (!function_exists('numberToWordsBn')) {
-    function numberToWordsBn($number): string {
+    function numberToWordsBn($number): string
+    {
         $words = [
-            0=>'শূন্য',1=>'এক',2=>'দুই',3=>'তিন',4=>'চার',5=>'পাঁচ',6=>'ছয়',7=>'সাত',8=>'আট',9=>'নয়',
-            10=>'দশ',11=>'এগারো',12=>'বারো',13=>'তেরো',14=>'চৌদ্দ',15=>'পনেরো',16=>'ষোল',
-            17=>'সতেরো',18=>'আঠারো',19=>'উনিশ',20=>'বিশ',21=>'একুশ',22=>'বাইশ',23=>'তেইশ',
-            24=>'চব্বিশ',25=>'পঁচিশ',26=>'ছাব্বিশ',27=>'সাতাশ',28=>'আটাশ',29=>'ঊনত্রিশ',30=>'ত্রিশ',
-            31=>'একত্রিশ',32=>'বত্রিশ',33=>'তেত্রিশ',34=>'চৌত্রিশ',35=>'পঁয়ত্রিশ',36=>'ছত্রিশ',
-            37=>'সাঁইত্রিশ',38=>'আটত্রিশ',39=>'ঊনচল্লিশ',40=>'চল্লিশ',50=>'পঞ্চাশ',
-            60=>'ষাট',70=>'সত্তর',80=>'আশি',90=>'নব্বই'
+            0 => 'শূন্য',
+            1 => 'এক',
+            2 => 'দুই',
+            3 => 'তিন',
+            4 => 'চার',
+            5 => 'পাঁচ',
+            6 => 'ছয়',
+            7 => 'সাত',
+            8 => 'আট',
+            9 => 'নয়',
+            10 => 'দশ',
+            11 => 'এগারো',
+            12 => 'বারো',
+            13 => 'তেরো',
+            14 => 'চৌদ্দ',
+            15 => 'পনেরো',
+            16 => 'ষোল',
+            17 => 'সতেরো',
+            18 => 'আঠারো',
+            19 => 'উনিশ',
+            20 => 'বিশ',
+            21 => 'একুশ',
+            22 => 'বাইশ',
+            23 => 'তেইশ',
+            24 => 'চব্বিশ',
+            25 => 'পঁচিশ',
+            26 => 'ছাব্বিশ',
+            27 => 'সাতাশ',
+            28 => 'আটাশ',
+            29 => 'ঊনত্রিশ',
+            30 => 'ত্রিশ',
+            31 => 'একত্রিশ',
+            32 => 'বত্রিশ',
+            33 => 'তেত্রিশ',
+            34 => 'চৌত্রিশ',
+            35 => 'পঁয়ত্রিশ',
+            36 => 'ছত্রিশ',
+            37 => 'সাঁইত্রিশ',
+            38 => 'আটত্রিশ',
+            39 => 'ঊনচল্লিশ',
+            40 => 'চল্লিশ',
+            50 => 'পঞ্চাশ',
+            60 => 'ষাট',
+            70 => 'সত্তর',
+            80 => 'আশি',
+            90 => 'নব্বই'
         ];
 
         $n = (int)$number;
@@ -45,7 +86,8 @@ if (!function_exists('numberToWordsBn')) {
  * Convert English year to words (BD Birth Certificate style)
  */
 if (!function_exists('yearToWordsEn')) {
-    function yearToWordsEn($year): string {
+    function yearToWordsEn($year): string
+    {
         $y = (int)$year;
         $f = new \NumberFormatter("en", \NumberFormatter::SPELLOUT);
 
@@ -78,7 +120,8 @@ if (!function_exists('yearToWordsEn')) {
  * Convert date to words (BN + EN) - English formatted for birth certificate
  */
 if (!function_exists('dateToWords')) {
-    function dateToWords(string $date): array {
+    function dateToWords(string $date): array
+    {
         $d = DateTime::createFromFormat('Y-m-d', $date);
         if (!$d) throw new Exception("Invalid date format for dateToWords, expected yyyy-mm-dd.");
 
@@ -86,14 +129,40 @@ if (!function_exists('dateToWords')) {
         $month = (int)$d->format('m');
         $year  = (int)$d->format('Y');
 
-        $bnMonths = [1=>'জানুয়ারি','ফেব্রুয়ারি','মার্চ','এপ্রিল','মে','জুন','জুলাই','অগাস্ট','সেপ্টেম্বর','অক্টোবর','নভেম্বর','ডিসেম্বর'];
+        $bnMonths = [1 => 'জানুয়ারি', 'ফেব্রুয়ারি', 'মার্চ', 'এপ্রিল', 'মে', 'জুন', 'জুলাই', 'অগাস্ট', 'সেপ্টেম্বর', 'অক্টোবর', 'নভেম্বর', 'ডিসেম্বর'];
 
         $enDayWords = [
-            1=>'First',2=>'Second',3=>'Third',4=>'Fourth',5=>'Fifth',6=>'Sixth',7=>'Seventh',8=>'Eighth',9=>'Ninth',10=>'Tenth',
-            11=>'Eleventh',12=>'Twelfth',13=>'Thirteenth',14=>'Fourteenth',15=>'Fifteenth',16=>'Sixteenth',17=>'Seventeenth',
-            18=>'Eighteenth',19=>'Nineteenth',20=>'Twentieth',21=>'Twenty First',22=>'Twenty Second',23=>'Twenty Third',
-            24=>'Twenty Fourth',25=>'Twenty Fifth',26=>'Twenty Sixth',27=>'Twenty Seventh',28=>'Twenty Eighth',
-            29=>'Twenty Ninth',30=>'Thirtieth',31=>'Thirty First'
+            1 => 'First',
+            2 => 'Second',
+            3 => 'Third',
+            4 => 'Fourth',
+            5 => 'Fifth',
+            6 => 'Sixth',
+            7 => 'Seventh',
+            8 => 'Eighth',
+            9 => 'Ninth',
+            10 => 'Tenth',
+            11 => 'Eleventh',
+            12 => 'Twelfth',
+            13 => 'Thirteenth',
+            14 => 'Fourteenth',
+            15 => 'Fifteenth',
+            16 => 'Sixteenth',
+            17 => 'Seventeenth',
+            18 => 'Eighteenth',
+            19 => 'Nineteenth',
+            20 => 'Twentieth',
+            21 => 'Twenty First',
+            22 => 'Twenty Second',
+            23 => 'Twenty Third',
+            24 => 'Twenty Fourth',
+            25 => 'Twenty Fifth',
+            26 => 'Twenty Sixth',
+            27 => 'Twenty Seventh',
+            28 => 'Twenty Eighth',
+            29 => 'Twenty Ninth',
+            30 => 'Thirtieth',
+            31 => 'Thirty First'
         ];
 
         $birth_date_words_en = "{$enDayWords[$day]} of {$d->format('F')} " . yearToWordsEn($year);
@@ -116,7 +185,8 @@ if (!function_exists('dateToWords')) {
 }
 
 if (!function_exists('bdris_log')) {
-    function bdris_log($msg) {
+    function bdris_log($msg)
+    {
         $logFile = BASE_PATH . '/storage/logs/bdris_log.txt';
         if (!file_exists(dirname($logFile))) {
             mkdir(dirname($logFile), 0777, true);
@@ -127,20 +197,29 @@ if (!function_exists('bdris_log')) {
 }
 
 if (!function_exists('bdris_cookie_file')) {
-    function bdris_cookie_file() {
+    function bdris_cookie_file()
+    {
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
         return TEMP_DIR . '/cookies_' . session_id() . '.txt';
     }
 }
 
 if (!function_exists('bdris_captcha_file')) {
-    function bdris_captcha_file() {
+    function bdris_captcha_file()
+    {
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
         return TEMP_DIR . '/captcha_' . session_id() . '.png';
     }
 }
 
 /* ---------------- CURL WRAPPERS ---------------- */
 if (!function_exists('bdris_curl_get')) {
-    function bdris_curl_get($url, $cookie_file, $referer = null, $raw = false) {
+    function bdris_curl_get($url, $cookie_file, $referer = null, $raw = false)
+    {
         $ch = curl_init($url);
         curl_setopt_array($ch, [
             CURLOPT_RETURNTRANSFER => true,
@@ -168,7 +247,8 @@ if (!function_exists('bdris_curl_get')) {
 }
 
 if (!function_exists('bdris_curl_post_raw')) {
-    function bdris_curl_post_raw($url, $body, $cookie_file, $referer = null, $boundary = null) {
+    function bdris_curl_post_raw($url, $body, $cookie_file, $referer = null, $boundary = null)
+    {
         $ch = curl_init($url);
         $headers = [
             "Origin: https://everify.bdris.gov.bd",
@@ -202,7 +282,8 @@ if (!function_exists('bdris_curl_post_raw')) {
 
 /* ---------------- HTML PARSER ---------------- */
 if (!function_exists('bdris_parse_html')) {
-    function bdris_parse_html(string $html): array {
+    function bdris_parse_html(string $html): array
+    {
         if (stripos($html, 'Death registration number') !== false) {
             return bdris_parse_death_html($html);
         }
@@ -211,7 +292,8 @@ if (!function_exists('bdris_parse_html')) {
 }
 
 if (!function_exists('bdris_parse_birth_html')) {
-    function bdris_parse_birth_html(string $html): array {
+    function bdris_parse_birth_html(string $html): array
+    {
         $doc = new DOMDocument();
         libxml_use_internal_errors(true);
         @$doc->loadHTML($html);
@@ -316,7 +398,8 @@ if (!function_exists('bdris_parse_birth_html')) {
 }
 
 if (!function_exists('bdris_parse_death_html')) {
-    function bdris_parse_death_html(string $html): array {
+    function bdris_parse_death_html(string $html): array
+    {
         $doc = new DOMDocument();
         libxml_use_internal_errors(true);
         @$doc->loadHTML($html);
@@ -400,7 +483,8 @@ if (!function_exists('bdris_parse_death_html')) {
 
 /* ---------------- Utility ---------------- */
 if (!function_exists('bdris_convert_date')) {
-    function bdris_convert_date($dateString, $format = 'Y-m-d') {
+    function bdris_convert_date($dateString, $format = 'Y-m-d')
+    {
         if (empty($dateString)) return null;
         $timestamp = strtotime($dateString);
         return $timestamp ? date($format, $timestamp) : null;
@@ -415,13 +499,14 @@ if (!function_exists('bdris_convert_date')) {
  * Generate captcha + verification token from BDRIS site
  */
 if (!function_exists('bdris_generate_captcha')) {
-    function bdris_generate_captcha() {
+    function bdris_generate_captcha()
+    {
         try {
             $cookie = bdris_cookie_file();
             $base = 'https://everify.bdris.gov.bd';
             $html = bdris_curl_get("$base/UBRNVerification", $cookie);
             if (!$html) {
-                return ['status'=>'error', 'message'=>'Failed to load birth initial page'];
+                return ['status' => 'error', 'message' => 'Failed to load birth initial page'];
             }
 
             $doc = new DOMDocument();
@@ -434,13 +519,13 @@ if (!function_exists('bdris_generate_captcha')) {
             $captcha_de_text = $xp->evaluate("string(//input[@name='CaptchaDeText']/@value)");
 
             if (!$token || !$captcha_de_text) {
-                return ['status'=>'error', 'message'=>'Birth Token or Captcha text not found'];
+                return ['status' => 'error', 'message' => 'Birth Token or Captcha text not found'];
             }
 
             $captcha_url = "$base/DefaultCaptcha/Generate?t=" . urlencode($captcha_de_text);
             $img = bdris_curl_get($captcha_url, $cookie, "$base/UBRNVerification", true);
             if (!$img) {
-                return ['status'=>'error', 'message'=>'Birth Captcha image not fetched'];
+                return ['status' => 'error', 'message' => 'Birth Captcha image not fetched'];
             }
 
             $data_uri = 'data:image/png;base64,' . base64_encode($img);
@@ -451,7 +536,7 @@ if (!function_exists('bdris_generate_captcha')) {
                 'captcha_data_uri' => $data_uri
             ];
         } catch (Throwable $e) {
-            return ['status'=>'error', 'message'=>$e->getMessage()];
+            return ['status' => 'error', 'message' => $e->getMessage()];
         }
     }
 }
@@ -460,7 +545,8 @@ if (!function_exists('bdris_generate_captcha')) {
  * Submit UBRN data and fetch parsed birth info
  */
 if (!function_exists('bdris_fetch_birth_data')) {
-    function bdris_fetch_birth_data($ubrn, $dob, $captcha, $token = '', $captcha_de_text = '') {
+    function bdris_fetch_birth_data($ubrn, $dob, $captcha, $token = '', $captcha_de_text = '')
+    {
         try {
             $cookie = bdris_cookie_file();
             $base = 'https://everify.bdris.gov.bd';
@@ -482,12 +568,12 @@ if (!function_exists('bdris_fetch_birth_data')) {
 
             $html = bdris_curl_post_raw("$base/UBRNVerification/Search", $body, $cookie, null, $boundary);
             if (!$html) {
-                return ['status'=>'error', 'message'=>'No birth response from BDRIS'];
+                return ['status' => 'error', 'message' => 'No birth response from BDRIS'];
             }
 
             $parsed = bdris_parse_html($html);
             if (!$parsed || !isset($parsed['birth_registration_number_en'])) {
-                return ['status'=>'error', 'message'=>'Failed to parse Birth Data'];
+                return ['status' => 'error', 'message' => 'Failed to parse Birth Data'];
             }
 
             // Convert date formats
@@ -497,7 +583,7 @@ if (!function_exists('bdris_fetch_birth_data')) {
 
             return $parsed;
         } catch (Throwable $e) {
-            return ['status'=>'error', 'message'=>$e->getMessage()];
+            return ['status' => 'error', 'message' => $e->getMessage()];
         }
     }
 }
@@ -506,14 +592,15 @@ if (!function_exists('bdris_fetch_birth_data')) {
  * Generate captcha + verification token for Death (UDRN)
  */
 if (!function_exists('bdris_generate_death_captcha')) {
-    function bdris_generate_death_captcha() {
+    function bdris_generate_death_captcha()
+    {
         try {
             $cookie = bdris_cookie_file();
             $base = 'https://everify.bdris.gov.bd';
 
             $html = bdris_curl_get("$base/UDRNVerification", $cookie);
             if (!$html) {
-                return ['status'=>'error', 'message'=>'Failed to load death verification page'];
+                return ['status' => 'error', 'message' => 'Failed to load death verification page'];
             }
 
             $doc = new DOMDocument();
@@ -526,14 +613,14 @@ if (!function_exists('bdris_generate_death_captcha')) {
             $captcha_de_text = $xp->evaluate("string(//input[@name='CaptchaDeText']/@value)");
 
             if (!$token || !$captcha_de_text) {
-                return ['status'=>'error', 'message'=>'Death Token or captcha text missing'];
+                return ['status' => 'error', 'message' => 'Death Token or captcha text missing'];
             }
 
             $captcha_url = "$base/DefaultCaptcha/Generate?t=" . urlencode($captcha_de_text);
             $img = bdris_curl_get($captcha_url, $cookie, "$base/UDRNVerification", true);
 
             if (!$img) {
-                return ['status'=>'error', 'message'=>'Death Captcha image fetch failed'];
+                return ['status' => 'error', 'message' => 'Death Captcha image fetch failed'];
             }
 
             return [
@@ -543,7 +630,7 @@ if (!function_exists('bdris_generate_death_captcha')) {
                 'captcha_data_uri' => 'data:image/png;base64,' . base64_encode($img)
             ];
         } catch (Throwable $e) {
-            return ['status'=>'error', 'message'=>$e->getMessage()];
+            return ['status' => 'error', 'message' => $e->getMessage()];
         }
     }
 }
@@ -552,7 +639,8 @@ if (!function_exists('bdris_generate_death_captcha')) {
  * Submit UDRN and fetch parsed death registration info
  */
 if (!function_exists('bdris_fetch_death_data')) {
-    function bdris_fetch_death_data($udrn, $deathDate, $captcha, $token, $captcha_de_text) {
+    function bdris_fetch_death_data($udrn, $deathDate, $captcha, $token, $captcha_de_text)
+    {
         $cookie = bdris_cookie_file();
         $url = 'https://everify.bdris.gov.bd/UDRNVerification/Search';
 
@@ -589,16 +677,16 @@ if (!function_exists('bdris_fetch_death_data')) {
 
         if ($html === false || $http >= 400) {
             bdris_log("Death POST failed http=$http err=$err");
-            return ['status'=>'error','message'=>'Death request failed'];
+            return ['status' => 'error', 'message' => 'Death request failed'];
         }
 
         // DEBUG (optional but recommended)
-        file_put_contents(__DIR__.'/death_debug.html', $html);
+        file_put_contents(__DIR__ . '/death_debug.html', $html);
 
         $parsed = bdris_parse_death_html($html);
 
         if (empty($parsed['death_registration_number_en'])) {
-            return ['status'=>'error','message'=>'Invalid death record or captcha'];
+            return ['status' => 'error', 'message' => 'Invalid death record or captcha'];
         }
 
         return $parsed;

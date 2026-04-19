@@ -10,7 +10,7 @@
     <div class="card shadow-lg rounded-4 border-0">
         <div class="card-header bg-gradient text-white d-flex justify-content-between align-items-center py-3 rounded-top-4 flex-wrap">
             <h5 class="mb-2 mb-md-0"><i class="bi bi-list-columns-reverse me-2"></i> রেজিস্টার তালিকা</h5>
-            <a href="/birth/form" class="btn btn-gradient btn-sm fw-bold d-flex align-items-center gap-1">
+            <a href="{{ url }}/birth/form" class="btn btn-gradient btn-sm fw-bold d-flex align-items-center gap-1">
                 <i class="bi bi-plus-circle-fill"></i> নতুন এন্ট্রি
             </a>
         </div>
@@ -113,6 +113,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const tableSearch = document.getElementById('tableSearch');
     const paginationContainer = document.getElementById('tablePagination');
     const tableInfo = document.getElementById('tableInfo');
+    const BASE_URL = '{{ url|e('js') }}';
 
     let currentPage = 1;
     let entries = Number(entriesSelect.value);
@@ -136,7 +137,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <span class="spinner-border spinner-border-sm me-2" role="status"></span> ডেটা লোড হচ্ছে...
         </div>`;
         try {
-            const res = await fetch('/api/births');
+            const res = await fetch(`${BASE_URL}/api/births`);
             const data = await res.json();
             allRows = data.map(b => {
                 const tr = document.createElement('tr');
@@ -149,8 +150,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     <td class="small"><span class="d-block text-info">জন্মস্থান: ${b.district_bn||'নাই'}, ${b.country_bn||'নাই'}</span><span class="d-block text-secondary">স্থায়ী ঠিকানা: ${b.permanent_address_bn||''}</span></td>
                     <td class="text-center">
                         <div class="d-flex flex-wrap gap-1 justify-content-center">
-                            <a href="/birth/pdf/${b.id}" class="btn btn-sm btn-info text-white" title="PDF"><i class="bi bi-file-earmark-pdf-fill"></i></a>
-                            <a href="/birth/edit/${b.id}" class="btn btn-sm btn-success" title="Edit"><i class="bi bi-pencil-square"></i></a>
+                            <a href="${BASE_URL}/birth/pdf/${b.id}" class="btn btn-sm btn-info text-white" title="PDF"><i class="bi bi-file-earmark-pdf-fill"></i></a>
+                            <a href="${BASE_URL}/birth/edit/${b.id}" class="btn btn-sm btn-success" title="Edit"><i class="bi bi-pencil-square"></i></a>
                             <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#deleteModal" data-id="${b.id}" title="Delete"><i class="bi bi-trash"></i></button>
                         </div>
                     </td>
@@ -203,8 +204,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="card-header bg-primary text-white fw-bold d-flex justify-content-between align-items-center">
                     ${r.dataset.registration_number}
                     <div class="d-flex gap-1">
-                        <a href="/birth/pdf/${r.dataset.id}" class="btn btn-sm btn-info text-white" title="PDF"><i class="bi bi-file-earmark-pdf-fill"></i></a>
-                        <a href="/birth/edit/${r.dataset.id}" class="btn btn-sm btn-success" title="Edit"><i class="bi bi-pencil-square"></i></a>
+                        <a href="${BASE_URL}/birth/pdf/${r.dataset.id}" class="btn btn-sm btn-info text-white" title="PDF"><i class="bi bi-file-earmark-pdf-fill"></i></a>
+                        <a href="${BASE_URL}/birth/edit/${r.dataset.id}" class="btn btn-sm btn-success" title="Edit"><i class="bi bi-pencil-square"></i></a>
                         <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#deleteModal" data-id="${r.dataset.id}"><i class="bi bi-trash"></i></button>
                     </div>
                 </div>
@@ -253,7 +254,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const deleteModal = document.getElementById('deleteModal');
     const confirmBtn = document.getElementById('confirmDeleteBtn');
     deleteModal.addEventListener('show.bs.modal', e => {
-        confirmBtn.href = '/birth/delete/' + e.relatedTarget.getAttribute('data-id');
+        confirmBtn.href = `${BASE_URL}/birth/delete/` + e.relatedTarget.getAttribute('data-id');
     });
 
     loadData();
