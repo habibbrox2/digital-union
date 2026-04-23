@@ -473,6 +473,21 @@
                         </div>
 
                         <div class="col-lg-6 col-md-6 col-sm-12">
+                            <label for="issue_time" class="form-label fw-semibold small mb-1">
+                                লাইসেন্স ইস্যু সময়:
+                            </label>
+                            <input type="time" 
+                                   id="issue_time" 
+                                   name="issue_time"
+                                   class="form-control form-control-sm shadow-sm"
+                                   value="{{ approval.issue_time|default('12:00:00') }}"
+                                   required>
+                        </div>
+                    </div>
+
+                    <!-- Approval Note -->
+                    <div class="row g-4 mt-3">
+                        <div class="col-lg-12">
                             <label for="approval_note" class="form-label fw-semibold small mb-1">
                                 মন্তব্য:
                             </label>
@@ -602,6 +617,11 @@
                                 class="btn btn-info btn-sm px-4 shadow-sm flex-grow-1 flex-md-grow-0">
                             <i class="bi bi-arrow-repeat me-2"></i> লাইসেন্স নবায়ন করুন
                         </button>
+                        <button type="button" 
+                                id="viewHistory" 
+                                class="btn btn-secondary btn-sm px-4 shadow-sm flex-grow-1 flex-md-grow-0">
+                            <i class="bi bi-clock-history me-2"></i> নবায়ন ইতিহাস
+                        </button>
                     {% endif %}
                 </div>
 
@@ -645,6 +665,17 @@
 {% block scripts %}
 <script>
 document.addEventListener('DOMContentLoaded', () => {
+
+    /* ===============================
+       Set Current Time for Issue Time Input
+    =============================== */
+    const issueTimeInput = document.getElementById('issue_time');
+    if (issueTimeInput && !issueTimeInput.value) {
+        const now = new Date();
+        const hours = String(now.getHours()).padStart(2, '0');
+        const minutes = String(now.getMinutes()).padStart(2, '0');
+        issueTimeInput.value = hours + ':' + minutes;
+    }
 
     /* ===============================
        Helpers
@@ -694,6 +725,31 @@ document.addEventListener('DOMContentLoaded', () => {
         .catch(() => displayMessage('error', '❌ কিছু ভুল হয়েছে, আবার চেষ্টা করুন।'));
     }
 
+    function validateTradeApprovalFields() {
+        if (certType() !== 'trade') {
+            return true;
+        }
+
+        const fiscalYear = $id('fiscal_year')?.value?.trim() || '';
+        const ownershipTypeId = $id('ownership_type_id')?.value?.trim() || '';
+        const businessTypeId = $id('business_type_id')?.value?.trim() || '';
+
+        if (!fiscalYear) {
+            displayMessage('error', 'অনুগ্রহ করে সনদের অর্থবছর নির্বাচন করুন।');
+            return false;
+        }
+        if (!ownershipTypeId) {
+            displayMessage('error', 'অনুগ্রহ করে মালিকানার ধরণ নির্বাচন করুন।');
+            return false;
+        }
+        if (!businessTypeId) {
+            displayMessage('error', 'অনুগ্রহ করে ব্যবসার ধরণ নির্বাচন করুন।');
+            return false;
+        }
+
+        return true;
+    }
+
     /* ===============================
        Init approval date
     =============================== */
@@ -726,6 +782,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         if (!verifierName && verifierDesignation) {
             Swal.fire('❌ ভুল হয়েছে!', 'পদবি নির্বাচন করলে যাচাইকারীর নাম আবশ্যক।', 'error');
+            return;
+        }
+
+        if (!validateTradeApprovalFields()) {
             return;
         }
 
@@ -894,6 +954,14 @@ document.addEventListener('DOMContentLoaded', () => {
         );
     });
     /* ===============================
+       View License Renewal History
+    =============================== */
+
+    on('viewHistory', 'click', e => {
+        e.preventDefault();
+        // Open renewal history view
+        window.open(`/applications/trade/renewal-history/${appId()}`, '_blank', 'width=1200,height=700');
+    });    /* ===============================
        Dropdown Functions
     =============================== */
 

@@ -63,7 +63,12 @@ LOG_FILE="${LOG_DIR}/deploy_$(date +%Y%m%d_%H%M%S).log"
 DEPLOYMENT_REPORT="${LOG_DIR}/latest-deployment.json"
 
 # Ensure log directory exists
-mkdir -p "$LOG_DIR"
+if ! mkdir -p "$LOG_DIR" 2>/dev/null; then
+    echo "WARNING: Could not create log directory at $LOG_DIR. Falling back to /tmp for deploy logs."
+    LOG_DIR="/tmp"
+    LOG_FILE="${LOG_DIR}/deploy_$(date +%Y%m%d_%H%M%S).log"
+    DEPLOYMENT_REPORT="${LOG_DIR}/latest-deployment.json"
+fi
 
 # Deployment tracking
 DEPLOY_START_TIME=$(date +%s)
@@ -71,6 +76,18 @@ DEPLOY_STEPS=()
 DEPLOY_ERRORS=0
 
 # Helper functions
+append_to_log_file() {
+    local entry="$1"
+    if [ -n "$LOG_FILE" ]; then
+        if ! printf "%s\n" "$entry" >> "$LOG_FILE" 2>/dev/null; then
+            # Fallback to /tmp if logging to storage fails (e.g. disk quota exceeded)
+            if touch /tmp/deploy_fallback.log 2>/dev/null; then
+                printf "%s\n" "$entry" >> /tmp/deploy_fallback.log 2>/dev/null || true
+            fi
+        fi
+    fi
+}
+
 log() {
     local message="$@"
     local timestamp="$(date '+%Y-%m-%d %H:%M:%S')"
@@ -78,17 +95,17 @@ log() {
     if [ "$SILENT_MODE" = false ]; then
         echo -e "${BLUE}${timestamp}${NC} - ${message}"
     fi
-    echo "[${timestamp}] ${message}" >> "$LOG_FILE"
+    append_to_log_file "[${timestamp}] ${message}"
 }
 
 success() {
     local message="$@"
     local timestamp="$(date '+%Y-%m-%d %H:%M:%S')"
-    
+
     if [ "$SILENT_MODE" = false ]; then
         echo -e "${GREEN}✅ ${message}${NC}"
     fi
-    echo "[${timestamp}] SUCCESS: ${message}" >> "$LOG_FILE"
+    append_to_log_file "[${timestamp}] SUCCESS: ${message}"
     DEPLOY_STEPS+=("✅ $message")
 }
 
@@ -99,7 +116,7 @@ error() {
     if [ "$SILENT_MODE" = false ]; then
         echo -e "${RED}❌ ERROR: ${message}${NC}"
     fi
-    echo "[${timestamp}] ERROR: ${message}" >> "$LOG_FILE"
+    append_to_log_file "[${timestamp}] ERROR: ${message}"
     DEPLOY_STEPS+=("❌ $message")
     ((DEPLOY_ERRORS++))
     
@@ -115,7 +132,7 @@ warning() {
     if [ "$SILENT_MODE" = false ]; then
         echo -e "${YELLOW}⚠️  WARNING: ${message}${NC}"
     fi
-    echo "[${timestamp}] WARNING: ${message}" >> "$LOG_FILE"
+    append_to_log_file "[${timestamp}] WARNING: ${message}"
     DEPLOY_STEPS+=("⚠️  $message")
 }
 
@@ -165,7 +182,9 @@ send_webhook_response() {
         json_response+="]
 }"
         
-        echo "$json_response" > "$DEPLOYMENT_REPORT"
+        if ! printf "%s" "$json_response" > "$DEPLOYMENT_REPORT" 2>/dev/null; then
+            append_to_log_file "[$(date '+%Y-%m-%d %H:%M:%S')] WARNING: Could not write deployment report to $DEPLOYMENT_REPORT"
+        fi
         
         if [ "$SILENT_MODE" = true ] && [ "$WEBHOOK_OUTPUT" = true ]; then
             echo "$json_response"

@@ -39,6 +39,7 @@ $router->get('/{certificate_type}/apply/from/{applicant_id}', function($certific
         $businessOwnership = new BusinessOwnershipType($mysqli);
         $reuse_data['business_types'] = $businessOwnership->getBusinessTypes();
         $reuse_data['ownership_types'] = $businessOwnership->getOwnershipTypes();
+        $reuse_data['fiscal_year_options'] = generateFiscalYearOptions($reuse_data['business_meta']['fiscal_year'] ?? null);
     }
     echo $twig->render($template, [
         'reuse_data' => $reuse_data,
@@ -377,8 +378,53 @@ $router->get('/applications/of/{applicant_id}', function($applicant_id) use ($tw
     ]);
 });
 
-
-
+/**
+ * License Renewal History View Route
+ * GET /applications/trade/renewal-history/{application_id}
+ * Displays the renewal history for a trade license
+ */
+$router->get('/applications/trade/renewal-history/{application_id}', function($application_id = null) use ($twig, $appmanager, $auth) {
+    ensure_can('approve', 'applications');
+    
+    if (!$application_id) {
+        echo $twig->render('errors/404.twig', ['message' => 'Application ID is required.']);
+        return;
+    }
+    
+    $user = $auth->getUserData(false);
+    $union_id = $user['union_id'] ?? null;
+    
+    // Fetch application
+    $application = $appmanager->getApplicationByApplicationId($application_id, $union_id);
+    if (!$application || $application['certificate_type'] !== 'trade') {
+        echo $twig->render('errors/404.twig', ['message' => 'Trade license not found.']);
+        return;
+    }
+    
+    // Fetch business meta
+    $business_meta = $appmanager->getBusinessMetaByApplicationId($application_id);
+    
+    // Fetch renewal history
+    $renewal_history = $appmanager->getLicenseHistory($application_id);
+    
+    // Get renewal count from application approvals
+    $approval = $appmanager->getApprovalByApplicationId($application_id);
+    $renewal_count = $approval['renewal_count'] ?? 0;
+    
+    // Get license expiry info
+    $expiry_info = $appmanager->getLicenseExpiryInfo($application_id);
+    
+    echo $twig->render('applications/license-renewal-history.twig', [
+        'application' => $application,
+        'business_meta' => $business_meta,
+        'renewal_history' => $renewal_history,
+        'renewal_count' => $renewal_count,
+        'expiry_info' => $expiry_info,
+        'can_renew' => true,
+        'title' => 'লাইসেন্স নবায়ন ইতিহাস',
+        'header_title' => 'লাইসেন্স নবায়ন ইতিহাস'
+    ]);
+});
 
 
 $router->post('/applications/{certificate_type}/reject/{application_id}', function($certificate_type = null, $application_id = null) use ($appmanager, $auth) {

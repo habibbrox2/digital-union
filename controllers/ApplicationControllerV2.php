@@ -185,7 +185,7 @@ $router->post('/applications/{certificate_type}/apply', function ($certificate_t
         'marital_status' => sanitize_input($_POST['marital_status']),
         'spouse_name_en' => sanitize_input($_POST['spouse_name_en']),
         'spouse_name_bn' => sanitize_input($_POST['spouse_name_bn']),
-        'applicant_name' => sanitize_input($_POST['applicant_name']),
+        'applicant_name' => sanitize_input(trim($_POST['applicant_name'] ?? '') !== '' ? $_POST['applicant_name'] : ($_POST['name_bn'] ?? '')),
         'applicant_phone' => sanitize_input($_POST['applicant_phone']),
         'applicant_photo' => $photoPath,
         'documents' => $documents_json,
@@ -476,9 +476,9 @@ $router->post('/applications/{certificate_type}/edit/{application_id}', function
         'marital_status' => sanitize_input($_POST['marital_status'] ?? ''),
         'spouse_name_en' => sanitize_input($_POST['spouse_name_en'] ?? ''),
         'spouse_name_bn' => sanitize_input($_POST['spouse_name_bn'] ?? ''),
-        'applicant_name' => sanitize_input($_POST['applicant_name'] ?? ''),
+        'applicant_name' => sanitize_input(trim($_POST['applicant_name'] ?? '') !== '' ? $_POST['applicant_name'] : ($_POST['name_bn'] ?? '')),
         'applicant_phone' => sanitize_input($_POST['applicant_phone'] ?? ''),
-        'applicant_photo' => !empty($_FILES['applicant_photo']['name'])
+        'applicant_photo' => (!empty($_FILES['applicant_photo']['name']) || !empty($_FILES['photo']['name']))
             ? handleApplicantFileUpload($application_id)['photo']
             : $application['applicant_photo'],
         'documents' => isset($_POST['documents'])
@@ -804,41 +804,99 @@ $router->post('/applications/{certificate_type}/approve/{application_id}', funct
         return;
     }
 
-    $sonod_number = !empty($_POST['license_number'])
-        ? sanitize_input($_POST['license_number'])
-        : generateSonodNumber('applications', $union_code);
+    if ($certificate_type === 'trade') {
+        $fiscal_year = trim((string)($_POST['fiscal_year'] ?? ''));
+        $ownership_type_id = trim((string)($_POST['ownership_type_id'] ?? ''));
+        $business_type_id = trim((string)($_POST['business_type_id'] ?? ''));
+
+        if ($fiscal_year === '') {
+            echo json_encode(['status' => 'error', 'message' => 'অনুগ্রহ করে সনদের অর্থবছর নির্বাচন করুন।']);
+            return;
+        }
+        if ($ownership_type_id === '') {
+            echo json_encode(['status' => 'error', 'message' => 'অনুগ্রহ করে মালিকানার ধরণ নির্বাচন করুন।']);
+            return;
+        }
+        if ($business_type_id === '') {
+            echo json_encode(['status' => 'error', 'message' => 'অনুগ্রহ করে ব্যবসার ধরণ নির্বাচন করুন।']);
+            return;
+        }
+    }
+
+    $sonod_number = null;
+    $posted_license_number = trim((string)($_POST['license_number'] ?? ''));
+    try {
+        if ($posted_license_number !== '') {
+            $sonod_number = sanitize_input($posted_license_number);
+        } elseif (!empty($application['sonod_number'])) {
+            $sonod_number = sanitize_input($application['sonod_number']);
+        } elseif (!empty($union_code)) {
+            $sonod_number = generateSonodNumber('applications', $union_code);
+        } else {
+            throw new RuntimeException('লাইসেন্স নম্বর তৈরি করা যাচ্ছে না, কারণ ইউনিয়ন কোড পাওয়া যায়নি।');
+        }
+    } catch (Throwable $e) {
+        $response = [
+            'status' => 'error',
+            'message' => $e->getMessage(),
+        ];
+        if ($isSuperAdmin) {
+            $response['debug'] = [
+                'mysql_error' => $e->getMessage(),
+                'error_log_path' => ini_get('error_log'),
+                'union_code' => $union_code,
+            ];
+        }
+        echo json_encode($response);
+        return;
+    }
 
     // 🟢 Date conversion directly from POST (sanitize_input kept for text fields only)
     $approval_date = null;
     if (!empty($_POST['approval_date'])) {
-        $approvalDateTime = DateTime::createFromFormat('d-m-Y', $_POST['approval_date']);
-        $approval_date = $approvalDateTime ? $approvalDateTime->format('Y-m-d H:i:s') : null;
+        try {
+            $approvalDateTime = DateTime::createFromFormat('Y-m-d', $_POST['approval_date']);
+            if (!$approvalDateTime instanceof DateTime) {
+                $approvalDateTime = DateTime::createFromFormat('d-m-Y', $_POST['approval_date']);
+            }
+            $approval_date = ($approvalDateTime instanceof DateTime) ? $approvalDateTime->format('Y-m-d') : null;
+        } catch (Exception $e) {
+            $approval_date = null;
+        }
     }
 
     $verification_date = null;
     if (!empty($_POST['verification_date'])) {
-        $verificationDateTime = DateTime::createFromFormat('d-m-Y', $_POST['verification_date']);
-        $verification_date = $verificationDateTime ? $verificationDateTime->format('Y-m-d') : null;
+        try {
+            $verificationDateTime = DateTime::createFromFormat('Y-m-d', $_POST['verification_date']);
+            if (!$verificationDateTime instanceof DateTime) {
+                $verificationDateTime = DateTime::createFromFormat('d-m-Y', $_POST['verification_date']);
+            }
+            $verification_date = ($verificationDateTime instanceof DateTime) ? $verificationDateTime->format('Y-m-d') : null;
+        } catch (Exception $e) {
+            $verification_date = null;
+        }
     }
 
     $data = [
-        'verifier_id'          => sanitize_input($_POST['verifier_id'] ?? ''),
-        'verifier_designation' => sanitize_input($_POST['verifier_designation'] ?? ''),
-        'verifier_contact'     => sanitize_input($_POST['verifier_contact'] ?? ''),
-        'verifier_name_bn'     => sanitize_input($_POST['verifier_name_bn'] ?? ''),
-        'verifier_name_en'     => sanitize_input($_POST['verifier_name_en'] ?? ''),
-        'verifier_ward_no'     => sanitize_input($_POST['verifier_ward_no'] ?? ''),
+        'verifier_id'          => isset($_POST['verifier_id']) && $_POST['verifier_id'] !== '' ? (int)$_POST['verifier_id'] : 0,
+        'verifier_designation' => !empty($_POST['verifier_designation']) ? sanitize_input($_POST['verifier_designation']) : '',
+        'verifier_contact'     => !empty($_POST['verifier_contact']) ? sanitize_input($_POST['verifier_contact']) : '',
+        'verifier_name_bn'     => !empty($_POST['verifier_name_bn']) ? sanitize_input($_POST['verifier_name_bn']) : '',
+        'verifier_name_en'     => !empty($_POST['verifier_name_en']) ? sanitize_input($_POST['verifier_name_en']) : '',
+        'verifier_ward_no'     => !empty($_POST['verifier_ward_no']) ? sanitize_input($_POST['verifier_ward_no']) : '',
         'verification_date'    => $verification_date,
-        'verification_note'    => sanitize_input($_POST['verification_note'] ?? ''),
-        'approver_id'          => sanitize_input($_POST['approver_id'] ?? ''),
-        'approver_name_bn'     => sanitize_input($_POST['approver_name_bn'] ?? ''),
-        'approver_name_en'     => sanitize_input($_POST['approver_name_en'] ?? ''),
-        'approver_ward_no'     => sanitize_input($_POST['approver_ward_no'] ?? ''),
+        'verification_note'    => !empty($_POST['verification_note']) ? sanitize_input($_POST['verification_note']) : '',
+        'approver_id'          => !empty($_POST['approver_id']) ? sanitize_input($_POST['approver_id']) : '',
+        'approver_name_bn'     => !empty($_POST['approver_name_bn']) ? sanitize_input($_POST['approver_name_bn']) : '',
+        'approver_name_en'     => !empty($_POST['approver_name_en']) ? sanitize_input($_POST['approver_name_en']) : '',
+        'approver_ward_no'     => !empty($_POST['approver_ward_no']) ? sanitize_input($_POST['approver_ward_no']) : '',
         'approval_date'        => $approval_date,
-        'approval_note'        => sanitize_input($_POST['approval_note'] ?? ''),
-        'certificate_fee'      => isset($_POST['certificate_fee']) && $_POST['certificate_fee'] !== '' ? floatval($_POST['certificate_fee']) : NULL,
-        'payment_method'       => sanitize_input($_POST['payment_method'] ?? ''),
-        'payment_status'       => sanitize_input($_POST['payment_status'] ?? ''),
+        'issue_time'           => !empty($_POST['issue_time']) ? sanitize_input($_POST['issue_time']) : '12:00:00',
+        'approval_note'        => !empty($_POST['approval_note']) ? sanitize_input($_POST['approval_note']) : '',
+        'certificate_fee'      => isset($_POST['certificate_fee']) && $_POST['certificate_fee'] !== '' ? floatval($_POST['certificate_fee']) : 0.00,
+        'payment_method'       => !empty($_POST['payment_method']) ? sanitize_input($_POST['payment_method']) : '',
+        'payment_status'       => !empty($_POST['payment_status']) ? sanitize_input($_POST['payment_status']) : '',
         'certificate_type'     => $certificate_type,
         'sonod_number'         => $sonod_number,
     ];
@@ -870,9 +928,25 @@ $router->post('/applications/{certificate_type}/approve/{application_id}', funct
             }
 
             $existingMeta = $appmanager->getBusinessMetaByApplicationId($application_id);
+            $metaAction = $existingMeta ? 'update' : 'insert';
+            error_log(sprintf(
+                '[approveApplication] trade business meta %s start: application_id=%s, union_id=%s, fiscal_year=%s',
+                $metaAction,
+                $application_id,
+                $union_id === null ? 'null' : (string)$union_id,
+                $fiscal_year ?? 'null'
+            ));
             $businessUpdateResult = $existingMeta
                 ? $appmanager->updateBusinessMeta($application_id, $businessMetaData)
                 : $appmanager->insertBusinessMeta($application_id, $businessMetaData);
+
+            error_log(sprintf(
+                '[approveApplication] trade business meta %s result: application_id=%s, status=%s, message=%s',
+                $metaAction,
+                $application_id,
+                isset($businessUpdateResult['status']) ? var_export($businessUpdateResult['status'], true) : 'missing',
+                $businessUpdateResult['message'] ?? 'none'
+            ));
 
             if (!$businessUpdateResult['status']) {
                 throw new Exception($businessUpdateResult['message'] ?? 'Business meta update failed');
@@ -887,11 +961,110 @@ $router->post('/applications/{certificate_type}/approve/{application_id}', funct
         ]);
     } catch (Exception $e) {
         $mysqli->rollback();
-        echo json_encode([
+        $response = [
             'status'  => 'error',
             'message' => 'অনুমোদনে সমস্যা হয়েছে: ' . $e->getMessage()
-        ]);
+        ];
+
+        if ($isSuperAdmin) {
+            $response['debug'] = [
+                'mysql_error' => $e->getMessage(),
+                'error_log_path' => ini_get('error_log'),
+            ];
+        }
+
+        echo json_encode($response);
     }
+});
+
+
+/**
+ * Trade License Renewal Route
+ * POST /applications/trade/renew/{application_id}
+ * Renews a trade license with new fiscal year
+ */
+$router->post('/applications/{certificate_type}/renew/{application_id}', function ($certificate_type = null, $application_id = null) use ($appmanager, $auth, $mysqli) {
+    header('Content-Type: application/json; charset=utf-8');
+
+    // User login check
+    $auth->requireLogin();
+    $user = $auth->getUserData(false);
+    $union_id = $user['union_id'] ?? null;
+
+    // Only trade licenses can be renewed
+    if ($certificate_type !== 'trade') {
+        echo json_encode([
+            'status' => 'error',
+            'message' => 'শুধুমাত্র ট্রেড লাইসেন্স নবায়ন করা যায়। Only trade licenses can be renewed.'
+        ]);
+        return;
+    }
+
+    // Permission check - must be approver/admin
+    try {
+        ensure_can('approve', 'applications');
+    } catch (Exception $e) {
+        echo json_encode([
+            'status' => 'error',
+            'message' => 'এই কাজের অনুমতি নেই। You do not have permission to renew licenses.'
+        ]);
+        return;
+    }
+
+    // Validate application ID
+    if (!$application_id) {
+        echo json_encode([
+            'status' => 'error',
+            'message' => 'অ্যাপ্লিকেশন আইডি প্রয়োজন। Application ID is required.'
+        ]);
+        return;
+    }
+
+    // Get union filter for authorization
+    $lookupUnion = (isset($user['role_id']) && $user['role_id'] <= 1) ? null : $union_id;
+
+    // Fetch application
+    $application = $appmanager->getApplicationByApplicationId($application_id, $lookupUnion);
+    if (!$application) {
+        echo json_encode([
+            'status' => 'error',
+            'message' => 'অ্যাপ্লিকেশন খুঁজে পাওয়া যায়নি। Application not found.'
+        ]);
+        return;
+    }
+
+    // Validate fiscal year from form
+    $fiscal_year = sanitize_input($_POST['fiscal_year'] ?? '');
+    if (!preg_match('/^\d{4}-\d{4}$/', $fiscal_year)) {
+        echo json_encode([
+            'status' => 'error',
+            'message' => 'অর্থবছর ফর্ম্যাট অবৈধ। Invalid fiscal year format (use YYYY-YYYY).'
+        ]);
+        return;
+    }
+
+    // Prepare renewal data
+    $renewal_data = [
+        'fiscal_year' => $fiscal_year,
+        'license_fee' => !empty($_POST['license_fee']) ? (float)$_POST['license_fee'] : 0,
+        'vat_amount' => !empty($_POST['vat_amount']) ? (float)$_POST['vat_amount'] : 0,
+        'occupation_tax' => !empty($_POST['occupation_tax']) ? (float)$_POST['occupation_tax'] : 0,
+        'income_tax' => !empty($_POST['income_tax']) ? (float)$_POST['income_tax'] : 0,
+        'signboard_tax' => !empty($_POST['signboard_tax']) ? (float)$_POST['signboard_tax'] : 0,
+        'surcharge' => !empty($_POST['surcharge']) ? (float)$_POST['surcharge'] : 0,
+        'total_fee' => !empty($_POST['total_fee']) ? (float)$_POST['total_fee'] : 0,
+        'ownership_type_id' => !empty($_POST['ownership_type_id']) ? (int)$_POST['ownership_type_id'] : null,
+        'business_type_id' => !empty($_POST['business_type_id']) ? (int)$_POST['business_type_id'] : null,
+        'issue_date' => date('Y-m-d'),
+        'renewed_by' => $user['id'] ?? $_SESSION['user_id'] ?? 'system',
+        'renewal_notes' => !empty($_POST['renewal_notes']) ? sanitize_input($_POST['renewal_notes']) : 'Renewed via system'
+    ];
+
+    // Call renewal method
+    $result = $appmanager->renewLicense($application_id, $renewal_data, $lookupUnion);
+
+    // Return result
+    echo json_encode($result);
 });
 
 

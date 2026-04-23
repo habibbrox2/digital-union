@@ -206,7 +206,7 @@ $(document).ready(function () {
         if (!$(dropdownSelector).length) return;
 
         $.ajax({
-            url: '/settings/geo/getdata',
+            url: '/geo/getdata',
             method: 'POST',
             data: { geo_order: geoOrder, parent_geo_id: parentGeoId },
             dataType: 'json',
@@ -315,13 +315,18 @@ $(document).ready(function () {
                                 });
                             }
                             // Applicant name radio & input logic
-                            if (typeof data.applicant_name !== 'undefined' && typeof data.name_bn !== 'undefined') {
-                                if (data.applicant_name === data.name_bn) {
+                            if (typeof data.name_bn !== 'undefined') {
+                                const applicantName = (data.applicant_name && String(data.applicant_name).trim() !== '')
+                                    ? data.applicant_name
+                                    : data.name_bn;
+                                const isOwnName = !data.applicant_name || String(data.applicant_name).trim() === '' || applicantName === data.name_bn;
+
+                                if (isOwnName) {
                                     $('#own_name').prop('checked', true);
-                                    $('#applicant_name').val(data.applicant_name).prop('readonly', true).show();
+                                    $('#applicant_name').val(applicantName || data.name_bn || '').prop('readonly', true).show();
                                 } else {
                                     $('#other_name').prop('checked', true);
-                                    $('#applicant_name').val(data.applicant_name).prop('readonly', false).show();
+                                    $('#applicant_name').val(applicantName).prop('readonly', false).show();
                                 }
                             }
                             // Applicant phone

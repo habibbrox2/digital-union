@@ -1,5 +1,6 @@
 <?php
-class ApplicationManager {
+class ApplicationManager
+{
     private $conn;
 
     public function __construct(mysqli $mysqli)
@@ -7,7 +8,8 @@ class ApplicationManager {
         $this->conn = $mysqli;
     }
 
-    private static function getTypeUrlExpressionSQL(): string {
+    private static function getTypeUrlExpressionSQL(): string
+    {
         return "LOWER(REPLACE(REPLACE(REPLACE(REPLACE(tt.name_bl, ' ', '-'), '/', '-'), '_', '-'), '.', ''))";
     }
 
@@ -26,13 +28,13 @@ class ApplicationManager {
         ";
     }
     /**
-         * Returns SELECT fields for applications with address and translation info.
-         *
-         * @return string
-         */
+     * Returns SELECT fields for applications with address and translation info.
+     *
+     * @return string
+     */
     protected static function getSelectFields()
     {
-            return "
+        return "
                 a.*,
 
                 -- Present Address
@@ -64,16 +66,16 @@ class ApplicationManager {
                 -- Certificate Info
                 " . static::getCertificateTypeFields() . "
             ";
-        }
+    }
 
-     /**
-         * Returns reusable JOIN clauses for address and translation info.
-         *
-         * @return string
-         */
+    /**
+     * Returns reusable JOIN clauses for address and translation info.
+     *
+     * @return string
+     */
     protected static function getJoinStatements()
     {
-            return "
+        return "
                 LEFT JOIN address pa ON a.present_address_id = pa.id AND pa.type = 'present'
                 LEFT JOIN address per ON a.permanent_address_id = per.id AND per.type = 'permanent'
                 LEFT JOIN term_translations tt  
@@ -81,27 +83,65 @@ class ApplicationManager {
                 AND tt.is_certificate_type = 1
                 LEFT JOIN business_meta bm ON a.application_id = bm.application_id
             ";
+    }
+
+    private static function normalizeTimeValue($time, string $default = '12:00:00'): string
+    {
+        $time = is_string($time) ? trim($time) : '';
+        if ($time === '') {
+            return $default;
         }
 
+        $formats = ['H:i:s', 'H:i'];
+        foreach ($formats as $format) {
+            $dt = DateTime::createFromFormat($format, $time);
+            if ($dt instanceof DateTime) {
+                return $dt->format('H:i:s');
+            }
+        }
+
+        return $default;
+    }
+
+    private function applicationApprovalsHasIssueTimeColumn(): bool
+    {
+        static $cached = null;
+        if ($cached !== null) {
+            return $cached;
+        }
+
+        $stmt = $this->conn->prepare("SHOW COLUMNS FROM application_approvals LIKE 'issue_time'");
+        if (!$stmt) {
+            return $cached = false;
+        }
+
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $cached = $result && $result->num_rows > 0;
+        $stmt->close();
+
+        return $cached;
+    }
+
     /**
-         * Get a distinct list of certificate types used in applications,
-         * with translations and a slug for URL.
-         *
-         * @return array
-         */
+     * Get a distinct list of certificate types used in applications,
+     * with translations and a slug for URL.
+     *
+     * @return array
+     */
     public function CertificateTypeLists($union_id = null)
     {
-            $types = [];
-    
-            $whereClause = "WHERE tt.is_certificate_type = 1";
-    
-            if ($union_id) {
-                $unionFilter = " AND a.union_id = " . (int)$union_id;
-            } else {
-                $unionFilter = "";
-            }
-    
-            $sql = "SELECT 
+        $types = [];
+
+        $whereClause = "WHERE tt.is_certificate_type = 1";
+
+        if ($union_id !== null) {
+            $unionFilter = " AND a.union_id = " . (int)$union_id;
+        } else {
+            $unionFilter = "";
+        }
+
+        $sql = "SELECT 
                         tt.slug AS certificate_type,
                         " . static::getCertificateTypeFields() . ",
                         (
@@ -115,135 +155,149 @@ class ApplicationManager {
                     $whereClause
                     GROUP BY tt.slug
                     ORDER BY tt.name_bn ASC";
-    
-            if ($result = $this->conn->query($sql)) {
-                while ($row = $result->fetch_assoc()) {
-                    $types[] = $row;
-                }
-                $result->free();
+
+        if ($result = $this->conn->query($sql)) {
+            while ($row = $result->fetch_assoc()) {
+                $types[] = $row;
             }
-    
-            return $types;
+            $result->free();
         }
+
+        return $types;
+    }
         
     // ======================
     // APPLICATIONS CRUD
     // ======================
-    
+
     /**
-         * Fetch all applications with pagination and search
-         */
+     * Fetch all applications with pagination and search
+     */
 
     public function fetchAllApplications($union_id, $page = 1, $search = '', $records_per_page = 10, $sort_by = 'apply_date', $sort_order = 'DESC', $certificate_type = null)
     {
-                $offset = ($page - 1) * $records_per_page;
-                $search_pattern = "%$search%";
-                $allowed_sort = [
-                    'application_id', 'name_bn', 'name_en', 'father_name_bn', 'father_name_en', 'mother_name_bn', 'mother_name_en',
-                    'spouse_name_bn', 'spouse_name_en', 'applicant_name', 'nid', 'birth_id', 'passport_no', 'sonod_number', 'apply_date', 'status'
-                ];
-                $sort_by = in_array($sort_by, $allowed_sort) ? $sort_by : 'application_id';
-                $sort_order = strtoupper($sort_order) === 'ASC' ? 'ASC' : 'DESC';
-                $where = [];
-                $params = [];
-                $types = '';
-                // If search is numeric, match any of the key numbers with LIKE (partial match)
-                if (is_numeric($search) && $search !== '') {
-                    $where[] = "(a.application_id LIKE ? OR a.nid LIKE ? OR a.birth_id LIKE ? OR a.passport_no LIKE ?)";
-                    for ($i = 0; $i < 4; $i++) {
-                        $params[] = $search_pattern;
-                        $types .= 's';
-                    }
-                } else {
-                    $where[] = "(a.name_bn LIKE ? OR a.name_en LIKE ? OR a.father_name_bn LIKE ? OR a.father_name_en LIKE ? OR a.mother_name_bn LIKE ? OR a.mother_name_en LIKE ? OR a.spouse_name_bn LIKE ? OR a.spouse_name_en LIKE ? OR a.applicant_name LIKE ? OR a.nid LIKE ? OR a.birth_id LIKE ? OR a.passport_no LIKE ? OR a.sonod_number LIKE ?)";
-                    for ($i = 0; $i < 13; $i++) {
-                        $params[] = $search_pattern;
-                        $types .= 's';
-                    }
-                }
-                if ($union_id) {
-                    $where[] = "a.union_id = ?";
-                    $params[] = $union_id;
-                    $types .= 'i';
-                }
-                $slugExpr = self::getTypeUrlExpressionSQL();
+        $offset = ($page - 1) * $records_per_page;
+        $search_pattern = "%$search%";
+        $allowed_sort = [
+            'application_id',
+            'name_bn',
+            'name_en',
+            'father_name_bn',
+            'father_name_en',
+            'mother_name_bn',
+            'mother_name_en',
+            'spouse_name_bn',
+            'spouse_name_en',
+            'applicant_name',
+            'nid',
+            'birth_id',
+            'passport_no',
+            'sonod_number',
+            'apply_date',
+            'status'
+        ];
+        $sort_by = in_array($sort_by, $allowed_sort) ? $sort_by : 'application_id';
+        $sort_order = strtoupper($sort_order) === 'ASC' ? 'ASC' : 'DESC';
+        $where = [];
+        $params = [];
+        $types = '';
+        // If search is numeric, match any of the key numbers with LIKE (partial match)
+        if (is_numeric($search) && $search !== '') {
+            $where[] = "(a.application_id LIKE ? OR a.nid LIKE ? OR a.birth_id LIKE ? OR a.passport_no LIKE ?)";
+            for ($i = 0; $i < 4; $i++) {
+                $params[] = $search_pattern;
+                $types .= 's';
+            }
+        } else {
+            $where[] = "(a.name_bn LIKE ? OR a.name_en LIKE ? OR a.father_name_bn LIKE ? OR a.father_name_en LIKE ? OR a.mother_name_bn LIKE ? OR a.mother_name_en LIKE ? OR a.spouse_name_bn LIKE ? OR a.spouse_name_en LIKE ? OR a.applicant_name LIKE ? OR a.nid LIKE ? OR a.birth_id LIKE ? OR a.passport_no LIKE ? OR a.sonod_number LIKE ?)";
+            for ($i = 0; $i < 13; $i++) {
+                $params[] = $search_pattern;
+                $types .= 's';
+            }
+        }
+        if ($union_id !== null) {
+            $where[] = "a.union_id = ?";
+            $params[] = $union_id;
+            $types .= 'i';
+        }
+        $slugExpr = self::getTypeUrlExpressionSQL();
 
-                if ($certificate_type) {
-                    // একই প্যারামিটার দু’বার bind হবে (slug ও type_url—দুটিতেই পরীক্ষা)
-                    $where[]  = "(a.certificate_type = ? OR $slugExpr = ?)";
-                    $params[] = $certificate_type;   // slug পরীক্ষা
-                    $params[] = $certificate_type;   // url‑slug পরীক্ষা
-                    $types   .= 'ss';
-                }
+        if ($certificate_type) {
+            // একই প্যারামিটার দু’বার bind হবে (slug ও type_url—দুটিতেই পরীক্ষা)
+            $where[]  = "(a.certificate_type = ? OR $slugExpr = ?)";
+            $params[] = $certificate_type;   // slug পরীক্ষা
+            $params[] = $certificate_type;   // url‑slug পরীক্ষা
+            $types   .= 'ss';
+        }
 
 
-                $where_sql = implode(' AND ', $where);
-                $selectFields = self::getSelectFields();
-                $joins = self::getJoinStatements();
+        $where_sql = implode(' AND ', $where);
+        $selectFields = self::getSelectFields();
+        $joins = self::getJoinStatements();
 
-                $sql = "SELECT $selectFields
+        $sql = "SELECT $selectFields
                         FROM applications a
                         $joins
                         WHERE $where_sql
                         ORDER BY a.$sort_by $sort_order
                         LIMIT ?, ?";
-                $params[] = $offset;
-                $params[] = $records_per_page;
-                $types .= 'ii';
-                $stmt = $this->conn->prepare($sql);
-                if (!$stmt) {
-                    return ['status' => 'error', 'message' => 'Prepare failed: ' . $this->conn->error];
-                }
-                $stmt->bind_param($types, ...$params);
-                $stmt->execute();
-                $result = $stmt->get_result();
-                $data = $result->fetch_all(MYSQLI_ASSOC);
-                $stmt->close();
-                // Count query
-                $count_sql = "SELECT COUNT(*) AS total FROM applications a " . self::getJoinStatements() . " WHERE $where_sql";
-                $count_stmt = $this->conn->prepare($count_sql);
-                if (!$count_stmt) {
-                    return ['status' => 'error', 'message' => 'Prepare failed: ' . $this->conn->error];
-                }
-                $count_types = substr($types, 0, strlen($types) - 2); // Remove ii for offset/limit
-                $count_stmt->bind_param($count_types, ...array_slice($params, 0, count($params) - 2));
-                $count_stmt->execute();
-                $total = $count_stmt->get_result()->fetch_assoc()['total'];
-                $count_stmt->close();
-                $total_pages = ceil($total / $records_per_page);
-                return [
-                    'status' => 'success',
-                    'data' => $data,
-                    'total_pages' => $total_pages,
-                    'total_records' => $total
-                ];
-            }
+        $params[] = $offset;
+        $params[] = $records_per_page;
+        $types .= 'ii';
+        $stmt = $this->conn->prepare($sql);
+        if (!$stmt) {
+            return ['status' => 'error', 'message' => 'Prepare failed: ' . $this->conn->error];
+        }
+        $stmt->bind_param($types, ...$params);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $data = $result->fetch_all(MYSQLI_ASSOC);
+        $stmt->close();
+        // Count query
+        $count_sql = "SELECT COUNT(*) AS total FROM applications a " . self::getJoinStatements() . " WHERE $where_sql";
+        $count_stmt = $this->conn->prepare($count_sql);
+        if (!$count_stmt) {
+            return ['status' => 'error', 'message' => 'Prepare failed: ' . $this->conn->error];
+        }
+        $count_types = substr($types, 0, strlen($types) - 2); // Remove ii for offset/limit
+        $count_stmt->bind_param($count_types, ...array_slice($params, 0, count($params) - 2));
+        $count_stmt->execute();
+        $total = $count_stmt->get_result()->fetch_assoc()['total'];
+        $count_stmt->close();
+        $total_pages = ceil($total / $records_per_page);
+        return [
+            'status' => 'success',
+            'data' => $data,
+            'total_pages' => $total_pages,
+            'total_records' => $total
+        ];
+    }
 
     /**
-         * Example usage inside a method like getApplicationById
-         *
-         * @param int $id
-         * @return array|null
-         */
+     * Example usage inside a method like getApplicationById
+     *
+     * @param int $id
+     * @return array|null
+     */
     public function getApplicationById($id)
     {
-            $selectFields = self::getSelectFields();
-            $joins = self::getJoinStatements();
-    
-            $stmt = $this->conn->prepare("
+        $selectFields = self::getSelectFields();
+        $joins = self::getJoinStatements();
+
+        $stmt = $this->conn->prepare("
                 SELECT $selectFields
                 FROM applications a
                 $joins
                 WHERE a.id = ?
                 LIMIT 1
             ");
-    
-            $stmt->bind_param('i', $id);
-            $stmt->execute();
-    
-            $result = $stmt->get_result();
-            return $result ? $result->fetch_assoc() : null;
-        }
+
+        $stmt->bind_param('i', $id);
+        $stmt->execute();
+
+        $result = $stmt->get_result();
+        return $result ? $result->fetch_assoc() : null;
+    }
 
     /**
      * Get application by application_id with optional union_id filter
@@ -262,7 +316,7 @@ class ApplicationManager {
                 FROM applications a
                 $joins
                 WHERE a.application_id = ?";
-        
+
         $params = [$application_id];
         $types = 's';
 
@@ -303,7 +357,7 @@ class ApplicationManager {
                 FROM applications a
                 $joins
                 WHERE a.applicant_id = ?";
-             //   --   AND a.status = 'Approved'";
+        //   --   AND a.status = 'Approved'";
 
         $params = [$applicant_id];
         $types = 's';
@@ -345,14 +399,36 @@ class ApplicationManager {
         }
 
         $stmt->bind_param(
-            "sisssssssssssssssssssssssssiis",
-            $data['application_id'], $data['applicant_id'], $data['certificate_type'], $data['union_id'],
-            $data['sonod_number'], $data['name_en'], $data['name_bn'], $data['nid'], $data['birth_id'],
-            $data['passport_no'], $data['birth_date'], $data['gender'], $data['father_name_en'], $data['father_name_bn'],
-            $data['mother_name_en'], $data['mother_name_bn'], $data['occupation'], $data['resident'],
-            $data['educational_qualification'], $data['religion'], $data['marital_status'], $data['spouse_name_en'],
-            $data['spouse_name_bn'], $data['applicant_name'], $data['applicant_phone'], $data['applicant_photo'],
-            $data['documents'], $data['present_address_id'], $data['permanent_address_id'],
+            "sssisssssssssssssssssssssssiis",
+            $data['application_id'],
+            $data['applicant_id'],
+            $data['certificate_type'],
+            $data['union_id'],
+            $data['sonod_number'],
+            $data['name_en'],
+            $data['name_bn'],
+            $data['nid'],
+            $data['birth_id'],
+            $data['passport_no'],
+            $data['birth_date'],
+            $data['gender'],
+            $data['father_name_en'],
+            $data['father_name_bn'],
+            $data['mother_name_en'],
+            $data['mother_name_bn'],
+            $data['occupation'],
+            $data['resident'],
+            $data['educational_qualification'],
+            $data['religion'],
+            $data['marital_status'],
+            $data['spouse_name_en'],
+            $data['spouse_name_bn'],
+            $data['applicant_name'],
+            $data['applicant_phone'],
+            $data['applicant_photo'],
+            $data['documents'],
+            $data['present_address_id'],
+            $data['permanent_address_id'],
             $data['extra_data']
         );
 
@@ -389,9 +465,20 @@ class ApplicationManager {
 
         $stmt->bind_param(
             "sssssssssssisss",
-            $data['application_id'], $data['certificate_type'], $data['name_en'], $data['name_bn'],
-            $data['relation_en'], $data['relation_bn'], $data['birth_date'], $data['nid'], $data['gender'],
-            $data['occupation'], $data['mobile'], $data['serial_no'], $data['address'], $data['marital_status'],
+            $data['application_id'],
+            $data['certificate_type'],
+            $data['name_en'],
+            $data['name_bn'],
+            $data['relation_en'],
+            $data['relation_bn'],
+            $data['birth_date'],
+            $data['nid'],
+            $data['gender'],
+            $data['occupation'],
+            $data['mobile'],
+            $data['serial_no'],
+            $data['address'],
+            $data['marital_status'],
             $data['is_dead']
         );
 
@@ -408,48 +495,71 @@ class ApplicationManager {
         ];
     }
 
-    public function insertBusinessMeta($application_id, $data) {
+    public function insertBusinessMeta($application_id, $data)
+    {
         $sql = "INSERT INTO business_meta 
             (application_id, business_name_en, business_name_bn, ownership_type_id, vat_id, tax_id, business_type_id,
             paid_up_capital, license_fee, vat_amount, occupation_tax, income_tax, signboard_tax,
             surcharge, total_fee, business_address_id, expiry_date)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-    
+
         $stmt = $this->conn->prepare($sql);
-        if (!$stmt) return ['status' => false, 'message' => $this->conn->error];
-    
-        $expiry_date = $data['expiry_date'] ?? null; // optional
-    
+        if (!$stmt) {
+            error_log("[insertBusinessMeta] prepare failed: application_id={$application_id}, error={$this->conn->error}");
+            return ['status' => false, 'message' => $this->conn->error];
+        }
+
+        $business_name_en    = $data['business_name_en'] ?? '';
+        $business_name_bn    = $data['business_name_bn'] ?? '';
+        $ownership_type_id   = $data['ownership_type_id'] ?? null;
+        $vat_id              = $data['vat_id'] ?? '';
+        $tax_id              = $data['tax_id'] ?? '';
+        $business_type_id    = $data['business_type_id'] ?? null;
+        $paid_up_capital     = $data['paid_up_capital'] ?? 0;
+        $license_fee         = $data['license_fee'] ?? 0;
+        $vat_amount          = $data['vat_amount'] ?? 0;
+        $occupation_tax      = $data['occupation_tax'] ?? 0;
+        $income_tax          = $data['income_tax'] ?? 0;
+        $signboard_tax       = $data['signboard_tax'] ?? 0;
+        $surcharge           = $data['surcharge'] ?? 0;
+        $total_fee           = $data['total_fee'] ?? 0;
+        $business_address_id = $data['business_address_id'] ?? null;
+        $expiry_date         = $data['expiry_date'] ?? null; // optional
+
         $stmt->bind_param(
-            'ssssssiddddddddis',
+            'sssissiddddddddis',
             $application_id,                 // s
-            $data['business_name_en'],        // s
-            $data['business_name_bn'],        // s
-            $data['ownership_type_id'],       // i
-            $data['vat_id'],                  // s
-            $data['tax_id'],                  // s
-            $data['business_type_id'],        // i
-            $data['paid_up_capital'],         // d
-            $data['license_fee'],             // d
-            $data['vat_amount'],              // d
-            $data['occupation_tax'],          // d
-            $data['income_tax'],              // d
-            $data['signboard_tax'],           // d
-            $data['surcharge'],               // d
-            $data['total_fee'],               // d
-            $data['business_address_id'],     // i
+            $business_name_en,                // s
+            $business_name_bn,                // s
+            $ownership_type_id,               // i
+            $vat_id,                          // s
+            $tax_id,                          // s
+            $business_type_id,                // i
+            $paid_up_capital,                 // d
+            $license_fee,                     // d
+            $vat_amount,                      // d
+            $occupation_tax,                  // d
+            $income_tax,                      // d
+            $signboard_tax,                   // d
+            $surcharge,                       // d
+            $total_fee,                       // d
+            $business_address_id,             // i
             $expiry_date                      // s (nullable)
         );
 
-    
+
         $exec = $stmt->execute();
-    
-        return $exec 
-            ? ['status' => true] 
+        if (!$exec) {
+            error_log("[insertBusinessMeta] execute failed: application_id={$application_id}, error={$stmt->error}");
+        }
+
+        return $exec
+            ? ['status' => true]
             : ['status' => false, 'message' => $stmt->error];
     }
-    
-    public function updateBusinessMeta($application_id, $data) {
+
+    public function updateBusinessMeta($application_id, $data)
+    {
         $sql = "UPDATE business_meta 
                 SET 
                     license_fee = ?, 
@@ -464,30 +574,48 @@ class ApplicationManager {
                     business_type_id = ?,
                     expiry_date = ?
                 WHERE application_id = ?";
-    
+
         $stmt = $this->conn->prepare($sql);
         if (!$stmt) {
+            error_log("[updateBusinessMeta] prepare failed: application_id={$application_id}, error={$this->conn->error}");
             return ['status' => false, 'message' => $this->conn->error];
         }
-    
+
+        $license_fee       = $data['license_fee'] ?? 0;
+        $vat_amount        = $data['vat_amount'] ?? 0;
+        $occupation_tax    = $data['occupation_tax'] ?? 0;
+        $income_tax        = $data['income_tax'] ?? 0;
+        $signboard_tax     = $data['signboard_tax'] ?? 0;
+        $surcharge         = $data['surcharge'] ?? 0;
+        $total_fee         = $data['total_fee'] ?? 0;
+        $fiscal_year       = $data['fiscal_year'] ?? '';
+        $ownership_type_id  = $data['ownership_type_id'] ?? null;
+        $business_type_id  = $data['business_type_id'] ?? null;
+        $expiry_date       = $data['expiry_date'] ?? null;
+
         $stmt->bind_param(
-            'dddddddsiisi',
-            $data['license_fee'],
-            $data['vat_amount'],
-            $data['occupation_tax'],
-            $data['income_tax'],
-            $data['signboard_tax'],
-            $data['surcharge'],
-            $data['total_fee'],
-            $data['fiscal_year'],
-            $data['ownership_type_id'],
-            $data['business_type_id'],
-            $data['expiry_date'],
+            'dddddddsiiss',
+            $license_fee,
+            $vat_amount,
+            $occupation_tax,
+            $income_tax,
+            $signboard_tax,
+            $surcharge,
+            $total_fee,
+            $fiscal_year,
+            $ownership_type_id,
+            $business_type_id,
+            $expiry_date,
             $application_id
         );
 
-    
-        return $stmt->execute()
+
+        $exec = $stmt->execute();
+        if (!$exec) {
+            error_log("[updateBusinessMeta] execute failed: application_id={$application_id}, error={$stmt->error}");
+        }
+
+        return $exec
             ? ['status' => true]
             : ['status' => false, 'message' => $stmt->error];
     }
@@ -505,6 +633,7 @@ class ApplicationManager {
             a.rbs_bn AS business_rbs_bn,
             a.rbs_en AS business_rbs_en,
             a.holding_no,
+            a.holding_no AS business_holding_no,
             a.ward_no AS business_ward_no,
             a.district_bn AS business_district_bn,
             a.district_en AS business_district_en,
@@ -553,7 +682,8 @@ class ApplicationManager {
     }
 
 
-    public function deleteMembersByApplication($application_id) {
+    public function deleteMembersByApplication($application_id)
+    {
         global $mysqli;
         $stmt = $mysqli->prepare("DELETE FROM application_members WHERE application_id = ?");
         if (!$stmt) {
@@ -575,9 +705,7 @@ class ApplicationManager {
         return $stmt->execute();
     }
 
-    public function updateMember($member_id, $data)
-    {
-    }
+    public function updateMember($member_id, $data) {}
 
 
     public function getApplication($application_id, $union_id = null)
@@ -605,7 +733,7 @@ class ApplicationManager {
         $name_bn    = $data['name_bn'] ?? '';
         $nid        = $data['nid'] ?? '';
         $birth_id   = $data['birth_id'] ?? '';
-        $passport_no= $data['passport_no'] ?? '';
+        $passport_no = $data['passport_no'] ?? '';
         $birth_date = $data['birth_date'] ?? '';
         $gender     = $data['gender'] ?? '';
         $father_name_en = $data['father_name_en'] ?? '';
@@ -650,31 +778,58 @@ class ApplicationManager {
         $present_address_id   = isset($data['present_address_id']) ? (int)$data['present_address_id'] : null;
         $permanent_address_id = isset($data['permanent_address_id']) ? (int)$data['permanent_address_id'] : null;
 
-        $application_id = (int)$application_id;
-        $union_id = (int)($union_id ?? 0);
-
         // ---------------- Update Query ----------------
-        $stmt = $this->conn->prepare("
+        $sql = "
             UPDATE applications SET
                 name_en=?, name_bn=?, nid=?, birth_id=?, passport_no=?, birth_date=?,
                 gender=?, father_name_en=?, father_name_bn=?, mother_name_en=?, mother_name_bn=?,
                 occupation=?, resident=?, educational_qualification=?, religion=?, marital_status=?,
                 spouse_name_en=?, spouse_name_bn=?, applicant_name=?, applicant_phone=?, applicant_photo=?,
                 documents=?, extra_data=?, edit_date=NOW(), present_address_id=?, permanent_address_id=?
-            WHERE application_id=? AND (? = 0 OR union_id=?)
-        ");
+            WHERE application_id=?
+        ";
+
+        $params = [
+            $name_en,
+            $name_bn,
+            $nid,
+            $birth_id,
+            $passport_no,
+            $birth_date,
+            $gender,
+            $father_name_en,
+            $father_name_bn,
+            $mother_name_en,
+            $mother_name_bn,
+            $occupation,
+            $resident,
+            $educational_qualification,
+            $religion,
+            $marital_status,
+            $spouse_name_en,
+            $spouse_name_bn,
+            $applicant_name,
+            $applicant_phone,
+            $applicant_photo,
+            $documents,
+            $extra_data,
+            $present_address_id,
+            $permanent_address_id,
+            $application_id,
+        ];
+        $types = str_repeat('s', 23) . 'iis';
+
+        if ($union_id !== null) {
+            $sql .= " AND union_id = ?";
+            $params[] = (int)$union_id;
+            $types .= 'i';
+        }
+
+        $stmt = $this->conn->prepare($sql);
 
         if (!$stmt) throw new Exception("Prepare failed: " . $this->conn->error);
 
-        $stmt->bind_param(
-            'sssssssssssssssssssssssiisii',
-            $name_en, $name_bn, $nid, $birth_id, $passport_no, $birth_date,
-            $gender, $father_name_en, $father_name_bn, $mother_name_en, $mother_name_bn,
-            $occupation, $resident, $educational_qualification, $religion, $marital_status,
-            $spouse_name_en, $spouse_name_bn, $applicant_name, $applicant_phone, $applicant_photo,
-            $documents, $extra_data, $present_address_id, $permanent_address_id,
-            $application_id, $union_id, $union_id
-        );
+        $stmt->bind_param($types, ...$params);
 
         if (!$stmt->execute()) {
             $error = $stmt->error;
@@ -712,15 +867,17 @@ class ApplicationManager {
         // ✅ যদি সুপার অ্যাডমিন না হয়, তাহলে ইউনিয়ন চেক করবো
         if ($union_id !== null) {
             $sql .= " AND a.union_id = ?";
-            $stmt = $this->conn->prepare($sql);
-            $stmt->bind_param('si', $application_id, $union_id);
-        } else {
-            $stmt = $this->conn->prepare($sql);
-            $stmt->bind_param('s', $application_id);
         }
 
+        $stmt = $this->conn->prepare($sql);
         if (!$stmt) {
             return null;
+        }
+
+        if ($union_id !== null) {
+            $stmt->bind_param('si', $application_id, $union_id);
+        } else {
+            $stmt->bind_param('s', $application_id);
         }
 
         $stmt->execute();
@@ -730,15 +887,16 @@ class ApplicationManager {
         return $row;
     }
 
-    public function deleteApplication($application_id, $union_id = null) {
+    public function deleteApplication($application_id, $union_id = null)
+    {
         try {
             $sql = "DELETE FROM applications WHERE application_id = ?";
-            if ($union_id) {
-                $sql .= " AND union_id = ?";
-            }
+        if ($union_id !== null) {
+            $sql .= " AND union_id = ?";
+        }
 
             $stmt = $this->conn->prepare($sql);
-            if ($union_id) {
+            if ($union_id !== null) {
                 $stmt->bind_param("si", $application_id, $union_id);
             } else {
                 $stmt->bind_param("s", $application_id);
@@ -766,7 +924,14 @@ class ApplicationManager {
 
     public function updateApprovalStatus($application_id, $status, $note = null)
     {
-        $stmt = $this->conn->prepare("UPDATE application_approvals SET approval_status = ?, approval_note = ?, approval_date = NOW() WHERE application_id = ?");
+        $hasIssueTime = $this->applicationApprovalsHasIssueTimeColumn();
+        $sql = "UPDATE application_approvals SET approval_status = ?, approval_note = ?, approval_date = NOW()";
+        if ($hasIssueTime) {
+            $sql .= ", issue_time = TIME(NOW())";
+        }
+        $sql .= " WHERE application_id = ?";
+
+        $stmt = $this->conn->prepare($sql);
         $stmt->bind_param("sss", $status, $note, $application_id);
         return $stmt->execute();
     }
@@ -820,13 +985,11 @@ class ApplicationManager {
         return $result->fetch_assoc();
     }
 
-    
+
 
 
     public function approveApplication($application_id, $data, $sonod_number, $union_id, $certificate_type = null)
     {
-        $this->conn->begin_transaction();
-
         try {
             // Auto fetch certificate_type if not provided 
             if (empty($certificate_type)) {
@@ -851,13 +1014,15 @@ class ApplicationManager {
             $check_stmt->close();
 
             if (!empty($data['approval_date'])) {
-                $approval_date = $data['approval_date']; // Already Y-m-d H:i:s from route
+                $approval_date = substr((string)$data['approval_date'], 0, 10); // Store as DATE
             } else {
                 $approval_date = null;
             }
-            
+
+            $issue_time = self::normalizeTimeValue($data['issue_time'] ?? null); // Store as TIME
+
             if (!empty($data['verification_date'])) {
-                $verification_date = $data['verification_date']; // Already Y-m-d from route
+                $verification_date = substr((string)$data['verification_date'], 0, 10); // Store as DATE
             } else {
                 $verification_date = null;
             }
@@ -880,65 +1045,197 @@ class ApplicationManager {
             $certificate_fee = $data['certificate_fee'] ?? null;
             $payment_method = $data['payment_method'] ?? null;
             $payment_status = $data['payment_status'] ?? 'Unpaid';
+            $approvalHasIssueTime = $this->applicationApprovalsHasIssueTimeColumn();
 
 
             if ($hasApproval) {
                 // Update
-                $update_stmt = $this->conn->prepare("
-                    UPDATE application_approvals SET
-                        certificate_type = ?, verifier_id = ?, verifier_designation = ?, verifier_contact = ?,
-                        verifier_name_bn = ?, verifier_name_en = ?, verifier_ward_no = ?,
-                        verification_date = ?, verification_note = ?, approver_id = ?, approver_name_bn = ?,
-                        approver_name_en = ?, approver_ward_no = ?, approval_date = ?,
-                        approval_note = ?, approval_status = ?, certificate_fee = ?, payment_method = ?, payment_status = ?
-                    WHERE application_id = ?
-                ");
-                $update_stmt->bind_param(
-                    "ssissssssssssssssss",
-                    $certificate_type, $verifier_id, $verifier_designation, $verifier_contact,
-                    $verifier_name_bn, $verifier_name_en, $verifier_ward_no,
-                    $verification_date, $verification_note, $approver_id, $approver_name_bn,
-                    $approver_name_en, $approver_ward_no, $approval_date,
-                    $approval_note, $approval_status, $certificate_fee, $payment_method, $payment_status, $application_id
-                );
-                $update_stmt->execute();
+                if ($approvalHasIssueTime) {
+                    $update_stmt = $this->conn->prepare("
+                        UPDATE application_approvals SET
+                            certificate_type = ?, verifier_id = ?, verifier_designation = ?, verifier_contact = ?,
+                            verifier_name_bn = ?, verifier_name_en = ?, verifier_ward_no = ?,
+                            verification_date = ?, verification_note = ?, approver_id = ?, approver_name_bn = ?,
+                            approver_name_en = ?, approver_ward_no = ?, approval_date = ?, issue_time = ?,
+                            approval_note = ?, approval_status = ?, certificate_fee = ?, payment_method = ?, payment_status = ?
+                        WHERE application_id = ?
+                    ");
+                    if (!$update_stmt) {
+                        throw new Exception("Failed to prepare approval update: " . $this->conn->error);
+                    }
+                    $updateTypes = 'si' . str_repeat('s', 15) . 'dsss';
+                    $update_stmt->bind_param(
+                        $updateTypes,
+                        $certificate_type,
+                        $verifier_id,
+                        $verifier_designation,
+                        $verifier_contact,
+                        $verifier_name_bn,
+                        $verifier_name_en,
+                        $verifier_ward_no,
+                        $verification_date,
+                        $verification_note,
+                        $approver_id,
+                        $approver_name_bn,
+                        $approver_name_en,
+                        $approver_ward_no,
+                        $approval_date,
+                        $issue_time,
+                        $approval_note,
+                        $approval_status,
+                        $certificate_fee,
+                        $payment_method,
+                        $payment_status,
+                        $application_id
+                    );
+                } else {
+                    $update_stmt = $this->conn->prepare("
+                        UPDATE application_approvals SET
+                            certificate_type = ?, verifier_id = ?, verifier_designation = ?, verifier_contact = ?,
+                            verifier_name_bn = ?, verifier_name_en = ?, verifier_ward_no = ?,
+                            verification_date = ?, verification_note = ?, approver_id = ?, approver_name_bn = ?,
+                            approver_name_en = ?, approver_ward_no = ?, approval_date = ?,
+                            approval_note = ?, approval_status = ?, certificate_fee = ?, payment_method = ?, payment_status = ?
+                        WHERE application_id = ?
+                    ");
+                    if (!$update_stmt) {
+                        throw new Exception("Failed to prepare approval update: " . $this->conn->error);
+                    }
+                    $updateTypes = 'si' . str_repeat('s', 14) . 'dsss';
+                    $update_stmt->bind_param(
+                        $updateTypes,
+                        $certificate_type,
+                        $verifier_id,
+                        $verifier_designation,
+                        $verifier_contact,
+                        $verifier_name_bn,
+                        $verifier_name_en,
+                        $verifier_ward_no,
+                        $verification_date,
+                        $verification_note,
+                        $approver_id,
+                        $approver_name_bn,
+                        $approver_name_en,
+                        $approver_ward_no,
+                        $approval_date,
+                        $approval_note,
+                        $approval_status,
+                        $certificate_fee,
+                        $payment_method,
+                        $payment_status,
+                        $application_id
+                    );
+                }
+                if (!$update_stmt->execute()) {
+                    error_log("[approveApplication] approval update failed: application_id={$application_id}, error={$update_stmt->error}");
+                    throw new Exception("Failed to update application approval: " . $update_stmt->error);
+                }
                 $update_stmt->close();
             } else {
                 // Insert
-                $insert_stmt = $this->conn->prepare("
-                    INSERT INTO application_approvals (
-                        application_id, certificate_type, verifier_id, verifier_designation, verifier_contact,
-                        verifier_name_bn, verifier_name_en, verifier_ward_no,
-                        verification_date, verification_note, approver_id, approver_name_bn,
-                        approver_name_en, approver_ward_no, approval_date,
-                        approval_note, approval_status, certificate_fee, payment_method, payment_status
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                ");
-                $insert_stmt->bind_param(
-                    "ssisssssssssssssssss",
-                    $application_id, $certificate_type, $verifier_id, $verifier_designation, $verifier_contact,
-                    $verifier_name_bn, $verifier_name_en, $verifier_ward_no,
-                    $verification_date, $verification_note, $approver_id, $approver_name_bn,
-                    $approver_name_en, $approver_ward_no, $approval_date,
-                    $approval_note, $approval_status, $certificate_fee, $payment_method, $payment_status
-                );
-                $insert_stmt->execute();
+                if ($approvalHasIssueTime) {
+                    $insert_stmt = $this->conn->prepare("
+                        INSERT INTO application_approvals (
+                            application_id, certificate_type, verifier_id, verifier_designation, verifier_contact,
+                            verifier_name_bn, verifier_name_en, verifier_ward_no,
+                            verification_date, verification_note, approver_id, approver_name_bn,
+                            approver_name_en, approver_ward_no, approval_date, issue_time,
+                            approval_note, approval_status, certificate_fee, payment_method, payment_status
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ");
+                    if (!$insert_stmt) {
+                        throw new Exception("Failed to prepare approval insert: " . $this->conn->error);
+                    }
+                    $insertTypes = 'ssi' . str_repeat('s', 15) . 'dss';
+                    $insert_stmt->bind_param(
+                        $insertTypes,
+                        $application_id,
+                        $certificate_type,
+                        $verifier_id,
+                        $verifier_designation,
+                        $verifier_contact,
+                        $verifier_name_bn,
+                        $verifier_name_en,
+                        $verifier_ward_no,
+                        $verification_date,
+                        $verification_note,
+                        $approver_id,
+                        $approver_name_bn,
+                        $approver_name_en,
+                        $approver_ward_no,
+                        $approval_date,
+                        $issue_time,
+                        $approval_note,
+                        $approval_status,
+                        $certificate_fee,
+                        $payment_method,
+                        $payment_status
+                    );
+                } else {
+                    $insert_stmt = $this->conn->prepare("
+                        INSERT INTO application_approvals (
+                            application_id, certificate_type, verifier_id, verifier_designation, verifier_contact,
+                            verifier_name_bn, verifier_name_en, verifier_ward_no,
+                            verification_date, verification_note, approver_id, approver_name_bn,
+                            approver_name_en, approver_ward_no, approval_date,
+                            approval_note, approval_status, certificate_fee, payment_method, payment_status
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ");
+                    if (!$insert_stmt) {
+                        throw new Exception("Failed to prepare approval insert: " . $this->conn->error);
+                    }
+                    $insertTypes = 'ssi' . str_repeat('s', 14) . 'dss';
+                    $insert_stmt->bind_param(
+                        $insertTypes,
+                        $application_id,
+                        $certificate_type,
+                        $verifier_id,
+                        $verifier_designation,
+                        $verifier_contact,
+                        $verifier_name_bn,
+                        $verifier_name_en,
+                        $verifier_ward_no,
+                        $verification_date,
+                        $verification_note,
+                        $approver_id,
+                        $approver_name_bn,
+                        $approver_name_en,
+                        $approver_ward_no,
+                        $approval_date,
+                        $approval_note,
+                        $approval_status,
+                        $certificate_fee,
+                        $payment_method,
+                        $payment_status
+                    );
+                }
+                if (!$insert_stmt->execute()) {
+                    error_log("[approveApplication] approval insert failed: application_id={$application_id}, error={$insert_stmt->error}");
+                    throw new Exception("Failed to insert application approval: " . $insert_stmt->error);
+                }
                 $insert_stmt->close();
             }
             $issue_by = $_SESSION['user_id'] ?? 'system';
             $issue_date = $approval_date;
             $status = 'Approved';
 
-            if (!empty($union_id)) {
+            if ($union_id !== null) {
                 $update_app_stmt = $this->conn->prepare("
                     UPDATE applications 
                     SET issue_by = ?, issue_date = ?, status = ?, sonod_number = ?
                     WHERE application_id = ? AND union_id = ?
                 ");
+                if (!$update_app_stmt) {
+                    throw new Exception("Failed to prepare application update: " . $this->conn->error);
+                }
                 $update_app_stmt->bind_param(
                     "sssssi",
-                    $issue_by, $issue_date, $status, $sonod_number,
-                    $application_id, $union_id
+                    $issue_by,
+                    $issue_date,
+                    $status,
+                    $sonod_number,
+                    $application_id,
+                    $union_id
                 );
             } else {
                 $update_app_stmt = $this->conn->prepare("
@@ -946,28 +1243,31 @@ class ApplicationManager {
                     SET issue_by = ?, issue_date = ?, status = ?, sonod_number = ?
                     WHERE application_id = ?
                 ");
+                if (!$update_app_stmt) {
+                    throw new Exception("Failed to prepare application update: " . $this->conn->error);
+                }
                 $update_app_stmt->bind_param(
                     "sssss",
-                    $issue_by, $issue_date, $status, $sonod_number,
+                    $issue_by,
+                    $issue_date,
+                    $status,
+                    $sonod_number,
                     $application_id
                 );
             }
 
-            $update_app_stmt->execute();
+            if (!$update_app_stmt->execute()) {
+                error_log("[approveApplication] application update failed: application_id={$application_id}, error={$update_app_stmt->error}");
+                throw new Exception("Failed to update application row: " . $update_app_stmt->error);
+            }
             $update_app_stmt->close();
-
-            $this->conn->commit();
 
             return [
                 'status' => 'success',
                 'message' => 'Application approved successfully.'
             ];
         } catch (Exception $e) {
-            $this->conn->rollback();
-            return [
-                'status' => 'error',
-                'message' => 'Approval failed: ' . $e->getMessage()
-            ];
+            throw $e;
         }
     }
 
@@ -997,9 +1297,9 @@ class ApplicationManager {
                                 reject_reason, 
                                 reject_date,
                                 certificate_type
-                            ) VALUES (?, 'Rejected', ?, ?, ?, ?)";
+                            ) VALUES (?, 'Rejected', ?, ?, ?)";
             $stmt = $this->conn->prepare($sql_rejection);
-            $stmt->bind_param("sssss", $application_id, $reject_reason, $reject_date, $certificate_type);
+            $stmt->bind_param("ssss", $application_id, $reject_reason, $reject_date, $certificate_type);
             if (!$stmt->execute()) {
                 throw new Exception("Error inserting rejection record: " . $stmt->error);
             }
@@ -1028,7 +1328,12 @@ class ApplicationManager {
         $stmt->bind_param("ssi", $note, $application_id, $union_id);
         $result = $stmt->execute();
         $stmt->close();
-        return $result;
+
+        if ($result) {
+            return ['status' => 'success', 'message' => 'Application placed on hold successfully.'];
+        } else {
+            return ['status' => 'error', 'message' => 'Failed to place application on hold.'];
+        }
     }
 
     // union_id দিয়ে ফিল্টার শুধুমাত্র applications table-এ
@@ -1039,11 +1344,17 @@ class ApplicationManager {
         $stmt->bind_param("si", $application_id, $union_id);
         $result = $stmt->execute();
         $stmt->close();
-        return $result;
+
+        if ($result) {
+            return ['status' => 'success', 'message' => 'Application reactivated successfully.'];
+        } else {
+            return ['status' => 'error', 'message' => 'Failed to reactivate application.'];
+        }
     }
 
 
-    public function updateSonodStatus($application_id, $union_id, $sonod_number, $status) {
+    public function updateSonodStatus($application_id, $union_id, $sonod_number, $status)
+    {
         $stmt = $this->conn->prepare("UPDATE applications SET sonod_number = ?, status = ? WHERE application_id = ? AND union_id = ?");
         $stmt->bind_param("sssi", $sonod_number, $status, $application_id, $union_id);
         $success = $stmt->execute();
@@ -1052,12 +1363,13 @@ class ApplicationManager {
     }
 
 
-    public function getApplicationsByApplicantId($applicant_id, $offset = 0, $limit = 10) {
+    public function getApplicationsByApplicantId($applicant_id, $offset = 0, $limit = 10)
+    {
         global $mysqli;
         $unionModel = new UnionModel($mysqli);
         $selectFields = self::getSelectFields();
         $joins = self::getJoinStatements();
-    
+
         // ডেটা আনা
         $stmt = $mysqli->prepare("
             SELECT $selectFields 
@@ -1070,17 +1382,17 @@ class ApplicationManager {
         $offset = (int)$offset;
         $limit = (int)$limit;
         $stmt->bind_param("sii", $applicant_id, $offset, $limit);
-        $stmt->execute();       
+        $stmt->execute();
         $result = $stmt->get_result();
         $applications = $result->fetch_all(MYSQLI_ASSOC);
-    
+
         // প্রতিটি আবেদনের union ডেটা যোগ করা
         foreach ($applications as &$app) {
             if (!empty($app['union_id'])) {
                 $app['union'] = $unionModel->getById($app['union_id']);
             }
         }
-    
+
         // মোট রেকর্ড সংখ্যা
         $countStmt = $mysqli->prepare("
             SELECT COUNT(*) AS total 
@@ -1093,7 +1405,7 @@ class ApplicationManager {
         $totalRes = $countStmt->get_result();
         $total = (int)$totalRes->fetch_assoc()['total'];
         $total_pages = ceil($total / $limit);
-    
+
         return [
             'applications' => $applications,
             'total' => $total,
@@ -1104,7 +1416,8 @@ class ApplicationManager {
     /**
      * Get the most recent application by applicant ID
      */
-    public function getLatestApplicationByApplicantId($applicant_id) {
+    public function getLatestApplicationByApplicantId($applicant_id)
+    {
         $stmt = $this->conn->prepare("SELECT * FROM applications WHERE applicant_id = ? ORDER BY id DESC LIMIT 1");
         $stmt->bind_param("s", $applicant_id);
         $stmt->execute();
@@ -1112,11 +1425,12 @@ class ApplicationManager {
         return $result->fetch_assoc() ?: null;
     }
 
-    public function getAllCertificateTypes() {
+    public function getAllCertificateTypes()
+    {
         $types = [];
-    
+
         $whereClause = "WHERE tt.is_certificate_type = 1";
-    
+
         $query = "SELECT 
                     tt.slug AS certificate_type,
                     " . static::getCertificateTypeFields() . "
@@ -1124,7 +1438,7 @@ class ApplicationManager {
                 $whereClause
                 GROUP BY tt.slug
                 ORDER BY tt.name_bn ASC";
-    
+
         $result = $this->conn->query($query);
         if ($result) {
             while ($row = $result->fetch_assoc()) {
@@ -1138,7 +1452,7 @@ class ApplicationManager {
             }
             $result->free();
         }
-    
+
         return $types;
     }
 
@@ -1153,7 +1467,7 @@ class ApplicationManager {
     {
         $selectFields = self::getSelectFields();
         $joins = self::getJoinStatements();
-    
+
         $sql = "SELECT $selectFields
                 FROM applications a
                 $joins
@@ -1162,29 +1476,268 @@ class ApplicationManager {
                        OR a.passport_no = ?
                        OR a.application_id = ?
                        OR a.applicant_id = ?)";
-    
+
         $params = [$identifier, $identifier, $identifier, $identifier, $identifier];
         $types  = 'sssss';
-    
+
         // যদি ইউনিয়ন ফিল্টার ব্যবহার করতে চান
         if ($union_id !== null) {
             $sql .= " AND a.union_id = ?";
             $params[] = $union_id;
             $types   .= 'i';
         }
-    
+
         $sql .= " LIMIT 1";
-    
+
         $stmt = $this->conn->prepare($sql);
         if (!$stmt) {
             return null;
         }
-    
+
         $stmt->bind_param($types, ...$params);
         $stmt->execute();
         $result = $stmt->get_result();
-    
+
         return $result->fetch_assoc() ?: null;
     }
 
+    /**
+     * Renew a Trade License
+     * Updates application status, generates new fiscal year, updates expiry date
+     * Tracks renewal history
+     */
+    public function renewLicense($application_id, $renewalData, $union_id = null)
+    {
+        $this->conn->begin_transaction();
+
+        try {
+            // Get current application
+            $app = $this->getApplicationByApplicationId($application_id, $union_id);
+            if (!$app) {
+                throw new Exception("আবেদন খুঁজে পাওয়া যায়নি। Application not found.");
+            }
+
+            // Only trade licenses can be renewed
+            if ($app['certificate_type'] !== 'trade') {
+                throw new Exception("শুধুমাত্র ট্রেড লাইসেন্স নবায়ন করা যায়। Only trade licenses can be renewed.");
+            }
+
+            // Get business meta
+            $businessMeta = $this->getBusinessMetaByApplicationId($application_id);
+            if (!$businessMeta) {
+                throw new Exception("ব্যবসায়িক তথ্য খুঁজে পাওয়া যায়নি। Business information not found.");
+            }
+
+            // Calculate new expiry date based on fiscal year
+            $fiscalYear = $renewalData['fiscal_year'] ?? '';
+            if (!preg_match('/^\d{4}-\d{4}$/', $fiscalYear)) {
+                throw new Exception("অর্থবছর ফর্ম্যাট অবৈধ। Invalid fiscal year format.");
+            }
+
+            // Extract year from fiscal year (e.g., "2024-2025" => 2025)
+            $yearParts = explode('-', $fiscalYear);
+            $expiryYear = end($yearParts);
+            $newExpiryDate = "$expiryYear-06-30"; // Bangladeshi fiscal year ends on June 30
+
+            // Get current approval date for new issue
+            $issueDate = date('Y-m-d');
+            if (!empty($renewalData['issue_date'])) {
+                $issueDate = $renewalData['issue_date'];
+            }
+
+            // Step 1: Track renewal history before updating
+            $this->trackRenewalHistory([
+                'application_id' => $application_id,
+                'old_sonod_number' => $app['sonod_number'],
+                'old_fiscal_year' => $businessMeta['fiscal_year'] ?? 'N/A',
+                'old_expiry_date' => $businessMeta['expiry_date'],
+                'renewal_date' => $issueDate,
+                'renewed_by' => $renewalData['renewed_by'] ?? $_SESSION['user_id'] ?? 'system',
+                'renewal_notes' => $renewalData['renewal_notes'] ?? null
+            ]);
+
+            // Step 2: Update business meta with new expiry date and fiscal year
+            $updateBusinessData = [
+                'license_fee' => $renewalData['license_fee'] ?? $businessMeta['license_fee'],
+                'vat_amount' => $renewalData['vat_amount'] ?? $businessMeta['vat_amount'],
+                'occupation_tax' => $renewalData['occupation_tax'] ?? $businessMeta['occupation_tax'],
+                'income_tax' => $renewalData['income_tax'] ?? $businessMeta['income_tax'],
+                'signboard_tax' => $renewalData['signboard_tax'] ?? $businessMeta['signboard_tax'],
+                'surcharge' => $renewalData['surcharge'] ?? $businessMeta['surcharge'],
+                'total_fee' => $renewalData['total_fee'] ?? $businessMeta['total_fee'],
+                'fiscal_year' => $fiscalYear,
+                'ownership_type_id' => $renewalData['ownership_type_id'] ?? $businessMeta['ownership_type_id'],
+                'business_type_id' => $renewalData['business_type_id'] ?? $businessMeta['business_type_id'],
+                'expiry_date' => $newExpiryDate,
+            ];
+
+            $businessUpdateResult = $this->updateBusinessMeta($application_id, $updateBusinessData);
+            if (!$businessUpdateResult['status']) {
+                throw new Exception("ব্যবসায়িক তথ্য আপডেট ব্যর্থ। Failed to update business meta: " . $businessUpdateResult['message']);
+            }
+
+            // Step 3: Update application approval record
+            $approval = $this->getApprovalByApplicationId($application_id);
+            if ($approval) {
+                // Update existing approval
+                $hasIssueTime = $this->applicationApprovalsHasIssueTimeColumn();
+                $sql = "
+                    UPDATE application_approvals 
+                    SET 
+                        approval_status = 'Approved',
+                        renewal_count = COALESCE(renewal_count, 0) + 1,
+                        last_renewal_date = NOW(),";
+                if ($hasIssueTime) {
+                    $sql .= "
+                        issue_time = TIME(NOW()),";
+                }
+                $sql .= "
+                        approval_note = CONCAT(COALESCE(approval_note, ''), '\nRenewal: ', ?, ' - FY: ', ?)
+                    WHERE application_id = ?
+                ";
+                $stmt = $this->conn->prepare($sql);
+                $renewalNotes = $renewalData['renewal_notes'] ?? 'Renewed via system';
+                $stmt->bind_param("sss", $renewalNotes, $fiscalYear, $application_id);
+                $stmt->execute();
+                $stmt->close();
+            }
+
+            // Step 4: Update application status to Active (if was Expired)
+            $stmt = $this->conn->prepare("
+                UPDATE applications 
+                SET 
+                    status = 'Approved',
+                    issue_date = ?
+                WHERE application_id = ?
+            ");
+            $stmt->bind_param("ss", $issueDate, $application_id);
+            if (!$stmt->execute()) {
+                throw new Exception("আবেদন স্ট্যাটাস আপডেট ব্যর্থ। Failed to update application status: " . $stmt->error);
+            }
+            $stmt->close();
+
+            $this->conn->commit();
+
+            return [
+                'status' => 'success',
+                'message' => 'লাইসেন্স সফলভাবে নবায়িত হয়েছে। License renewed successfully.',
+                'new_expiry_date' => $newExpiryDate,
+                'fiscal_year' => $fiscalYear,
+                'sonod_number' => $app['sonod_number']
+            ];
+        } catch (Exception $e) {
+            $this->conn->rollback();
+            return [
+                'status' => 'error',
+                'message' => $e->getMessage()
+            ];
+        }
+    }
+
+    /**
+     * Track license renewal history in license_renewal_history table
+     */
+    public function trackRenewalHistory($historyData)
+    {
+        $sql = "INSERT INTO license_renewal_history (
+            application_id, old_sonod_number, old_fiscal_year, old_expiry_date,
+            renewal_date, renewed_by, renewal_notes, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, NOW())";
+
+        $stmt = $this->conn->prepare($sql);
+        if (!$stmt) {
+            // Table might not exist yet - return gracefully
+            return ['status' => false, 'message' => 'History table not found'];
+        }
+
+        $stmt->bind_param(
+            "sssssss",
+            $historyData['application_id'],
+            $historyData['old_sonod_number'],
+            $historyData['old_fiscal_year'],
+            $historyData['old_expiry_date'],
+            $historyData['renewal_date'],
+            $historyData['renewed_by'],
+            $historyData['renewal_notes']
+        );
+
+        $result = $stmt->execute();
+        $stmt->close();
+
+        return [
+            'status' => $result,
+            'message' => $result ? 'History tracked' : 'Failed to track history'
+        ];
+    }
+
+    /**
+     * Get license renewal history for an application
+     */
+    public function getLicenseHistory($application_id)
+    {
+        $sql = "SELECT * FROM license_renewal_history 
+                WHERE application_id = ? 
+                ORDER BY renewal_date DESC";
+
+        $stmt = $this->conn->prepare($sql);
+        if (!$stmt) {
+            return [];
+        }
+
+        $stmt->bind_param("s", $application_id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $history = $result->fetch_all(MYSQLI_ASSOC);
+        $stmt->close();
+
+        return $history;
+    }
+
+    /**
+     * Check if a license is expired
+     */
+    public function isLicenseExpired($application_id)
+    {
+        $businessMeta = $this->getBusinessMetaByApplicationId($application_id);
+        if (!$businessMeta) {
+            return false;
+        }
+
+        if (empty($businessMeta['expiry_date'])) {
+            return false;
+        }
+
+        $expiryDate = new DateTime($businessMeta['expiry_date']);
+        $today = new DateTime();
+
+        return $today > $expiryDate;
+    }
+
+    /**
+     * Get license expiry info
+     */
+    public function getLicenseExpiryInfo($application_id)
+    {
+        $businessMeta = $this->getBusinessMetaByApplicationId($application_id);
+        if (!$businessMeta) {
+            return null;
+        }
+
+        if (empty($businessMeta['expiry_date'])) {
+            return null;
+        }
+
+        $expiryDate = new DateTime($businessMeta['expiry_date']);
+        $today = new DateTime();
+        $daysUntilExpiry = $today->diff($expiryDate)->days;
+        $isExpired = $today > $expiryDate;
+
+        return [
+            'expiry_date' => $businessMeta['expiry_date'],
+            'fiscal_year' => $businessMeta['fiscal_year'],
+            'days_until_expiry' => $isExpired ? 0 : $daysUntilExpiry,
+            'is_expired' => $isExpired,
+            'status_text' => $isExpired ? 'মেয়াদোত্তীর্ণ (Expired)' : ($daysUntilExpiry <= 30 ? 'শীঘ্রই মেয়াদোত্তীর্ণ হবে (Expiring Soon)' : 'সক্রিয় (Active)')
+        ];
+    }
 }

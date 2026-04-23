@@ -604,11 +604,11 @@
                         <div class="mb-6">
                             <label class="form-label">আবেদনকারীর নাম</label>
                             <div class="form-check form-check-inline">
-                                <input type="radio" class="form-check-input" name="applicant_name_option" id="own_name">
+                                <input type="radio" class="form-check-input" name="applicant_name_option" id="own_name" value="own">
                                 <label class="form-check-label" for="own_name">নিজ</label>
                             </div>
                             <div class="form-check form-check-inline">
-                                <input type="radio" class="form-check-input" name="applicant_name_option" id="other_name">
+                                <input type="radio" class="form-check-input" name="applicant_name_option" id="other_name" value="other">
                                 <label class="form-check-label" for="other_name">অন্যান্য</label>
                             </div>
                             
@@ -669,30 +669,6 @@
     <script>
 
         $(document).ready(function () {
-
-            // ===================== Auto-populate Applicant Name =====================
-            var nameBnField = $('#name_bn');
-            var applicantNameField = $('#applicant_name');
-
-            // Auto-sync name_bn to applicant_name
-            nameBnField.on('input', function() {
-                var value = $(this).val();
-                applicantNameField.val(value);
-            });
-
-            // Handle radio button selection
-            $('input[name="applicant_name_option"]').on('change', function() {
-                if($(this).val() === 'on' && $(this).attr('id') === 'own_name' && $(this).prop('checked')) {
-                    // "নিজ" (Own) selected
-                    applicantNameField.val(nameBnField.val());
-                    applicantNameField.hide();
-                } else if($(this).val() === 'on' && $(this).attr('id') === 'other_name' && $(this).prop('checked')) {
-                    // "অন্যান্য" (Other) selected
-                    applicantNameField.show();
-                    applicantNameField.val('');
-                }
-            });
-            // ===================================================================
 
             // ডিফল্ট জেলা লোড ও callback ফাংশন সহ
             fetchGeoData(1, 0, '#district_dropdown', function() {
@@ -826,26 +802,49 @@
             }
 
 
-            document.querySelectorAll('input[name="applicant_name_option"]').forEach((radio) => {
-                radio.addEventListener('change', function () {
-                    const nameInput = document.getElementById('applicant_name');
-                    const originalName = document.getElementById('name_bn');
-                    if (document.getElementById('own_name').checked) {
-                        
-                        const ownName = originalName.value; 
-                        nameInput.value = ownName; 
-                        nameInput.readOnly = true;
-                        nameInput.style.display = "block";
-                        nameInput.style.backgroundColor = "#e9ecef"; 
-                    } else if (document.getElementById('other_name').checked) {
-                        nameInput.value = "";
+            document.addEventListener('DOMContentLoaded', function () {
+                const nameInput = document.getElementById('applicant_name');
+                const originalName = document.getElementById('name_bn');
+                const ownRadio = document.getElementById('own_name');
+                const otherRadio = document.getElementById('other_name');
+
+                if (!nameInput || !originalName) {
+                    return;
+                }
+
+                const syncApplicantName = function () {
+                    const banglaName = originalName.value || '';
+
+                    if (otherRadio && otherRadio.checked) {
                         nameInput.readOnly = false;
                         nameInput.style.display = "block";
-                        nameInput.style.backgroundColor = ""; 
-                    } else {
-                        nameInput.style.display = "none"; 
+                        nameInput.style.backgroundColor = "";
+                        if (!nameInput.value) {
+                            nameInput.value = banglaName;
+                        }
+                        return;
+                    }
+
+                    if (ownRadio) {
+                        ownRadio.checked = true;
+                    }
+                    nameInput.value = banglaName;
+                    nameInput.readOnly = true;
+                    nameInput.style.display = "block";
+                    nameInput.style.backgroundColor = "#e9ecef";
+                };
+
+                originalName.addEventListener('input', function () {
+                    if (!otherRadio || !otherRadio.checked) {
+                        nameInput.value = this.value || '';
                     }
                 });
+
+                document.querySelectorAll('input[name="applicant_name_option"]').forEach((radio) => {
+                    radio.addEventListener('change', syncApplicantName);
+                });
+
+                syncApplicantName();
             });
 
 

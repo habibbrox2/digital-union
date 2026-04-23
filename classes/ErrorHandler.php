@@ -36,6 +36,10 @@ class ErrorHandler
         if (!file_exists($htaccessPath)) {
             file_put_contents($htaccessPath, "Deny from all\n");
         }
+
+        if (!file_exists(self::$logFile)) {
+            @touch(self::$logFile);
+        }
     }
     
     /**
@@ -73,7 +77,10 @@ class ErrorHandler
         
         $logMessage .= "---\n";
         
-        error_log($logMessage, 3, self::$logFile);
+        if (!@error_log($logMessage, 3, self::$logFile)) {
+            $fallback = dirname(self::$logFile) . '/bdris_log.txt';
+            @file_put_contents($fallback, $logMessage, FILE_APPEND);
+        }
     }
     
     /**

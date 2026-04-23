@@ -3,27 +3,31 @@
 // Helper functions moved from controllers/ApplicationController.php
 
 if (!function_exists('si')) {
-    function si($val) {
+    function si($val)
+    {
         return sanitize_input($val ?? '');
     }
 }
 
 if (!function_exists('respondError')) {
-    function respondError($msg) {
+    function respondError($msg)
+    {
         echo json_encode(['status' => 'error', 'message' => $msg]);
         exit;
     }
 }
 
 if (!function_exists('convertBanglaToEnglishNumber')) {
-    function convertBanglaToEnglishNumber($string) {
-        $bangla  = ['০','১','২','৩','৪','৫','৬','৭','৮','৯'];
-        $english = ['0','1','2','3','4','5','6','7','8','9'];
+    function convertBanglaToEnglishNumber($string)
+    {
+        $bangla  = ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯'];
+        $english = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
         return str_replace($bangla, $english, $string);
     }
 }
 if (!function_exists('explodeRelation')) {
-    function explodeRelation($value) {
+    function explodeRelation($value)
+    {
         return strpos($value, '|') !== false
             ? array_map('trim', explode('|', $value, 2))
             : ['', ''];
@@ -31,21 +35,32 @@ if (!function_exists('explodeRelation')) {
 }
 
 if (!function_exists('updateAddress')) {
-    function updateAddress($type, $existing_id = null) {
+    function updateAddress($type, $existing_id = null)
+    {
         return sonod_address(
             $type,
-            si($_POST["{$type}_village_en"]), si($_POST["{$type}_village_bn"]),
-            si($_POST["{$type}_rbs_en"]), si($_POST["{$type}_rbs_bn"]), si($_POST["{$type}_holding_no"]),
-            si($_POST["{$type}_ward_no"]), si($_POST["{$type}_district_en"]), si($_POST["{$type}_district_bn"]),
-            si($_POST["{$type}_upazila_en"]), si($_POST["{$type}_upazila_bn"]), si($_POST["{$type}_union_en"]),
-            si($_POST["{$type}_union_bn"]), si($_POST["{$type}_postoffice_en"]), si($_POST["{$type}_postoffice_bn"]),
+            si($_POST["{$type}_village_en"]),
+            si($_POST["{$type}_village_bn"]),
+            si($_POST["{$type}_rbs_en"]),
+            si($_POST["{$type}_rbs_bn"]),
+            si($_POST["{$type}_holding_no"]),
+            si($_POST["{$type}_ward_no"]),
+            si($_POST["{$type}_district_en"]),
+            si($_POST["{$type}_district_bn"]),
+            si($_POST["{$type}_upazila_en"]),
+            si($_POST["{$type}_upazila_bn"]),
+            si($_POST["{$type}_union_en"]),
+            si($_POST["{$type}_union_bn"]),
+            si($_POST["{$type}_postoffice_en"]),
+            si($_POST["{$type}_postoffice_bn"]),
             $existing_id
         );
     }
 }
 
 if (!function_exists('insertMembers')) {
-    function insertMembers($application_id, $certificate_type) {
+    function insertMembers($application_id, $certificate_type)
+    {
         global $appmanager;
 
         $serials = $_POST['serial_no'] ?? [];
@@ -91,7 +106,8 @@ if (!function_exists('insertMembers')) {
 }
 
 if (!function_exists('updateBusinessMeta')) {
-    function updateBusinessMeta($application_id, $existing_address_id) {
+    function updateBusinessMeta($application_id, $existing_address_id)
+    {
         global $mysqli, $appmanager;
 
         $address_id = updateAddress('business', $existing_address_id);
@@ -129,7 +145,8 @@ if (!function_exists('updateBusinessMeta')) {
 }
 
 if (!function_exists('templatePath')) {
-    function templatePath($base_dir, $type, $default = 'default.twig') {
+    function templatePath($base_dir, $type, $default = 'default.twig')
+    {
         if (!empty($type) && $type !== 'application') {
             $custom_template = "{$base_dir}/{$type}.twig";
             $custom_template_path = __DIR__ . "/../templates/{$custom_template}";
@@ -142,7 +159,8 @@ if (!function_exists('templatePath')) {
 }
 
 if (!function_exists('getFullApplicationData')) {
-    function getFullApplicationData($application_id, $union_id = null, $includeMeta = false) {
+    function getFullApplicationData($application_id, $union_id = null, $includeMeta = false)
+    {
         global $appmanager;
 
         $application = $appmanager->getApplicationByApplicationId($application_id, $union_id);
@@ -169,13 +187,15 @@ if (!function_exists('getFullApplicationData')) {
 }
 
 if (!function_exists('formatApplicationId')) {
-    function formatApplicationId($application_id, $length = 6) {
+    function formatApplicationId($application_id, $length = 6)
+    {
         return str_pad($application_id, $length, '0', STR_PAD_LEFT);
     }
 }
 
 if (!function_exists('calculateAge')) {
-    function calculateAge($birth_date, $reference_date = null) {
+    function calculateAge($birth_date, $reference_date = null)
+    {
         $birth = new DateTime($birth_date);
         $ref = $reference_date ? new DateTime($reference_date) : new DateTime();
         $age = $ref->diff($birth);
@@ -184,17 +204,19 @@ if (!function_exists('calculateAge')) {
 }
 
 if (!function_exists('deleteApplication')) {
-    function deleteApplication($application_id) {
+    function deleteApplication($application_id)
+    {
         global $appmanager;
 
-        if (!$appmanager->deleteApplicationById($application_id)) {
+        if (!$appmanager->deleteApplication($application_id)) {
             throw new Exception("Failed to delete application ID: {$application_id}");
         }
     }
 }
 
 if (!function_exists('fetchApplicationById')) {
-    function fetchApplicationById($application_id, $union_id = null) {
+    function fetchApplicationById($application_id, $union_id = null)
+    {
         global $appmanager;
 
         return $appmanager->getApplicationByApplicationId($application_id, $union_id);
@@ -202,7 +224,8 @@ if (!function_exists('fetchApplicationById')) {
 }
 
 if (!function_exists('applicationRejectForm')) {
-    function applicationRejectForm($application_id, $reason) {
+    function applicationRejectForm($application_id, $reason)
+    {
         global $appmanager;
 
         if (!$appmanager->rejectApplication($application_id, $reason)) {
@@ -211,3 +234,31 @@ if (!function_exists('applicationRejectForm')) {
     }
 }
 
+/**
+ * Generate fiscal year options dynamically
+ * Generate from current year - 1 to current year + 2
+ * 
+ * @param string $selectedYear - Currently selected fiscal year (optional)
+ * @return array - Array of fiscal year options
+ */
+if (!function_exists('generateFiscalYearOptions')) {
+    function generateFiscalYearOptions($selectedYear = null)
+    {
+        $currentYear = (int)date('Y');
+        $minYear = 2022; // Minimum fiscal year starting from 2022-2023
+        $startYear = max($currentYear - 5, $minYear); // Don't go below 2022
+        $endYear = $currentYear + 3; // End at current year + 3 to include next fiscal year
+
+        $options = [];
+        for ($year = $startYear; $year < $endYear; $year++) {
+            $fiscalYear = $year . '-' . ($year + 1);
+            $options[] = [
+                'value' => $fiscalYear,
+                'label' => $fiscalYear,
+                'selected' => ($fiscalYear === $selectedYear)
+            ];
+        }
+
+        return $options;
+    }
+}

@@ -1,0 +1,263 @@
+{% extends "layout.twig" %}
+
+{% block title %}লাইসেন্স নবায়ন ইতিহাস - License Renewal History{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-history"></i> 
+                        লাইসেন্স নবায়ন ইতিহাস
+                        <br>
+                        <small>License Renewal History</small>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <!-- Application Info -->
+                    {% if application %}
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <p>
+                                <strong>আবেদনকারী / Applicant:</strong><br>
+                                {{ application.name_bn }} ({{ application.name_en }})
+                            </p>
+                            <p>
+                                <strong>আবেদন আইডি / Application ID:</strong><br>
+                                {{ application.application_id }}
+                            </p>
+                        </div>
+                        <div class="col-md-6">
+                            <p>
+                                <strong>সোনদ নম্বর / Sonod Number:</strong><br>
+                                <code>{{ application.sonod_number }}</code>
+                            </p>
+                            <p>
+                                <strong>ব্যবসায়িক নাম / Business Name:</strong><br>
+                                {{ business_meta.business_name_bn ?? 'N/A' }} ({{ business_meta.business_name_en ?? 'N/A' }})
+                            </p>
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <!-- Current License Info -->
+                    <div class="row mb-4">
+                        <div class="col-md-12">
+                            <h6 class="text-secondary">
+                                <i class="fas fa-certificate"></i> বর্তমান লাইসেন্স তথ্য / Current License Info
+                            </h6>
+                            <div class="row">
+                                <div class="col-md-3">
+                                    <p>
+                                        <strong>অর্থবছর:</strong><br>
+                                        <span class="badge badge-info">{{ business_meta.fiscal_year ?? 'N/A' }}</span>
+                                    </p>
+                                </div>
+                                <div class="col-md-3">
+                                    <p>
+                                        <strong>মেয়াদ শেষ:</strong><br>
+                                        {% if business_meta.expiry_date %}
+                                            {% set exp_date = business_meta.expiry_date | date('d M Y') %}
+                                            {% if now > business_meta.expiry_date | date('Y-m-d') %}
+                                                <span class="badge badge-danger">{{ exp_date }} (মেয়াদোত্তীর্ণ)</span>
+                                            {% else %}
+                                                <span class="badge badge-success">{{ exp_date }}</span>
+                                            {% endif %}
+                                        {% else %}
+                                            <span class="text-muted">তথ্য পাওয়া যায়নি</span>
+                                        {% endif %}
+                                    </p>
+                                </div>
+                                <div class="col-md-3">
+                                    <p>
+                                        <strong>মোট ফি:</strong><br>
+                                        <strong class="text-success">{{ business_meta.total_fee ?? '0.00' }} ৳</strong>
+                                    </p>
+                                </div>
+                                <div class="col-md-3">
+                                    <p>
+                                        <strong>নবায়ন সংখ্যা:</strong><br>
+                                        <span class="badge badge-secondary">{{ renewal_count }} বার</span>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {% endif %}
+
+                    <!-- Renewal History Table -->
+                    {% if renewal_history and renewal_history | length > 0 %}
+                    <div class="row">
+                        <div class="col-md-12">
+                            <h6 class="text-secondary mb-3">
+                                <i class="fas fa-list"></i> নবায়ন রেকর্ড / Renewal Records ({{ renewal_history | length }})
+                            </h6>
+                            <div class="table-responsive">
+                                <table class="table table-sm table-bordered table-hover">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th width="5%">#</th>
+                                            <th width="15%">নবায়ন তারিখ<br><small>Renewal Date</small></th>
+                                            <th width="12%">পূর্ববর্তী অর্থবছর<br><small>Previous FY</small></th>
+                                            <th width="12%">পূর্ববর্তী মেয়াদ<br><small>Previous Expiry</small></th>
+                                            <th width="12%">সোনদ নম্বর<br><small>Sonod Number</small></th>
+                                            <th width="15%">নবায়নকারী<br><small>Renewed By</small></th>
+                                            <th width="29%">নোট / Notes</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for record in renewal_history %}
+                                        <tr>
+                                            <td>{{ loop.index }}</td>
+                                            <td>
+                                                <strong>{{ record.renewal_date | date('d M Y') }}</strong>
+                                                <br>
+                                                <small class="text-muted">{{ record.created_at | date('H:i') }}</small>
+                                            </td>
+                                            <td>
+                                                <code>{{ record.old_fiscal_year ?? 'N/A' }}</code>
+                                            </td>
+                                            <td>
+                                                {% if record.old_expiry_date %}
+                                                    {{ record.old_expiry_date | date('d M Y') }}
+                                                {% else %}
+                                                    <span class="text-muted">-</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <code>{{ record.old_sonod_number ?? '-' }}</code>
+                                            </td>
+                                            <td>
+                                                <small>{{ record.renewed_by ?? 'System' }}</small>
+                                            </td>
+                                            <td>
+                                                {% if record.renewal_notes %}
+                                                    <small>{{ record.renewal_notes | truncate(50) }}</small>
+                                                {% else %}
+                                                    <span class="text-muted">-</span>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Renewal Timeline -->
+                    <div class="row mt-4">
+                        <div class="col-md-12">
+                            <h6 class="text-secondary mb-3">
+                                <i class="fas fa-timeline"></i> নবায়ন সময়রেখা / Renewal Timeline
+                            </h6>
+                            <div class="timeline">
+                                {% for record in renewal_history %}
+                                <div class="timeline-item {% if loop.first %}active{% endif %}">
+                                    <div class="timeline-marker">
+                                        <i class="fas fa-check-circle text-success"></i>
+                                    </div>
+                                    <div class="timeline-content">
+                                        <h6 class="mb-1">
+                                            নবায়ন #{{ renewal_history | length - loop.index0 }}
+                                            <small class="text-muted">{{ record.renewal_date | date('d M Y') }}</small>
+                                        </h6>
+                                        <p class="mb-1">
+                                            <strong>পূর্ববর্তী অর্থবছর:</strong> {{ record.old_fiscal_year ?? 'N/A' }}
+                                        </p>
+                                        <p class="mb-0">
+                                            <small class="text-muted">{{ record.renewal_notes ?? 'সিস্টেম দ্বারা নবায়িত' }}</small>
+                                        </p>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Legend -->
+                    <div class="alert alert-info mt-4">
+                        <h6 class="mb-2"><i class="fas fa-info-circle"></i> তথ্য / Information</h6>
+                        <ul class="mb-0">
+                            <li><strong>পূর্ববর্তী অর্থবছর:</strong> নবায়নের সময় যে অর্থবছরটি সক্রিয় ছিল</li>
+                            <li><strong>পূর্ববর্তী মেয়াদ:</strong> নবায়নের আগে লাইসেন্সের শেষ মেয়াদ</li>
+                            <li><strong>সোনদ নম্বর:</strong> পূর্ববর্তী নিবন্ধন নম্বর</li>
+                            <li>লাইসেন্স নবায়নের সম্পূর্ণ ইতিহাস এখানে ট্র্যাক করা হয়</li>
+                        </ul>
+                    </div>
+
+                    {% else %}
+                    <!-- No History Message -->
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <strong>কোনো নবায়ন ইতিহাস নেই</strong>
+                        <p class="mb-0">এই লাইসেন্সটি এখনও নবায়িত হয়নি। This license has not been renewed yet.</p>
+                    </div>
+                    {% endif %}
+
+                    <!-- Back and Action Buttons -->
+                    <div class="mt-4">
+                        <a href="javascript:history.back()" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left"></i> ফিরে যান / Back
+                        </a>
+                        {% if can_renew %}
+                        <a href="#" class="btn btn-primary" data-toggle="modal" data-target="#renewLicenseModal">
+                            <i class="fas fa-sync-alt"></i> এখনই নবায়ন করুন / Renew Now
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Custom Styles for Timeline -->
+<style>
+    .timeline {
+        position: relative;
+        padding: 20px 0;
+    }
+
+    .timeline-item {
+        display: flex;
+        margin-bottom: 30px;
+        position: relative;
+    }
+
+    .timeline-item:not(:last-child)::before {
+        content: '';
+        position: absolute;
+        left: 20px;
+        top: 60px;
+        height: calc(100% + 10px);
+        width: 2px;
+        background: #e9ecef;
+    }
+
+    .timeline-marker {
+        flex-shrink: 0;
+        margin-right: 20px;
+        font-size: 24px;
+        z-index: 1;
+    }
+
+    .timeline-content {
+        padding: 15px;
+        background: #f8f9fa;
+        border-left: 3px solid #007bff;
+        border-radius: 4px;
+        flex-grow: 1;
+    }
+
+    .timeline-item.active .timeline-content {
+        background: #e7f3ff;
+        border-left-color: #28a745;
+    }
+</style>
+
+{% endblock %}

@@ -195,6 +195,43 @@ if (!function_exists('validateURL')) {
     }
 }
 
+if (!function_exists('validateFiscalYear')) {
+    /**
+     * Validate fiscal year format (YYYY-YYYY)
+     * Example: 2024-2025, 2025-2026
+     */
+    function validateFiscalYear($data, $field, $message = null) {
+        if (!isset($data[$field]) || empty($data[$field])) {
+            return ['valid' => false, 'error' => $message ?? "{$field} আবশ্যক"];
+        }
+        
+        $fiscalYear = trim($data[$field]);
+        
+        // Format validation: YYYY-YYYY
+        if (!preg_match('/^\d{4}-\d{4}$/', $fiscalYear)) {
+            return ['valid' => false, 'error' => $message ?? "{$field} সঠিক ফরম্যাটে নয় (YYYY-YYYY)"];
+        }
+        
+        // Extract start and end year
+        list($startYear, $endYear) = explode('-', $fiscalYear);
+        $startYear = (int)$startYear;
+        $endYear = (int)$endYear;
+        
+        // Validate that end year is exactly start year + 1
+        if ($endYear !== $startYear + 1) {
+            return ['valid' => false, 'error' => $message ?? "{$field} ক্রমাগত বছর হতে হবে"];
+        }
+        
+        // Check if fiscal year is reasonable (within ±2 years of current year)
+        $currentYear = (int)date('Y');
+        if ($startYear < $currentYear - 1 || $startYear > $currentYear + 2) {
+            return ['valid' => false, 'error' => $message ?? "{$field} বৈধ নয়"];
+        }
+        
+        return ['valid' => true];
+    }
+}
+
 // ==================== BATCH VALIDATION ====================
 
 if (!function_exists('validateBatch')) {

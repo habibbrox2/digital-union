@@ -8,9 +8,20 @@
 $showErrors = true; // production = false, development = true
 $logDir = __DIR__ . '/../storage/logs';
 $logFile = $logDir . '/error.log';
+$fallbackLogFile = $logDir . '/bdris_log.txt';
 
 if (!is_dir($logDir)) {
     mkdir($logDir, 0755, true);
+}
+
+if (!file_exists($logFile)) {
+    @touch($logFile);
+}
+if (!is_writable($logFile)) {
+    $logFile = $fallbackLogFile;
+    if (!file_exists($logFile)) {
+        @touch($logFile);
+    }
 }
 
 $htaccess = $logDir . '/.htaccess';
@@ -24,7 +35,8 @@ ini_set('error_log', $logFile);
 if ($showErrors) {
     ini_set('display_errors', '1');
     ini_set('display_startup_errors', '1');
-    error_reporting(E_ALL);
+    // Log all errors except notices and deprecations
+    error_reporting(E_ALL & ~E_NOTICE & ~E_DEPRECATED & ~E_USER_NOTICE);
 } else {
     ini_set('display_errors', '0');
     error_reporting(E_ALL & ~E_NOTICE & ~E_DEPRECATED);

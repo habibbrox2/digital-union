@@ -193,7 +193,7 @@ $(document).ready(function () {
         if (!dropdownSelector || !$(dropdownSelector).length) return;
 
         $.ajax({
-            url: '/settings/geo/getdata',
+            url: '/geo/getdata',
             method: 'POST',
             data: { geo_order: geoOrder, parent_geo_id: parentGeoId },
             dataType: 'json',

@@ -11,8 +11,18 @@ function renderError(int $code, string $message): void
 
     // Log detailed error information
     $logPath = __DIR__ . '/../storage/logs/error.log';
+    $fallbackLogPath = __DIR__ . '/../storage/logs/bdris_log.txt';
     if (!is_dir(dirname($logPath))) {
         mkdir(dirname($logPath), 0755, true);
+    }
+    if (!file_exists($logPath)) {
+        @touch($logPath);
+    }
+    if (!is_writable($logPath)) {
+        $logPath = $fallbackLogPath;
+        if (!file_exists($logPath)) {
+            @touch($logPath);
+        }
     }
     
     // বিস্তারিত error information সংগ্রহ
@@ -32,7 +42,9 @@ USER AGENT: $userAgent
 
 LOG;
     
-    error_log($logEntry, 3, $logPath);
+    if (!@error_log($logEntry, 3, $logPath)) {
+        @file_put_contents($fallbackLogPath, $logEntry, FILE_APPEND);
+    }
 
     // Check both Twig and SafeTwig wrapper
     if (isset($GLOBALS['twig']) && (

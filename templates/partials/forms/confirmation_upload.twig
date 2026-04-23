@@ -24,7 +24,8 @@
   <div class="col-md-6">
     <label for="applicant_name" class="form-label">আবেদনকারীর নাম</label>
     <input type="text" id="applicant_name" name="applicant_name" class="form-control"
-           placeholder="আবেদনকারীর নাম" value="{{ data.applicant_name ?? '' }}">
+           placeholder="আবেদনকারীর নাম"
+           value="{{ data.applicant_name is defined and data.applicant_name ? data.applicant_name : (data.name_bn is defined ? data.name_bn : '') }}">
   </div>
 </div>
 
@@ -66,6 +67,46 @@ document.addEventListener('DOMContentLoaded', function() {
             mobileInput.parentNode.appendChild(warn);
         }
     });
+
+    /** ---------------------- আবেদনকারীর নাম ---------------------- **/
+    const nameBnField = document.getElementById('name_bn');
+    const applicantNameField = document.getElementById('applicant_name');
+    const ownNameRadio = document.getElementById('own_name');
+    const otherNameRadio = document.getElementById('other_name');
+
+    if (nameBnField && applicantNameField) {
+        const syncApplicantName = function () {
+            const banglaName = nameBnField.value || '';
+
+            if (otherNameRadio && otherNameRadio.checked) {
+                applicantNameField.readOnly = false;
+                applicantNameField.style.backgroundColor = '';
+                if (!applicantNameField.value) {
+                    applicantNameField.value = banglaName;
+                }
+                return;
+            }
+
+            if (ownNameRadio) {
+                ownNameRadio.checked = true;
+            }
+            applicantNameField.value = banglaName;
+            applicantNameField.readOnly = true;
+            applicantNameField.style.backgroundColor = '#e9ecef';
+        };
+
+        nameBnField.addEventListener('input', function() {
+            if (!otherNameRadio || !otherNameRadio.checked) {
+                applicantNameField.value = this.value || '';
+            }
+        });
+
+        document.querySelectorAll('input[name="applicant_name_option"]').forEach(radio => {
+            radio.addEventListener('change', syncApplicantName);
+        });
+
+        syncApplicantName();
+    }
 
     /** ---------------------- ছবি প্রিভিউ ---------------------- **/
     document.getElementById('photo').addEventListener('change', function(e){
