@@ -150,6 +150,10 @@
                 <td colspan="2"> : {{ detail.apply_date|date('d-m-Y')|bn}}</td>
             </tr>
             <tr>
+                <td> সনদের প্রকার</td>
+                <td colspan="5"> : {{ certificate_type_bn|default(detail.certificate_type_bn|default(detail.certificate_type)) }}</td>
+            </tr>
+            <tr>
                 <td> পিন নম্বর</td>
                 <td colspan="2"> : {{ detail.applicant_id|bn }}</td>
                 <td> ট্র্যাকিং নম্বর</td>
@@ -227,19 +231,158 @@
             </tr>
         </table>
 
+{% set certType = detail.certificate_type|default(certificate_type|default('')) %}
 
-<div class="dotted-title">নিদেশনাবলী / Instruction</div>
+{% if certType == 'trade' and business_meta %}
+<div class="dotted-title">ব্যবসায়িক তথ্য / Business Info</div>
+<table class="info">
+    <tr>
+        <td>ব্যবসায়ের নাম</td>
+        <td colspan="5"> : {{ business_meta.business_name_bn|default(detail.business_name_bn) }}</td>
+    </tr>
+    <tr>
+        <td>Business Name (English)</td>
+        <td colspan="2"> : {{ business_meta.business_name_en|default(detail.business_name_en) }}</td>
+        <td>ব্যবসার ধরন</td>
+        <td colspan="2"> : {{ business_meta.business_type_bn|default('') }}</td>
+    </tr>
+    <tr>
+        <td>মালিকানার ধরন</td>
+        <td colspan="2"> : {{ business_meta.ownership_name_bn|default('') }}</td>
+        <td>অর্থবছর</td>
+        <td colspan="2"> : {{ business_meta.fiscal_year|default('')|bn }}</td>
+    </tr>
+    {% if business_meta.expiry_date %}
+    <tr>
+        <td>মেয়াদ উত্তীর্ণের তারিখ</td>
+        <td colspan="5"> : {{ business_meta.expiry_date|date('d-m-Y')|bn }}</td>
+    </tr>
+    {% endif %}
+    <tr>
+        <td>ব্যবসায়ের ঠিকানা</td>
+        <td colspan="5" style="white-space: normal;"> :
+            গ্রাম/মহল্লা : {{ business_meta.business_village_bn|default('') }},
+            রাস্তা/ব্লক/সেক্টর : {{ business_meta.business_rbs_bn|default('') }},
+            ওয়ার্ড : {{ business_meta.business_ward_no|default('')|bn }},
+            পোস্ট অফিস : {{ business_meta.business_postoffice_bn|default('') }}, <br>
+            ইউনিয়ন : {{ business_meta.business_union_bn|default('') }},
+            উপজেলা : {{ business_meta.business_upazila_bn|default('') }},
+            জেলা : {{ business_meta.business_district_bn|default('') }}
+        </td>
+    </tr>
+    {% if business_meta.total_fee or business_meta.license_fee %}
+    <tr>
+        <td>লাইসেন্স ফি</td>
+        <td> : {{ business_meta.license_fee|default('')|bn }}</td>
+        <td>VAT</td>
+        <td> : {{ business_meta.vat_amount|default('')|bn }}</td>
+        <td>মোট ফি</td>
+        <td> : {{ business_meta.total_fee|default('')|bn }}</td>
+    </tr>
+    {% endif %}
+</table>
+{% endif %}
 
+{% if detail.warish_members is defined and detail.warish_members is iterable and detail.warish_members|length > 0 %}
+<div class="dotted-title">
+    {% if certType == 'family' %}
+        পরিবারের সদস্যদের তালিকা / Family Members
+    {% else %}
+        ওয়ারিশগণের তালিকা / Heirs List
+    {% endif %}
+</div>
+<table class="info">
+    <tr>
+        <th>ক্রম</th>
+        <th>নাম (বাংলা)</th>
+        <th>Name (English)</th>
+        <th>সম্পর্ক</th>
+    </tr>
+    {% for m in detail.warish_members %}
+    <tr>
+        <td>{{ m.serial_no|default(loop.index)|bn }}</td>
+        <td>{{ m.warish_name_bn|default('') }}</td>
+        <td>{{ m.warish_name_en|default('') }}</td>
+        <td>{{ m.relation|default('') }}</td>
+    </tr>
+    {% endfor %}
+</table>
+{% endif %}
 
-        <ul>
-            <li>এলাকার গণ্যমান্য ২ জন ব্যক্তি এবং ওয়ার্ড মেম্বার কর্তৃক সত্যায়িত করে ইউনিয়ন পরিষদে জমা দিন।</li>
-            <li>১ কপি পাসপোর্ট সাইজ ছবি (সত্যায়িত)।</li>
-            <li>আবেদন পত্রের অবস্থা জানার জন্য ট্র্যাকিং নম্বর দিয়ে ওয়েবসাইট থেকে যাচাই করুন।</li>
+{% if detail.extra_data is defined and detail.extra_data is iterable and detail.extra_data|length > 0 %}
+<div class="dotted-title">অতিরিক্ত তথ্য / Extra Info</div>
+<table class="info">
+    {% for k, v in detail.extra_data %}
+        {% if v is not empty %}
+            <tr>
+                <td>{{ k|replace({'_':' '}) }}</td>
+                <td colspan="5" style="white-space: normal;"> : {% if v is iterable %}{{ v|json_encode }}{% else %}{{ v }}{% endif %}</td>
+            </tr>
+        {% endif %}
+    {% endfor %}
+</table>
+{% endif %}
+
+{% if documents is defined and documents is iterable and documents|length > 0 %}
+<div class="dotted-title">সংযুক্ত ডকুমেন্টস / Documents</div>
+<table class="info">
+    {% for doc_path in documents %}
+        <tr>
+            <td colspan="6" style="white-space: normal;">- {{ doc_path|split('/')|last }}</td>
+        </tr>
+    {% endfor %}
+</table>
+{% endif %}
+ 
+
+<div class="dotted-title">নির্দেশনাবলী / Instruction</div>
+			
+        	<ul>
+            	<li>এলাকার গণ্যমান্য ২ জন ব্যক্তি এবং ওয়ার্ড মেম্বার কর্তৃক সত্যায়িত করে ইউনিয়ন পরিষদে জমা দিন।</li>
+            	<li>১ কপি পাসপোর্ট সাইজ ছবি (সত্যায়িত)।</li>
+            	<li>আবেদন পত্রের অবস্থা জানার জন্য ট্র্যাকিং নম্বর দিয়ে ওয়েবসাইট থেকে যাচাই করুন।</li>
         </ul>
+        
+        <h3>দokument / Documents</h3>
+        <table class="info">
+            <tr>
+                <th>ক্রম</th>
+                <th>দokument নাম</th>
+            </tr>
+            {% if documents is defined and documents is iterable and documents|length > 0 %}
+                {% for doc in documents %}
+                <tr>
+                    <td>{{ loop.index|bn }}</td>
+                    <td>{{ doc }}</td>
+                </tr>
+                {% endfor %}
+            {% else %}
+                <tr>
+                    <td colspan="2" style="text-align: center;">কোনও দokument পাওয়া যায়নি</td>
+                </tr>
+            {% endif %}
+        </table>
+        
+        <h3>অনুযায়ী তথ্য / Follow-up Information</h3>
+        <table class="info">
+            <tr>
+                <td>অনুযায তারিখ</td>
+                <td>: {{ follow_up_date|date('d-m-Y')|bn if follow_up_date is defined else 'N/A' }}</td>
+            </tr>
+            <tr>
+                <td>অনুযাযক</td>
+                <td>: {{ follow_up_officer|default('N/A') }}</td>
+            </tr>
+            <tr>
+                <td>স্থিতি</td>
+                <td>: {{ follow_up_status|default('N/A') }}</td>
+            </tr>
+        </table>
+        
         <table class="footer">
             <tr>
                 <td colspan="4" class="left-section" style="padding-top:40px; padding-bottom:20px;">
-                    <div class="title">সত্যায়ন / Verification</div>
+                    <div class="title">সত্যায়ন / Verification</div>
                     <br>
                     <br>
                     <br>
@@ -258,6 +401,7 @@
                 </td>
             </tr>
         </table>
+    	</div>
     </div>
 </body>
 </html>
