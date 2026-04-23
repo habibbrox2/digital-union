@@ -435,7 +435,13 @@ $(document).ready(function () {
                     union_en: data.permanent_union_en
                 };
 
-                const businessAddress = data.business_village_bn ? {
+                const businessAddress = (
+                    data.business_district_en || data.business_district_bn ||
+                    data.business_upazila_en || data.business_upazila_bn ||
+                    data.business_union_en || data.business_union_bn ||
+                    data.business_village_en || data.business_village_bn ||
+                    data.business_holding_no || data.business_ward_no
+                ) ? {
                     village_en: data.business_village_en,
                     village_bn: data.business_village_bn,
                     rbs_en: data.business_rbs_en,

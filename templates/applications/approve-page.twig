@@ -473,14 +473,21 @@
                         </div>
 
                         <div class="col-lg-6 col-md-6 col-sm-12">
-                            <label for="issue_time" class="form-label fw-semibold small mb-1">
-                                লাইসেন্স ইস্যু সময়:
-                            </label>
+                            <div class="d-flex align-items-center justify-content-between gap-2 mb-1">
+                                <label for="issue_time" class="form-label fw-semibold small mb-0">
+                                    লাইসেন্স ইস্যু সময়:
+                                </label>
+                                <span id="issue_time_live" class="badge bg-light text-dark border" title="Current time (live)">
+                                    --:--:--
+                                </span>
+                            </div>
                             <input type="time" 
                                    id="issue_time" 
                                    name="issue_time"
+                                   step="1"
+                                   data-prefilled="{{ approval.issue_time is defined and approval.issue_time is not empty ? '1' : '0' }}"
                                    class="form-control form-control-sm shadow-sm"
-                                   value="{{ approval.issue_time|default('12:00:00') }}"
+                                   value="{{ approval.issue_time is defined ? approval.issue_time : '' }}"
                                    required>
                         </div>
                     </div>
@@ -667,15 +674,109 @@
 document.addEventListener('DOMContentLoaded', () => {
 
     /* ===============================
-       Set Current Time for Issue Time Input
+       Set Current Time for Issue Time Input (Real-time sync)
     =============================== */
     const issueTimeInput = document.getElementById('issue_time');
-    if (issueTimeInput && !issueTimeInput.value) {
-        const now = new Date();
-        const hours = String(now.getHours()).padStart(2, '0');
-        const minutes = String(now.getMinutes()).padStart(2, '0');
-        issueTimeInput.value = hours + ':' + minutes;
+    const issueTimeLive = document.getElementById('issue_time_live');
+    let issueTimeTimer = null;
+    let issueTimeTimeout = null;
+    let liveClockTimer = null;
+    let liveClockTimeout = null;
+
+    const isDefaultIssueTime = (v) => {
+        const value = String(v || '').trim();
+        return value === '' || value === '12:00' || value === '12:00:00';
+    };
+
+    const formatTimeHHMMSS = (d) => {
+        const hours = String(d.getHours()).padStart(2, '0');
+        const minutes = String(d.getMinutes()).padStart(2, '0');
+        const seconds = String(d.getSeconds()).padStart(2, '0');
+        return `${hours}:${minutes}:${seconds}`;
+    };
+
+    const startLiveClock = () => {
+        if (!issueTimeLive || liveClockTimer || liveClockTimeout) return;
+
+        const tick = () => {
+            issueTimeLive.textContent = formatTimeHHMMSS(new Date());
+        };
+
+        tick();
+        const msToNextSecond = 1000 - (Date.now() % 1000);
+        liveClockTimeout = setTimeout(() => {
+            liveClockTimeout = null;
+            tick();
+            liveClockTimer = setInterval(tick, 1000);
+        }, msToNextSecond);
+    };
+
+    const stopLiveClock = () => {
+        if (liveClockTimeout) {
+            clearTimeout(liveClockTimeout);
+            liveClockTimeout = null;
+        }
+        if (!liveClockTimer) return;
+        clearInterval(liveClockTimer);
+        liveClockTimer = null;
+    };
+
+    const startIssueTimeSync = () => {
+        if (!issueTimeInput || issueTimeTimer || issueTimeTimeout) return;
+
+        const tick = () => {
+            // Avoid overwriting user input if they already set a custom time.
+            if (!isDefaultIssueTime(issueTimeInput.value)) {
+                stopIssueTimeSync();
+                return;
+            }
+            issueTimeInput.value = formatTimeHHMMSS(new Date());
+        };
+
+        // Align to the next full second so the timer doesn't drift too much.
+        tick();
+        const msToNextSecond = 1000 - (Date.now() % 1000);
+        issueTimeTimeout = setTimeout(() => {
+            issueTimeTimeout = null;
+            tick();
+            issueTimeTimer = setInterval(tick, 1000);
+        }, msToNextSecond);
+    };
+
+    const stopIssueTimeSync = () => {
+        if (issueTimeTimeout) {
+            clearTimeout(issueTimeTimeout);
+            issueTimeTimeout = null;
+        }
+        if (!issueTimeTimer) return;
+        clearInterval(issueTimeTimer);
+        issueTimeTimer = null;
+    };
+
+    if (issueTimeInput) {
+        const hasDbPrefill = issueTimeInput.dataset?.prefilled === '1';
+
+        // If server rendered the placeholder default, replace it with real time.
+        if (!hasDbPrefill && isDefaultIssueTime(issueTimeInput.value)) {
+            startIssueTimeSync();
+        }
+
+        // Let user edit without fighting the real-time updater.
+        issueTimeInput.addEventListener('focus', stopIssueTimeSync);
+        issueTimeInput.addEventListener('blur', () => {
+            if (!hasDbPrefill && isDefaultIssueTime(issueTimeInput.value)) startIssueTimeSync();
+        });
+        issueTimeInput.addEventListener('input', () => {
+            if (!isDefaultIssueTime(issueTimeInput.value)) stopIssueTimeSync();
+        });
     }
+
+    // Live clock display (independent from input syncing)
+    startLiveClock();
+    window.addEventListener('beforeunload', () => {
+        stopIssueTimeSync();
+        stopLiveClock();
+    });
 
     /* ===============================
        Helpers

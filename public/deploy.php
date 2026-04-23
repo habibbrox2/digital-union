@@ -55,9 +55,32 @@ define('ALLOWED_IPS', [
     '185.199.108.0/22',
 ]);
 
-// Deployment configuration
-// Note: If deploy.php is in public/, dirname(__DIR__) will point to project root
-define('PROJECT_ROOT', dirname(__DIR__));
+// Function to find git root directory
+function find_git_root($start_path = null)
+{
+    if ($start_path === null) {
+        $start_path = dirname(__DIR__);
+    }
+
+    $current = realpath($start_path);
+    $root = realpath('/');
+
+    while ($current && $current !== $root) {
+        if (is_dir($current . '/.git')) {
+            return $current;
+        }
+        $parent = dirname($current);
+        if ($parent === $current) break; // reached filesystem root
+        $current = $parent;
+    }
+
+    // If .git not found, assume project root is one level up from public/
+    return dirname(__DIR__);
+}
+
+// Determine project root by finding git repository
+define('PROJECT_ROOT', find_git_root());
+define('GIT_ROOT_EXISTS', is_dir(PROJECT_ROOT . '/.git'));
 
 define('DEPLOY_ENVIRONMENTS', [
     'production' => [
@@ -287,6 +310,21 @@ function execute_deployment($environment, $webhook_data = null)
     $config = DEPLOY_ENVIRONMENTS[$environment];
     $script = $config['path'] . '/' . $config['script'];
 
+    // Verify git repository exists
+    if (!is_dir($config['path'] . '/.git')) {
+        return [
+            'status' => 'error',
+            'message' => "Git repository not found at " . $config['path'] . "/.git. The project root path may be incorrect.",
+            'debug' => [
+                'expected_path' => $config['path'],
+                'git_exists' => is_dir($config['path'] . '/.git'),
+                'parent_git_exists' => is_dir(dirname($config['path']) . '/.git'),
+                'path_is_readable' => is_readable($config['path']),
+                'files_in_path' => file_exists($config['path']) ? scandir($config['path']) : [],
+            ],
+        ];
+    }
+
     if (!file_exists($script)) {
         return [
             'status' => 'error',
@@ -294,15 +332,22 @@ function execute_deployment($environment, $webhook_data = null)
         ];
     }
 
-    // Build command
-    $command = "cd " . escapeshellarg($config['path']) . " && ";
-    $command .= "/bin/bash " . escapeshellarg($script) . " ";
+    // Use absolute paths to avoid issues with working directory
+    $abs_path = realpath($config['path']);
+    $abs_script = realpath($script);
+
+    // Build command with proper directory change and full path
+    $command = "cd " . escapeshellarg($abs_path) . " && ";
+    $command .= "/bin/bash " . escapeshellarg($abs_script) . " ";
     $command .= escapeshellarg($environment) . " ";
     $command .= "--webhook 2>&1";
 
     log_webhook("Executing deployment", [
         'environment' => $environment,
+        'project_root' => $abs_path,
+        'script_path' => $abs_script,
         'command' => $command,
+        'git_dir_exists' => is_dir($abs_path . '/.git'),
         'webhook' => $webhook_data,
     ]);
 
@@ -376,19 +421,55 @@ if (isset($_GET['test']) || isset($_GET['debug'])) {
         exit;
     }
 
+    // Gather diagnostic info
+    $deploy_script = PROJECT_ROOT . '/deploy.sh';
+    $git_info = [
+        'project_root' => PROJECT_ROOT,
+        'git_directory' => PROJECT_ROOT . '/.git',
+        'git_exists' => is_dir(PROJECT_ROOT . '/.git'),
+        'git_readable' => is_readable(PROJECT_ROOT . '/.git'),
+        'deploy_script' => $deploy_script,
+        'deploy_script_exists' => file_exists($deploy_script),
+        'deploy_script_executable' => is_executable($deploy_script),
+        'env_file' => PROJECT_ROOT . '/.env',
+        'env_file_exists' => file_exists(PROJECT_ROOT . '/.env'),
+    ];
+
+    // Try to find git repo if not found at project root
+    if (!$git_info['git_exists']) {
+        $parent = dirname(PROJECT_ROOT);
+        $git_info['parent_directory'] = $parent;
+        $git_info['parent_git_exists'] = is_dir($parent . '/.git');
+
+        $grandparent = dirname($parent);
+        $git_info['grandparent_directory'] = $grandparent;
+        $git_info['grandparent_git_exists'] = is_dir($grandparent . '/.git');
+    }
+
     echo json_encode([
         'status' => 'success',
-        'message' => 'Configuration test',
-        'config' => [
-            'token_length' => strlen(DEPLOY_TOKEN),
-            'token_first_chars' => substr(DEPLOY_TOKEN, 0, 8) . '...',
-            'token_empty' => empty(DEPLOY_TOKEN),
-            'project_root' => dirname(__DIR__),
-            'env_file_exists' => file_exists(dirname(__DIR__) . '/.env'),
-            'env_vars_loaded' => count($env_vars),
-            'php_version' => phpversion(),
-            'script_dir' => __DIR__,
+        'message' => 'Configuration diagnostic test',
+        'paths' => [
+            'this_script' => __FILE__,
+            'web_root' => __DIR__,
+            'project_root' => PROJECT_ROOT,
+            'public_dir' => dirname(__DIR__),
         ],
+        'git' => $git_info,
+        'permissions' => [
+            'project_root_readable' => is_readable(PROJECT_ROOT),
+            'project_root_writable' => is_writable(PROJECT_ROOT),
+            'storage_logs_writable' => is_writable(PROJECT_ROOT . '/storage/logs'),
+        ],
+        'configuration' => [
+            'deploy_token_set' => !empty(DEPLOY_TOKEN),
+            'token_length' => strlen(DEPLOY_TOKEN),
+            'token_first_chars' => strlen(DEPLOY_TOKEN) > 8 ? substr(DEPLOY_TOKEN, 0, 8) . '...' : '(empty)',
+            'php_version' => phpversion(),
+            'proc_open_available' => function_exists('proc_open'),
+            'shell_exec_available' => function_exists('shell_exec'),
+        ],
+        'environments' => array_keys(DEPLOY_ENVIRONMENTS),
     ], JSON_PRETTY_PRINT);
     exit;
 }

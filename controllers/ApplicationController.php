@@ -75,8 +75,15 @@ $router->get('/{url_path}_verify/application/{application_id}', function($url_pa
         if ($certificate_type === 'trade' && !empty($application['application_id'])) {
             $business_meta = $appmanager->getBusinessMetaByApplicationId($application['application_id']);
         }
-        if ($certificate_type === 'warish' && !empty($application['application_id'])) {
+        if (in_array($certificate_type, ['warish', 'family'], true) && !empty($application['application_id'])) {
             $application['warish_members'] = $appmanager->getMembersByApplication($application_id);
+        }
+        if (!empty($application['extra_data']) && is_string($application['extra_data'])) {
+            $decoded = json_decode($application['extra_data'], true);
+            if (is_array($decoded)) {
+                // For templates: use parsed extra fields instead of raw JSON string.
+                $application['extra_data'] = $decoded;
+            }
         }
         $htmlContent = $twig->render($template, [
             'title' => 'আবেদনের কপি',
@@ -118,8 +125,15 @@ $router->get('/{url_path}_verify/application/{application_id}/{union_code}/{rmo_
         if ($certificate_type === 'trade' && !empty($application['application_id'])) {
             $business_meta = $appmanager->getBusinessMetaByApplicationId($application['application_id']);
         }
-        if ($certificate_type === 'warish' && !empty($application['application_id'])) {
+        if (in_array($certificate_type, ['warish', 'family'], true) && !empty($application['application_id'])) {
             $application['warish_members'] = $appmanager->getMembersByApplication($application_id);
+        }
+        if (!empty($application['extra_data']) && is_string($application['extra_data'])) {
+            $decoded = json_decode($application['extra_data'], true);
+            if (is_array($decoded)) {
+                // For templates: use parsed extra fields instead of raw JSON string.
+                $application['extra_data'] = $decoded;
+            }
         }
         $htmlContent = $twig->render($template, [
             'title' => 'আবেদনের কপি',

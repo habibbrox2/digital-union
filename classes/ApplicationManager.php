@@ -58,6 +58,16 @@ class ApplicationManager
                 -- Business Meta
                 bm.business_name_bn AS business_name_bn,
                 bm.business_name_en AS business_name_en,
+                bm.business_address_id AS business_address_id,
+
+                -- Business Address
+                ba.village_en AS business_village_en, ba.village_bn AS business_village_bn, 
+                ba.district_en AS business_district_en, ba.district_bn AS business_district_bn, 
+                ba.upazila_en AS business_upazila_en, ba.upazila_bn AS business_upazila_bn, 
+                ba.union_en AS business_union_en, ba.union_bn AS business_union_bn, 
+                ba.ward_no AS business_ward_no, ba.holding_no AS business_holding_no,
+                ba.postoffice_en AS business_postoffice_en, ba.postoffice_bn AS business_postoffice_bn,
+                ba.rbs_en AS business_rbs_en, ba.rbs_bn AS business_rbs_bn,
 
                 -- Documents
                 a.documents AS existing_documents,
@@ -82,6 +92,7 @@ class ApplicationManager
                 ON (a.certificate_type = tt.slug OR a.certificate_type IS NULL OR a.certificate_type = '')  
                 AND tt.is_certificate_type = 1
                 LEFT JOIN business_meta bm ON a.application_id = bm.application_id
+                LEFT JOIN address ba ON bm.business_address_id = ba.id AND ba.type = 'business'
             ";
     }
 
