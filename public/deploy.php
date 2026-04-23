@@ -542,7 +542,53 @@ if ($is_webhook) {
     $webhook_data = null;
 }
 
-// Execute deployment
+// For webhooks, respond immediately and queue deployment in background
+// This prevents GitHub webhook timeout (10-30 second limit)
+if ($is_webhook) {
+    // Respond to GitHub immediately with 202 Accepted
+    header('Content-Type: application/json');
+    http_response_code(202);
+
+    $quick_response = [
+        'status' => 'accepted',
+        'message' => 'Deployment queued for background execution',
+        'environment' => $environment,
+        'branch' => $webhook_data['branch'] ?? 'unknown',
+        'commit' => $webhook_data['commit'] ?? 'unknown',
+        'timestamp' => date('Y-m-d H:i:s'),
+    ];
+
+    echo json_encode($quick_response, JSON_PRETTY_PRINT);
+    flush();
+
+    log_webhook("Webhook accepted, deployment queued in background", $quick_response);
+
+    // Close connection to client so GitHub doesn't timeout
+    if (function_exists('fastcgi_finish_request')) {
+        fastcgi_finish_request();
+    } else {
+        // For non-FastCGI servers, still try to disconnect
+        ignore_user_abort(true);
+        ob_end_flush();
+    }
+
+    // Queue deployment as background job
+    $config = DEPLOY_ENVIRONMENTS[$environment];
+    $script = $config['path'] . '/' . $config['script'];
+
+    // Run deployment in background using nohup
+    $command = "cd " . escapeshellarg($config['path']) . " && ";
+    $command .= "/bin/bash " . escapeshellarg($script) . " ";
+    $command .= escapeshellarg($environment) . " ";
+    $command .= "--webhook 2>&1 >> " . escapeshellarg(LOG_DIR . '/deploy_bg.log') . " &";
+
+    @shell_exec($command);
+
+    log_webhook("Deployment background job spawned", ['command' => $command]);
+    exit;
+}
+
+// For manual deployments (not webhooks), execute synchronously and wait for response
 $result = execute_deployment($environment, $webhook_data);
 
 log_webhook("Deployment result", $result);
