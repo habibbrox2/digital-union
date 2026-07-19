@@ -88,6 +88,15 @@
             font-weight: bold;
             text-align: center;
         }
+
+        .overlay-bottom {
+            position: fixed;
+            bottom: 5mm;
+            left: 0;
+            width: 100%;
+            margin: 0;
+            font-family: solaimanlipi;
+        }
     </style>
 </head>
 <body>
@@ -122,9 +131,19 @@
             </td>
             <td style="text-align: center;">
                 <img src="{{ url }}/assets/logo/logo.png" alt="বাংলাদেশ সরকার" height="75pt" width="75pt">
+                <br>
+                {% if union.stamp_logo_url is defined and union.stamp_logo_url %}
+                    <img src="{{ url ~ union.stamp_logo_url }}" alt="Stamp" height="60pt" width="60pt" style="margin-top:5pt;">
+                {% else %}
+                    <img src="{{ url }}/assets/img/band-cross.png" alt="X" height="60pt" width="60pt" style="margin-top:5pt;">
+                {% endif %}
             </td>
             <td style="width: 2.1in;">
-                <img src="{{ url }}/assets/img/band-cross.png" style="padding: 10px;" alt="Icon" height="60pt" width="60pt">
+                {% if data.applicant_photo %}
+                    <img src="{{ url ~ data.applicant_photo }}" style="padding: 10px;" alt="applicant photo" height="60pt" width="60pt">
+                {% else %}
+                    <img src="{{ url }}/assets/img/band-cross.png" style="padding: 10px;" alt="Icon" height="60pt" width="60pt">
+                {% endif %}
             </td>
         </tr>
     </table>
@@ -380,9 +399,13 @@
 	                </tr>
 	            </table>
 	        </td>
-	    </tr>
-	</table>
-	
+    </tr>
+    </table>
+
+
+
+
+
 
 
     <!-- প্রথম টেবিল: ট্রেড লাইসেন্সের মেয়াদ -->
@@ -395,7 +418,7 @@
 
 
 	<!-- ইউপি প্রশাসনিক কর্মকর্তা এবং চেয়ারম্যান -->
-	<table border="0" width="100%" style="margin-top:80px; font-family:solaimanlipi; font-size:14pt;">
+	<table border="0" width="100%" style="margin-top:50px; font-family:solaimanlipi; font-size:14pt;">
 	    <tr>
 	        <!-- Left column: positioned further left -->
 	        <td style="width:35%; text-align:center;">
@@ -409,20 +432,25 @@
 	            _______________________<br>
 	            চেয়ারম্যান
 	        </td>
-	    </tr>
-	</table>
+    </tr>
+    </table>
 
 
 
+    </table>
 
-
-
-
-
-
-
+    <table border="0" class="overlay-bottom" style="font-family:solaimanlipi;">
+        <tr>
+            <td style="text-align:center; font-size:8px;">
+                অল্প সময়ে, স্বপ্ল খরচে সঠিক বিচার পেতে চলো যাই গ্রাম আদালতে। <br>
+                {{ union.website }}- {{ union.email }}
+            </td>
+        </tr>
+    </table>
 
 </div>
+
+
 
 </body>
 </html>

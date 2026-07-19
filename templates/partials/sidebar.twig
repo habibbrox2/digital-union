@@ -1,85 +1,75 @@
 <nav class="sidebar">
     <div class="sidebar-header">
-        Dashboard <br><br>
-        <a href="/profile" class="profile-wrapper">
-            <img src="{% if is_superadmin %}
-                        {{ auth_user.profile_picture_url ?: '/assets/images/administrator.png' }}
-                     {% else %}
-                        {{ auth_user.profile_picture_url ?: '/assets/images/default.png' }}
-                     {% endif %}"
-                 alt="{{ auth_user.name_bn ?: auth_user.name_en }}"
-                 class="profile-pic">
-            <div class="full-name">{{ auth_user.name_bn ?: auth_user.name_en }}</div>
-            <div class="user-text">
-                <div class="role">{{ user_role ?: (getRoleName(auth_user.role_id) ?: '-') }}</div>
-                <div class="union">{{ auth_user.union_name_bn ?: '-' }}</div>
+        <a href="/dashboard" class="sidebar-logo-link" title="ঢাকা জেলা - ড্যাশবোর্ড">
+            <div class="sidebar-logo-area">
+                <img src="{{ url }}/assets/images/login_logo.png" alt="Smart Union" class="sidebar-logo">
+                <span class="sidebar-logo-text">ঢাকা জেলা</span>
             </div>
         </a>
     </div>
 
     <ul>
         {# Main Links #}
-        <li><a href="/#"><i class="fas fa-home-lg-alt"></i> হোম</a></li>
-        <li><a href="/dashboard"><i class="fas fa-chart-line"></i> ড্যাশবোর্ড</a></li>
-        <li><a href="/blank_pad"><i class="fas fa-file"></i> খালি প্যাড</a></li>
+        <li><a href="/#" title="হোম"><i class="fas fa-home-lg-alt"></i><span class="nav-text">হোম</span></a></li>
+        <li><a href="/dashboard" title="ড্যাশবোর্ড"><i class="fas fa-chart-line"></i><span class="nav-text">ড্যাশবোর্ড</span></a></li>
 
         {# Applications / Certificates #}
         <li class="menu-item">
-            <a href="#" class="submenu-toggle">
-                <i class="fas fa-tools"></i> সনদসমূহ
+            <a href="#" class="submenu-toggle" title="সনদসমূহ">
+                <i class="fas fa-tools"></i><span class="nav-text">সনদসমূহ</span>
                 <i class="fas fa-chevron-down float-end"></i>
             </a>
             <ul class="submenu">
-                <li><a href="/applications/nagorik-sonod"><i class="fas fa-address-card"></i> নাগরিক সনদ</a></li>
-                <li><a href="/applications/trade-license"><i class="fas fa-id-card"></i> ট্রেড লাইসেন্স</a></li>
-                <li><a href="/applications/warish-sonod"><i class="fas fa-users"></i> ওয়ারিশ সনদ</a></li>
-                <li><a href="{{ url }}/birth"><i class="fas fa-baby"></i> জন্ম নিবন্ধন</a></li>
-                <li><a href="/applications/character-sonod"><i class="fas fa-user-shield"></i> চারিত্রিক সনদ</a></li>
-                <li><a href="/applications/new-voter-sonod"><i class="fas fa-vote-yea"></i> নতুন ভোটার</a></li>
-                <li><a href="/applications/vumihin-sonod"><i class="fas fa-tree"></i> ভূমিহীন সনদ</a></li>
-                <li><a href="/applications/mrityu-sonod"><i class="fas fa-cross"></i> মৃত্যু প্রত্যয়ন</a></li>
-                <li><a href="/applications/barshik-aye-sonod"><i class="fas fa-coins"></i> বার্ষিক আয়ের প্রত্যয়ন</a></li>
-                <li><a href="/applications/poribar-sodosso-sonod"><i class="fas fa-home"></i> পারিবারিক সনদ</a></li>
-                <li><a href="/applications/obibahito-sonod"><i class="fas fa-female"></i> অবিবাহিত সনদ</a></li>
-                <li><a href="/applications/bibahito-sonod"><i class="fas fa-male"></i> বিবাহিত সনদ</a></li>
-                <li><a href="/applications/eko-namiyo-sonod"><i class="fas fa-file-signature"></i> একই নামের প্রত্যয়ন</a></li>
-                <li><a href="/applications/punobibaho-sonod"><i class="fas fa-ring"></i> পুনঃ বিবাহ না হওয়া সনদ</a></li>
-                <li><a href="/applications/protibondhi-sonod"><i class="fas fa-wheelchair"></i> প্রতিবন্ধী সনদ</a></li>
-                <li><a href="/applications/onapotti-potro"><i class="fas fa-file-alt"></i> অনাপত্তি পত্র</a></li>
-                <li><a href="/applications/prottyon-potro"><i class="fas fa-stamp"></i> প্রত্যয়নপত্র</a></li>
-                <li><a href="/applications/onumoti-potro"><i class="fas fa-check-circle"></i> অনুমতি পত্র</a></li>
-                <li><a href="/applications/voter-sonod"><i class="fas fa-id-card"></i> ভোটার আইডি স্থানান্তর</a></li>
-                <li><a href="/applications/rasta-khonon-onapotti"><i class="fas fa-road"></i> রাস্তা খনন</a></li>
-                <li><a href="/applications/sonaton-dhormio-sonod"><i class="fas fa-om"></i> সনাতন ধর্ম</a></li>
-                <li><a href="/applications/nodibhanga-sonod"><i class="fas fa-water"></i> নদী ভাঙন</a></li>
-                <li><a href="/applications/anumanik-boyosh-protyon"><i class="fas fa-birthday-cake"></i> আনুমানিক বয়স প্রত্যয়ন</a></li>
-                <li><a href="/applications/protyonpotro-onnanno"><i class="fas fa-file"></i> প্রত্যয়নপত্র (অন্যান্য)</a></li>
+                <li><a href="/applications/nagorik" title="নাগরিক সনদ"><i class="fas fa-address-card"></i> নাগরিক সনদ <span class="sidebar-count-badge">{{ certificate_type_counts['nagorik']|default(0)|bn_number }}</span></a></li>
+                <li><a href="/applications/trade" title="ট্রেড লাইসেন্স"><i class="fas fa-id-card"></i> ট্রেড লাইসেন্স <span class="sidebar-count-badge">{{ certificate_type_counts['trade']|default(0)|bn_number }}</span></a></li>
+                <li><a href="/applications/warish" title="ওয়ারিশ সনদ"><i class="fas fa-users"></i> ওয়ারিশ সনদ <span class="sidebar-count-badge">{{ certificate_type_counts['warish']|default(0)|bn_number }}</span></a></li>
+                <li><a href="{{ url }}/birth" title="জন্ম নিবন্ধন"><i class="fas fa-baby"></i> জন্ম নিবন্ধন <span class="sidebar-count-badge">{{ certificate_type_counts['birth']|default(0)|bn_number }}</span></a></li>
+                <li><a href="/applications/character" title="চারিত্রিক সনদ"><i class="fas fa-user-shield"></i> চারিত্রিক সনদ <span class="sidebar-count-badge">{{ certificate_type_counts['character']|default(0)|bn_number }}</span></a></li>
+                <li><a href="/applications/new-voter" title="নতুন ভোটার"><i class="fas fa-vote-yea"></i> নতুন ভোটার <span class="sidebar-count-badge">{{ certificate_type_counts['new-voter']|default(0)|bn_number }}</span></a></li>
+                <li><a href="/applications/vumihin" title="ভূমিহীন সনদ"><i class="fas fa-tree"></i> ভূমিহীন সনদ <span class="sidebar-count-badge">{{ certificate_type_counts['vumihin']|default(0)|bn_number }}</span></a></li>
+                <li><a href="/applications/death" title="মৃত্যু প্রত্যয়ন"><i class="fas fa-cross"></i> মৃত্যু প্রত্যয়ন <span class="sidebar-count-badge">{{ certificate_type_counts['death']|default(0)|bn_number }}</span></a></li>
+                <li><a href="/applications/yearlyincome" title="বার্ষিক আয়ের প্রত্যয়ন"><i class="fas fa-coins"></i> বার্ষিক আয়ের প্রত্যয়ন <span class="sidebar-count-badge">{{ certificate_type_counts['yearlyincome']|default(0)|bn_number }}</span></a></li>
+                <li><a href="/applications/family" title="পারিবারিক সনদ"><i class="fas fa-home"></i> পারিবারিক সনদ <span class="sidebar-count-badge">{{ certificate_type_counts['family']|default(0)|bn_number }}</span></a></li>
+                <li><a href="/applications/obibahito" title="অবিবাহিত সনদ"><i class="fas fa-female"></i> অবিবাহিত সনদ <span class="sidebar-count-badge">{{ certificate_type_counts['obibahito']|default(0)|bn_number }}</span></a></li>
+                <li><a href="/applications/bibahito" title="বিবাহিত সনদ"><i class="fas fa-male"></i> বিবাহিত সনদ <span class="sidebar-count-badge">{{ certificate_type_counts['bibahito']|default(0)|bn_number }}</span></a></li>
+                <li><a href="/applications/ekoinam" title="একই নামের প্রত্যয়ন"><i class="fas fa-file-signature"></i> একই নামের প্রত্যয়ন <span class="sidebar-count-badge">{{ certificate_type_counts['ekoinam']|default(0)|bn_number }}</span></a></li>
+                <li><a href="/applications/punobibaho" title="পুনঃ বিবাহ না হওয়া সনদ"><i class="fas fa-ring"></i> পুনঃ বিবাহ না হওয়া সনদ <span class="sidebar-count-badge">{{ certificate_type_counts['punobibaho']|default(0)|bn_number }}</span></a></li>
+                <li><a href="/applications/protibondi" title="প্রতিবন্ধী সনদ"><i class="fas fa-wheelchair"></i> প্রতিবন্ধী সনদ <span class="sidebar-count-badge">{{ certificate_type_counts['protibondi']|default(0)|bn_number }}</span></a></li>
+                <li><a href="/applications/onapotti" title="অনাপত্তি পত্র"><i class="fas fa-file-alt"></i> অনাপত্তি পত্র <span class="sidebar-count-badge">{{ certificate_type_counts['onapotti']|default(0)|bn_number }}</span></a></li>
+                <li><a href="/applications/prottyon" title="প্রত্যয়নপত্র"><i class="fas fa-stamp"></i> প্রত্যয়নপত্র <span class="sidebar-count-badge">{{ certificate_type_counts['prottyon']|default(0)|bn_number }}</span></a></li>
+                <li><a href="/applications/onumoti" title="অনুমতি পত্র"><i class="fas fa-check-circle"></i> অনুমতি পত্র <span class="sidebar-count-badge">{{ certificate_type_counts['onumoti']|default(0)|bn_number }}</span></a></li>
+                <li><a href="/applications/voter" title="ভোটার আইডি স্থানান্তর"><i class="fas fa-id-card"></i> ভোটার আইডি স্থানান্তর <span class="sidebar-count-badge">{{ certificate_type_counts['voter']|default(0)|bn_number }}</span></a></li>
+                <li><a href="/applications/rastakhonon" title="রাস্তা খনন"><i class="fas fa-road"></i> রাস্তা খনন <span class="sidebar-count-badge">{{ certificate_type_counts['rastakhonon']|default(0)|bn_number }}</span></a></li>
+                <li><a href="/applications/sonaton" title="সনাতন ধর্ম"><i class="fas fa-om"></i> সনাতন ধর্ম <span class="sidebar-count-badge">{{ certificate_type_counts['sonaton']|default(0)|bn_number }}</span></a></li>
+                <li><a href="/applications/nodibanga" title="নদী ভাঙন"><i class="fas fa-water"></i> নদী ভাঙন <span class="sidebar-count-badge">{{ certificate_type_counts['nodibanga']|default(0)|bn_number }}</span></a></li>
+                <li><a href="/applications/anumanik-boyosh-protyon" title="আনুমানিক বয়স প্রত্যয়ন"><i class="fas fa-birthday-cake"></i> আনুমানিক বয়স প্রত্যয়ন <span class="sidebar-count-badge">{{ certificate_type_counts['anumanik-boyosh-protyon']|default(0)|bn_number }}</span></a></li>
+                <li><a href="/applications/protyonpotro-onnanno" title="প্রত্যয়নপত্র (অন্যান্য)"><i class="fas fa-file"></i> প্রত্যয়নপত্র (অন্যান্য) <span class="sidebar-count-badge">{{ certificate_type_counts['protyonpotro-onnanno']|default(0)|bn_number }}</span></a></li>
             </ul>
         </li>
 
         {# Superadmin Only #}
         {% if is_superadmin %}
-            <li><a href="/unions"><i class="fas fa-building"></i> সকল ইউনিয়ন</a></li>
+            <li><a href="/unions" title="সকল ইউনিয়ন"><i class="fas fa-building"></i><span class="nav-text">সকল ইউনিয়ন</span></a></li>
         {% endif %}
 
         {# RBAC Section #}
         {% if is_superadmin or can('manage_users') or can('manage_roles') or can('manage_permissions') or can('view_permission_audit') %}
         <li class="menu-item">
-            <a href="#" class="submenu-toggle">
-                <i class="fas fa-user-shield"></i>অনুমতি ও রোল
+            <a href="#" class="submenu-toggle" title="অনুমতি ও রোল">
+                <i class="fas fa-user-shield"></i><span class="nav-text">অনুমতি ও রোল</span>
                 <i class="fas fa-chevron-down float-end"></i>
             </a>
             <ul class="submenu">
                 {% if is_superadmin or can('manage_users') %}
-                    <li><a href="/users"><i class="fas fa-users"></i> ব্যবহারকারী</a></li>
+                    <li><a href="/users" title="ব্যবহারকারী"><i class="fas fa-users"></i> ব্যবহারকারী</a></li>
                 {% endif %}
                 {% if is_superadmin or can('manage_roles') %}
-                    <li><a href="/roles"><i class="fas fa-user-tag"></i> রোলসমূহ</a></li>
+                    <li><a href="/roles" title="রোলসমূহ"><i class="fas fa-user-tag"></i> রোলসমূহ</a></li>
                 {% endif %}
                 {% if is_superadmin or can('manage_permissions') %}
-                    <li><a href="/permissions"><i class="fas fa-key"></i> অনুমতি তালিকা</a></li>
-                    <li><a href="/permissions/assign"><i class="fas fa-user-check"></i> অনুমতি বরাদ্দ</a></li>
-                    <li><a href="/manage-permissions"><i class="fas fa-edit"></i> পারমিশন অ্যাসাইন(রোল)</a></li>
+                    <li><a href="/permissions" title="অনুমতি তালিকা"><i class="fas fa-key"></i> অনুমতি তালিকা</a></li>
+                    <li><a href="/permissions/assign" title="অনুমতি বরাদ্দ"><i class="fas fa-user-check"></i> অনুমতি বরাদ্দ</a></li>
+                    <li><a href="/manage-permissions" title="পারমিশন অ্যাসাইন (রোল)"><i class="fas fa-edit"></i> পারমিশন অ্যাসাইন(রোল)</a></li>
                 {% endif %}
             </ul>
         </li>
@@ -88,39 +78,40 @@
         {# Settings Section #}
         {% if can('manage_settings') or is_superadmin %}
         <li class="menu-item">
-            <a href="#" class="submenu-toggle">
-                <i class="fas fa-cogs"></i> সেটিংস
+            <a href="#" class="submenu-toggle" title="সেটিংস">
+                <i class="fas fa-cogs"></i><span class="nav-text">সেটিংস</span>
                 <i class="fas fa-chevron-down float-end"></i>
             </a>
             <ul class="submenu">
-                <li><a href="/profile"><i class="fas fa-user"></i> প্রোফাইল সেটিংস</a></li>
+                <li><a href="/profile" title="প্রোফাইল সেটিংস"><i class="fas fa-user"></i> প্রোফাইল সেটিংস</a></li>
                 
                 <li class="menu-item">
-                    <a href="#" class="submenu-toggle">
+                    <a href="#" class="submenu-toggle" title="সিস্টেম সেটিংস">
                         <i class="fas fa-sliders-h"></i> সিস্টেম সেটিংস
                         <i class="fas fa-chevron-down float-end"></i>
                     </a>
                     <ul class="submenu">
                         {% if is_superadmin or can('manage_settings') %}
-                            <li><a href="/settings/email-templates"><i class="fas fa-envelope"></i> ইমেইল টেমপ্লেট</a></li>
-                            <li><a href="/settings/email-test"><i class="fas fa-paper-plane"></i> ইমেইল টেস্ট</a></li>
+                            <li><a href="/settings/email-templates" title="ইমেইল টেমপ্লেট"><i class="fas fa-envelope"></i> ইমেইল টেমপ্লেট</a></li>
+                            <li><a href="/settings/email-test" title="ইমেইল টেস্ট"><i class="fas fa-paper-plane"></i> ইমেইল টেস্ট</a></li>
                         {% endif %}
-                        <li><a href="/settings/business-types"><i class="fas fa-briefcase"></i> ব্যবসা ধরণ</a></li>
-                        <li><a href="/settings/ownership-types"><i class="fas fa-users"></i> মালিকানা ধরণ</a></li>
-                        <li><a href="/settings/extra-fields"><i class="fas fa-layer-group"></i> অতিরিক্ত ইনপুট</a></li>
+                        <li><a href="/settings/business-types" title="ব্যবসা ধরণ"><i class="fas fa-briefcase"></i> ব্যবসা ধরণ</a></li>
+                        <li><a href="/settings/ownership-types" title="মালিকানা ধরণ"><i class="fas fa-users"></i> মালিকানা ধরণ</a></li>
+                        <li><a href="/settings/extra-fields" title="অতিরিক্ত ইনপুট"><i class="fas fa-layer-group"></i> অতিরিক্ত ইনপুট</a></li>
                         {% if is_superadmin %}
-                            <li><a href="/settings/geo"><i class="fas fa-globe"></i> জিও লোকেশন</a></li>
-                            <li><a href="/term_translations"><i class="fas fa-pen-nib"></i> ভাষা অনুবাদ</a></li>
-                            <li><a href="/admin/logs"><i class="fas fa-bug"></i> এররস লগ</a></li>
-                            <li><a href="/admin/database/migrations"><i class="fas fa-database"></i> ডাটাবেস মাইগ্রেশন</a></li>
+                            <li><a href="/settings/geo" title="জিও লোকেশন"><i class="fas fa-globe"></i> জিও লোকেশন</a></li>
+                            <li><a href="/term_translations" title="ভাষা অনুবাদ"><i class="fas fa-pen-nib"></i> ভাষা অনুবাদ</a></li>
+                            <li><a href="/admin/logs" title="এররস লগ"><i class="fas fa-bug"></i> এররস লগ</a></li>
+                            <li><a href="/admin/database/migrations" title="ডাটাবেস মাইগ্রেশন"><i class="fas fa-database"></i> ডাটাবেস মাইগ্রেশন</a></li>
                         {% endif %}
-                        <li><a href="/settings"><i class="fas fa-cog"></i> সার্বিক সেটিংস</a></li>
+                        <li><a href="/settings" title="সার্বিক সেটিংস"><i class="fas fa-cog"></i> সার্বিক সেটিংস</a></li>
                     </ul>
                 </li>
             </ul>
         </li>
         {% endif %}
 
-        <li><a href="/logout"><i class="fas fa-door-open"></i> লগ আউট</a></li>
+        <li><a href="/logout" title="লগ আউট"><i class="fas fa-door-open"></i><span class="nav-text">লগ আউট</span></a></li>
     </ul>
 </nav>
+

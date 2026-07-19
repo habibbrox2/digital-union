@@ -1,0 +1,56 @@
+<header class="site-header py-3 shadow-sm bg-white">
+    <div class="container-fluid">
+        <div class="row align-items-center g-2">
+            <div class="col-4 col-md-4 text-start text-md-center">
+                <a href="https://lgdhaka.com">
+                    <img class="site-logo img-fluid" 
+                         src="{{ url }}/assets/images/dijital union logo.png" 
+                         alt="Logo">
+                </a>
+            </div>
+
+            <div class="col-4 col-md-4 text-center">
+                <h3 class="site-title mb-0 fw-bold d-none d-sm-block" style="font-size: calc(1.2rem + 0.5vw);">
+                    {{ page_title is defined ? page_title : 'স্মার্ট ইউপি, ঢাকা' }}
+                </h3>
+                <h6 class="site-title mb-0 fw-bold d-block d-sm-none">
+                    {{ page_title is defined ? page_title|slice(0, 10) : 'স্মার্ট ইউপি' }}
+                </h6>
+            </div>
+
+            <div class="col-4 col-md-4 text-end text-md-center">
+                {% if auth_user %}
+                    <div class="user-profile d-flex align-items-center justify-content-end justify-content-md-center">
+                        <div class="user-info d-none d-md-block me-2">
+                            <span class="user-name d-block fw-bold text-dark">
+                                {{ auth_user.name_bn ?: auth_user.name_en }}
+                            </span>
+                            <div class="user-links small">
+                                <a href="/dashboard" class="text-decoration-none">ড্যাশবোর্ড</a> |
+                                <a href="/logout" class="text-decoration-none text-danger">লগআউট</a>
+                            </div>
+                        </div>
+                        
+                        <div class="dropdown">
+                            <img class="user-avatar rounded-circle border border-2 border-primary p-1 shadow-sm" 
+                                 src="{% if is_superadmin %}{{ auth_user.profile_picture_url ?: '/assets/images/administrator.png' }}{% else %}{{ auth_user.profile_picture_url ?: '/assets/images/default.png' }}{% endif %}" 
+                                  alt="{{ auth_user.name_bn ?: auth_user.name_en }}"
+                                 style="width: 45px; height: 45px; cursor: pointer; object-fit: cover;"
+                                 data-bs-toggle="dropdown">
+                            
+                            <ul class="dropdown-menu dropdown-menu-end d-md-none">
+                                <li class="dropdown-header">{{ auth_user.name_bn ?: auth_user.name_en }}</li>
+                                <li><a class="dropdown-item" href="/dashboard">ড্যাশবোর্ড</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item text-danger" href="/logout">লগআউট</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                {% else %}
+                    <a href="/login" class="btn btn-primary btn-sm px-4 rounded-pill shadow-sm">লগইন</a>
+                {% endif %}
+            </div>
+
+        </div>
+    </div>
+</header>

@@ -1,103 +1,491 @@
 {% extends "layout.twig" %}
 
-{% block title %}সাধারণ আবেদন ফরম{% endblock %}
-
-{% block header_title %}সাধারণ আবেদন ফরম{% endblock %}
+{% block title %}  {{ certificate_type_bn ?? 'আবেদন ফরম' }} {% endblock %}
+{% block header_title %}  {{ certificate_type_bn ?? 'আবেদন ফরম' }} {% endblock %}
 
 {% block content %}
+{% include 'components/sweetAlert.twig' %}
+<link rel="stylesheet" href="/assets/css/forms.css?t={{ "now"|date("Hiss") }}">
 
-<link rel="stylesheet" href="/assets/css/forms.css">
+{% set _data = reuse_data|default(data)|default({}) %}
 
+<div class="container form-page px-3">
+    <div class="form-shell">
+        <div class="form-hero">
+            <h1 id="formTitle">{{ certificate_type_bn ?? 'আবেদন ফরম' }}</h1>
+        </div>
 
-<div class="container mt-4 px-3">
+        <!-- ================= Application Form ================= -->
+        <form id="applicationForm" method="POST"
+            action="/applications/{{ certificate_type }}/apply"
+            enctype="multipart/form-data">
 
-    <h2 id="formTitle" class="text-center my-4 fw-bold">আবেদন ফরম</h2>
+            <!-- Hidden Inputs -->
+            <input type="hidden" name="certificate_type" value="{{ certificate_type }}">
+            <span id="certificate_type_data" data-certificate-type="{{ certificate_type }}" style="display:none"></span>
 
-    {# নিয়মাবলী ও সাবমিট #}
-    {% include 'common/rules.twig' %}
-
-        
-
-
-    <form id="applicationForm" method="POST" action="" enctype="multipart/form-data">
-        <input type="hidden" id="certificate_type" name="certificate_type" value="{{ certificate_type }}">
-        
-            <fieldset class="border rounded p-3 mb-4">
-                <legend class="w-auto px-2">ইউনিয়ন বাছাই করুন</legend>
-                    <div class="row">
-                        <div class="col-md-4 mb-3">
-                            <label for="district_dropdown" class="form-label">জেলা</label>
-                            <select id="district_dropdown" name="district" class="form-control" required>
-                            <option value="3026" selected data-geo-code="3026" data-name-en="DHAKA" data-name-bn="ঢাকা" data-geo-id="25">ঢাকা</option> 
-                            </select>
-                        </div>
-
-                        <div class="col-md-4 mb-3">
-                            <label for="upazila_dropdown" class="form-label">উপজেলা</label>
-                            <select id="upazila_dropdown" name="upazila" class="form-control" required>
-                                <option value="">উপজেলা নির্বাচন করুন</option>
-                            </select>
-                        </div>
-
-                        <div class="col-md-4 mb-3">
-                            <label for="union_dropdown" class="form-label">ইউনিয়ন</label>
-                            <select id="union_dropdown" name="union_code" class="form-control" required>
-                                <option value="">ইউনিয়ন নির্বাচন করুন</option>
-                            </select>
-                        </div>
-                    </div>
+            <!-- ================= Union Selection ================= -->
+            <fieldset class="form-section">
+                <legend>ইউনিয়ন বাছাই করুন</legend>
+                {% include 'partials/forms/union_selection.twig' with { data: _data } %}
             </fieldset>
 
+            {% if certificate_type == 'trade' %}
+            <!-- ================= Business Info ================= -->
+            <fieldset class="form-section">
+                <legend>ব্যবসায়িক তথ্য</legend>
+                {% include 'partials/forms/business_info.twig' with { data: _data } %}
+            </fieldset>
+            {% endif %}
 
-        {# ব্যক্তিগত তথ্য অংশ #}
-        <fieldset class="border rounded p-3 mb-4">
-            <legend class="w-auto px-2">ব্যক্তিগত তথ্য</legend>
-            {% include 'common/personal_info.twig' %}
-        </fieldset>
+            <!-- ================= Personal Info ================= -->
+            <fieldset class="form-section">
+                <legend>ব্যক্তিগত তথ্য</legend>
+                {% include 'partials/forms/personal_info.twig' with { data: _data } %}
+            </fieldset>
 
-        {# বর্তমান ঠিকানা #}
-        <fieldset class="border rounded p-3 mb-4">
-            <legend class="w-auto px-2">বর্তমান ঠিকানা</legend>
-            <div id="present_address_fields">
-                {% include 'common/address_fields.twig' with { prefix: 'present' } %}
-            </div>
-        </fieldset>
+            <!-- ================= Warish/Family Members ================= -->
+            {% if certificate_type in ['family', 'warish'] %}
+            <fieldset class="form-section">
+                <legend>পরিবারের সদস্যগণের তালিকা</legend>
+                {% include 'partials/forms/warish_entry.twig' with { data: _data } %}
+            </fieldset>
+            {% endif %}
 
-        {# স্থায়ী ঠিকানা #}
-        <fieldset class="border rounded p-3 mb-4">
-            <legend class="w-auto px-2">স্থায়ী ঠিকানা</legend>
+            <!-- ================= Present Address ================= -->
+            <fieldset class="form-section">
+                <legend>বর্তমান ঠিকানা</legend>
+                <div id="present_address_fields">
+                    {% include 'partials/forms/address_fields.twig' with { prefix: 'present', data: _data } %}
+                </div>
+            </fieldset>
 
-            <!-- Copy Present to Permanent Checkbox -->
-            <div class="form-check mb-2">
-                <input type="checkbox" id="copy_present_to_permanent" class="form-check-input">
-                <label for="copy_present_to_permanent" class="form-check-label">
-                    বর্তমান ঠিকানা এবং স্থায়ী ঠিকানা একই
-                </label>
-            </div>
+            <!-- ================= Permanent Address ================= -->
+            <fieldset class="form-section">
+                <legend>স্থায়ী ঠিকানা</legend>
+                <div class="form-check mb-2">
+                    <input type="checkbox" class="form-check-input" id="copy_present_to_permanent">
+                    <label for="copy_present_to_permanent" class="form-check-label">
+                        বর্তমান ঠিকানা এবং স্থায়ী ঠিকানা একই
+                    </label>
+                </div>
+                <div id="permanent_address_fields">
+                    {% include 'partials/forms/address_fields.twig' with { prefix: 'permanent', data: _data } %}
+                </div>
+            </fieldset>
 
-            <div id="permanent_address_fields">
-                {% include 'common/address_fields.twig' with { prefix: 'permanent' } %}
-            </div>
-        </fieldset>
+            {% if certificate_type == 'trade' %}
+            <!-- ================= Business Address ================= -->
+            <fieldset class="form-section">
+                <legend>ব্যবসার ঠিকানা</legend>
+                <div class="form-check mb-1">
+                    <input class="form-check-input" type="checkbox" id="copy_present_to_business">
+                    <label class="form-check-label" for="copy_present_to_business">
+                        বর্তমান ঠিকানা থেকে ব্যবসায়িক ঠিকানা কপি করুন
+                    </label>
+                </div>
+                <div id="business_address_fields">
+                    {% include 'partials/forms/address_fields.twig' with { prefix: 'business', data: _data } %}
+                </div>
+            </fieldset>
+            {% endif %}
 
+            <!-- ================= Contact & Documents ================= -->
+            <fieldset class="form-section">
+                <legend>যোগাযোগ এবং ডকুমেন্ট আপলোড</legend>
 
-        {# সারসংক্ষেপ অংশ #}
-        <fieldset class="border rounded p-3 mb-4">
-            <legend class="w-auto px-2">সারসংক্ষেপ</legend>
-            {% include 'common/summary_section.twig' %}
-        </fieldset>
+                <div class="row mb-3 align-items-center">
+                    <div class="col-lg-2 col-md-3 col-12">
+                        <label for="applicant_name" class="form-label mb-0">আবেদনকারীর নাম</label>
+                    </div>
+                    <div class="col-lg-4 col-md-3 col-12">
+                        <input type="text" id="applicant_name" name="applicant_name" class="form-control"
+                            placeholder="আবেদনকারীর নাম"
+                            value="{{ _data.applicant_name is defined and _data.applicant_name ? _data.applicant_name : (_data.name_bn is defined ? _data.name_bn : '') }}">
+                    </div>
+                    <div class="col-lg-2 col-md-3 col-12">
+                        <label for="applicant_phone" class="form-label mb-0">আবেদনকারীর মোবাইল নম্বর</label>
+                    </div>
+                    <div class="col-lg-4 col-md-3 col-12">
+                        <input type="text" id="applicant_phone" name="applicant_phone" class="form-control"
+                            placeholder="আপনার মোবাইল নম্বর লিখুন" value="{{ _data.applicant_phone ?? '' }}">
+                    </div>
+                </div>
 
-        <div class="d-flex justify-content-center mt-4">
-            <button type="submit" class="btn btn-success submit-button">জমা দিন</button>
-        </div>
-    </form>
+                <div class="row align-items-start mb-3">
+                    <div class="col-lg-2 col-md-3 col-12">
+                        <label class="form-label mb-0">প্রয়োজনীয় ডকুমেন্ট আপলোড করুন</label>
+                    </div>
+                    <div class="col-lg-10 col-md-9 col-12">
+                        <div id="documents_container"></div>
+                    </div>
+                </div>
+
+                <button type="submit" class="text-center btn btn-lg px-5 submit-button">
+                    জমা দিন
+                </button>
+            </fieldset>
+        </form>
+
+    </div>
 </div>
-    {# ফর্ম সাবমিশন এবং সফল মডাল হ্যান্ডলিং #}
-    {% include '/common/success_modal.twig' %}
 
-<script src="/assets/js/dynamic-sonod.js?t={{ "now"|date("Hiss") }}"></script>
+<!-- ================= Success Modal ================= -->
+{% include 'partials/forms/success_modal.twig' %}
+
 <script src="/assets/js/forms.js?t={{ "now"|date("Hiss") }}"></script>
 
+<script>
+(function () {
+    'use strict';
+
+    // ---------------- extraData init ----------------
+    try {
+        window.extraData = {{ extra_data|default({})|json_encode|raw }};
+    } catch(e) {
+        window.extraData = {};
+    }
+
+    // ---------------- helper ----------------
+    const escapeHtml = str => str == null ? '' : String(str).replace(/[&<>"']/g,
+        m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])
+    );
+    const updateLabelAndPlaceholder = (labelEl, inputEl, text) => {
+        if (!labelEl) return;
+        const span = labelEl.querySelector('span');
+        labelEl.textContent = text;
+        if (span) labelEl.appendChild(span);
+        if (inputEl) inputEl.placeholder = text;
+    };
+
+    // ---------------- Mobile Number Validation ----------------
+    document.addEventListener('DOMContentLoaded', function () {
+        const mobileInput = document.getElementById('applicant_phone');
+        if (mobileInput) {
+            mobileInput.addEventListener('input', function() {
+                let val = this.value.replace(/[০-৯]/g, function(m) {
+                    return '০১২৩৪৫৬৭৮৯'.indexOf(m);
+                }).replace(/[۰-۹]/g, function(m) {
+                    return m.charCodeAt(0) - 1776;
+                }).replace(/\D/g, '');
+                this.value = val;
+                const warningId = 'mobile_warning';
+                document.getElementById(warningId)?.remove();
+                if (val.length > 0 && val.length < 11) {
+                    const warn = document.createElement('div');
+                    warn.id = warningId;
+                    warn.style.color = 'red';
+                    warn.style.fontSize = '0.85rem';
+                    warn.textContent = 'মোবাইল নম্বর অবশ্যই ১১ সংখ্যার হতে হবে।';
+                    mobileInput.parentNode.appendChild(warn);
+                }
+            });
+        }
+
+        // ---------------- Applicant Name Sync ----------------
+        const nameBnField = document.getElementById('name_bn');
+        const applicantNameField = document.getElementById('applicant_name');
+        const ownNameRadio = document.getElementById('own_name');
+        const otherNameRadio = document.getElementById('other_name');
+
+        if (nameBnField && applicantNameField) {
+            const syncApplicantName = function () {
+                const banglaName = nameBnField.value || '';
+                if (otherNameRadio && otherNameRadio.checked) {
+                    applicantNameField.readOnly = false;
+                    applicantNameField.style.backgroundColor = '';
+                    if (!applicantNameField.value) {
+                        applicantNameField.value = banglaName;
+                    }
+                    return;
+                }
+                if (ownNameRadio) ownNameRadio.checked = true;
+                applicantNameField.value = banglaName;
+                applicantNameField.readOnly = false;
+                applicantNameField.style.backgroundColor = '#e9ecef';
+            };
+            nameBnField.addEventListener('input', function() {
+                if (!otherNameRadio || !otherNameRadio.checked) {
+                    applicantNameField.value = this.value || '';
+                }
+            });
+            document.querySelectorAll('input[name="applicant_name_option"]').forEach(function(radio) {
+                radio.addEventListener('change', syncApplicantName);
+            });
+            syncApplicantName();
+        }
+
+        // ---------------- Document Upload ----------------
+        const container = document.getElementById('documents_container');
+        if (container) {
+            function createDocumentRow(url) {
+                var row = document.createElement('div');
+                row.className = 'row align-items-center document-row mb-2';
+                var previewHTML = '';
+                if (url) {
+                    if (url.match(/\.(jpg|jpeg|png|gif)$/i)) {
+                        previewHTML = '<img src="' + url + '" class="img-fluid rounded shadow-sm" style="max-width:100px">';
+                    } else if (url.match(/\.pdf$/i)) {
+                        previewHTML = '<a href="' + url + '" target="_blank">PDF দেখুন</a>';
+                    } else {
+                        previewHTML = '<a href="' + url + '" target="_blank">' + url.split('/').pop() + '</a>';
+                    }
+                }
+                row.innerHTML = '\
+                    <div class="col-md-5">\
+                        <input type="file" name="documents[]" class="form-control file-input">\
+                    </div>\
+                    <div class="col-md-5 preview-area">' + previewHTML + '</div>\
+                    <div class="col-md-2 d-flex gap-2">\
+                        <button type="button" class="btn btn-add-doc icon-only" title="নতুন ফাইল">\
+                            <i class="bi bi-plus"></i>\
+                        </button>\
+                        <button type="button" class="btn btn-remove-file icon-only" title="মুছে ফেলুন">\
+                            <i class="bi bi-trash"></i>\
+                        </button>\
+                    </div>';
+                container.appendChild(row);
+            }
+            container.addEventListener('click', function(e) {
+                var btn = e.target.closest('button');
+                if (!btn) return;
+                if (btn.classList.contains('btn-add-doc')) createDocumentRow();
+                if (btn.classList.contains('btn-remove-file')) btn.closest('.document-row').remove();
+            });
+            container.addEventListener('change', function(e) {
+                if (!e.target.classList.contains('file-input')) return;
+                var file = e.target.files[0];
+                var previewArea = e.target.closest('.document-row').querySelector('.preview-area');
+                previewArea.innerHTML = '';
+                if (!file) return;
+                if (file.type.startsWith('image/')) {
+                    var img = document.createElement('img');
+                    img.src = URL.createObjectURL(file);
+                    img.className = 'img-fluid rounded shadow-sm';
+                    img.style.maxWidth = '100px';
+                    previewArea.appendChild(img);
+                } else if (file.type === 'application/pdf') {
+                    var link = document.createElement('a');
+                    link.href = URL.createObjectURL(file);
+                    link.target = '_blank';
+                    link.textContent = 'PDF দেখুন';
+                    previewArea.appendChild(link);
+                } else {
+                    var span = document.createElement('span');
+                    span.textContent = file.name;
+                    previewArea.appendChild(span);
+                }
+            });
+            // Preload existing documents from reuse data
+            var docs = {{ _data.documents|default([])|json_encode|raw }};
+            if (Array.isArray(docs) && docs.length) {
+                docs.forEach(function(url) { createDocumentRow(url); });
+            } else {
+                createDocumentRow();
+            }
+        }
+    });
+
+    // ---------------- extra data JS (independent of DOMContentLoaded) ----------------
+    async function fetchExtraFields(){
+        if (window.extraFieldsCache) return window.extraFieldsCache;
+        try {
+            const res = await fetch('/api/v2/extra-fields/json', {cache:'no-store'});
+            if (!res.ok) throw new Error('HTTP '+res.status);
+            const data = await res.json();
+            window.extraFieldsCache = data;
+            return data;
+        } catch(err){
+            console.error(err);
+            return {};
+        }
+    }
+
+    function initDatepickers(root){
+        if (!root) root = document;
+        root.querySelectorAll('.datepicker').forEach(function(input){
+            if (window.jQuery && typeof $(input).datepicker === 'function'){
+                try {
+                    $(input).datepicker({
+                        format:'dd-mm-yyyy',
+                        autoclose:true,
+                        todayHighlight:true
+                    });
+                } catch(e) {
+                    input.placeholder = input.placeholder || 'দিন-মাস-বছর';
+                    input.setAttribute('inputmode','numeric');
+                }
+            } else {
+                input.placeholder = input.placeholder || 'দিন-মাস-বছর';
+                input.setAttribute('inputmode','numeric');
+            }
+        });
+    }
+
+    function createFieldHTML(field, data){
+        const ed = data || window.extraData || {};
+        const val = escapeHtml(ed[field.id] || '');
+        const placeholder = escapeHtml(field.placeholder || field.label || '');
+        const label = escapeHtml(field.label || field.label_en || '');
+        const markDynamic = ' data-extra-field="1"';
+
+        if (field.count === 2){
+            const bnVal = escapeHtml(ed[field.id+'_bn'] || '');
+            const enVal = escapeHtml(ed[field.id+'_en'] || '');
+            const labelBn = escapeHtml(field.label_bn || field.label || '');
+            const labelEn = escapeHtml(field.label_en || field.label || '');
+            return `<div class="row mb-3">
+                <div class="col-lg-2 col-md-3 col-12">
+                    <label for="${field.id}_en" class="form-label">${labelEn}</label>
+                </div>
+                <div class="col-lg-4 col-md-3 col-12">
+                    <input type="text" name="${field.id}_en" id="${field.id}_en" class="form-control"${markDynamic} value="${enVal}" placeholder="${placeholder} (ইংরেজিতে)">
+                </div>
+                <div class="col-lg-2 col-md-3 col-12">
+                    <label for="${field.id}_bn" class="form-label">${labelBn} <span class="text-danger">*</span></label>
+                </div>
+                <div class="col-lg-4 col-md-3 col-12">
+                    <input type="text" name="${field.id}_bn" id="${field.id}_bn" class="form-control bangla"${markDynamic} value="${bnVal}" placeholder="${placeholder} (বাংলায়)" required>
+                </div>
+            </div>`;
+        }
+
+        switch(field.type){
+            case 'text':
+            case 'number':
+            case 'date':
+                const inputClass = field.type==='date' ? 'form-control datepicker' : 'form-control';
+                return `<div class="row mb-3 align-items-center">
+                    <div class="col-lg-2 col-md-3 col-12">
+                        <label for="${field.id}" class="form-label mb-0">${label} <span class="text-danger">*</span></label>
+                    </div>
+                    <div class="col-lg-4 col-md-3 col-12">
+                        <input type="${field.type==='date'?'text':field.type}" name="${field.id}" id="${field.id}" class="${inputClass}"${markDynamic} value="${val}" placeholder="${placeholder}">
+                    </div>
+                </div>`;
+            case 'textarea':
+                return `<div class="row mb-3">
+                    <div class="col-lg-2 col-md-3 col-12">
+                        <label for="${field.id}" class="form-label">${label} <span class="text-danger">*</span></label>
+                    </div>
+                    <div class="col-lg-4 col-md-3 col-12">
+                        <textarea name="${field.id}" id="${field.id}" class="form-control"${markDynamic} rows="4" placeholder="${placeholder}">${val}</textarea>
+                    </div>
+                </div>`;
+            case 'select':
+                const options = (field.options||[])
+                    .map(function(o){ return `<option value="${o.value}" ${val==o.value?'selected':''}>${o.text}</option>`; }).join('');
+                return `<div class="row mb-3 align-items-center">
+                    <div class="col-lg-2 col-md-3 col-12">
+                        <label for="${field.id}" class="form-label mb-0">${label} <span class="text-danger">*</span></label>
+                    </div>
+                    <div class="col-lg-4 col-md-3 col-12">
+                        <select name="${field.id}" id="${field.id}" class="form-control"${markDynamic}>
+                            <option value="">Select</option>${options}
+                        </select>
+                    </div>
+                </div>`;
+            case 'label':
+                return `<div class="col-lg-6 mb-2"><span id="${field.id}" class="form-label">${label}</span></div>`;
+            default:
+                return `<div class="row mb-3 align-items-center">
+                    <div class="col-lg-2 col-md-3 col-12">
+                        <label for="${field.id}" class="form-label mb-0">${label} <span class="text-danger">*</span></label>
+                    </div>
+                    <div class="col-lg-4 col-md-3 col-12">
+                        <input type="text" name="${field.id}" id="${field.id}" class="form-control"${markDynamic} value="${val}" placeholder="${placeholder}">
+                    </div>
+                </div>`;
+        }
+    }
+
+    async function initExtraFields(){
+        const extraFields = await fetchExtraFields();
+        const certInput = document.querySelector('input[name="certificate_type"], #certificate_type');
+        const certificateType = certInput ? certInput.value : null;
+        if (!certificateType || !extraFields[certificateType]) return extraFields;
+
+        const fragment = document.createDocumentFragment();
+        extraFields[certificateType].forEach(function(field){
+            if (field.type==='label') return;
+            const html = createFieldHTML(field, window.extraData);
+            const container = document.createElement('div');
+            container.innerHTML = html;
+            const target = document.getElementById(field.orderAfter) || document.querySelector('[name="'+field.orderAfter+'"]');
+            if (target){
+                const baseRow = target.closest('.row') || target;
+                baseRow.insertAdjacentElement('afterend', container);
+            } else {
+                fragment.appendChild(container);
+            }
+        });
+
+        const form = document.getElementById('applicationForm') || document.body;
+        form.appendChild(fragment);
+        initDatepickers();
+        return extraFields;
+    }
+
+    function initFormSubmit(){
+        const form = document.getElementById('applicationForm');
+        if (!form) return;
+
+        form.addEventListener('submit', function (e) {
+            try {
+                const payload = {};
+                const dynamicInputs = form.querySelectorAll('[data-extra-field="1"]');
+                dynamicInputs.forEach(function(input){
+                    if (input.name) payload[input.name] = input.value;
+                });
+                let hidden = form.querySelector('input[name="extra_data"]');
+                if (!hidden) {
+                    hidden = document.createElement('input');
+                    hidden.type = 'hidden';
+                    hidden.name = 'extra_data';
+                    form.appendChild(hidden);
+                }
+                hidden.value = JSON.stringify(payload);
+            } catch(err){ console.error(err); }
+        }, {capture:true});
+    }
+
+    function updateLabelsByCertificateType(extraFields, certType){
+        if (!extraFields[certType]) return;
+        extraFields[certType].forEach(function(field){
+            if (field.type!=='label') return;
+            if (field.count===2){
+                const enLabelEl = document.querySelector('label[for="'+field.id+'_en"]');
+                const bnLabelEl = document.querySelector('label[for="'+field.id+'_bn"]');
+                const enInput = document.getElementById(field.id+'_en');
+                const bnInput = document.getElementById(field.id+'_bn');
+                updateLabelAndPlaceholder(enLabelEl, enInput, (field.label_en || field.label || '') + ' (ইংরেজিতে)');
+                updateLabelAndPlaceholder(bnLabelEl, bnInput, (field.label_bn || field.label || '') + ' (বাংলায়)');
+            } else {
+                const labelEl = document.querySelector('label[for="'+field.id+'"]');
+                const inputEl = document.getElementById(field.id);
+                updateLabelAndPlaceholder(labelEl, inputEl, field.label || '');
+            }
+        });
+    }        // ---------------- initialize extra fields on DOMContentLoaded ----------------
+    document.addEventListener('DOMContentLoaded', function() {
+        (async function(){
+            const extraFields = await initExtraFields();
+            window.extraFieldsCache = extraFields;
+            initFormSubmit();
+
+            const certificateTypeInput = document.querySelector('input[name="certificate_type"], #certificate_type');
+            if (certificateTypeInput){
+                updateLabelsByCertificateType(extraFields, certificateTypeInput.value);
+                certificateTypeInput.addEventListener('change', async function(){
+                    window.extraFieldsCache = await initExtraFields();
+                    if (window.toggleSpouseFields) window.toggleSpouseFields();
+                    updateLabelsByCertificateType(extraFields, this.value);
+                });
+            }
+        })();
+    });
+
+})();
+</script>
 
 {% endblock %}
-

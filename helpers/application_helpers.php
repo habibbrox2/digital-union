@@ -224,12 +224,13 @@ if (!function_exists('fetchApplicationById')) {
 }
 
 if (!function_exists('applicationRejectForm')) {
-    function applicationRejectForm($application_id, $reason)
+    function applicationRejectForm($application_id, $reason, $union_id = null, $certificate_type = null)
     {
         global $appmanager;
 
-        if (!$appmanager->rejectApplication($application_id, $reason)) {
-            throw new Exception("Failed to reject application ID: {$application_id}");
+        $result = $appmanager->rejectApplication($application_id, $reason, $union_id, $certificate_type);
+        if (isset($result['status']) && $result['status'] !== 'success') {
+            throw new Exception($result['message'] ?? "Failed to reject application ID: {$application_id}");
         }
     }
 }

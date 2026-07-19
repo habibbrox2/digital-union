@@ -1,27 +1,31 @@
 // slider.js
-let currentSlide = 0;
-const slides = document.querySelectorAll(".slider-item");
-const totalSlides = slides.length;
+(function() {
+    'use strict';
 
-function showNextSlide() {
-    // Hide the current slide
-    slides[currentSlide].style.display = "none";
-    
-    // Move to the next slide
-    currentSlide = (currentSlide + 1) % totalSlides;
-    
-    // Show the next slide
-    slides[currentSlide].style.display = "block";
-}
+    document.addEventListener('DOMContentLoaded', function () {
+        let currentSlide = 0;
+        const slides = document.querySelectorAll(".slider-item");
+        const totalSlides = slides.length;
 
-// Initially hide all slides except the first
-slides.forEach((slide, index) => {
-    if (index !== 0) {
-        slide.style.display = "none";
-    } else {
-        slide.style.display = "block"; // Show the first slide
-    }
-});
+        if (totalSlides === 0) return;
 
-// Change slides every 5 seconds
-setInterval(showNextSlide, 5000); // 5000 milliseconds = 5 seconds
+        function showNextSlide() {
+            // Hide the current slide
+            slides[currentSlide].style.display = "none";
+            
+            // Move to the next slide
+            currentSlide = (currentSlide + 1) % totalSlides;
+            
+            // Show the next slide
+            slides[currentSlide].style.display = "block";
+        }
+
+        // Initially hide all slides except the first
+        slides.forEach((slide, index) => {
+            slide.style.display = index === 0 ? "block" : "none";
+        });
+
+        // Change slides every 5 seconds
+        setInterval(showNextSlide, 5000);
+    });
+})();

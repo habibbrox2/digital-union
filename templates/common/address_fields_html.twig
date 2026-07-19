@@ -1,0 +1,210 @@
+{# common/address_fields_html.twig — HTML fields only (no bottom script)
+   Converted to 4-column Bangladesh govt-style layout #}
+
+{% set govt_label = 'col-lg-2 col-md-3 col-12' %}
+{% set govt_input = 'col-lg-4 col-md-3 col-12' %}
+
+{% if reuse_data is defined and reuse_data[prefix~'_address_id'] is defined and reuse_data[prefix~'_address_id'] %}
+<script>
+$(document).ready(function() {
+    var addressId = '{{ reuse_data[prefix~'_address_id'] }}';
+    if (addressId) {
+        $.ajax({
+            url: '/api/address/' + addressId,
+            method: 'GET',
+            dataType: 'json',
+            success: function(addr) {
+                // Fill all address fields — map data keys to actual element IDs
+                var fieldMap = {
+                    'village_en': 'village_en',
+                    'village_bn': 'village_bn',
+                    'rbs_en': 'rbs_en',
+                    'rbs_bn': 'rbs_bn',
+                    'holding_no': 'holding_no',
+                    'ward_no': 'ward_no',
+                    'district_en': 'district_id',  // actual ID (not 'district_en')
+                    'district_bn': 'district',      // actual ID (not 'district_bn')
+                    'upazila_en': 'upazila_id',     // actual ID (not 'upazila_en')
+                    'upazila_bn': 'upazila',        // actual ID (not 'upazila_bn')
+                    'union_en': 'union_id',         // actual ID (not 'union_en')
+                    'union_bn': 'union',            // actual ID (not 'union_bn')
+                    'postoffice_en': 'postoffice_en',
+                    'postoffice_bn': 'postoffice_bn'
+                };
+                for (var dataKey in fieldMap) {
+                    if (!fieldMap.hasOwnProperty(dataKey)) continue;
+                    var el = $("#{{ prefix }}_" + fieldMap[dataKey]);
+                    if (el.length && addr[dataKey] !== undefined) {
+                        el.val(addr[dataKey]);
+                        // Highlight prefilled fields
+                        el.css('background-color', '#d4edda');
+                        el.css('border', '2px solid #c3e6cb');
+                    }
+                }
+                // Set dropdowns and trigger change for cascading
+                if (addr['district_en']) {
+                    $("#{{ prefix }}_district_id").val(addr['district_en']).trigger('change');
+                }
+                if (addr['upazila_en']) {
+                    setTimeout(function() {
+                        $("#{{ prefix }}_upazila_id").val(addr['upazila_en']).trigger('change');
+                    }, 500);
+                }
+                if (addr['union_en']) {
+                    setTimeout(function() {
+                        $("#{{ prefix }}_union_id").val(addr['union_en']).trigger('change');
+                    }, 1000);
+                }
+            }
+        });
+    }
+});
+</script>
+{% endif %}
+
+{# === Village/Mahalla (EN + BN pair) === #}
+<div class="row align-items-center mb-3 gx-4 gy-3">
+    <div class="{{ govt_label }}">
+        <label for="{{ prefix }}_village_en" class="form-label mb-0">গ্রাম/মহল্লা (ইংরেজিতে)</label>
+    </div>
+    <div class="{{ govt_input }}">
+        <input type="text" name="{{ prefix }}_village_en" id="{{ prefix }}_village_en" class="form-control"
+               placeholder="Enter village or neighborhood (English)"
+               value="{{ reuse_data[prefix~'_village_en']|default('') }}">
+    </div>
+    <div class="{{ govt_label }}">
+        <label for="{{ prefix }}_village_bn" class="form-label mb-0">গ্রাম/মহল্লা (বাংলায়) <span class="text-danger">*</span></label>
+    </div>
+    <div class="{{ govt_input }}">
+        <input type="text" name="{{ prefix }}_village_bn" id="{{ prefix }}_village_bn" class="form-control"
+               placeholder="গ্রামের নাম/মহল্লা লিখুন"
+               value="{{ reuse_data[prefix~'_village_bn']|default('') }}">
+    </div>
+</div>
+
+{# === Road/Block/Sector (EN + BN pair) === #}
+<div class="row align-items-center mb-3 gx-4 gy-3">
+    <div class="{{ govt_label }}">
+        <label for="{{ prefix }}_rbs_en" class="form-label mb-0">রোড/ব্লক/সেক্টর (ইংরেজিতে)</label>
+    </div>
+    <div class="{{ govt_input }}">
+        <input type="text" name="{{ prefix }}_rbs_en" id="{{ prefix }}_rbs_en" class="form-control"
+               placeholder="Enter road/block/sector (English)"
+               value="{{ reuse_data[prefix~'_rbs_en']|default('') }}">
+    </div>
+    <div class="{{ govt_label }}">
+        <label for="{{ prefix }}_rbs_bn" class="form-label mb-0">রোড/ব্লক/সেক্টর (বাংলায়)</label>
+    </div>
+    <div class="{{ govt_input }}">
+        <input type="text" name="{{ prefix }}_rbs_bn" id="{{ prefix }}_rbs_bn" class="form-control"
+               placeholder="রোড/ব্লক/সেক্টর লিখুন"
+               value="{{ reuse_data[prefix~'_rbs_bn']|default('') }}">
+    </div>
+</div>
+
+{# === Holding No + Ward No (paired together) === #}
+<div class="row align-items-center mb-3 gx-4 gy-3">
+    <div class="{{ govt_label }}">
+        <label for="{{ prefix }}_holding_no" class="form-label mb-0">হোল্ডিং নং</label>
+    </div>
+    <div class="{{ govt_input }}">
+        <input type="text" name="{{ prefix }}_holding_no" id="{{ prefix }}_holding_no" class="form-control"
+               placeholder="হোল্ডিং নম্বর লিখুন"
+               value="{{ reuse_data[prefix~'_holding_no']|default('') }}">
+    </div>
+    <div class="{{ govt_label }}">
+        <label for="{{ prefix }}_ward_no" class="form-label mb-0">ওয়ার্ড নং <span class="text-danger">*</span></label>
+    </div>
+    <div class="{{ govt_input }}">
+        <select name="{{ prefix }}_ward_no" id="{{ prefix }}_ward_no" class="form-control" required>
+            <option value="">ওয়ার্ড নির্বাচন করুন</option>
+            {% for i in 1..9 %}<option value="{{ i }}" {% if reuse_data[prefix~'_ward_no'] == i %}selected{% endif %}>{{ i }}</option>{% endfor %}
+        </select>
+    </div>
+</div>
+
+{# === District (EN select + BN text) === #}
+<div class="row align-items-center mb-3 gx-4 gy-3">
+    <div class="{{ govt_label }}">
+        <label for="{{ prefix }}_district_id" class="form-label mb-0">জেলা (ইংরেজিতে) <span class="text-danger">*</span></label>
+    </div>
+    <div class="{{ govt_input }}">
+        <select name="{{ prefix }}_district_en" id="{{ prefix }}_district_id" class="form-control" required
+                data-selected="{{ reuse_data[prefix~'_district_en']|default('') }}">
+            <option value="">জেলা নির্বাচন করুন</option>
+        </select>
+    </div>
+    <div class="{{ govt_label }}">
+        <label for="{{ prefix }}_district" class="form-label mb-0">জেলা (বাংলায়)</label>
+    </div>
+    <div class="{{ govt_input }}">
+        <input type="text" name="{{ prefix }}_district_bn" id="{{ prefix }}_district" class="form-control"
+               placeholder="স্বয়ংক্রিয়ভাবে পূরণ হবে"
+               value="{{ reuse_data[prefix~'_district_bn']|default('') }}">
+    </div>
+</div>
+
+{# === Upazila/Thana (EN select + BN text) === #}
+<div class="row align-items-center mb-3 gx-4 gy-3">
+    <div class="{{ govt_label }}">
+        <label for="{{ prefix }}_upazila_id" class="form-label mb-0">উপজেলা/থানা (ইংরেজিতে) <span class="text-danger">*</span></label>
+    </div>
+    <div class="{{ govt_input }}">
+        <select name="{{ prefix }}_upazila_en" id="{{ prefix }}_upazila_id" class="form-control" required
+                data-selected="{{ reuse_data[prefix~'_upazila_en']|default('') }}">
+            <option value="">উপজেলা নির্বাচন করুন</option>
+        </select>
+    </div>
+    <div class="{{ govt_label }}">
+        <label for="{{ prefix }}_upazila" class="form-label mb-0">উপজেলা/থানা (বাংলায়)</label>
+    </div>
+    <div class="{{ govt_input }}">
+        <input type="text" name="{{ prefix }}_upazila_bn" id="{{ prefix }}_upazila" class="form-control"
+               placeholder="স্বয়ংক্রিয়ভাবে পূরণ হবে"
+               value="{{ reuse_data[prefix~'_upazila_bn']|default('') }}">
+    </div>
+</div>
+
+{# === Union (EN select + BN text) === #}
+<div class="row align-items-center mb-3 gx-4 gy-3">
+    <div class="{{ govt_label }}">
+        <label for="{{ prefix }}_union_id" class="form-label mb-0">ইউনিয়ন (ইংরেজিতে) <span class="text-danger">*</span></label>
+    </div>
+    <div class="{{ govt_input }}">
+        <select name="{{ prefix }}_union_en" id="{{ prefix }}_union_id" class="form-control"
+                data-selected="{{ reuse_data[prefix~'_union_en']|default('') }}">
+            <option value="">ইউনিয়ন নির্বাচন করুন</option>
+        </select>
+    </div>
+    <div class="{{ govt_label }}">
+        <label for="{{ prefix }}_union" class="form-label mb-0">ইউনিয়ন (বাংলায়)</label>
+    </div>
+    <div class="{{ govt_input }}">
+        <input type="text" name="{{ prefix }}_union_bn" id="{{ prefix }}_union" class="form-control"
+               placeholder="স্বয়ংক্রিয়ভাবে পূরণ হবে"
+               value="{{ reuse_data[prefix~'_union_bn']|default('') }}">
+    </div>
+</div>
+
+{# === Post Office (EN autocomplete + BN text) === #}
+<div class="row align-items-center mb-3 gx-4 gy-3">
+    <div class="{{ govt_label }}">
+        <label for="{{ prefix }}_postoffice_en" class="form-label mb-0">পোষ্ট অফিস (ইংরেজিতে)</label>
+    </div>
+    <div class="{{ govt_input }}">
+        <div class="autocomplete-wrapper">
+            <input type="text" name="{{ prefix }}_postoffice_en" id="{{ prefix }}_postoffice_en"
+                   class="form-control" placeholder="পোষ্ট অফিস লিখুন বা নির্বাচন করুন"
+                   value="{{ reuse_data[prefix~'_postoffice_en']|default('') }}" autocomplete="off">
+            <ul class="autocomplete-dropdown postoffice-dropdown" id="{{ prefix }}_postoffice_list"></ul>
+        </div>
+    </div>
+    <div class="{{ govt_label }}">
+        <label for="{{ prefix }}_postoffice_bn" class="form-label mb-0">পোষ্ট অফিস (বাংলায়) <span class="text-danger">*</span></label>
+    </div>
+    <div class="{{ govt_input }}">
+        <input type="text" name="{{ prefix }}_postoffice_bn" id="{{ prefix }}_postoffice_bn"
+               class="form-control" placeholder="পোষ্ট অফিসের নাম লিখুন" required
+               value="{{ reuse_data[prefix~'_postoffice_bn']|default('') }}">
+    </div>
+</div>

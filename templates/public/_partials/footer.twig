@@ -1,0 +1,80 @@
+<footer class="footer-bg py-5 border-top mt-5">
+    <div class="container">
+        <div class="row g-4">
+            
+            <div class="col-md-4 col-sm-6">
+                <div class="footer-item d-flex align-items-start text-start">
+                    <img src="{{ url }}/assets/images/union_logo.png" alt="Logo" class="footer-logo-small me-3" style="width: 50px; height: auto;">
+                    <div class="footer-text">
+                        <p class="mb-1 text-light fw-bold">পরিকল্পনা ও বাস্তবায়নে:</p>
+                        <p class="mb-0 text-light opacity-75">জেলা প্রশাসন, ঢাকা।</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4 col-sm-6">
+                <div class="footer-item d-flex align-items-start text-start">
+                    <img src="{{ url }}/assets/images/union_logo.png" alt="Logo" class="footer-logo-small me-3" style="width: 50px; height: auto;">
+                    <div class="footer-text">
+                        <p class="mb-1 text-light fw-bold">ব্যবস্থাপনা ও তত্ত্বাবধানে:</p>
+                        <p class="mb-0 text-light opacity-75">জেলা প্রশাসন, ঢাকা।</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4 col-sm-12">
+                <div class="footer-item d-flex align-items-start text-start">
+                    <a href="http://innovationit.com.bd/" target="_blank" class="me-3">
+                        <img src="{{ url }}/assets/images/logo_iit.png" alt="Innovation IT" class="footer-logo-large" style="width: 65px; height: auto;">
+                    </a>
+                    <div class="footer-text">
+                        <p class="mb-1 text-light fw-bold">কারিগরি সহায়তায়:</p>
+                        <p class="mb-0">
+                            <a href="http://innovationit.com.bd/" target="_blank" class="text-decoration-none text-light opacity-75">ইনোভেশন আইটি</a>
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</footer>
+
+<section class="bg-white py-5 border-top">
+    <div class="container">
+        <div class="partner">
+            <div class="partner-text text-center mb-4">
+                <h4 class="partner-title d-inline-block px-3">মোবাইল অ্যাপ্লিকেশন</h4>
+                <div class="partner-underline mx-auto"></div>
+            </div>
+
+            <div class="row align-items-center g-3">
+                <div class="col-md-8">
+                    <div class="row row-cols-3 row-cols-md-5 g-2 text-center">
+                        {% for i in 1..5 %}
+                        <div class="col">
+                            <div class="app-screenshot-card">
+                                <img src="{{ url }}/assets/images/apps/app{{ i }}.png" 
+                                     class="img-fluid rounded shadow-sm app-thumb" 
+                                     alt="App Screen {{ i }}">
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="col-md-4 text-center mt-4 mt-md-0">
+                    <div class="download-box p-3 border rounded bg-light">
+                        <h5 class="mb-3 fw-bold" style="font-size: 16px;">ডাউনলোড করতে গুগল প্লেতে ক্লিক করুন</h5>
+                        <a href="https://play.google.com/store/apps/details?id=com.dhaka.smartUnion" target="_blank">
+                            <img src="{{ url }}/assets/images/apps/playstore.png" 
+                                 class="img-fluid playstore-btn" 
+                                 style="max-width: 180px;" 
+                                 alt="Google Play Store">
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>

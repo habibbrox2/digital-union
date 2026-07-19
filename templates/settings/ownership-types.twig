@@ -6,68 +6,793 @@
 
 {% block content %}
 {% include 'components/sweetAlert.twig' %}
-{% if not is_logged_in %}
-    {% set redirect = "<script>window.location.href='/#';</script>" %}
-    {{ redirect|raw }}
-{% endif %}
 
-<div class="container mt-4">
-    <h3>{{ header_title }}</h3>
-    {% if status %}
-        <div class="alert alert-{{ status == 'success' ? 'success' : 'danger' }}">
-            {{ message }}
-        </div>
-    {% endif %}
+<div class="container-fluid px-0">
 
-    <!-- মালিকানা প্রকার যোগ করুন ফর্ম -->
-    <form method="post" action="" class="mb-4">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-        
-        <div class="form-group">
-            <label for="ownership_name_bn">মালিকানার নাম (বাংলা)</label>
-            <input type="text" class="form-control" id="ownership_name_bn" name="ownership_name_bn" placeholder="মালিকানার নাম লিখুন" required>
+    <!-- Stats Banner -->
+    <div class="row g-3 mb-4 stats-banner">
+        <div class="col-lg-4 col-md-6">
+            <div class="stat-card stat-card-primary">
+                <div class="stat-icon">
+                    <i class="bi bi-diagram-3"></i>
+                </div>
+                <div class="stat-info">
+                    <span class="stat-label">মোট মালিকানা প্রকার</span>
+                    <span class="stat-value" id="totalCountDisplay">{{ ownershipTypes|length }}</span>
+                </div>
+            </div>
         </div>
-        
-        <div class="form-group">
-            <label for="ownership_name_en">মালিকানার নাম (ইংরেজি)</label>
-            <input type="text" class="form-control" id="ownership_name_en" name="ownership_name_en" placeholder="Ownership name in English">
+        <div class="col-lg-4 col-md-6">
+            <div class="stat-card stat-card-success">
+                <div class="stat-icon">
+                    <i class="bi bi-plus-circle"></i>
+                </div>
+                <div class="stat-info">
+                    <span class="stat-label">সর্বশেষ যোগ</span>
+                    <span class="stat-value" id="lastAddedDisplay">
+                        {% if ownershipTypes|length > 0 %}
+                            {{ (ownershipTypes|first).ownership_name_bn }}
+                        {% else %}
+                            —
+                        {% endif %}
+                    </span>
+                </div>
+            </div>
         </div>
-        
-        <button type="submit" class="btn btn-primary">মালিকানা প্রকার যোগ করুন</button>
-    </form>
-    
-    <table class="table table-bordered">
-        <thead>
-            <tr>
-                <th>আইডি</th>
-                <th>মালিকানার নাম (বাংলা)</th>
-                <th>মালিকানার নাম (ইংরেজি)</th>
-                <th>অ্যাকশন</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for ownership in ownershipTypes %}
-            <tr>
-                <td>{{ ownership.id }}</td>
-                <td>{{ ownership.ownership_name_bn }}</td>
-                <td>{{ ownership.ownership_name_en }}</td>
-                <td>
-                    <!-- সম্পাদনা বোতাম -->
-                    <a href="/settings/ownership-types/edit/{{ ownership.id }}" class="d-inline btn btn-warning btn-sm">
-                            <i class="bi bi-pencil"></i> সম্পাদনা
-                    </a>
-                    <!-- মুছুন বোতাম -->
-                    <form method="post" action="/settings/ownership-types/delete" class="d-inline">
-                        <input type="hidden" name="id" value="{{ ownership.id }}">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                        <button type="submit" class="btn btn-danger btn-sm">
-                            <i class="bi bi-trash"></i> মুছুন
-                        </button>
-                    </form>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+        <div class="col-lg-4 col-md-6">
+            <div class="stat-card stat-card-info">
+                <div class="stat-icon">
+                    <i class="bi bi-search"></i>
+                </div>
+                <div class="stat-info">
+                    <span class="stat-label">বর্তমানে দৃশ্যমান</span>
+                    <span class="stat-value"><span id="visibleCount">0</span> / <span id="totalCount">{{ ownershipTypes|length }}</span></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toolbar: Header + Add Button -->
+    <div class="d-flex flex-wrap align-items-center justify-content-between mb-3 gap-2">
+        <div>
+            <h4 class="mb-0 fw-bold" style="color: #1e293b;">
+                <i class="bi bi-diagram-3 me-2 text-primary"></i>মালিকানা প্রকার তালিকা
+            </h4>
+        </div>
+        <button class="btn btn-primary rounded-pill px-4 shadow-sm" id="toggleAddForm" type="button">
+            <i class="bi bi-plus-circle me-1"></i> <span id="toggleAddText">নতুন যোগ করুন</span>
+        </button>
+    </div>
+
+    <!-- Add Ownership Type Form (Collapsible Card) -->
+    <div class="section-card mb-4" id="addFormCard" style="display: none;">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+            <h5 class="section-title mb-0" style="border-bottom: none; padding-bottom: 0;">
+                <i class="bi bi-plus-square-dotted text-primary me-2"></i>
+                <span id="formTitle">নতুন মালিকানা প্রকার</span>
+            </h5>
+            <button type="button" class="btn btn-sm btn-outline-secondary rounded-circle" id="closeAddForm" style="width: 32px; height: 32px;" title="বন্ধ করুন (Esc)">
+                <i class="bi bi-x-lg"></i>
+            </button>
+        </div>
+
+        <form id="ownershipForm" method="post">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <input type="hidden" name="id" id="editId" value="">
+
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label for="ownership_name_bn" class="form-label fw-semibold small text-secondary">
+                        মালিকানার নাম (বাংলা) <span class="text-danger">*</span>
+                    </label>
+                    <div class="input-group input-group-enhanced">
+                        <span class="input-group-text"><i class="bi bi-pencil"></i></span>
+                        <input type="text" class="form-control input-enhanced" id="ownership_name_bn" name="ownership_name_bn"
+                               placeholder="যেমন: একক মালিকানা" required autocomplete="off">
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <label for="ownership_name_en" class="form-label fw-semibold small text-secondary">
+                        মালিকানার নাম (ইংরেজি) <span class="text-danger">*</span>
+                    </label>
+                    <div class="input-group input-group-enhanced">
+                        <span class="input-group-text"><i class="bi bi-globe"></i></span>
+                        <input type="text" class="form-control input-enhanced" id="ownership_name_en" name="ownership_name_en"
+                               placeholder="e.g. Sole Proprietorship" required autocomplete="off">
+                    </div>
+                </div>
+            </div>
+
+            <div class="d-flex gap-2 mt-4 pt-3 border-top">
+                <button type="submit" class="btn btn-primary rounded-pill px-4 shadow-sm" id="formSubmitBtn">
+                    <i class="bi bi-floppy me-1"></i> <span id="submitBtnText">সংরক্ষণ করুন</span>
+                </button>
+                <button type="button" class="btn btn-outline-secondary rounded-pill px-3" id="cancelFormBtn">
+                    <i class="bi bi-x-circle me-1"></i> বাতিল
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Toolbar: Search + Per Page -->
+    <div class="section-card mb-3 p-3">
+        <div class="row g-2 align-items-center">
+            <div class="col-md-5">
+                <div class="search-wrapper position-relative">
+                    <i class="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-3 text-muted" style="font-size: 0.9rem; z-index: 5;"></i>
+                    <input type="text" id="searchInput" class="form-control ps-5 pe-5 input-enhanced rounded-pill"
+                           placeholder="অনুসন্ধান করুন..." autocomplete="off">
+                    <button type="button" id="searchClearBtn"
+                            class="btn position-absolute top-50 end-0 translate-middle-y me-1 border-0 text-muted"
+                            style="display: none; font-size: 0.8rem; z-index: 5;" title="সার্চ পরিষ্কার করুন">
+                        <i class="bi bi-x-circle-fill"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="col-md-4 ms-auto">
+                <div class="d-flex align-items-center gap-2 justify-content-md-end flex-wrap">
+                    <label for="itemsPerPage" class="text-nowrap small text-muted fw-semibold">প্রতি পৃষ্ঠা:</label>
+                    <select id="itemsPerPage" class="form-select form-select-sm w-auto rounded-pill input-enhanced">
+                        <option value="5">৫টি</option>
+                        <option value="10" selected>১০টি</option>
+                        <option value="20">২০টি</option>
+                        <option value="50">৫০টি</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Table -->
+    <div class="section-card p-0 overflow-hidden">
+        <div class="table-responsive" style="max-height: 65vh;">
+            <table class="table table-enhanced table-hover align-middle mb-0" id="ownershipTable">
+                <thead class="table-light" style="position: sticky; top: 0; z-index: 2;">
+                    <tr>
+                        <th data-sort="number" class="ps-4" style="width: 60px; min-width: 60px;">
+                            <div class="d-flex align-items-center gap-1">
+                                আইডি <i class="bi bi-arrow-down-up ms-1" style="font-size: 0.7rem; opacity: 0.5;"></i>
+                            </div>
+                        </th>
+                        <th data-sort="string">নাম (বাংলা) <i class="bi bi-arrow-down-up ms-1" style="font-size: 0.7rem; opacity: 0.5;"></i></th>
+                        <th data-sort="string">নাম (ইংরেজি) <i class="bi bi-arrow-down-up ms-1" style="font-size: 0.7rem; opacity: 0.5;"></i></th>
+                        <th class="text-center pe-4" style="width: 140px; min-width: 140px;">অ্যাকশন</th>
+                    </tr>
+                </thead>
+                <tbody id="ownershipTableBody">
+                    {% for ownership in ownershipTypes %}
+                    <tr class="table-row-appear" data-id="{{ ownership.id }}" data-name-bn="{{ ownership.ownership_name_bn }}" data-name-en="{{ ownership.ownership_name_en }}">
+                        <td class="ps-4">
+                            <span class="badge bg-light text-dark rounded-pill">#{{ ownership.id }}</span>
+                        </td>
+                        <td class="fw-medium">{{ ownership.ownership_name_bn }}</td>
+                        <td class="text-secondary">{{ ownership.ownership_name_en }}</td>
+                        <td class="text-center pe-4">
+                            <div class="d-flex gap-1 justify-content-center">
+                                <button type="button" class="btn btn-sm btn-outline-warning rounded-pill px-3 action-btn edit-btn"
+                                        title="সম্পাদনা" data-id="{{ ownership.id }}"
+                                        data-name-bn="{{ ownership.ownership_name_bn }}"
+                                        data-name-en="{{ ownership.ownership_name_en }}">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-3 action-btn delete-btn"
+                                        title="মুছুন" data-id="{{ ownership.id }}"
+                                        data-name-bn="{{ ownership.ownership_name_bn }}">
+                                    <i class="bi bi-trash3"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr id="emptyRow">
+                        <td colspan="4" class="text-center py-5">
+                            <div class="empty-state">
+                                <div class="empty-icon">
+                                    <i class="bi bi-inbox"></i>
+                                </div>
+                                <h6 class="fw-bold mt-3 mb-1">কোনও মালিকানা প্রকার পাওয়া যায়নি</h6>
+                                <p class="text-muted small mb-0">উপরে "নতুন যোগ করুন" বাটনে ক্লিক করে প্রথম প্রকার যোগ করুন</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Pagination -->
+    <div class="d-flex flex-wrap align-items-center justify-content-between mt-3 px-1 gap-2">
+        <div class="d-flex align-items-center gap-2">
+            <button id="prevPage" class="btn btn-outline-primary btn-sm rounded-pill px-3" disabled>
+                <i class="bi bi-chevron-left me-1"></i> পূর্ববর্তী
+            </button>
+            <div id="pageNumbers" class="d-flex gap-1"></div>
+            <button id="nextPage" class="btn btn-outline-primary btn-sm rounded-pill px-3">
+                পরবর্তী <i class="bi bi-chevron-right ms-1"></i>
+            </button>
+        </div>
+        <div id="paginationInfo" class="text-muted small fw-medium px-3 py-1 rounded-pill bg-light"></div>
+    </div>
+
 </div>
+
+<style>
+/* ─── Stats Banner ─── */
+.stats-banner .stat-card {
+    background: #fff;
+    border-radius: 16px;
+    padding: 1.25rem 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    border: 1px solid rgba(0,0,0,0.06);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+.stats-banner .stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 3px;
+    opacity: 0.3;
+    transition: opacity 0.3s ease;
+}
+.stats-banner .stat-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 32px rgba(0,0,0,0.08);
+}
+.stats-banner .stat-card:hover::before { opacity: 1; }
+.stat-card-primary::before { background: linear-gradient(90deg, #008B8B, #00B4B4); }
+.stat-card-success::before { background: linear-gradient(90deg, #28A745, #5DD475); }
+.stat-card-info::before { background: linear-gradient(90deg, #0D6EFD, #5B9CFF); }
+
+.stat-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+    flex-shrink: 0;
+    transition: all 0.3s ease;
+}
+.stat-card-primary .stat-icon { background: rgba(0,139,139,0.1); color: #008B8B; }
+.stat-card-success .stat-icon { background: rgba(40,167,69,0.1); color: #28A745; }
+.stat-card-info .stat-icon { background: rgba(13,110,253,0.1); color: #0D6EFD; }
+.stat-card:hover .stat-icon { transform: scale(1.1) rotate(-5deg); }
+
+.stat-info { display: flex; flex-direction: column; }
+.stat-label { font-size: 0.78rem; color: #6c757d; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; }
+.stat-value { font-size: 1.05rem; font-weight: 700; color: #1e293b; }
+
+/* ─── Table ─── */
+.table-row-appear {
+    opacity: 0;
+    transform: translateY(12px);
+    animation: rowEntrance 0.35s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+@keyframes rowEntrance {
+    to { opacity: 1; transform: translateY(0); }
+}
+.table-enhanced thead th {
+    background: #f1f5f9;
+    border-bottom: 2px solid #e2e8f0;
+    text-transform: uppercase;
+    font-size: 0.72rem;
+    letter-spacing: 0.3px;
+    padding-top: 12px;
+    padding-bottom: 12px;
+    user-select: none;
+}
+.table-enhanced thead th:hover { background: #e9edf3; }
+.table-enhanced tbody tr { transition: background 0.15s ease; }
+.table-enhanced tbody tr:hover {
+    background: rgba(0, 139, 139, 0.04) !important;
+}
+th[data-sort] { cursor: pointer; }
+.table-enhanced tbody tr.row-deleting {
+    animation: rowDelete 0.35s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+@keyframes rowDelete {
+    to { opacity: 0; transform: translateX(30px) scale(0.95); height: 0; padding: 0; }
+}
+
+/* ─── Input Groups ─── */
+.input-group-enhanced .input-group-text {
+    background: #f8f9fa;
+    border: 1px solid #ced4da;
+    border-right: none;
+    color: #6c757d;
+    transition: all 0.25s ease;
+}
+.input-group-enhanced .input-enhanced {
+    border-left: none;
+}
+.input-group-enhanced:focus-within .input-group-text {
+    border-color: #008B8B;
+    color: #008B8B;
+}
+
+/* ─── Actions ─── */
+.action-btn {
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+.action-btn::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: currentColor;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+.action-btn:hover::after { opacity: 0.08; }
+.action-btn:active { transform: scale(0.92); }
+
+/* ─── Add Form ─── */
+#addFormCard {
+    animation: slideDown 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+@keyframes slideDown {
+    from { opacity: 0; transform: translateY(-12px) scale(0.98); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* ─── Empty State ─── */
+.empty-state .empty-icon {
+    font-size: 3rem;
+    opacity: 0.3;
+    color: #6c757d;
+    animation: emptyBounce 2s ease-in-out infinite;
+}
+@keyframes emptyBounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+}
+
+/* ─── Pagination ─── */
+.page-num-btn {
+    min-width: 34px; height: 34px;
+    padding: 0 10px;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    border: 1px solid #dee2e6;
+    background: white;
+    color: #495057;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+.page-num-btn:hover { background: #e9ecef; border-color: #ced4da; }
+.page-num-btn.active {
+    background: #008B8B;
+    color: white;
+    border-color: #008B8B;
+    box-shadow: 0 2px 8px rgba(0, 139, 139, 0.3);
+}
+.page-num-btn.active:hover { background: #007A7A; }
+.page-num-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* ─── Responsive ─── */
+@media (max-width: 768px) {
+    .table-responsive { max-height: none !important; }
+    .section-card { padding: 1rem !important; }
+}
+</style>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    // ─── DOM refs ───
+    const table = document.getElementById("ownershipTable");
+    const tbody = document.getElementById("ownershipTableBody");
+    const allDataRows = Array.from(tbody.querySelectorAll("tr.table-row-appear"));
+    const searchInput = document.getElementById("searchInput");
+    const searchClearBtn = document.getElementById("searchClearBtn");
+    const itemsPerPageSelect = document.getElementById("itemsPerPage");
+    const prevBtn = document.getElementById("prevPage");
+    const nextBtn = document.getElementById("nextPage");
+    const paginationInfo = document.getElementById("paginationInfo");
+    const pageNumbers = document.getElementById("pageNumbers");
+    const visibleCount = document.getElementById("visibleCount");
+    const totalCountDisplay = document.getElementById("totalCountDisplay");
+    const totalCount = document.getElementById("totalCount");
+
+    const toggleAddForm = document.getElementById("toggleAddForm");
+    const toggleAddText = document.getElementById("toggleAddText");
+    const addFormCard = document.getElementById("addFormCard");
+    const closeAddForm = document.getElementById("closeAddForm");
+    const cancelFormBtn = document.getElementById("cancelFormBtn");
+    const ownershipForm = document.getElementById("ownershipForm");
+    const formTitle = document.getElementById("formTitle");
+    const submitBtnText = document.getElementById("submitBtnText");
+    const formSubmitBtn = document.getElementById("formSubmitBtn");
+    const editIdInput = document.getElementById("editId");
+    const nameBnInput = document.getElementById("ownership_name_bn");
+    const nameEnInput = document.getElementById("ownership_name_en");
+
+    let currentPage = 1;
+    let itemsPerPage = parseInt(itemsPerPageSelect.value);
+    let filteredRows = [...allDataRows];
+    let sortDir = {};
+    let sortIndex = -1;
+
+    // ─── Animate initial rows ───
+    allDataRows.forEach((row, i) => { row.style.animationDelay = `${i * 25}ms`; });
+    updateVisibleCount();
+
+    // ─── Toggle Add / Edit form ───
+    function openForm(mode = "add", data = {}) {
+        addFormCard.style.display = "block";
+        if (mode === "add") {
+            formTitle.textContent = "নতুন মালিকানা প্রকার";
+            submitBtnText.textContent = "সংরক্ষণ করুন";
+            editIdInput.value = "";
+            ownershipForm.reset();
+            formSubmitBtn.className = "btn btn-primary rounded-pill px-4 shadow-sm";
+            formSubmitBtn.querySelector("i").className = "bi bi-floppy me-1";
+        } else {
+            formTitle.textContent = "মালিকানা প্রকার সম্পাদনা";
+            submitBtnText.textContent = "আপডেট করুন";
+            editIdInput.value = data.id;
+            nameBnInput.value = data.nameBn;
+            nameEnInput.value = data.nameEn;
+            formSubmitBtn.className = "btn btn-warning rounded-pill px-4 shadow-sm";
+            formSubmitBtn.querySelector("i").className = "bi bi-pencil me-1";
+        }
+        nameBnInput.focus();
+        toggleAddText.textContent = "বন্ধ করুন";
+        toggleAddForm.innerHTML = '<i class="bi bi-dash-circle me-1"></i> বন্ধ করুন';
+        toggleAddForm.className = "btn btn-primary rounded-pill px-4 shadow-sm";
+    }
+
+    function closeForm() {
+        addFormCard.style.display = "none";
+        ownershipForm.reset();
+        editIdInput.value = "";
+        toggleAddText.textContent = "নতুন যোগ করুন";
+        toggleAddForm.innerHTML = '<i class="bi bi-plus-circle me-1"></i> নতুন যোগ করুন';
+        toggleAddForm.className = "btn btn-primary rounded-pill px-4 shadow-sm";
+    }
+
+    toggleAddForm.addEventListener("click", () => {
+        if (addFormCard.style.display === "none" || addFormCard.style.display === "") {
+            openForm("add");
+        } else {
+            closeForm();
+        }
+    });
+    closeAddForm.addEventListener("click", closeForm);
+    cancelFormBtn.addEventListener("click", closeForm);
+
+    // Keyboard shortcut: Escape to close form
+    document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape" && addFormCard.style.display === "block") {
+            closeForm();
+        }
+    });
+
+    // ─── Event Delegation: Edit & Delete buttons on tbody ───
+    // This avoids the "cloned DOM elements lose their event listeners" bug.
+    tbody.addEventListener("click", (e) => {
+        const editBtn = e.target.closest(".edit-btn");
+        if (editBtn) {
+            openForm("edit", {
+                id: editBtn.dataset.id,
+                nameBn: editBtn.dataset.nameBn,
+                nameEn: editBtn.dataset.nameEn
+            });
+            return;
+        }
+
+        const delBtn = e.target.closest(".delete-btn");
+        if (delBtn) {
+            const id = delBtn.dataset.id;
+            const nameBn = delBtn.dataset.nameBn;
+
+            Swal.fire({
+                title: 'নিশ্চিত করুন',
+                html: `আপনি কি "<strong>${nameBn}</strong>" মুছে ফেলতে চান?<br><small class="text-muted">এই প্রকারটি পুনরুদ্ধার করা যাবে না।</small>`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#dc3545',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: '<i class="bi bi-trash3 me-1"></i> হ্যাঁ, মুছুন',
+                cancelButtonText: '<i class="bi bi-x-circle me-1"></i> বাতিল',
+                reverseButtons: true,
+                customClass: {
+                    confirmButton: 'btn btn-danger rounded-pill px-4',
+                    cancelButton: 'btn btn-outline-secondary rounded-pill px-4'
+                },
+                buttonsStyling: false,
+                showLoaderOnConfirm: true,
+                preConfirm: () => {
+                    const fd = new FormData();
+                    const csrf = document.querySelector('input[name="csrf_token"]')?.value || '';
+                    fd.append('csrf_token', csrf);
+                    return fetch(`/settings/ownership-types/delete/${id}`, {
+                        method: 'POST',
+                        body: fd
+                    }).then(r => r.json()).then(d => {
+                        if (d.status !== 'success') throw new Error(d.message || 'মুছতে ব্যর্থ');
+                        return d;
+                    }).catch(e => { throw new Error(e.message || 'Network error'); });
+                }
+            }).then(result => {
+                if (result.isConfirmed) {
+                    const row = document.querySelector(`tr[data-id="${id}"]`);
+                    if (row) {
+                        row.classList.add("row-deleting");
+                        setTimeout(() => {
+                            row.remove();
+                            const idx = allDataRows.indexOf(row);
+                            if (idx > -1) allDataRows.splice(idx, 1);
+                            filteredRows = [...allDataRows];
+                            currentPage = 1;
+                            renderTable();
+                            updateStats();
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'মুছে ফেলা হয়েছে',
+                                text: `"${nameBn}" সফলভাবে মুছে ফেলা হয়েছে।`,
+                                timer: 2000,
+                                showConfirmButton: false,
+                                toast: true,
+                                position: 'top-end'
+                            });
+                        }, 350);
+                    }
+                }
+            });
+        }
+    });
+
+    // ─── AJAX Form Submit (using FormData for CSRF compatibility) ───
+    ownershipForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const id = editIdInput.value;
+        const nameBn = nameBnInput.value.trim();
+        const nameEn = nameEnInput.value.trim();
+        if (!nameBn || !nameEn) {
+            Swal.fire({ icon: 'warning', title: 'উভয় ক্ষেত্র পূরণ করুন', timer: 2000, showConfirmButton: false, toast: true, position: 'top-end' });
+            return;
+        }
+
+        formSubmitBtn.disabled = true;
+        formSubmitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> সংরক্ষণ করা হচ্ছে...';
+
+        try {
+            const fd = new FormData();
+            fd.append('ownership_name_bn', nameBn);
+            fd.append('ownership_name_en', nameEn);
+            const csrf = document.querySelector('input[name="csrf_token"]')?.value || '';
+            fd.append('csrf_token', csrf);
+
+            const res = await fetch(id ? `/settings/ownership-types/edit/${id}` : '/settings/ownership-types/add', {
+                method: 'POST',
+                body: fd
+            });
+            const data = await res.json();
+            if (data.status !== 'success') throw new Error(data.message || 'ব্যর্থ');
+
+            Swal.fire({
+                icon: 'success',
+                title: id ? 'আপডেট করা হয়েছে' : 'যোগ করা হয়েছে',
+                text: data.message || 'সফলভাবে সংরক্ষিত',
+                timer: 2000,
+                showConfirmButton: false,
+                toast: true,
+                position: 'top-end'
+            });
+
+            setTimeout(() => window.location.reload(), 500);
+        } catch (err) {
+            Swal.fire({
+                icon: 'error',
+                title: 'ত্রুটি',
+                text: err.message || 'সংরক্ষণ ব্যর্থ হয়েছে',
+                confirmButtonText: 'ঠিক আছে'
+            });
+        } finally {
+            formSubmitBtn.disabled = false;
+            formSubmitBtn.innerHTML = id
+                ? '<i class="bi bi-pencil me-1"></i> আপডেট করুন'
+                : '<i class="bi bi-floppy me-1"></i> সংরক্ষণ করুন';
+        }
+    });
+
+    // ─── Search ───
+    searchInput.addEventListener("input", () => {
+        const filter = searchInput.value.toLowerCase().trim();
+        searchClearBtn.style.display = filter ? "block" : "none";
+        filteredRows = allDataRows.filter(row =>
+            row.textContent.toLowerCase().includes(filter)
+        );
+        currentPage = 1;
+        renderTable();
+        animateVisibleRows();
+    });
+
+    searchClearBtn.addEventListener("click", () => {
+        searchInput.value = "";
+        searchInput.focus();
+        searchClearBtn.style.display = "none";
+        filteredRows = [...allDataRows];
+        currentPage = 1;
+        renderTable();
+        animateVisibleRows();
+    });
+
+    // ─── Sort ───
+    table.querySelectorAll("th[data-sort]").forEach((th, index) => {
+        const type = th.dataset.sort;
+        th.addEventListener("click", () => {
+            table.querySelectorAll("th[data-sort] i.bi").forEach(icon => {
+                icon.className = "bi bi-arrow-down-up ms-1";
+                icon.style.cssText = "font-size: 0.7rem; opacity: 0.5;";
+            });
+            const icon = th.querySelector("i.bi");
+            if (sortIndex === index) {
+                sortDir[index] = sortDir[index] === "asc" ? "desc" : "asc";
+            } else {
+                sortIndex = index;
+                sortDir[index] = "asc";
+            }
+            icon.className = sortDir[index] === "asc" ? "bi bi-sort-up ms-1" : "bi bi-sort-down ms-1";
+            icon.style.cssText = "font-size: 0.7rem; opacity: 1; color: #008B8B;";
+
+            filteredRows.sort((a, b) => {
+                let aText = a.children[index].textContent.trim();
+                let bText = b.children[index].textContent.trim();
+                if (type === "number") {
+                    aText = parseFloat(aText.replace(/[,/#$]/g, '')) || 0;
+                    bText = parseFloat(bText.replace(/[,/#$]/g, '')) || 0;
+                    return sortDir[index] === "asc" ? aText - bText : bText - aText;
+                } else {
+                    return sortDir[index] === "asc"
+                        ? aText.localeCompare(bText, 'bn')
+                        : bText.localeCompare(aText, 'bn');
+                }
+            });
+            currentPage = 1;
+            renderTable();
+        });
+    });
+
+    // ─── Pagination ───
+    itemsPerPageSelect.addEventListener("change", () => {
+        itemsPerPage = parseInt(itemsPerPageSelect.value);
+        currentPage = 1;
+        renderTable();
+    });
+    prevBtn.addEventListener("click", () => { if (currentPage > 1) { currentPage--; renderTable(); } });
+    nextBtn.addEventListener("click", () => {
+        const totalPages = Math.ceil(filteredRows.length / itemsPerPage);
+        if (currentPage < totalPages) { currentPage++; renderTable(); }
+    });
+
+    function renderTable() {
+        const totalPages = Math.ceil(filteredRows.length / itemsPerPage) || 1;
+        const start = (currentPage - 1) * itemsPerPage;
+        const end = start + itemsPerPage;
+        const pageRows = filteredRows.slice(start, end);
+        tbody.innerHTML = "";
+        if (pageRows.length === 0) {
+            const emptyRow = document.createElement("tr");
+            const msg = searchInput.value.trim() ? 'অনুসন্ধানের সাথে মিলে পাওয়া যায়নি' : 'কোনও মালিকানা প্রকার পাওয়া যায়নি';
+            const hint = searchInput.value.trim() ? 'অনুগ্রহ করে ভিন্ন শব্দ দিয়ে অনুসন্ধান করুন' : 'উপরে "নতুন যোগ করুন" বাটনে ক্লিক করে প্রথম প্রকার যোগ করুন';
+            emptyRow.innerHTML = `
+                <td colspan="4" class="text-center py-5">
+                    <div class="empty-state">
+                        <div class="empty-icon"><i class="bi bi-${searchInput.value.trim() ? 'search' : 'inbox'}"></i></div>
+                        <h6 class="fw-bold mt-3 mb-1">${msg}</h6>
+                        <p class="text-muted small mb-0">${hint}</p>
+                    </div>
+                </td>
+            `;
+            tbody.appendChild(emptyRow);
+        } else {
+            pageRows.forEach((row, i) => {
+                const clone = row.cloneNode(true);
+                clone.style.animation = "none";
+                clone.offsetHeight;
+                clone.style.animation = `rowEntrance 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards`;
+                clone.style.animationDelay = `${i * 20}ms`;
+                tbody.appendChild(clone);
+            });
+        }
+        updateVisibleCount();
+        paginationInfo.textContent = `পৃষ্ঠা ${currentPage} / ${totalPages} (মোট ${filteredRows.length})`;
+        prevBtn.disabled = currentPage <= 1;
+        nextBtn.disabled = currentPage >= totalPages;
+        renderPageNumbers(totalPages);
+    }
+
+    function renderPageNumbers(totalPages) {
+        pageNumbers.innerHTML = "";
+        if (totalPages <= 1) return;
+        const range = 2;
+        const startPage = Math.max(1, currentPage - range);
+        const endPage = Math.min(totalPages, currentPage + range);
+        if (startPage > 1) {
+            pageNumbers.appendChild(createPageBtn(1));
+            if (startPage > 2) {
+                const dots = document.createElement("span");
+                dots.textContent = "\u2026";
+                dots.className = "px-1 text-muted";
+                dots.style.cssText = "font-size: 0.8rem; align-self: center;";
+                pageNumbers.appendChild(dots);
+            }
+        }
+        for (let i = startPage; i <= endPage; i++) {
+            pageNumbers.appendChild(createPageBtn(i));
+        }
+        if (endPage < totalPages) {
+            if (endPage < totalPages - 1) {
+                const dots = document.createElement("span");
+                dots.textContent = "\u2026";
+                dots.className = "px-1 text-muted";
+                dots.style.cssText = "font-size: 0.8rem; align-self: center;";
+                pageNumbers.appendChild(dots);
+            }
+            pageNumbers.appendChild(createPageBtn(totalPages));
+        }
+    }
+
+    function createPageBtn(page) {
+        const btn = document.createElement("button");
+        btn.textContent = page;
+        btn.className = "page-num-btn";
+        if (page === currentPage) { btn.classList.add("active"); btn.disabled = true; }
+        btn.addEventListener("click", () => {
+            currentPage = page;
+            renderTable();
+            document.querySelector(".table-responsive")?.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+        return btn;
+    }
+
+    function updateVisibleCount() {
+        const visibleRows = tbody.querySelectorAll("tr.table-row-appear");
+        const count = visibleRows.length;
+        visibleCount.textContent = count;
+        if (totalCount) totalCount.textContent = allDataRows.length;
+        if (totalCountDisplay) totalCountDisplay.textContent = allDataRows.length;
+    }
+
+    function animateVisibleRows() {
+        const rows = tbody.querySelectorAll("tr.table-row-appear");
+        rows.forEach((row, i) => {
+            row.style.animation = "none";
+            row.offsetHeight;
+            row.style.animation = `rowEntrance 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards`;
+            row.style.animationDelay = `${i * 20}ms`;
+        });
+    }
+
+    function updateStats() {
+        const total = allDataRows.length;
+        if (totalCountDisplay) totalCountDisplay.textContent = total;
+        if (totalCount) totalCount.textContent = total;
+        const lastAdded = document.getElementById("lastAddedDisplay");
+        if (lastAdded) {
+            const first = allDataRows[0];
+            lastAdded.textContent = first ? (first.dataset.nameBn || first.children[1]?.textContent.trim() || "—") : "—";
+        }
+    }
+
+    // Initial render
+    if (allDataRows.length > 0) renderTable();
+});
+</script>
 {% endblock %}

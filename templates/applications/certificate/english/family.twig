@@ -202,7 +202,11 @@
                     </td>
                     <td width="20%">
                         {% if url is defined %}
-                            <img src="{{ url }}/assets/img/band-cross.png" alt="X" class="logo">
+                            {% if union.stamp_logo_url is defined and union.stamp_logo_url %}
+                                <img src="{{ url ~ union.stamp_logo_url }}" alt="Stamp" class="logo">
+                            {% else %}
+                                <img src="{{ url }}/assets/img/band-cross.png" alt="X" class="logo">
+                            {% endif %}
                         {% endif %}
                     </td>
                 </tr>
@@ -304,7 +308,7 @@
             </table>
 
             <!-- Warish Statement -->
-            <table><tr><td class="warish-statement"> &nbsp; &nbsp;&nbsp; &nbsp; A permanent resident of this Union. The following members are the family members of the applicant:-</td></tr></table>
+            <table><tr><td class="warish-statement"> &nbsp; &nbsp;&nbsp; &nbsp; {% if (data.resident|default('permanent')) == 'temporary' %}A temporary resident{% else %}A permanent resident{% endif %} of this Union. The following members are the family members of the applicant:-</td></tr></table>
 
             <!-- Warish List -->
             <table class="warish-table">
@@ -553,7 +557,11 @@
 
                     </td>
                     <td>
-                     <img src="{{ url }}/assets/img/band-cross.png" alt="X" class="logo">
+                        {% if union.stamp_logo_url is defined and union.stamp_logo_url %}
+                            <img src="{{ url ~ union.stamp_logo_url }}" alt="Stamp" class="logo">
+                        {% else %}
+                            <img src="{{ url }}/assets/img/band-cross.png" alt="X" class="logo">
+                        {% endif %}
                     </td>
                 </tr>
             </table>
@@ -653,7 +661,7 @@
             </table>
 
             <!-- Family Statement -->
-            <table><tr><td class="warish-statement"> &nbsp; &nbsp;&nbsp; &nbsp; A permanent resident of this Union. The following members listed below are the members of his/her family:</td></tr></table>
+            <table><tr><td class="warish-statement"> &nbsp; &nbsp;&nbsp; &nbsp; {% if (data.resident|default('permanent')) == 'temporary' %}A temporary resident{% else %}A permanent resident{% endif %} of this Union. The following members listed below are the members of his/her family:</td></tr></table>
 
             <!-- Family List -->
             <table class="warish-table">

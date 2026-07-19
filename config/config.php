@@ -90,6 +90,10 @@ foreach ([STORAGE_DIR, CACHE_DIR, TEMP_DIR] as $dir) {
 
 
 
+// Path to mysqldump.exe for database backups & exports
+define('MYSQLDUMP_PATH', $_ENV['MYSQLDUMP_PATH'] ?? 'C:\\xampp\\mysql\\bin\\mysqldump.exe');
+
+
 // Detect protocol & host automatically
 
 $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
@@ -114,19 +118,20 @@ if (session_status() === PHP_SESSION_NONE) {
 
     ]);
 
+}// ============================
+// Encryption Configuration 🔐
+// ============================
+// Read from .env — fallback retains existing values for backward compatibility
+
+if (!empty($_ENV['ENCRYPTION_KEY'])) {
+    define('ENCRYPTION_KEY', $_ENV['ENCRYPTION_KEY']);
+} else {
+    define('ENCRYPTION_KEY', '@#+AriyanAhmedAlif_2025SecureKey!%');
 }
 
-
-
-// ============================
-
-// Encryption Configuration 🔐
-
-// ============================
-
-
-
-define('ENCRYPTION_KEY', '@#+AriyanAhmedAlif_2025SecureKey!%');
-
-define('ENCRYPTION_METHOD', 'AES-256-CBC');
+if (!empty($_ENV['ENCRYPTION_METHOD'])) {
+    define('ENCRYPTION_METHOD', $_ENV['ENCRYPTION_METHOD']);
+} else {
+    define('ENCRYPTION_METHOD', 'AES-256-CBC');
+}
 

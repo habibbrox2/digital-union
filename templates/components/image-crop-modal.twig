@@ -1,0 +1,32 @@
+{#
+/**
+ * ============================================================
+ *  Image Crop Modal — Bootstrap 5 + Cropper.js
+ * ============================================================
+ *
+ *  This modal is injected once into the page. The JavaScript
+ *  module (image-cropper.js) manages its lifecycle.
+ *
+ *  Include once near the bottom of the layout:
+ *    {% include 'components/image-crop-modal.twig' %}
+ *
+ *  No changes needed — the JS handles everything dynamically.
+ * ============================================================
+ */ #}
+
+{# The modal is created dynamically by image-cropper.js when first needed.
+   This template serves as a reference and fallback for manual placement.
+
+   To use manually in any template:
+   1. Include this file near the end of the page body
+   2. Make sure Cropper.js CSS/JS and image-cropper.js are loaded
+
+   Include:
+     {% include 'components/image-crop-modal.twig' %}
+#}
+
+<!--
+  Bootstrap 5 Crop Modal — Dynamically created by ImageCropper JS module.
+  If you see this text, the modal was not created by JS, which means the
+  auto-init may not have run. Call ImageCropper.autoInit() after DOM ready.
+-->

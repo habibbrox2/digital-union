@@ -1,55 +1,74 @@
 {# components/macros.twig #}
 
 {% macro display_info_block(data) %}
-    <dl class="uk-description-list uk-description-list-divider">
+    <div class="info-grid">
     {% for label, value in data %}
-        <dt>{{ label }}</dt>
-        <dd>{{ value is not empty ? value : 'N/A' }}</dd>
+        <div class="info-item">
+            <span class="info-label">{{ label }}</span>
+            <span class="info-value">{{ value is not empty ? value : 'N/A' }}</span>
+        </div>
     {% endfor %}
-    </dl>
+    </div>
 {% endmacro %}
 
 {% macro display_status_badge(status) %}
-    {% set classes = {
-        'Approved': 'uk-label uk-label-success',
-        'Pending': 'uk-label uk-label-warning',
-        'Rejected': 'uk-label uk-label-danger'
+    {% set badge_class = {
+        'Approved': 'bg-success',
+        'approved': 'bg-success',
+        'Pending': 'bg-warning text-dark',
+        'pending': 'bg-warning text-dark',
+        'Rejected': 'bg-danger',
+        'rejected': 'bg-danger',
+        'on_hold': 'bg-secondary',
+        'On_Hold': 'bg-secondary'
     } %}
     {% set icons = {
-        'Approved': 'check-circle',
-        'Pending': 'clock',
-        'Rejected': 'close'
+        'Approved': 'bi-check-circle-fill',
+        'approved': 'bi-check-circle-fill',
+        'Pending': 'bi-clock-fill',
+        'pending': 'bi-clock-fill',
+        'Rejected': 'bi-x-circle-fill',
+        'rejected': 'bi-x-circle-fill',
+        'on_hold': 'bi-pause-circle-fill',
+        'On_Hold': 'bi-pause-circle-fill'
     } %}
-    <span class="{{ classes[status] | default('uk-label') }}">
-        <span uk-icon=\"icon: {{ icons[status] | default('info') }}\"></span>
-        {{ status }}
+    {% set icon = icons[status] | default('bi-info-circle-fill') %}
+    {% set badge = badge_class[status] | default('bg-info') %}
+    <span class="badge {{ badge }} rounded-pill px-3">
+        <i class="bi {{ icon }} me-1"></i> {{ status }}
     </span>
 {% endmacro %}
 
 {% macro display_documents_table(documents) %}
     {% if documents is empty %}
-        <p>No documents uploaded.</p>
+        <div class="text-center py-4">
+            <i class="bi bi-file-earmark-x fs-1 text-muted"></i>
+            <p class="text-muted fst-italic mt-2">কোনো ডকুমেন্ট আপলোড করা হয়নি।</p>
+        </div>
     {% else %}
-        <table class="uk-table uk-table-divider uk-table-responsive uk-table-small">
-            <thead>
-                <tr>
-                    <th>#</th>
-                    <th>Document Name</th>
-                    <th>Download</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for doc_path in documents %}
+        <div class="table-responsive">
+            <table class="table table-hover align-middle table-enhanced">
+                <thead class="table-light">
                     <tr>
-                        <td>{{ loop.index }}</td>
-                        <td>{{ doc_path | split('/') | last }}</td>
-                        <td>
-                            <a href="{{ doc_path }}" target="_blank" class="uk-button uk-button-small uk-button-primary">View</a>
-                        </td>
+                        <th>#</th>
+                        <th>Document Name</th>
+                        <th class="text-center">Download</th>
                     </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+                </thead>
+                <tbody>
+                    {% for doc_path in documents %}
+                        <tr>
+                            <td>{{ loop.index }}</td>
+                            <td>{{ doc_path | split('/') | last }}</td>
+                            <td class="text-center">
+                                <a href="{{ doc_path }}" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-eye me-1"></i> View
+                                </a>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
     {% endif %}
 {% endmacro %}
-

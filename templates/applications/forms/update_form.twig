@@ -1,0 +1,712 @@
+{% extends "layout.twig" %}
+
+{% block title %}  {{ certificate_type_bn ?? 'তথ্য সংশোধন ফরম' }} {% endblock %}
+{% block header_title %}  {{ certificate_type_bn ?? 'তথ্য সংশোধন ফরম' }} {% endblock %}
+
+{% block content %}
+{% include 'components/sweetAlert.twig' %}
+<link rel="stylesheet" href="{{ url }}/assets/css/forms.css?t={{ "now"|date("Hiss") }}">
+
+<div class="container form-page px-3">
+    <div class="form-shell">
+        <div class="form-hero">
+            <div id="formTitle">{{ certificate_type_bn ?? 'তথ্য সংশোধন ফরম' }}</div>
+        </div>
+
+        <form id="applicationForm" method="POST" action="/application/update" enctype="multipart/form-data">
+            <input type="hidden" id="application_id" name="application_id" value="{{ data.application_id }}">
+            <input type="hidden" id="sonod_number" name="sonod_number" value="{{ data.sonod_number }}">
+            <input type="hidden" id="certificate_type" name="certificate_type" value="{{ certificate_type }}">
+            <span id="certificate_type_data" data-certificate-type="{{ certificate_type }}" style="display:none"></span>
+
+            {# Union display (read-only for existing app) #}
+            <fieldset class="form-section">
+                <legend>ইউনিয়ন</legend>
+                {% include 'partials/forms/union_info_photo.twig' with { union: union, data: data } %}
+            </fieldset>
+
+            {% if certificate_type == 'trade' %}
+            <!-- ================= Business Info ================= -->
+            <fieldset class="form-section">
+                <legend>ব্যবসায়িক তথ্য</legend>
+                {% include 'partials/forms/business_info.twig' with { data: data } %}
+            </fieldset>
+            {% endif %}
+
+            {# Personal Info #}
+            <fieldset class="form-section">
+                <legend>ব্যক্তিগত তথ্য</legend>
+                {% include 'partials/forms/personal_info.twig' with { data: data } %}
+            </fieldset>
+
+            {# Warish/Waris Section (conditional) #}
+            {% if certificate_type in ['family', 'warish'] %}
+            <fieldset class="form-section">
+                <legend>পরিবারের সদস্যগণের তালিকা</legend>
+                {% include 'partials/forms/warish_entry.twig' with { data: data } %}
+            </fieldset>
+            {% endif %}
+
+            {# Present Address #}
+            <fieldset class="form-section">
+                <legend>বর্তমান ঠিকানা</legend>
+                <div id="present_address_fields">
+                    {% include 'partials/forms/address_fields.twig' with { prefix: 'present', data: data } %}
+                </div>
+            </fieldset>
+
+            {# Permanent Address #}
+            <fieldset class="form-section">
+                <legend>স্থায়ী ঠিকানা</legend>
+                <div class="form-check mb-2">
+                    <input type="checkbox" class="form-check-input" id="copy_present_to_permanent">
+                    <label for="copy_present_to_permanent" class="form-check-label">
+                        বর্তমান ঠিকানা এবং স্থায়ী ঠিকানা একই
+                    </label>
+                </div>
+                <div id="permanent_address_fields">
+                    {% include 'partials/forms/address_fields.twig' with { prefix: 'permanent', data: data } %}
+                </div>
+            </fieldset>
+            
+            {% if certificate_type == 'trade' %}
+                <!-- ব্যবসার ঠিকানা -->
+                <fieldset class="form-section">
+                    <legend>ব্যবসার ঠিকানা</legend>
+                    <div class="form-check mb-1">
+                        <input class="form-check-input" type="checkbox" id="copy_present_to_business">
+                        <label class="form-check-label" for="copy_present_to_business">
+                            বর্তমান ঠিকানা থেকে ব্যবসায়িক ঠিকানা কপি করুন
+                        </label>
+                    </div>
+                    <div id="business_address_fields">
+                        {% include 'partials/forms/address_fields.twig' with { prefix: 'business', data: data } %}
+                    </div>
+                </fieldset>
+            {% endif %}
+
+            {# Contact & Documents #}
+            <fieldset class="form-section">
+                <legend>যোগাযোগ, ছবি এবং ডকুমেন্ট</legend>
+
+
+            <div class="row mb-3 align-items-center">
+                <div class="col-lg-2 col-md-3 col-12">
+                    <label for="applicant_name" class="form-label mb-0">আবেদনকারীর নাম</label>
+                </div>
+                <div class="col-lg-4 col-md-3 col-12">
+                    <input type="text" id="applicant_name" name="applicant_name" class="form-control"
+                        placeholder="আবেদনকারীর নাম"
+                        value="{{ data.applicant_name is defined and data.applicant_name ? data.applicant_name : (data.name_bn is defined ? data.name_bn : '') }}">
+                </div>
+                <div class="col-lg-2 col-md-3 col-12">
+                    <label for="applicant_phone" class="form-label mb-0">আবেদনকারীর মোবাইল নম্বর</label>
+                </div>
+                <div class="col-lg-4 col-md-3 col-12">
+                    <input type="text" id="applicant_phone" name="applicant_phone" class="form-control"
+                        placeholder="আপনার মোবাইল নম্বর লিখুন" value="{{ data.applicant_phone ?? '' }}">
+                    </div>
+                </div>
+
+                <div class="row align-items-start mb-3">
+                    <div class="col-lg-2 col-md-3 col-12">
+                        <label class="form-label mb-0">প্রয়োজনীয় ডকুমেন্ট আপলোড করুন</label>
+                    </div>
+                    <div class="col-lg-10 col-md-9 col-12">
+                        <div id="documents_container"></div>
+                    </div>
+                </div>
+
+                <button type="submit" class="text-center btn btn-lg px-5 submit-button">
+                    আপডেট করুন
+                </button>
+            </fieldset>
+        </form>
+    </div>
+</div>
+
+{% include 'partials/forms/success_modal.twig' %}
+
+<script src="{{ url }}/assets/js/forms.js?t={{ "now"|date("Hiss") }}"></script>
+
+<script>
+$(document).ready(function () {
+    window.postOfficeDebug = window.postOfficeDebug ?? true;
+    window.postOfficeDebugLog = window.postOfficeDebugLog || function () {
+        if (window.postOfficeDebug && window.console) {
+            console.log.apply(console, arguments);
+        }
+    };
+
+    const applicationId = $('#application_id').val();
+    const certificate_type = $('#certificate_type').val();
+    if (applicationId && certificate_type) {
+        loadApplicationData(applicationId, certificate_type);
+    }
+
+    function populateEditDropdown(selector, data, selectedValue = null) {
+        if (!$(selector).length) return;
+        const dropdown = $(selector);
+        dropdown.empty().append('<option value="">-- নির্বাচন করুন --</option>');
+        const selectedValueNorm = selectedValue ? String(selectedValue).trim().toLowerCase() : null;
+
+        $.each(data, function (_, item) {
+            const itemIdNorm = String(item.id).trim().toLowerCase();
+            const itemNameEnNorm = String(item.name_en).trim().toLowerCase();
+            const isSelected = selectedValueNorm &&
+                (selectedValueNorm === itemIdNorm || selectedValueNorm === itemNameEnNorm) ? 'selected' : '';
+
+            dropdown.append(
+                `<option value="${item.name_en}" 
+                    data-geo-code="${item.geo_code}" 
+                    data-name-en="${item.name_en}" 
+                    data-name-bn="${item.name_bn}" 
+                    data-geo-id="${item.id}" ${isSelected}>${item.name_en} (${item.name_bn})</option>`
+            );
+        });
+    }
+
+    function fetchEditGeoData(geoOrder, parentGeoId, dropdownSelector, nextDropdownSelector = null, selectedValue = null, callback = null) {
+        if (!$(dropdownSelector).length) return;
+
+        $.ajax({
+            url: '/geo/getdata',
+            method: 'POST',
+            data: { geo_order: geoOrder, parent_geo_id: parentGeoId },
+            dataType: 'json',
+            success: function (data) {
+                populateEditDropdown(dropdownSelector, data, selectedValue);
+                if (nextDropdownSelector && $(nextDropdownSelector).length) {
+                    $(nextDropdownSelector).empty().append('<option value="">-- নির্বাচন করুন --</option>');
+                }
+                if (callback) callback();
+            },
+            error: function (err) {
+                console.error(`Geo data fetch failed: ${dropdownSelector}`, err);
+            }
+        });
+    }
+
+    window.highlightPrefilled = window.highlightPrefilled || function(el) {
+        if (el && el.length && el.val()) {
+            el.css('background-color', '#d4edda');
+            el.css('border', '2px solid #c3e6cb');
+        }
+    }
+
+    function populateAddressFields(prefix, addressData) {
+        if (!addressData || !$(`#${prefix}_district_id`).length) return;
+
+        const fields = ['village_en', 'village_bn', 'rbs_en', 'rbs_bn', 'holding_no', 'ward_no', 'postoffice_en', 'postoffice_bn'];
+        fields.forEach(field => {
+            const el = $(`#${prefix}_${field}`);
+            el.val(addressData[field] || '');
+            highlightPrefilled(el);
+        });
+
+        const districtBn = $(`#${prefix}_district`);
+        if (addressData.district_bn) {
+            districtBn.val(addressData.district_bn);
+            highlightPrefilled(districtBn);
+        }
+        const upazilaBn = $(`#${prefix}_upazila`);
+        if (addressData.upazila_bn) {
+            upazilaBn.val(addressData.upazila_bn);
+            highlightPrefilled(upazilaBn);
+        }
+        const unionBn = $(`#${prefix}_union`);
+        if (addressData.union_bn) {
+            unionBn.val(addressData.union_bn);
+            highlightPrefilled(unionBn);
+        }
+
+        // Cascading geo dropdowns
+        fetchEditGeoData(1, 0, `#${prefix}_district_id`, null, addressData.district_geo_id || addressData.district_en, function () {
+            const selectedDistrictId = $(`#${prefix}_district_id option:selected`).data('geo-id');
+            fetchEditGeoData(2, selectedDistrictId, `#${prefix}_upazila_id`, null, addressData.upazila_geo_id || addressData.upazila_en, function () {
+                const selectedUpazilaId = $(`#${prefix}_upazila_id option:selected`).data('geo-id');
+                fetchEditGeoData(3, selectedUpazilaId, `#${prefix}_union_id`, null, addressData.union_geo_id || addressData.union_en, function () {
+                    // Fill Bengali text fields from the selected dropdown options
+                    if ($(`#${prefix}_district`).length) {
+                        const selectedDistrict = $(`#${prefix}_district_id option:selected`).data('name-bn') || '';
+                        $(`#${prefix}_district`).val(selectedDistrict);
+                    }
+                    if ($(`#${prefix}_upazila`).length) {
+                        const selectedUpazila = $(`#${prefix}_upazila_id option:selected`).data('name-bn') || '';
+                        $(`#${prefix}_upazila`).val(selectedUpazila);
+                    }
+                    if ($(`#${prefix}_union`).length) {
+                        const selectedUnion = $(`#${prefix}_union_id option:selected`).data('name-bn') || '';
+                        $(`#${prefix}_union`).val(selectedUnion);
+                    }
+                    const unionNameForPo = $(`#${prefix}_union_id option:selected`).data('name-en') || $(`#${prefix}_union_id`).val();
+                    window.postOfficeDebugLog('[post-office] update form prefill', {
+                        prefix: prefix,
+                        unionNameForPo: unionNameForPo
+                    });
+                    if (unionNameForPo && typeof window.fetchPostOffices === 'function') {
+                        window.fetchPostOffices(unionNameForPo, `#${prefix}_postoffice_en`, `#${prefix}_postoffice_bn`);
+                    }
+                });
+            });
+        });
+    }
+
+    // ---------------- Mobile Number Validation ----------------
+    const mobileInput = document.getElementById('applicant_phone');
+    if (mobileInput) {
+        function convertToEnglishNumber(str) {
+            const bnNumbers = ['০','১','২','৩','৪','৫','৬','৭','৮','৯'];
+            return str.replace(/[০-৯]/g, m => bnNumbers.indexOf(m))
+                      .replace(/[۰-৯]/g, m => m.charCodeAt(0) - 1776);
+        }
+        mobileInput.addEventListener('input', function() {
+            let val = convertToEnglishNumber(this.value).replace(/\D/g, '');
+            this.value = val;
+            const warningId = 'mobile_warning';
+            document.getElementById(warningId)?.remove();
+            if(val.length > 0 && val.length < 11) {
+                const warn = document.createElement('div');
+                warn.id = warningId;
+                warn.style.color = 'red';
+                warn.style.fontSize = '0.85rem';
+                warn.textContent = 'মোবাইল নম্বর অবশ্যই ১১ সংখ্যার হতে হবে।';
+                mobileInput.parentNode.appendChild(warn);
+            }
+        });
+    }
+
+    // Photo preview on new file selection
+    var photoInput = document.getElementById('applicant_photo');
+    var photoPreview = document.getElementById('uploadPreviewImg');
+    if (photoInput && photoPreview) {
+        photoInput.addEventListener('change', function () {
+            var file = this.files[0];
+            if (!file) return;
+            photoPreview.src = URL.createObjectURL(file);
+        });
+    }
+
+    function loadApplicationData(applicationId, certificate_type) {
+        $.ajax({
+            url: `/applications/${certificate_type}/api/${applicationId}`,
+            method: 'GET',
+            dataType: 'json',
+            success: function (data) {
+
+                // Extra data — parse JSON and init dynamic fields
+                let parsedExtraData = {};
+                if (typeof data.extra_data !== 'undefined' && data.extra_data !== null) {
+                    if (typeof data.extra_data === 'string') {
+                        try { parsedExtraData = JSON.parse(data.extra_data); } catch(e) { parsedExtraData = {}; }
+                    } else {
+                        parsedExtraData = data.extra_data;
+                    }
+                }
+                window.extraData = parsedExtraData;
+                // Init extra dynamic fields
+                initExtraFieldsForUpdate();
+                initFormSubmitForUpdate();
+
+                // Photo preview — show the existing applicant photo
+                if (data.applicant_photo) {
+                    var previewImg = document.getElementById('uploadPreviewImg');
+                    var previewContainer = document.getElementById('uploadPreviewContainer');
+                    var dropZone = document.getElementById('uploadDropZone');
+                    if (previewImg) {
+                        previewImg.src = data.applicant_photo;
+                        previewImg.style.display = 'block';
+                    }
+                    if (previewContainer) previewContainer.style.display = 'block';
+                    if (dropZone) {
+                        dropZone.style.backgroundImage = 'none';
+                        dropZone.style.background = '#F2F2F2';
+                    }
+                }
+
+                // Documents preview
+                if (data.documents && Array.isArray(data.documents)) {
+                    $('#documents_container .document-row:gt(0)').remove();
+                    data.documents.forEach(function(doc, idx) {
+                        let row;
+                        if (idx === 0) {
+                            row = $('#documents_container .document-row').first();
+                        } else {
+                            row = $('#documents_container .document-row').first().clone();
+                            row.find('input[type="file"]').val('');
+                            row.find('.preview-area').empty();
+                            $('#documents_container').append(row);
+                        }
+                        if (doc && row.find('.preview-area').length) {
+                            let ext = doc.split('.').pop().toLowerCase();
+                            if(['jpg','jpeg','png','gif','bmp','webp'].includes(ext)) {
+                                row.find('.preview-area').html(`<img src="${doc}" alt="ডকুমেন্ট" style="max-width:100px;max-height:100px;">`);
+                            } else {
+                                row.find('.preview-area').html(`<a href="${doc}" target="_blank">ডকুমেন্ট দেখুন</a>`);
+                            }
+                        }
+                    });
+                }
+
+                // Applicant name & phone
+                if (typeof data.name_bn !== 'undefined') {
+                    const applicantName = (data.applicant_name && String(data.applicant_name).trim() !== '')
+                        ? data.applicant_name
+                        : data.name_bn;
+                    const isOwnName = !data.applicant_name || String(data.applicant_name).trim() === '' || applicantName === data.name_bn;
+
+                    if (isOwnName) {
+                        $('#own_name').prop('checked', true);
+                        $('#applicant_name').val(applicantName || data.name_bn || '').prop('readonly', true).show();
+                    } else {
+                        $('#other_name').prop('checked', true);
+                        $('#applicant_name').val(applicantName).prop('readonly', false).show();
+                    }
+                    highlightPrefilled($('#applicant_name'));
+                }
+                if ($('#applicant_phone').length) $('#applicant_phone').val(data.applicant_phone || '');
+
+                // Applicant name radio change handler
+                $('input[name="applicant_name_option"]').change(function() {
+                    if ($(this).val() === 'own') {
+                        $('#applicant_name').prop('readonly', true).show();
+                    } else {
+                        $('#applicant_name').prop('readonly', false).show();
+                    }
+                });
+
+                // Personal info prefill
+                function setWithHighlight(el, val) {
+                    el.val(val || '');
+                    highlightPrefilled(el);
+                }
+                setWithHighlight($('#name_en'), data.name_en);
+                setWithHighlight($('#name_bn'), data.name_bn);
+                setWithHighlight($('#nid'), data.nid);
+                setWithHighlight($('#birth_id'), data.birth_id);
+                setWithHighlight($('#passport_no'), data.passport_no);
+                if ($('#birth_date').length && data.birth_date) {
+                    let date = new Date(data.birth_date);
+                    if (!isNaN(date.getTime())) {
+                        let day = String(date.getDate()).padStart(2, '0');
+                        let month = String(date.getMonth() + 1).padStart(2, '0');
+                        let year = date.getFullYear();
+                        const el = $('#birth_date');
+                        el.val(`${day}-${month}-${year}`);
+                        el.css('background-color', '#d4edda');
+                        el.css('border', '2px solid #c3e6cb');
+                    } else {
+                        setWithHighlight($('#birth_date'), data.birth_date);
+                    }
+                }
+
+                setWithHighlight($('#father_name_en'), data.father_name_en);
+                setWithHighlight($('#father_name_bn'), data.father_name_bn);
+                setWithHighlight($('#mother_name_en'), data.mother_name_en);
+                setWithHighlight($('#mother_name_bn'), data.mother_name_bn);
+                setWithHighlight($('#occupation'), data.occupation);
+                setWithHighlight($('#educational_qualification'), data.educational_qualification);
+                setWithHighlight($('#resident'), data.resident);
+                setWithHighlight($('#religion'), data.religion);
+                setWithHighlight($('#spouse_name_en'), data.spouse_name_en);
+                setWithHighlight($('#spouse_name_bn'), data.spouse_name_bn);
+
+                // Gender select
+                if ($('#gender').length && data.gender) {
+                    $('#gender').val(function(){
+                        let val = String(data.gender).toLowerCase();
+                        if(val==='male'||val==='পুরুষ') return 'male';
+                        if(val==='female'||val==='মহিলা') return 'female';
+                        if(val==='other'||val==='অন্যান্য') return 'other';
+                        return '';
+                    });
+                }
+                // Marital status select
+                if ($('#marital_status').length && data.marital_status) {
+                    $('#marital_status').val(function(){
+                        let val = String(data.marital_status).toLowerCase();
+                        if(val==='single'||val==='অবিবাহিত') return 'single';
+                        if(val==='married'||val==='বিবাহিত') return 'married';
+                        if(val==='divorced'||val==='তালাকপ্রাপ্ত') return 'divorced';
+                        if(val==='widowed'||val==='বিধবা/বিপত্নীক') return 'widowed';
+                        if(val==='other'||val==='অন্যান্য') return 'other';
+                        return '';
+                    }).trigger('change');
+                }
+                // Spouse info show/hide
+                if (data.marital_status && (String(data.marital_status).toLowerCase() === 'married' || String(data.marital_status).toLowerCase() === 'বিবাহিত')) {
+                    $('#spouse_section').show();
+                    if ($('#spouse_name_en').length) $('#spouse_name_en').val(data.spouse_name_en || '');
+                    if ($('#spouse_name_bn').length) $('#spouse_name_bn').val(data.spouse_name_bn || '');
+                } else {
+                    $('#spouse_section').hide();
+                }
+
+                const addressPrefixes = ['present', 'permanent'];
+                const presentAddress = {
+                    village_en: data.present_village_en,
+                    village_bn: data.present_village_bn,
+                    rbs_en: data.present_rbs_en,
+                    rbs_bn: data.present_rbs_bn,
+                    holding_no: data.present_holding_no,
+                    ward_no: data.present_ward_no,
+                    postoffice_en: data.present_postoffice_en,
+                    postoffice_bn: data.present_postoffice_bn,
+                    district_geo_id: data.present_district_geo_id,
+                    upazila_geo_id: data.present_upazila_geo_id,
+                    union_geo_id: data.present_union_geo_id,
+                    district_en: data.present_district_en,
+                    upazila_en: data.present_upazila_en,
+                    union_en: data.present_union_en
+                };
+
+                const permanentAddress = {
+                    village_en: data.permanent_village_en,
+                    village_bn: data.permanent_village_bn,
+                    rbs_en: data.permanent_rbs_en,
+                    rbs_bn: data.permanent_rbs_bn,
+                    holding_no: data.permanent_holding_no,
+                    ward_no: data.permanent_ward_no,
+                    postoffice_en: data.permanent_postoffice_en,
+                    postoffice_bn: data.permanent_postoffice_bn,
+                    district_geo_id: data.permanent_district_geo_id,
+                    upazila_geo_id: data.permanent_upazila_geo_id,
+                    union_geo_id: data.permanent_union_geo_id,
+                    district_en: data.permanent_district_en,
+                    upazila_en: data.permanent_upazila_en,
+                    union_en: data.permanent_union_en
+                };
+
+                // Populate addresses
+                populateAddressFields('present', presentAddress);
+                populateAddressFields('permanent', permanentAddress);
+
+                // Business address (if present)
+                if (
+                    data.business_district_en || data.business_district_bn ||
+                    data.business_upazila_en || data.business_upazila_bn ||
+                    data.business_union_en || data.business_union_bn ||
+                    data.business_village_en || data.business_village_bn ||
+                    data.business_holding_no || data.business_ward_no
+                ) {
+                    const businessAddress = {
+                        village_en: data.business_village_en,
+                        village_bn: data.business_village_bn,
+                        rbs_en: data.business_rbs_en,
+                        rbs_bn: data.business_rbs_bn,
+                        holding_no: data.business_holding_no,
+                        ward_no: data.business_ward_no,
+                        postoffice_en: data.business_postoffice_en,
+                        postoffice_bn: data.business_postoffice_bn,
+                        district_geo_id: data.business_district_geo_id,
+                        upazila_geo_id: data.business_upazila_geo_id,
+                        union_geo_id: data.business_union_geo_id,
+                        district_en: data.business_district_en,
+                        upazila_en: data.business_upazila_en,
+                        union_en: data.business_union_en
+                    };
+                    populateAddressFields('business', businessAddress);
+                }
+            },
+            error: function (err) {
+                console.error("Could not load application data:", err);
+            }
+        });
+    }
+
+    // =======================================================
+    // Extra fields: dynamic rendering system (matches default.twig)
+    // =======================================================
+
+    const escapeHtml = str => str == null ? '' : String(str).replace(/[&<>"']/g,
+        m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])
+    );
+
+    async function fetchExtraFields(){
+        if (window.extraFieldsCache) return window.extraFieldsCache;
+        try {
+            const res = await fetch('/api/v2/extra-fields/json', {cache:'no-store'});
+            if (!res.ok) throw new Error('HTTP '+res.status);
+            const fData = await res.json();
+            window.extraFieldsCache = fData;
+            return fData;
+        } catch(err){
+            console.error(err);
+            return {};
+        }
+    }
+
+    function initDatepickers(rootEl){
+        if (!rootEl) rootEl = document;
+        $(rootEl).find('.datepicker').each(function(){
+            try {
+                $(this).datepicker({
+                    format:'dd-mm-yyyy',
+                    autoclose:true,
+                    todayHighlight:true
+                });
+            } catch(e) {
+                this.placeholder = this.placeholder || 'দিন-মাস-বছর';
+                this.setAttribute('inputmode','numeric');
+            }
+        });
+    }
+
+    function createFieldHTML(field, dataOverride){
+        const ed = dataOverride || window.extraData || {};
+        const val = escapeHtml(ed[field.id] || '');
+        const placeholder = escapeHtml(field.placeholder || field.label || '');
+        const label = escapeHtml(field.label || field.label_en || '');
+        const markDynamic = ' data-extra-field="1"';
+
+        if (field.count === 2){
+            const bnVal = escapeHtml(ed[field.id+'_bn'] || '');
+            const enVal = escapeHtml(ed[field.id+'_en'] || '');
+            const labelBn = escapeHtml(field.label_bn || field.label || '');
+            const labelEn = escapeHtml(field.label_en || field.label || '');
+            return `<div class="row mb-3">
+                <div class="col-lg-2 col-md-3 col-12">
+                    <label for="${field.id}_en" class="form-label">${labelEn}</label>
+                </div>
+                <div class="col-lg-4 col-md-3 col-12">
+                    <input type="text" name="${field.id}_en" id="${field.id}_en" class="form-control"${markDynamic} value="${enVal}" placeholder="${placeholder} (ইংরেজিতে)">
+                </div>
+                <div class="col-lg-2 col-md-3 col-12">
+                    <label for="${field.id}_bn" class="form-label">${labelBn} <span class="text-danger">*</span></label>
+                </div>
+                <div class="col-lg-4 col-md-3 col-12">
+                    <input type="text" name="${field.id}_bn" id="${field.id}_bn" class="form-control bangla"${markDynamic} value="${bnVal}" placeholder="${placeholder} (বাংলায়)" required>
+                </div>
+            </div>`;
+        }
+
+        switch(field.type){
+            case 'text':
+            case 'number':
+            case 'date':
+                const inputClass = field.type==='date' ? 'form-control datepicker' : 'form-control';
+                return `<div class="row mb-3 align-items-center">
+                    <div class="col-lg-2 col-md-3 col-12">
+                        <label for="${field.id}" class="form-label mb-0">${label} <span class="text-danger">*</span></label>
+                    </div>
+                    <div class="col-lg-4 col-md-3 col-12">
+                        <input type="${field.type==='date'?'text':field.type}" name="${field.id}" id="${field.id}" class="${inputClass}"${markDynamic} value="${val}" placeholder="${placeholder}">
+                    </div>
+                </div>`;
+            case 'textarea':
+                return `<div class="row mb-3">
+                    <div class="col-lg-2 col-md-3 col-12">
+                        <label for="${field.id}" class="form-label">${label} <span class="text-danger">*</span></label>
+                    </div>
+                    <div class="col-lg-4 col-md-3 col-12">
+                        <textarea name="${field.id}" id="${field.id}" class="form-control"${markDynamic} rows="4" placeholder="${placeholder}">${val}</textarea>
+                    </div>
+                </div>`;
+            case 'select':
+                const opts = (field.options||[])
+                    .map(o => `<option value="${o.value}" ${val==o.value?'selected':''}>${o.text}</option>`).join('');
+                return `<div class="row mb-3 align-items-center">
+                    <div class="col-lg-2 col-md-3 col-12">
+                        <label for="${field.id}" class="form-label mb-0">${label} <span class="text-danger">*</span></label>
+                    </div>
+                    <div class="col-lg-4 col-md-3 col-12">
+                        <select name="${field.id}" id="${field.id}" class="form-control"${markDynamic}>
+                            <option value="">Select</option>${opts}
+                        </select>
+                    </div>
+                </div>`;
+            case 'label':
+                return `<div class="col-lg-6 mb-2"><span id="${field.id}" class="form-label">${label}</span></div>`;
+            default:
+                return `<div class="row mb-3 align-items-center">
+                    <div class="col-lg-2 col-md-3 col-12">
+                        <label for="${field.id}" class="form-label mb-0">${label} <span class="text-danger">*</span></label>
+                    </div>
+                    <div class="col-lg-4 col-md-3 col-12">
+                        <input type="text" name="${field.id}" id="${field.id}" class="form-control"${markDynamic} value="${val}" placeholder="${placeholder}">
+                    </div>
+                </div>`;
+        }
+    }
+
+    async function initExtraFieldsForUpdate(){
+        const extraFields = await fetchExtraFields();
+        const certType = $('#certificate_type').val();
+        if (!certType || !extraFields[certType]) return;
+
+        const form = document.getElementById('applicationForm');
+        if (!form) return;
+
+        const fragment = document.createDocumentFragment();
+        extraFields[certType].forEach(function(field){
+            if (field.type==='label') return;
+            const html = createFieldHTML(field, window.extraData);
+            const container = document.createElement('div');
+            container.innerHTML = html;
+            const target = document.getElementById(field.orderAfter) || document.querySelector('[name="'+field.orderAfter+'"]');
+            if (target){
+                const baseRow = target.closest('.row') || target;
+                baseRow.insertAdjacentElement('afterend', container);
+            } else {
+                fragment.appendChild(container);
+            }
+        });
+
+        form.appendChild(fragment);
+        initDatepickers(form);
+    }
+
+    function initFormSubmitForUpdate(){
+        const form = document.getElementById('applicationForm');
+        if (!form) return;
+
+        // Remove any existing handler to avoid duplicates
+        $(form).off('submit.extraFields');
+        $(form).on('submit.extraFields', function(e) {
+            try {
+                const payload = {};
+                const dynamicInputs = form.querySelectorAll('[data-extra-field="1"]');
+                dynamicInputs.forEach(function(input){
+                    if (input.name) payload[input.name] = input.value;
+                });
+                let hidden = form.querySelector('input[name="extra_data"]');
+                if (!hidden) {
+                    hidden = document.createElement('input');
+                    hidden.type = 'hidden';
+                    hidden.name = 'extra_data';
+                    form.appendChild(hidden);
+                }
+                hidden.value = JSON.stringify(payload);
+            } catch(err){ console.error(err); }
+        });
+    }
+
+    function updateLabelAndPlaceholderSafe(labelEl, inputEl, text){
+        if (labelEl) labelEl.textContent = text;
+        if (inputEl && !inputEl.classList.contains('datepicker')){
+            inputEl.placeholder = text;
+        }
+    }
+
+    function updateLabelsByCertificateType(extraFields, certType){
+        if (!extraFields[certType]) return;
+        extraFields[certType].forEach(function(field){
+            if (field.type!=='label') return;
+            if (field.count===2){
+                const enLabelEl = document.querySelector('label[for="'+field.id+'_en"]');
+                const bnLabelEl = document.querySelector('label[for="'+field.id+'_bn"]');
+                const enInput = document.getElementById(field.id+'_en');
+                const bnInput = document.getElementById(field.id+'_bn');
+                updateLabelAndPlaceholderSafe(enLabelEl, enInput, (field.label_en || field.label || '') + ' (ইংরেজিতে)');
+                updateLabelAndPlaceholderSafe(bnLabelEl, bnInput, (field.label_bn || field.label || '') + ' (বাংলায়)');
+            } else {
+                const labelEl = document.querySelector('label[for="'+field.id+'"]');
+                const inputEl = document.getElementById(field.id);
+                updateLabelAndPlaceholderSafe(labelEl, inputEl, field.label || '');
+            }
+        });
+    }
+});
+</script>
+
+{% endblock %}

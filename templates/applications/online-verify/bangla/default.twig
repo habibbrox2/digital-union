@@ -7,350 +7,656 @@
     <link rel="stylesheet" href="{{ url }}/assets/css/online-verify.css">
 
     <style type="text/css" media="all">
-
         body {
             font-family: 'bangla', sans-serif !important;
             font-size: 14px;
         }
-
-        @media  print {
-            * {
-                -webkit-print-color-adjust: exact;
-            }
+        @media print {
+            * { -webkit-print-color-adjust: exact; }
         }
-
-        @page  {
+        @page {
             header: page-header;
             footer: page-footer;
-            margin:20px 0px;
+            margin: 20px 0px;
             padding: 0px;
-
         }
-        
-        
-        
-        @media  print {
+        @media print {
             body {
                 font-size: 14px !important;
                 font-family: 'bangla', sans-serif !important;
             }
-           
-
         }
     </style>
-
 </head>
 
 <body>
-
     <section>
         <div class="container">
             <div class="card" style="margin:20px 0px; padding: 10px 0px 20px 0px">
 
-                                <table border="0px" width="98%" align="center" style="border-collapse:collapse; margin:2px auto; padding-top: 50px">
-                        <tr>
-                            <td style="width:1.5in; text-align:center;"><img src="{{ url }}/assets/logo/logo.png" height="100px" width="100px" /></td>
-
-                            <td style="text-align:center;">
+                <table border="0px" width="98%" align="center" style="border-collapse:collapse; margin:2px auto; padding-top: 50px">
+                    <tr>
+                        <td style="width:1.5in; text-align:center;">
+                            <img src="{{ url }}/assets/logo/logo.png" height="100px" width="100px" />
+                        </td>
+                        <td style="text-align:center;">
                             <div class="parishad-info">
                                 <div class="parishad-name">{{ union.union_name_bn }}</div>
-
                                 <div class="parishad-details">
-                                   {{ union.upazila_name_bn }},{{ union.district_name_bn }}-{{ union.postcode|bn }}<br>
-                                    মোবাইলঃ {{ union.phone | bn }}, 
-                                    ই-মেইলঃ  {{ union.email }} <br>
+                                    {{ union.upazila_name_bn }}, {{ union.district_name_bn }}-{{ union.postcode|bn }}<br>
+                                    মোবাইলঃ {{ union.phone | bn }},
+                                    ই-মেইলঃ {{ union.email }}<br>
                                     ওয়েব সাইট : {{ union.website }}
                                 </div>
                             </div>
-
-
-                            </td>
-
-                            <td style="width:1.2in; text-align:left;">
-            
-                                <img src="{{ url }}/assets/img/band-cross.png" height="100px" width="100px" style="position:relative;right:10px;" />
-            
-                            </td>
-
-                        </tr>
-                    </table> 
-                    
-
-                    <table style="width:95%; margin-left:48px;border-color:lightgray;border-collapse:collapse;margin-top:10px;" cellpadding="0" cellspacing="0">
-                    
-                    <tr>
-                        <td colspan="2" style="text-align:center;font-size:25px;font-weight:bold;padding-bottom: 5px">
-                            <font style="">
-                                <u>{{ citizen.certificate_type_bn }} </u>
-                            </font>
+                        </td>
+                        <td style="width:1.2in; text-align:left;">
+                            <img src="{{ url }}/assets/img/band-cross.png" height="100px" width="100px" style="position:relative;right:10px;" />
                         </td>
                     </tr>
+                </table>
 
+                <table style="width:95%; margin-left:48px; border-color:lightgray; border-collapse:collapse; margin-top:10px;" cellpadding="0" cellspacing="0">
                     <tr>
-
+                        <td colspan="2" style="text-align:center; font-size:25px; font-weight:bold; padding-bottom:5px">
+                            <font><u>{{ citizen.certificate_type_bn }}</u></font>
+                        </td>
+                    </tr>
+                    <tr>
                         <td>
-                            
-                            <table border="1" style="width: 600px;border-color:lightgray;border-collapse:collapse;" cellpadding="0" cellspacing="0">
+                            <table border="1" style="width:600px; border-color:lightgray; border-collapse:collapse;" cellpadding="0" cellspacing="0">
                                 <tr>
-                                    <td style="width:100px; text-align:center;font-weight:700;font-size:17px;">সনদ নং :</td>
-                                    
+                                    <td style="width:100px; text-align:center; font-weight:700; font-size:17px;">সনদ নং :</td>
                                     {% set sonod_number_bn = citizen.sonod_number | bn %}
-                                         {% for digit in sonod_number_bn | split('') %}
-
-                                    
-                                    <td style="text-align:center; font-weight:bold; font-size:20px;">
-                                    {{ digit }}
-                                    </td>
+                                    {% for digit in sonod_number_bn | split('') %}
+                                    <td style="text-align:center; font-weight:bold; font-size:20px;">{{ digit }}</td>
                                     {% endfor %}
-                                      </tr>
+                                </tr>
                             </table>
                         </td>
-
-                        
-                       <td rowspan="3" valign="top" style="text-align: left;">
+                        <td rowspan="3" valign="top" style="text-align:left;">
                             {% if citizen.applicant_photo %}
                                 <img src="{{ url }}/{{ citizen.applicant_photo }}" height="100px" width="100px" alt="profile" />
                             {% endif %}
                         </td>
-
-
                     </tr>
-
                     <tr>
-                        <td colspan="2" style="font-size:18px; text-indent:50px; padding-top: 5px; padding-bottom: 5px;">এই মর্মে প্রত্যয়ন পত্র প্রদান করা যাইতেছে যে,</td>
+                        <td colspan="2" style="font-size:18px; text-indent:50px; padding-top:5px; padding-bottom:5px;">
+                            এই মর্মে প্রত্যয়ন পত্র প্রদান করা যাইতেছে যে,
+                        </td>
                     </tr>
                 </table>
 
-     
-                <table class="jolchap" align="center" border="0" height="415px" width='99%' cellspacing="0" cellspacing='0' style="border-collapse:collapse;margin:0 auto;table-layout:fixed;">
-                  
+                <table class="jolchap" align="center" border="0" height="415px" width="99%" cellspacing="0" style="border-collapse:collapse; margin:0 auto; table-layout:fixed;">
                     <tr>
-                        <td align="left" style="font-size:16px;text-indent:55px; font-color:black; width: 180px; padding-left: 50px">নাম </font>
-                        </td>
-                        <td>
-                            <font style="font-size:16px;">: {{ citizen.name_bn }}</font>
-                        </td>
+                        <td align="left" style="font-size:16px; text-indent:55px; width:180px; padding-left:50px">নাম</td>
+                        <td><font style="font-size:16px;">: {{ citizen.name_bn }}</font></td>
                     </tr>
-
-                    
                     <tr>
-                        <td align="left" style="font-size:16px;text-indent:55px; font-color:black; width: 180px; padding-left: 50px ">পিতার নাম </td>
-                        <td>
-                            <font style="font-size:16px; ">: {{ citizen.father_name_bn  }}</font>
-                        </td>
+                        <td align="left" style="font-size:16px; text-indent:55px; width:180px; padding-left:50px">পিতার নাম</td>
+                        <td><font style="font-size:16px;">: {{ citizen.father_name_bn }}</font></td>
                     </tr>
-
                     <tr>
-                        <td align="left" style="font-size:16px;text-indent:55px; font-color:black; width: 180px; padding-left: 50px">মাতার নাম</td>
-                        <td>
-                            <font style="font-size:16px;  ">: {{ citizen.mother_name_bn }}</font>
-                        </td>
+                        <td align="left" style="font-size:16px; text-indent:55px; width:180px; padding-left:50px">মাতার নাম</td>
+                        <td><font style="font-size:16px;">: {{ citizen.mother_name_bn }}</font></td>
                     </tr>
                     {% if citizen.marital_status == 'Married' %}
-                     <tr>
-                        <td align="left" style="font-size:16px;text-indent:55px; font-color:black; width: 180px; padding-left: 50px"> স্বামী/স্ত্রীর নাম </td>
-                        <td>
-                            <font style="font-size:16px;  ">: {{ citizen.spouse_name_bn | default('N/A') }}</font>
-                        </td>
+                    <tr>
+                        <td align="left" style="font-size:16px; text-indent:55px; width:180px; padding-left:50px">স্বামী/স্ত্রীর নাম</td>
+                        <td><font style="font-size:16px;">: {{ citizen.spouse_name_bn | default('N/A') }}</font></td>
                     </tr>
                     {% endif %}
                     <tr>
-                        <td nowrap align="left" style="font-size:16px;text-indent:55px; font-color:black; width: 180px; padding-left: 50px;vertical-align:top; ">বর্তমান ঠিকানা </td>
-
-                        <td style=" vertical-align:top;">
-                            <p style="line-height:25px;font-size:16px; ">
-
+                        <td nowrap align="left" style="font-size:16px; text-indent:55px; width:180px; padding-left:50px; vertical-align:top;">বর্তমান ঠিকানা</td>
+                        <td style="vertical-align:top;">
+                            <p style="line-height:25px; font-size:16px;">
                                 : গ্রামঃ {{ citizen.present_village_bn }}
                                 <br> &nbsp; ডাকঘরঃ {{ citizen.present_postoffice_bn }}
                                 <br> &nbsp; উপজেলাঃ {{ citizen.present_upazila_bn }}
                                 <br> &nbsp; জেলা: {{ citizen.present_district_bn }}
-                                </p>
+                            </p>
                         </td>
                     </tr>
-
                     <tr>
-                        <td nowrap align="left" style="font-size:16px;text-indent:55px; font-color:black; width: 180px; padding-left: 50px; vertical-align:top; ">স্থায়ী ঠিকানা </td>
-
-                        <td style=" vertical-align:top;">
-
-                            <p style="line-height:25px;font-size:16px;  ">
-                                 : গ্রামঃ {{ citizen.permanent_village_bn }}
-                                <br> &nbsp; ডাকঘরঃ  {{ citizen.permanent_postoffice_bn }}
+                        <td nowrap align="left" style="font-size:16px; text-indent:55px; width:180px; padding-left:50px; vertical-align:top;">স্থায়ী ঠিকানা</td>
+                        <td style="vertical-align:top;">
+                            <p style="line-height:25px; font-size:16px;">
+                                : গ্রামঃ {{ citizen.permanent_village_bn }}
+                                <br> &nbsp; ডাকঘরঃ {{ citizen.permanent_postoffice_bn }}
                                 <br> &nbsp; উপজেলাঃ {{ citizen.permanent_upazila_bn }}
                                 <br> &nbsp; জেলা: {{ citizen.permanent_district_bn }}
-                                </p>
+                            </p>
                         </td>
                     </tr>
-
                     <tr>
-                        <td align="left" nowrap style="font-size:16px;text-indent:55px; font-color:black; width: 180px; padding-left: 50px">ওয়ার্ড নং </td>
-                        <td>
-                            <font style="font-size:16px;  ">:   {{ citizen.permanent_ward_no|bn }} </font>
-                        </td>
+                        <td align="left" nowrap style="font-size:16px; text-indent:55px; width:180px; padding-left:50px">ওয়ার্ড নং</td>
+                        <td><font style="font-size:16px;">: {{ citizen.permanent_ward_no|bn }}</font></td>
                     </tr>
-                    
-                                        <tr>
-                        <td align="left" nowrap style="font-size:16px;text-indent:55px; font-color:black; width: 200px; padding-left: 50px">       
-                         {% if citizen.birth_id %}
-                            জন্ম নিবন্ধন নং
-                        {% elseif citizen.nid %}
-                            ন্যাশনাল আইডি নং
-                        {% else %}
-                            পার্সপোট নং
-                        {% endif %}
-                        </td>
-                        <td>
-                            <font style="font-size:16px;">: 
+                    <tr>
+                        <td align="left" nowrap style="font-size:16px; text-indent:55px; width:200px; padding-left:50px">
                             {% if citizen.birth_id %}
-                            {{ citizen.birth_id | bn }}
-                        {% elseif citizen.nid %}
-                            {{ citizen.nid | bn }}
-                        {% elseif citizen.passport_no %}
-                            {{ citizen.passport_no }}
-                        {% endif %}
-                        </font>
+                                জন্ম নিবন্ধন নং
+                            {% elseif citizen.nid %}
+                                ন্যাশনাল আইডি নং
+                            {% else %}
+                                পার্সপোট নং
+                            {% endif %}
                         </td>
-                    </tr>
-                    
-                    
-                    
-                    <tr>
-                        <td align="left" nowrap style="font-size:16px;text-indent:55px; font-color:black; width: 180px; padding-left: 50px">তারিখ </td>
                         <td>
-                            <font style="font-size:16px;">: {{ citizen.issue_date|date('d-m-Y')|bn}}</font>
+                            <font style="font-size:16px;">:
+                                {% if citizen.birth_id %}
+                                    {{ citizen.birth_id | bn }}
+                                {% elseif citizen.nid %}
+                                    {{ citizen.nid | bn }}
+                                {% elseif citizen.passport_no %}
+                                    {{ citizen.passport_no }}
+                                {% endif %}
+                            </font>
                         </td>
                     </tr>
-
+                    <tr>
+                        <td align="left" nowrap style="font-size:16px; text-indent:55px; width:180px; padding-left:50px">তারিখ</td>
+                        <td><font style="font-size:16px;">: {{ citizen.issue_date|date('d-m-Y')|bn }}</font></td>
+                    </tr>
                 </table>
 
+                {# ───────────────────────────────────────────────
+                   CERTIFICATE BODY + SANJUKTI (সংযুক্তি)
+                   প্রতিটি সার্টিফিকেট টাইপে:
+                   ১. বিস্তারিত paragraph
+                   ২. সর্বাঙ্গীণ মঙ্গল লাইন
+                   ৩. সংযুক্তি অংশ
+                ─────────────────────────────────────────────── #}
+
+                {% if certificate_type == 'nagorik' %}
+                {# ── নাগরিক সনদ ── #}
                 <table border="0" width="98%" cellpadding="0" cellspacing="0" style="border-collapse:collapse; margin:0 auto; padding-top:10px;">
                     <tr>
                         <td style="font-size:17px; padding-left:50px;" height="80">
-                            &nbsp; &nbsp; &nbsp; &nbsp; 
-                            {% if certificate_type == 'nagorik' %}
-                                অত্র ইউনিয়নের একজন <font style="font-size:17px;">স্থায়ী</font> বাসিন্দা। তিনি জন্মগতভাবে বাংলাদেশী এবং আমার পরিচিত।
-                            {% elseif certificate_type == 'trade' %}
-                                অত্র ইউনিয়নের একজন ব্যবসায়ী। তিনি নিয়মিতভাবে ব্যবসা পরিচালনা করছেন এবং ট্রেড লাইসেন্স নবায়ন করেন।
-                            {% elseif certificate_type == 'warish' %}
-                                উক্ত ব্যক্তি মৃত ব্যক্তির ওয়ারিশ এবং সংশ্লিষ্ট সম্পত্তির উত্তরাধিকারী।
-                            {% elseif certificate_type == 'character' %}
-                                
-                                <table border="0" width="98%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin:0 auto;padding-top:10px;">
-
-        <tbody><tr>
-            <td style="font-size:17px;  padding-left:50px;" height="80">&nbsp; &nbsp; &nbsp; &nbsp;  স্থায়ী
-                 বাসিন্দা। তিনি জন্মগতভাবে বাংলাদেশী এবং আমার পরিচিত। তাহার স্বভাব ও নৈতিক চরিত্র ভাল এবং প্রশংসনীয়।  </td>
-
-        </tr>
-
-        <tr>
-            <td style="padding-left:72px; font-size:17px; height: 20px">আমি তাহার সর্বাঙ্গীণ মঙ্গল ও উন্নতি কামনা করি।</td>
-        </tr>
-
-    </tbody></table>
-                                
-                                
-                            {% elseif certificate_type == 'new-voter' %}
-                                অত্র ইউনিয়নের একজন স্থায়ী বাসিন্দা। তিনি জন্মগতভাবে বাংলাদেশী এবং আমার পরিচিত। ভোটার তালিকা হালনাগাদের সময় বাড়িতে না থাকায় নাম তালিকায় হয়নি।
-                            {% elseif certificate_type == 'voter' %}
-                                তিনি অত্র ইউনিয়ন থেকে অন্যত্র ভোটার আইডি স্থানান্তর করতে ইচ্ছুক।
-                            {% elseif certificate_type == 'vumihin' %}
-                                উক্ত ব্যক্তি একজন ভূমিহীন নাগরিক। সরকারের কাছে পুনর্বাসনের জন্য অনুরোধ জানানো যাচ্ছে।
-                            {% elseif certificate_type == 'death' %}
-                                উক্ত ব্যক্তি {{ data.deceased_name }} মৃত্যুবরণ করেছেন। মৃত্যুর তারিখ: {{ data.death_date | date('d-m-Y') | bn_number }}।
-                            {% elseif certificate_type == 'yearlyincome' %}
-                                উক্ত ব্যক্তির বার্ষিক আয় আনুমানিক {{ data.income_amount | bn_number }} টাকা।
-                            {% elseif certificate_type == 'family' %}
-                                উক্ত ব্যক্তি অত্র ইউনিয়নের একজন স্থায়ী বাসিন্দা এবং তার পরিবার নিম্নরূপ।
-                            {% elseif certificate_type == 'obibahito' %}
-<table border="0" width="98%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin:0 auto;padding-top:10px;">
-
-        <tbody><tr>
-            <td style="font-size:17px;  padding-left:50px;" height="80">&nbsp; &nbsp; &nbsp; &nbsp;   
-                  অত্র ইউনিয়নের একজন <font style="font-size:17px;">স্থায়ী বাসিন্দা। আমার জানা মতে, তিনি এখন পর্যন্ত বিবাহ বন্ধনে আবদ্ধ হয়নি। তাহার স্বভাব ও নৈতিক চরিত্র ভাল এবং প্রশংসনীয় । </font></td>
-            
-        </tr>
-
-        <tr>
-            <td style="padding-left:72px; font-size:17px; height: 20px">আমি তাহার সর্বাঙ্গীণ  মঙ্গল ও উন্নতি কামনা করি।</td>
-        </tr>
-
-    </tbody></table>                            {% elseif certificate_type == 'bibahito' %}
-                                উক্ত ব্যক্তি বিবাহিত। বিবাহের তারিখ: {{ data.marriage_date | date('d-m-Y') | bn_number }}।
-                            {% elseif certificate_type == 'ekoinam' %}
-                                উক্ত ব্যক্তির নাম একাধিক দালিলে একই নামে ব্যবহৃত হয়েছে।
-                            {% elseif certificate_type == 'punobibaho' %}
-                                উক্ত ব্যক্তি পুনঃবিবাহ করেননি।
-                            {% elseif certificate_type == 'protibondi' %}
-                                উক্ত ব্যক্তি প্রকৃত বাক ও শ্রবণ প্রতিবন্ধী।
-                            {% elseif certificate_type == 'onapotti' %}
-                                উক্ত ব্যক্তি কোন প্রকার আপত্তিকর কার্যকলাপে জড়িত নন।
-                            {% elseif certificate_type == 'prottyon' %}
-                            
-                            
-                                       অত্র ইউনিয়নের একজন স্থায়ী বাসিন্দা। সে আমার নিকট পরিচিত। তাহার নৈতিক চরিত্র ভাল।
-                                
-                                
-                            {% elseif certificate_type == 'onumoti' %}
-
-<table border="0" width="98%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin:0 auto;padding-top:10px;">
-
-        <tbody><tr>
-            <td style="font-size:17px;  padding-left:50px;" height="80">&nbsp; &nbsp; &nbsp; &nbsp; বাংলাদেশ পুলিশ  যোগদান করার জন্য স্বেচ্ছায় অনুমতি প্রদান করলাম।
-            </td>
-            
-        </tr>
-
-        <tr>
-            <td style="padding-left:72px; font-size:17px; height: 20px">আমি তাহার সর্বাঙ্গীণ মঙ্গল ও উন্নতি কামনা করি।</td>
-        </tr>
-
-    </tbody></table>
-
-
-                            {% elseif certificate_type == 'rastakhonon' %}
-                                ইউনিয়নের রাস্তায় খননের অনুমতি প্রদান করা হলো নির্দিষ্ট সময়সীমার মধ্যে কাজ সম্পন্ন করার শর্তে।
-                            {% elseif certificate_type == 'sonaton' %}
-                                উক্ত ব্যক্তি সনাতন ধর্মালম্বী এবং নিয়মিত ধর্মীয় কার্যক্রমে অংশগ্রহণ করেন।
-                            {% elseif certificate_type == 'nodibanga' %}
-                                উক্ত ব্যক্তি নদীভাঙনে ভিটেমাটি হারিয়েছেন এবং বর্তমানে অত্র এলাকায় অবস্থান করছেন।
-                            {% elseif certificate_type == 'Onnanno' %}
-                                উপরোক্ত ব্যক্তির বিষয়ে প্রয়োজনীয় তথ্য প্রদানপূর্বক এই প্রত্যয়নপত্র প্রদান করা হলো।
-                            {% else %}
-                                উক্ত ব্যক্তি অত্র ইউনিয়নের একজন স্থায়ী বাসিন্দা এবং উপরের তথ্য অনুযায়ী সনদ প্রদান করা হলো।
-                            {% endif %}
+                            &nbsp;&nbsp;&nbsp;&nbsp;
+                            {{ citizen.name_bn }} অত্র ইউনিয়নের {{ citizen.permanent_ward_no|bn }} নং ওয়ার্ডের একজন
+                            <strong>{% if (citizen.resident|default('permanent')) == 'temporary' %}অস্থায়ী{% else %}স্থায়ী{% endif %}</strong>
+                            বাসিন্দা। তিনি জন্মগতভাবে বাংলাদেশী নাগরিক এবং আমার ব্যক্তিগতভাবে পরিচিত।
+                            আমার জানামতে তিনি সৎ, পরিশ্রমী এবং আইন মান্যকারী একজন নাগরিক।
+                            তিনি কোনো আইনবিরোধী বা রাষ্ট্রবিরোধী কার্যকলাপে জড়িত নন।
                         </td>
                     </tr>
                     <tr>
-                        <td style="padding-left:72px; font-size:17px; height: 20px;">
+                        <td style="padding-left:72px; font-size:17px; height:20px;">
                             আমি তাহার সর্বাঙ্গীণ মঙ্গল ও উন্নতি কামনা করি।
                         </td>
                     </tr>
                 </table>
 
-	<table border="0" width="99%" style="border-collapse:collapse; margin:5px auto; height: 100px" cellspacing="0" cellpadding="0">
-	
-	        <tbody><tr>
-	
-	            <td style="font-size:16px; text-indent:70px; width:150px; font-weight:bold; padding-left: 55px; padding-top: 10px; height: 50px;">
-	                <span style="">সংযুক্তিঃ</span>
-	            </td>
-	
-	            <td style="font-size:16px;">&nbsp;তিনি অত্র ইউনিয়নের স্থায়ী বাসিন্দা এবং আমার ব্যক্তিগত ভাবে আমার পরিচিত। আমার জানামতে তিনি আইন শৃঙ্খলা পরিপন্থী কোন কাজের সাথে জড়িত নহে। তাহাঁর স্বভাব চরিত্র ভালো
-	
-	                                    আমি তাঁর সর্বাঙ্গীণ মঙ্গল কামনা করি। 
-	            </td>
-	        </tr>
-	
-	        
-	    
-	    	</tbody>
-	 </table>
-    
-                
-             </div>
+                {% elseif certificate_type == 'trade' %}
+                {# ── ট্রেড লাইসেন্স সনদ ── #}
+                <table border="0" width="98%" cellpadding="0" cellspacing="0" style="border-collapse:collapse; margin:0 auto; padding-top:10px;">
+                    <tr>
+                        <td style="font-size:17px; padding-left:50px;" height="80">
+                            &nbsp;&nbsp;&nbsp;&nbsp;
+                            {{ citizen.name_bn }} অত্র ইউনিয়নের একজন নিয়মিত ব্যবসায়ী। তিনি দীর্ঘদিন যাবৎ সুনামের সহিত ব্যবসা পরিচালনা করে আসছেন এবং প্রতি বৎসর নিয়মিতভাবে ট্রেড লাইসেন্স নবায়ন করেন।
+                            আমার জানামতে তিনি ব্যবসায়িক কার্যক্রমে সৎ ও আইনসম্মতভাবে পরিচালিত।
+                            তিনি সকল সরকারি বিধিমালা যথাযথভাবে পালন করেন।
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding-left:72px; font-size:17px; height:20px;">
+                            আমি তাহার ব্যবসায়িক সমৃদ্ধি ও সর্বাঙ্গীণ মঙ্গল কামনা করি।
+                        </td>
+                    </tr>
+                </table>
+
+                {% elseif certificate_type == 'warish' %}
+                {# ── ওয়ারিশ সনদ ── #}
+                <table border="0" width="98%" cellpadding="0" cellspacing="0" style="border-collapse:collapse; margin:0 auto; padding-top:10px;">
+                    <tr>
+                        <td style="font-size:17px; padding-left:50px;" height="80">
+                            &nbsp;&nbsp;&nbsp;&nbsp;
+                            {{ citizen.name_bn }} মৃত ব্যক্তির একজন বৈধ ওয়ারিশ এবং সংশ্লিষ্ট সম্পত্তির উত্তরাধিকারী।
+                            আমার জানামতে মৃত ব্যক্তির পরিবারের সদস্য হিসেবে তিনি আইনানুগভাবে ওয়ারিশ সম্পত্তি প্রাপ্তির যোগ্য।
+                            উক্ত সনদ যে কোনো আইনগত বা প্রশাসনিক কাজে ব্যবহার করা যাইবে।
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding-left:72px; font-size:17px; height:20px;">
+                            আমি তাহার সর্বাঙ্গীণ মঙ্গল ও উন্নতি কামনা করি।
+                        </td>
+                    </tr>
+                </table>
+
+                {% elseif certificate_type == 'character' %}
+                {# ── চারিত্রিক সনদ ── #}
+                <table border="0" width="98%" cellpadding="0" cellspacing="0" style="border-collapse:collapse; margin:0 auto; padding-top:10px;">
+                    <tr>
+                        <td style="font-size:17px; padding-left:50px;" height="80">
+                            &nbsp;&nbsp;&nbsp;&nbsp;
+                            {{ citizen.name_bn }} অত্র ইউনিয়নের {{ citizen.permanent_ward_no|bn }} নং ওয়ার্ডের একজন
+                            {% if (citizen.resident|default('permanent')) == 'temporary' %}অস্থায়ী{% else %}স্থায়ী{% endif %}
+                            বাসিন্দা। তিনি জন্মগতভাবে বাংলাদেশী এবং আমার ব্যক্তিগতভাবে পরিচিত।
+                            তাহার স্বভাব ও নৈতিক চরিত্র অত্যন্ত ভাল এবং সমাজে প্রশংসনীয়।
+                            তিনি কোনো আইনবিরোধী বা সমাজবিরোধী কার্যকলাপে কখনো জড়িত হননি।
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding-left:72px; font-size:17px; height:20px;">
+                            আমি তাহার সর্বাঙ্গীণ মঙ্গল ও উন্নতি কামনা করি।
+                        </td>
+                    </tr>
+                </table>
+
+                {% elseif certificate_type == 'new-voter' %}
+                {# ── নতুন ভোটার সনদ ── #}
+                <table border="0" width="98%" cellpadding="0" cellspacing="0" style="border-collapse:collapse; margin:0 auto; padding-top:10px;">
+                    <tr>
+                        <td style="font-size:17px; padding-left:50px;" height="80">
+                            &nbsp;&nbsp;&nbsp;&nbsp;
+                            {{ citizen.name_bn }} অত্র ইউনিয়নের {{ citizen.permanent_ward_no|bn }} নং ওয়ার্ডের একজন
+                            {% if (citizen.resident|default('permanent')) == 'temporary' %}অস্থায়ী বাসিন্দা{% else %}স্থায়ী বাসিন্দা{% endif %}।
+                            তিনি জন্মগতভাবে বাংলাদেশী নাগরিক এবং আমার ব্যক্তিগতভাবে পরিচিত।
+                            ভোটার তালিকা হালনাগাদের সময় বাড়িতে না থাকায় তাহার নাম তালিকায় অন্তর্ভুক্ত হয়নি।
+                            বর্তমানে তিনি উক্ত ওয়ার্ডের স্থায়ী বাসিন্দা হিসেবে ভোটার তালিকায় নাম অন্তর্ভুক্তির আবেদন করিতেছেন।
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding-left:72px; font-size:17px; height:20px;">
+                            আমি তাহার সর্বাঙ্গীণ মঙ্গল ও উন্নতি কামনা করি।
+                        </td>
+                    </tr>
+                </table>
+
+                {% elseif certificate_type == 'voter' %}
+                {# ── ভোটার স্থানান্তর সনদ ── #}
+                <table border="0" width="98%" cellpadding="0" cellspacing="0" style="border-collapse:collapse; margin:0 auto; padding-top:10px;">
+                    <tr>
+                        <td style="font-size:17px; padding-left:50px;" height="80">
+                            &nbsp;&nbsp;&nbsp;&nbsp;
+                            {{ citizen.name_bn }} অত্র ইউনিয়নের {{ citizen.permanent_ward_no|bn }} নং ওয়ার্ডের একজন বাসিন্দা।
+                            তিনি বর্তমানে অত্র ইউনিয়ন থেকে অন্যত্র ভোটার আইডি স্থানান্তর করিতে ইচ্ছুক।
+                            আমার জানামতে তিনি উক্ত ওয়ার্ডের বৈধ ভোটার এবং তাহার আইডি স্থানান্তরে কোনো বাধা নেই।
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding-left:72px; font-size:17px; height:20px;">
+                            আমি তাহার সর্বাঙ্গীণ মঙ্গল ও উন্নতি কামনা করি।
+                        </td>
+                    </tr>
+                </table>
+
+                {% elseif certificate_type == 'vumihin' %}
+                {# ── ভূমিহীন সনদ ── #}
+                <table border="0" width="98%" cellpadding="0" cellspacing="0" style="border-collapse:collapse; margin:0 auto; padding-top:10px;">
+                    <tr>
+                        <td style="font-size:17px; padding-left:50px;" height="80">
+                            &nbsp;&nbsp;&nbsp;&nbsp;
+                            {{ citizen.name_bn }} অত্র ইউনিয়নের একজন ভূমিহীন নাগরিক।
+                            আমার জানামতে তাহার নিজের নামে কোনো জমি বা বসতভিটা নেই।
+                            তিনি অত্যন্ত দরিদ্র ও অসহায় অবস্থায় জীবনযাপন করিতেছেন।
+                            মানবিক বিবেচনায় সরকারি পুনর্বাসন কর্মসূচির আওতায় তাহাকে অন্তর্ভুক্ত করার জন্য সংশ্লিষ্ট কর্তৃপক্ষের নিকট বিনীত অনুরোধ জানানো যাইতেছে।
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding-left:72px; font-size:17px; height:20px;">
+                            আমি তাহার সর্বাঙ্গীণ মঙ্গল ও উন্নতি কামনা করি।
+                        </td>
+                    </tr>
+                </table>
+
+                {% elseif certificate_type == 'death' %}
+                {# ── মৃত্যু সনদ ── #}
+                <table border="0" width="98%" cellpadding="0" cellspacing="0" style="border-collapse:collapse; margin:0 auto; padding-top:10px;">
+                    <tr>
+                        <td style="font-size:17px; padding-left:50px;" height="80">
+                            &nbsp;&nbsp;&nbsp;&nbsp;
+                            {{ data.deceased_name }} অত্র ইউনিয়নের একজন বাসিন্দা ছিলেন।
+                            তিনি {{ data.death_date | date('d-m-Y') | bn }} তারিখে মৃত্যুবরণ করিয়াছেন।
+                            মৃত্যুর সময় তাহার বয়স ছিল আনুমানিক {{ data.age | default('') | bn }} বৎসর।
+                            তাহার মৃত্যুর বিষয়টি স্থানীয়ভাবে সর্বজনবিদিত এবং এই মর্মে সনদ প্রদান করা হইল।
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding-left:72px; font-size:17px; height:20px;">
+                            মহান আল্লাহ তাহার রুহের মাগফিরাত করুন।
+                        </td>
+                    </tr>
+                </table>
+
+                {% elseif certificate_type == 'yearlyincome' %}
+                {# ── বার্ষিক আয় সনদ ── #}
+                <table border="0" width="98%" cellpadding="0" cellspacing="0" style="border-collapse:collapse; margin:0 auto; padding-top:10px;">
+                    <tr>
+                        <td style="font-size:17px; padding-left:50px;" height="80">
+                            &nbsp;&nbsp;&nbsp;&nbsp;
+                            {{ citizen.name_bn }} অত্র ইউনিয়নের {{ citizen.permanent_ward_no|bn }} নং ওয়ার্ডের একজন
+                            {% if (citizen.resident|default('permanent')) == 'temporary' %}অস্থায়ী{% else %}স্থায়ী{% endif %}
+                            বাসিন্দা এবং আমার ব্যক্তিগতভাবে পরিচিত।
+                            আমার জানামতে তাহার বার্ষিক পারিবারিক আয় আনুমানিক {{ data.income_amount | bn }} ({{ data.income_amount_word | default('') }}) টাকা।
+                            এই সনদ বিভিন্ন সরকারি ও বেসরকারি সেবা গ্রহণের উদ্দেশ্যে প্রদান করা হইল।
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding-left:72px; font-size:17px; height:20px;">
+                            আমি তাহার সর্বাঙ্গীণ মঙ্গল ও উন্নতি কামনা করি।
+                        </td>
+                    </tr>
+                </table>
+
+                {% elseif certificate_type == 'family' %}
+                {# ── পারিবারিক সনদ ── #}
+                <table border="0" width="98%" cellpadding="0" cellspacing="0" style="border-collapse:collapse; margin:0 auto; padding-top:10px;">
+                    <tr>
+                        <td style="font-size:17px; padding-left:50px;" height="80">
+                            &nbsp;&nbsp;&nbsp;&nbsp;
+                            {{ citizen.name_bn }} অত্র ইউনিয়নের {{ citizen.permanent_ward_no|bn }} নং ওয়ার্ডের একজন
+                            {% if (citizen.resident|default('permanent')) == 'temporary' %}অস্থায়ী বাসিন্দা{% else %}স্থায়ী বাসিন্দা{% endif %}।
+                            তাহার পারিবারিক বিবরণ নিম্নরূপঃ
+                            <br><br>
+                            {% if citizen.family_members is defined and citizen.family_members is not empty %}
+                            <table border="1" style="width:90%; margin-left:30px; border-collapse:collapse; font-size:16px;">
+                                <tr style="background:#f0f0f0; font-weight:bold;">
+                                    <td style="padding:5px;">ক্রমিক নং</td>
+                                    <td style="padding:5px;">নাম</td>
+                                    <td style="padding:5px;">সম্পর্ক</td>
+                                    <td style="padding:5px;">বয়স</td>
+                                </tr>
+                                {% for member in citizen.family_members %}
+                                <tr>
+                                    <td style="padding:5px;">{{ loop.index | bn }}</td>
+                                    <td style="padding:5px;">{{ member.name_bn }}</td>
+                                    <td style="padding:5px;">{{ member.relation_bn }}</td>
+                                    <td style="padding:5px;">{{ member.age | bn }}</td>
+                                </tr>
+                                {% endfor %}
+                            </table>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding-left:72px; font-size:17px; height:20px;">
+                            আমি তাহার সর্বাঙ্গীণ মঙ্গল ও উন্নতি কামনা করি।
+                        </td>
+                    </tr>
+                </table>
+
+                {% elseif certificate_type == 'obibahito' %}
+                {# ── অবিবাহিত সনদ ── #}
+                <table border="0" width="98%" cellpadding="0" cellspacing="0" style="border-collapse:collapse; margin:0 auto; padding-top:10px;">
+                    <tr>
+                        <td style="font-size:17px; padding-left:50px;" height="80">
+                            &nbsp;&nbsp;&nbsp;&nbsp;
+                            {{ citizen.name_bn }} অত্র ইউনিয়নের {{ citizen.permanent_ward_no|bn }} নং ওয়ার্ডের একজন
+                            {% if (citizen.resident|default('permanent')) == 'temporary' %}অস্থায়ী বাসিন্দা{% else %}স্থায়ী বাসিন্দা{% endif %}।
+                            আমার জানামতে তিনি এখন পর্যন্ত বিবাহ বন্ধনে আবদ্ধ হননি।
+                            তাহার স্বভাব ও নৈতিক চরিত্র ভাল এবং সমাজে প্রশংসনীয়।
+                            তিনি কোনো আইনবিরোধী কার্যকলাপে জড়িত নন।
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding-left:72px; font-size:17px; height:20px;">
+                            আমি তাহার সর্বাঙ্গীণ মঙ্গল ও উন্নতি কামনা করি।
+                        </td>
+                    </tr>
+                </table>
+
+                {% elseif certificate_type == 'bibahito' %}
+                {# ── বিবাহিত সনদ ── #}
+                <table border="0" width="98%" cellpadding="0" cellspacing="0" style="border-collapse:collapse; margin:0 auto; padding-top:10px;">
+                    <tr>
+                        <td style="font-size:17px; padding-left:50px;" height="80">
+                            &nbsp;&nbsp;&nbsp;&nbsp;
+                            {{ citizen.name_bn }} অত্র ইউনিয়নের একজন বিবাহিত নাগরিক।
+                            তাহার বিবাহ {{ data.marriage_date | date('d-m-Y') | bn }} তারিখে সম্পন্ন হইয়াছে।
+                            বিবাহটি সামাজিক ও ধর্মীয় রীতি অনুযায়ী সম্পাদিত হইয়াছে এবং স্থানীয়ভাবে সকলের নিকট সুবিদিত।
+                            এই মর্মে সনদ প্রদান করা হইল।
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding-left:72px; font-size:17px; height:20px;">
+                            আমি তাহার সর্বাঙ্গীণ মঙ্গল ও উন্নতি কামনা করি।
+                        </td>
+                    </tr>
+                </table>
+
+                {% elseif certificate_type == 'ekoinam' %}
+                {# ── একই নাম সনদ ── #}
+                <table border="0" width="98%" cellpadding="0" cellspacing="0" style="border-collapse:collapse; margin:0 auto; padding-top:10px;">
+                    <tr>
+                        <td style="font-size:17px; padding-left:50px;" height="80">
+                            &nbsp;&nbsp;&nbsp;&nbsp;
+                            তিনি অত্র ইউনিয়নের অন্তর্গত {{ citizen.permanent_ward_no|bn }} নং ওয়ার্ডের
+                            {% if (citizen.resident|default('permanent')) == 'temporary' %}অস্থায়ী বাসিন্দা{% else %}স্থায়ী বাসিন্দা{% endif %}।
+                            আমার জানামতে {{ citizen.name_bn }} প্রকাশে {{ citizen.extra.nickname_bn }} একই ব্যক্তি এবং উভয় নামে পরিচিত।
+                            বিভিন্ন দলিলে উভয় নামের ব্যবহার থাকলেও এটি একই ব্যক্তিকে নির্দেশ করে।
+                            এই মর্মে সনদ প্রদান করা হইল।
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding-left:72px; font-size:17px; height:20px;">
+                            আমি তাহার সর্বাঙ্গীণ মঙ্গল ও উন্নতি কামনা করি।
+                        </td>
+                    </tr>
+                </table>
+
+                {% elseif certificate_type == 'punobibaho' %}
+                {# ── পুনঃবিবাহ না করা সনদ ── #}
+                <table border="0" width="98%" cellpadding="0" cellspacing="0" style="border-collapse:collapse; margin:0 auto; padding-top:10px;">
+                    <tr>
+                        <td style="font-size:17px; padding-left:50px;" height="80">
+                            &nbsp;&nbsp;&nbsp;&nbsp;
+                            {{ citizen.name_bn }} অত্র ইউনিয়নের {{ citizen.permanent_ward_no|bn }} নং ওয়ার্ডের একজন বাসিন্দা।
+                            আমার জানামতে তিনি পূর্বে বিবাহিত ছিলেন কিন্তু বর্তমানে পুনঃবিবাহ করেননি।
+                            তিনি এককভাবে জীবনযাপন করিতেছেন।
+                            এই মর্মে সনদ প্রদান করা হইল।
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding-left:72px; font-size:17px; height:20px;">
+                            আমি তাহার সর্বাঙ্গীণ মঙ্গল ও উন্নতি কামনা করি।
+                        </td>
+                    </tr>
+                </table>
+
+                {% elseif certificate_type == 'protibondi' %}
+                {# ── প্রতিবন্ধী সনদ ── #}
+                <table border="0" width="98%" cellpadding="0" cellspacing="0" style="border-collapse:collapse; margin:0 auto; padding-top:10px;">
+                    <tr>
+                        <td style="font-size:17px; padding-left:50px;" height="80">
+                            &nbsp;&nbsp;&nbsp;&nbsp;
+                            {{ citizen.name_bn }} অত্র ইউনিয়নের {{ citizen.permanent_ward_no|bn }} নং ওয়ার্ডের একজন
+                            {% if (citizen.resident|default('permanent')) == 'temporary' %}অস্থায়ী{% else %}স্থায়ী{% endif %}
+                            বাসিন্দা।
+                            আমার জানামতে তিনি প্রকৃত বাক ও শ্রবণ প্রতিবন্ধী।
+                            তাহার প্রতিবন্ধিতা জন্মগত অথবা দুর্ঘটনাজনিত কারণে সৃষ্ট।
+                            তিনি সরকারি প্রতিবন্ধী ভাতা ও সেবা প্রাপ্তির আবেদন করিতেছেন।
+                            সংশ্লিষ্ট কর্তৃপক্ষের নিকট যথাযথ ব্যবস্থা গ্রহণের অনুরোধ জানানো যাইতেছে।
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding-left:72px; font-size:17px; height:20px;">
+                            আমি তাহার সর্বাঙ্গীণ মঙ্গল ও উন্নতি কামনা করি।
+                        </td>
+                    </tr>
+                </table>
+
+                {% elseif certificate_type == 'onapotti' %}
+                {# ── আপত্তিহীন সনদ ── #}
+                <table border="0" width="98%" cellpadding="0" cellspacing="0" style="border-collapse:collapse; margin:0 auto; padding-top:10px;">
+                    <tr>
+                        <td style="font-size:17px; padding-left:50px;" height="80">
+                            &nbsp;&nbsp;&nbsp;&nbsp;
+                            {{ citizen.name_bn }} অত্র ইউনিয়নের {{ citizen.permanent_ward_no|bn }} নং ওয়ার্ডের একজন
+                            {% if (citizen.resident|default('permanent')) == 'temporary' %}অস্থায়ী{% else %}স্থায়ী{% endif %}
+                            বাসিন্দা এবং আমার ব্যক্তিগতভাবে পরিচিত।
+                            আমার জানামতে তিনি কোনো প্রকার আপত্তিকর, বেআইনি বা অনৈতিক কার্যকলাপে জড়িত নন।
+                            তাহার স্বভাব ও চরিত্র সমাজে প্রশংসনীয় এবং তিনি একজন সৎ নাগরিক হিসেবে পরিচিত।
+                            এই মর্মে সনদ প্রদান করা হইল।
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding-left:72px; font-size:17px; height:20px;">
+                            আমি তাহার সর্বাঙ্গীণ মঙ্গল ও উন্নতি কামনা করি।
+                        </td>
+                    </tr>
+                </table>
+
+                {% elseif certificate_type == 'prottyon' %}
+                {# ── প্রত্যয়নপত্র ── #}
+                <table border="0" width="98%" cellpadding="0" cellspacing="0" style="border-collapse:collapse; margin:0 auto; padding-top:10px;">
+                    <tr>
+                        <td style="font-size:17px; padding-left:50px;" height="80">
+                            &nbsp;&nbsp;&nbsp;&nbsp;
+                            {{ citizen.name_bn }} অত্র ইউনিয়নের {{ citizen.permanent_ward_no|bn }} নং ওয়ার্ডের একজন
+                            {% if (citizen.resident|default('permanent')) == 'temporary' %}অস্থায়ী বাসিন্দা{% else %}স্থায়ী বাসিন্দা{% endif %}।
+                            সে আমার নিকট ব্যক্তিগতভাবে পরিচিত।
+                            তাহার নৈতিক চরিত্র ভাল এবং সমাজে সুনামের সহিত বসবাস করিতেছেন।
+                            তিনি কোনো সমাজবিরোধী বা আইনবিরোধী কাজে কখনো জড়িত হননি।
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding-left:72px; font-size:17px; height:20px;">
+                            আমি তাহার সর্বাঙ্গীণ মঙ্গল ও উন্নতি কামনা করি।
+                        </td>
+                    </tr>
+                </table>
+
+                {% elseif certificate_type == 'onumoti' %}
+                {# ── অনুমতিপত্র ── #}
+                <table border="0" width="98%" cellpadding="0" cellspacing="0" style="border-collapse:collapse; margin:0 auto; padding-top:10px;">
+                    <tr>
+                        <td style="font-size:17px; padding-left:50px;" height="80">
+                            &nbsp;&nbsp;&nbsp;&nbsp;
+                            {{ citizen.name_bn }} অত্র ইউনিয়নের {{ citizen.permanent_ward_no|bn }} নং ওয়ার্ডের একজন
+                            {% if (citizen.resident|default('permanent')) == 'temporary' %}অস্থায়ী বাসিন্দা{% else %}স্থায়ী বাসিন্দা{% endif %}
+                            এবং আমার ব্যক্তিগতভাবে পরিচিত।
+                            {{ citizen.extra.permission_reason_bn }} যোগদান করার জন্য তিনি স্বেচ্ছায় অনুমতি প্রার্থনা করিয়াছেন এবং আমি তাহাকে অনুমতি প্রদান করিলাম।
+                            তাহার স্বভাব ও নৈতিক চরিত্র ভাল এবং তিনি একজন আইনমান্যকারী নাগরিক।
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding-left:72px; font-size:17px; height:20px;">
+                            আমি তাহার সর্বাঙ্গীণ মঙ্গল ও উন্নতি কামনা করি।
+                        </td>
+                    </tr>
+                </table>
+
+                {% elseif certificate_type == 'rastakhonon' %}
+                {# ── রাস্তা খনন অনুমতি ── #}
+                <table border="0" width="98%" cellpadding="0" cellspacing="0" style="border-collapse:collapse; margin:0 auto; padding-top:10px;">
+                    <tr>
+                        <td style="font-size:17px; padding-left:50px;" height="80">
+                            &nbsp;&nbsp;&nbsp;&nbsp;
+                            {{ citizen.name_bn }} কর্তৃক দাখিলকৃত আবেদনের পরিপ্রেক্ষিতে অত্র ইউনিয়নের রাস্তায় খননকার্য পরিচালনার অনুমতি প্রদান করা হইল।
+                            উক্ত খননকার্য নির্ধারিত সময়সীমার মধ্যে সম্পন্ন করিতে হইবে এবং কাজ শেষে রাস্তা পূর্বের অবস্থায় পুনরুদ্ধার করিতে হইবে।
+                            কোনোরূপ ক্ষতি হইলে সংশ্লিষ্ট ব্যক্তি দায়ী থাকিবেন।
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding-left:72px; font-size:17px; height:20px;">
+                            আমি তাহার সর্বাঙ্গীণ মঙ্গল ও উন্নতি কামনা করি।
+                        </td>
+                    </tr>
+                </table>
+
+                {% elseif certificate_type == 'sonaton' %}
+                {# ── সনাতন ধর্ম সনদ ── #}
+                <table border="0" width="98%" cellpadding="0" cellspacing="0" style="border-collapse:collapse; margin:0 auto; padding-top:10px;">
+                    <tr>
+                        <td style="font-size:17px; padding-left:50px;" height="80">
+                            &nbsp;&nbsp;&nbsp;&nbsp;
+                            {{ citizen.name_bn }} অত্র ইউনিয়নের {{ citizen.permanent_ward_no|bn }} নং ওয়ার্ডের একজন
+                            {% if (citizen.resident|default('permanent')) == 'temporary' %}অস্থায়ী{% else %}স্থায়ী{% endif %}
+                            বাসিন্দা।
+                            আমার জানামতে তিনি সনাতন ধর্মাবলম্বী এবং নিয়মিতভাবে ধর্মীয় আচার-অনুষ্ঠান ও কার্যক্রমে অংশগ্রহণ করেন।
+                            তিনি একজন ধর্মপ্রাণ ও সৎ নাগরিক হিসেবে সমাজে পরিচিত।
+                            এই মর্মে সনদ প্রদান করা হইল।
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding-left:72px; font-size:17px; height:20px;">
+                            আমি তাহার সর্বাঙ্গীণ মঙ্গল ও উন্নতি কামনা করি।
+                        </td>
+                    </tr>
+                </table>
+
+                {% elseif certificate_type == 'nodibanga' %}
+                {# ── নদীভাঙন সনদ ── #}
+                <table border="0" width="98%" cellpadding="0" cellspacing="0" style="border-collapse:collapse; margin:0 auto; padding-top:10px;">
+                    <tr>
+                        <td style="font-size:17px; padding-left:50px;" height="80">
+                            &nbsp;&nbsp;&nbsp;&nbsp;
+                            {{ citizen.name_bn }} নদীভাঙনের শিকার একজন ক্ষতিগ্রস্ত নাগরিক।
+                            নদীভাঙনের কারণে তাহার ভিটেমাটি ও বাসস্থান সম্পূর্ণরূপে নদীগর্ভে বিলীন হইয়া গিয়াছে।
+                            বর্তমানে তিনি অত্র এলাকায় অস্থায়ীভাবে বসবাস করিতেছেন।
+                            মানবিক বিবেচনায় তাহাকে সরকারি পুনর্বাসন কর্মসূচিতে অন্তর্ভুক্ত করার জন্য সংশ্লিষ্ট কর্তৃপক্ষের নিকট বিনীত অনুরোধ জানানো যাইতেছে।
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding-left:72px; font-size:17px; height:20px;">
+                            আমি তাহার সর্বাঙ্গীণ মঙ্গল ও উন্নতি কামনা করি।
+                        </td>
+                    </tr>
+                </table>
+
+                {% elseif certificate_type == 'Onnanno' %}
+                {# ── অন্যান্য সনদ ── #}
+                <table border="0" width="98%" cellpadding="0" cellspacing="0" style="border-collapse:collapse; margin:0 auto; padding-top:10px;">
+                    <tr>
+                        <td style="font-size:17px; padding-left:50px;" height="80">
+                            &nbsp;&nbsp;&nbsp;&nbsp;
+                            {{ citizen.name_bn }} অত্র ইউনিয়নের {{ citizen.permanent_ward_no|bn }} নং ওয়ার্ডের একজন
+                            {% if (citizen.resident|default('permanent')) == 'temporary' %}অস্থায়ী বাসিন্দা{% else %}স্থায়ী বাসিন্দা{% endif %}
+                            এবং আমার ব্যক্তিগতভাবে পরিচিত।
+                            উপরোক্ত ব্যক্তির বিষয়ে প্রয়োজনীয় তথ্য যাচাই করিয়া এই প্রত্যয়নপত্র প্রদান করা হইল।
+                            সংশ্লিষ্ট কর্তৃপক্ষ প্রয়োজনীয় ব্যবস্থা গ্রহণ করিলে বাধিত হইব।
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding-left:72px; font-size:17px; height:20px;">
+                            আমি তাহার সর্বাঙ্গীণ মঙ্গল ও উন্নতি কামনা করি।
+                        </td>
+                    </tr>
+                </table>
+
+                {% else %}
+                {# ── Default fallback ── #}
+                <table border="0" width="98%" cellpadding="0" cellspacing="0" style="border-collapse:collapse; margin:0 auto; padding-top:10px;">
+                    <tr>
+                        <td style="font-size:17px; padding-left:50px;" height="80">
+                            &nbsp;&nbsp;&nbsp;&nbsp;
+                            {{ citizen.name_bn }} অত্র ইউনিয়নের {{ citizen.permanent_ward_no|bn }} নং ওয়ার্ডের একজন
+                            {% if (citizen.resident|default('permanent')) == 'temporary' %}অস্থায়ী বাসিন্দা{% else %}স্থায়ী বাসিন্দা{% endif %}
+                            এবং উপরের তথ্য অনুযায়ী এই সনদ প্রদান করা হইল।
+                            সংশ্লিষ্ট কর্তৃপক্ষের নিকট প্রয়োজনীয় সহযোগিতার অনুরোধ জানানো যাইতেছে।
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding-left:72px; font-size:17px; height:20px;">
+                            আমি তাহার সর্বাঙ্গীণ মঙ্গল ও উন্নতি কামনা করি।
+                        </td>
+                    </tr>
+                </table>
+                {% endif %}
+
+                {# ═══════════════════════════════════════
+                   সংযুক্তি — সব সার্টিফিকেটে প্রযোজ্য
+                ═══════════════════════════════════════ #}
+                <table border="0" width="99%" style="border-collapse:collapse; margin:5px auto; height:100px;" cellspacing="0" cellpadding="0">
+                    <tbody>
+                        <tr>
+                            <td style="font-size:16px; text-indent:70px; width:150px; font-weight:bold; padding-left:55px; padding-top:10px; height:50px;">
+                                <span>সংযুক্তিঃ</span>
+                            </td>
+                            <td style="font-size:16px;">
+                                &nbsp; তিনি অত্র ইউনিয়নের
+                                {% if (citizen.resident|default('permanent')) == 'temporary' %}অস্থায়ী বাসিন্দা{% else %}স্থায়ী বাসিন্দা{% endif %}
+                                এবং আমার ব্যক্তিগতভাবে পরিচিত। আমার জানামতে তিনি আইন শৃঙ্খলা পরিপন্থী কোনো কাজের সাথে জড়িত নহেন। তাহার স্বভাব চরিত্র ভালো।
+                                আমি তাঁর সর্বাঙ্গীণ মঙ্গল কামনা করি।
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+
+            </div>
         </div>
     </section>
-
 </body>
 </html>

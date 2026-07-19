@@ -59,8 +59,10 @@
             e.preventDefault();
 
             let $form = $(this);
+            let $btn = $form.find('button[type="submit"]');
             let url = $form.attr('action');
             let data = $form.serialize();
+            const restore = btnLoading($btn[0], 'সংরক্ষণ করা হচ্ছে...');
 
             $.post(url, data, function(response) {
                 let $alert = $('#notificationAlert');
@@ -69,8 +71,10 @@
                 } else {
                     $alert.removeClass('d-none alert-success').addClass('alert-danger').text(response.message);
                 }
+                restore();
             }, 'json').fail(function() {
                 $('#notificationAlert').removeClass('d-none alert-success').addClass('alert-danger').text('Something went wrong. Please try again.');
+                restore();
             });
         });
     });

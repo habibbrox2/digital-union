@@ -45,22 +45,15 @@ $router->post('/csrf', function () {
         renderError(405, "শুধুমাত্র POST অনুরোধ অনুমোদিত।");
     }
 
-    if (!function_exists('processForm')) {
-        renderError(500, "processForm() ফাংশন পাওয়া যায়নি।");
+    // CSRF is auto-verified by autoVerifyCsrf() from config/csrf.php
+    // Sanitize the incoming data using the already-available sanitizeRequest()
+    if (!function_exists('sanitizeRequest')) {
+        renderError(500, "sanitizeRequest() ফাংশন পাওয়া যায়নি।");
     }
 
-    $processed = processForm($_POST);
-
-    if ($processed === false) {
-        renderError(403, "CSRF Token validation ব্যর্থ হয়েছে।");
-    }
-
-    // Sanitize processed data
-    foreach ($processed as $key => $value) {
-        if (is_string($value)) {
-            $processed[$key] = htmlspecialchars(trim($value), ENT_QUOTES, 'UTF-8');
-        }
-    }
+    $data = $_POST;
+    unset($data['csrf_token']);
+    $processed = sanitizeRequest($data);
 
     // Response (example)
     header('Content-Type: application/json; charset=utf-8');

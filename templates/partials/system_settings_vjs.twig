@@ -2,7 +2,7 @@
 <script>
 document.addEventListener('DOMContentLoaded', function () {
 
-    const userRole = "{{ user_role|lower|raw }}";
+    const userRole = "{{ user_role|lower|e('js') }}";
 
     const systemForm = document.getElementById('systemSettingsForm');
     const unionForm = document.getElementById('unionFormContainer');
@@ -156,16 +156,29 @@ document.addEventListener('DOMContentLoaded', function () {
         });
 
         // Logo preview
-        let logoPreview = document.querySelector('#unionFormContainer img');
+        let logoPreview = document.querySelector('#unionFormContainer img[alt="Union Logo"]');
         if (logoPreview) {
             logoPreview.src = data.logo_url || '';
         } else if (data.logo_url) {
             const img = document.createElement('img');
             img.src = data.logo_url;
             img.alt = "Union Logo";
-            img.className = "img-fluid mt-2";
+            img.className = "img-fluid mt-2 border rounded";
             img.style.maxHeight = "100px";
             document.getElementById('union_logo').after(img);
+        }
+
+        // Stamp logo preview
+        let stampPreview = document.querySelector('#unionFormContainer img[alt="Union Stamp Logo"]');
+        if (stampPreview) {
+            stampPreview.src = data.stamp_logo_url || '';
+        } else if (data.stamp_logo_url) {
+            const img = document.createElement('img');
+            img.src = data.stamp_logo_url;
+            img.alt = "Union Stamp Logo";
+            img.className = "img-fluid mt-2 border rounded";
+            img.style.maxHeight = "100px";
+            document.getElementById('union_stamp_logo').after(img);
         }
 
         // Cascade
@@ -205,7 +218,7 @@ document.addEventListener('DOMContentLoaded', function () {
         });
         if (systemForm) systemForm.querySelector('button[type="submit"]')?.remove();
         unionForm.style.display = 'block';
-        loadUnionData("{{ union_settings.union_id|raw }}");
+        loadUnionData("{{ union_settings.union_id|e('js') }}");
     } else {
         unionForm.style.display = 'none';
     }
@@ -214,14 +227,19 @@ document.addEventListener('DOMContentLoaded', function () {
     if (systemForm) {
         systemForm.addEventListener('submit', function (e) {
             e.preventDefault();
+            const restore = btnLoading(e.submitter, 'সংরক্ষণ করা হচ্ছে...');
             const formData = new FormData(systemForm);
             fetch('/settings/system', { method:'POST', body: formData })
             .then(res => res.json())
             .then(resp => {
                 if(resp.status==='success') showMessage('success', resp.message);
                 else showMessage('danger','Failed: '+resp.message);
+                restore();
             })
-            .catch(err => showMessage('danger','AJAX Error: '+err.message));
+            .catch(err => {
+                showMessage('danger','AJAX Error: '+err.message);
+                restore();
+            });
         });
     }
 
@@ -229,6 +247,8 @@ document.addEventListener('DOMContentLoaded', function () {
     if (unionForm) {
         unionForm.addEventListener('submit', function(e){
             e.preventDefault();
+
+            const restore = btnLoading(e.submitter, 'সংরক্ষণ করা হচ্ছে...');
 
             const fd = new FormData();
 
@@ -247,6 +267,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
             const logoInput = document.getElementById('union_logo');
             if(logoInput && logoInput.files.length>0) fd.set('union_logo', logoInput.files[0]);
+            const stampInput = document.getElementById('union_stamp_logo');
+            if(stampInput && stampInput.files.length>0) fd.set('union_stamp_logo', stampInput.files[0]);
             fd.set('csrf_token', getCsrfToken());
 
             fetch('/settings/union', { method:'POST', body: fd })
@@ -254,8 +276,12 @@ document.addEventListener('DOMContentLoaded', function () {
             .then(resp => {
                 if(resp.status==='success') showMessage('success', resp.message);
                 else showMessage('danger','Error: '+resp.message);
+                restore();
             })
-            .catch(err => showMessage('danger','Update failed: '+err.message));
+            .catch(err => {
+                showMessage('danger','Update failed: '+err.message);
+                restore();
+            });
         });
     }
 });

@@ -87,6 +87,19 @@ db_backups/
 backups/
 
 # ============================================
+# Audit & Backup Dumps (local copies, not source)
+# ============================================
+backup__/
+lgdhaka_extracted/
+
+# Timestamped config backups
+config/*.bak.*
+*.bak.*
+
+# Audit / code reports
+CODEBASE_AUDIT.md
+
+# ============================================
 # Documentation & Audit Files
 # ============================================
 AUDIT_AND_REPAIR_REPORT.md

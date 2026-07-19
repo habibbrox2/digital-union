@@ -6,103 +6,10 @@
  * as no-op stubs to avoid runtime errors.
  */
 
-require_once __DIR__ . '/../classes/PermissionsManager.php';
+require_once __DIR__ . '/../models/PermissionsManager.php';
 
-if (!function_exists('ensure_can')) {
-    function ensure_can($permissionName, $module = null) {
-        global $mysqli;
-        if (!isset($mysqli)) {
-            error_log('RBAC helper: $mysqli not available');
-            http_response_code(500);
-            if (function_exists('renderError')) renderError(500, 'Server configuration error.');
-            exit;
-        }
-
-        require_once __DIR__ . '/../classes/AuthManager.php';
-        $auth = new AuthManager($mysqli);
-        $auth->requireLogin();
-
-        $userId = $_SESSION['user_id'] ?? null;
-        if (!$userId) {
-            http_response_code(401);
-            if (function_exists('renderError')) renderError(401, 'আপনি লগইন করেননি।');
-            exit;
-        }
-
-        // Superadmin bypass
-        $stmt = $mysqli->prepare("SELECT role_id FROM users WHERE user_id = ? LIMIT 1");
-        $stmt->bind_param("i", $userId);
-        $stmt->execute();
-        $result = $stmt->get_result()->fetch_assoc();
-        $stmt->close();
-
-        if ($result && (int)$result['role_id'] === 1) {
-            return; // full bypass
-        }
-
-        $permissionsManager = new PermissionsManager($mysqli);
-
-        if ($module) {
-            $hasPermission = $permissionsManager->hasPermissionWithModule($userId, $permissionName, $module);
-        } else {
-            $hasPermission = $permissionsManager->hasPermission($userId, $permissionName);
-        }
-
-        if (!$hasPermission) {
-            http_response_code(403);
-            if (function_exists('renderError')) renderError(403, 'আপনার পর্যাপ্ত অনুমতি নেই।');
-            exit;
-        }
-    }
-}
-
-if (!function_exists('ensure_can_in_union')) {
-    function ensure_can_in_union($permissionName, $unionId, $module = null) {
-        global $mysqli;
-        if (!isset($mysqli)) {
-            error_log('RBAC helper: $mysqli not available');
-            http_response_code(500);
-            if (function_exists('renderError')) renderError(500, 'Server configuration error.');
-            exit;
-        }
-
-        require_once __DIR__ . '/../classes/AuthManager.php';
-        $auth = new AuthManager($mysqli);
-        $auth->requireLogin();
-
-        $userId = $_SESSION['user_id'] ?? null;
-        if (!$userId) {
-            http_response_code(401);
-            if (function_exists('renderError')) renderError(401, 'আপনি লগইন করেননি।');
-            exit;
-        }
-
-        // Superadmin bypass
-        $stmt = $mysqli->prepare("SELECT role_id FROM users WHERE user_id = ? LIMIT 1");
-        $stmt->bind_param("i", $userId);
-        $stmt->execute();
-        $result = $stmt->get_result()->fetch_assoc();
-        $stmt->close();
-
-        if ($result && (int)$result['role_id'] === 1) {
-            return; // full bypass
-        }
-
-        $permissionsManager = new PermissionsManager($mysqli);
-
-        if ($module) {
-            $hasPermission = $permissionsManager->hasPermissionInUnionWithModule($userId, $permissionName, $unionId, $module);
-        } else {
-            $hasPermission = $permissionsManager->hasPermissionInUnion($userId, $permissionName, $unionId);
-        }
-
-        if (!$hasPermission) {
-            http_response_code(403);
-            if (function_exists('renderError')) renderError(403, 'আপনার পর্যাপ্ত অনুমতি নেই।');
-            exit;
-        }
-    }
-}
+// @codebuff-removed: ensure_can() has been replaced by AuthService::ensureCan() in modules/Services/AuthService.php
+// All 99 call sites across 14 controllers have been migrated to use the service directly.
 
 if (!function_exists('isAdmin')) {
     function isAdmin($userId, $mysqli = null) {
@@ -253,39 +160,6 @@ if (!function_exists('hasMinimumRoleLevel')) {
 }
 
 /**
- * Ensure user has minimum role level
- * Exits with error if not met
- * @param int $minLevel Minimum role level
- * @param string $errorMessage Error message (optional)
- */
-if (!function_exists('ensure_role_level')) {
-    function ensure_role_level($minLevel, $errorMessage = null) {
-        global $mysqli;
-        
-        if (!isset($mysqli)) {
-            http_response_code(500);
-            if (function_exists('renderError')) renderError(500, 'সার্ভার কনফিগারেশন ত্রুটি।');
-            exit;
-        }
-
-        $userId = $_SESSION['user_id'] ?? null;
-        if (!$userId) {
-            http_response_code(401);
-            if (function_exists('renderError')) renderError(401, 'আপনি লগইন করেননি।');
-            exit;
-        }
-
-        $userLevel = getUserRoleLevel($userId, $mysqli);
-        if ($userLevel === null || $userLevel > $minLevel) {
-            http_response_code(403);
-            $message = $errorMessage ?? 'আপনার এই অপারেশনের জন্য সর্বনিম্ন ভূমিকা স্তর নেই।';
-            if (function_exists('renderError')) renderError(403, $message);
-            exit;
-        }
-    }
-}
-
-/**
  * Get privilege level name for display
  * @param int $roleLevel Role level
  * @param string $language 'bn' or 'en'
@@ -308,42 +182,6 @@ if (!function_exists('getRoleLevelDisplay')) {
         return $levels[$roleLevel][$language] ?? 'অজানা';
     }
 }
-
-/**
- * Enhanced canManageUser with role level support
- * Replaces previous version - now uses role levels
- * @param int $managerId Manager user ID
- * @param int $targetId Target user ID
- * @param mysqli $mysqli Database connection
- * @return bool True if manager can manage target
- */
-if (!function_exists('canManageUserByLevel')) {
-    function canManageUserByLevel($managerId, $targetId, $mysqli = null) {
-        if (!$mysqli) {
-            global $mysqli;
-        }
-
-        if (!$mysqli || $managerId == $targetId) {
-            return false;
-        }
-
-        $managerLevel = getUserRoleLevel($managerId, $mysqli);
-        $targetLevel = getUserRoleLevel($targetId, $mysqli);
-        
-        if ($managerLevel === null || $targetLevel === null) {
-            return false;
-        }
-
-        // Superadmin (level 1) can manage everyone except other superadmins
-        if ($managerLevel === 1) {
-            return $targetLevel !== 1;
-        }
-
-        // Others can manage users with equal or lower privilege (higher role_level number)
-        return $managerLevel < $targetLevel;
-    }
-}
-
 
 /**
  * RBAC: Check if a user can manage another user

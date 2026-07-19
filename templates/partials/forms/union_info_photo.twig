@@ -1,0 +1,109 @@
+{# partials/forms/union_info_photo.twig #}
+{# Reusable partial: read-only union badge + applicant photo upload #}
+{# Same row/column layout as union_selection.twig #}
+{# Expects: union, data #}
+
+
+<div class="form-intro text-center">
+    <h3 class="text-danger fw-bold">নিয়মাবলি:</h3>
+    <hr>
+</div>
+<div class="row">
+    <!-- Left Side: Union Info -->
+    <div class="col-lg-9">
+        <div class="form-note mb-3">
+            {% include 'partials/forms/rules.twig' %}
+        </div>
+
+        <div class="union-hero-badge">
+            <div class="union-hero-icon">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                    <circle cx="12" cy="10" r="3"/>
+                </svg>
+            </div>
+            <div class="union-hero-body">
+                <div class="union-hero-name">{{ union.union_name_bn ?? '—' }}
+                    {% if union.union_name_en is defined and union.union_name_en %}
+                    <span class="union-hero-name-en">{{ union.union_name_en }}</span>
+                    {% endif %}
+                </div>
+                <div class="union-full-address">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                        <circle cx="12" cy="10" r="3"/>
+                    </svg>
+                    <span>{{ union.upazila_name_bn ?? '' }}{% if union.upazila_name_bn and union.district_name_bn %}, {% endif %}{{ union.district_name_bn ?? '' }}{% if (union.upazila_name_bn or union.district_name_bn) and union.postcode %} - {% endif %}{{ union.postcode is defined and union.postcode ? (union.postcode|bn) : '' }}</span>
+                </div>
+                <div class="union-card-body">
+                    <div class="union-info-row">
+                        <div class="union-info-item">
+                            <span class="union-info-label">উপজেলা</span>
+                            <span class="union-info-value">{{ union.upazila_name_bn ?? '—' }}</span>
+                        </div>
+                        <div class="union-info-divider"></div>
+                        <div class="union-info-item">
+                            <span class="union-info-label">জেলা</span>
+                            <span class="union-info-value">{{ union.district_name_bn ?? '—' }}</span>
+                        </div>
+                        {% if union.postcode is defined and union.postcode %}
+                        <div class="union-info-divider"></div>
+                        <div class="union-info-item">
+                            <span class="union-info-label">পোস্ট কোড</span>
+                            <span class="union-info-value">{{ union.postcode|bn }}</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        <input type="hidden" name="union_code" value="{{ union.union_code ?? '' }}">
+    </div>
+
+    <!-- Right Side: Photo Upload Card -->
+    <div class="col-lg-3">
+        <div class="card shadow-sm border upload-card" id="uploadCard">
+            <div class="card-body p-0">
+                <div class="upload-preview-area" id="uploadDropZone"
+                     style="width:100%;height:225px;background: linear-gradient(rgba(255,255,255,0.7), rgba(255,255,255,0.7)), url('/assets/images/default.jpg') center/cover no-repeat;">
+                    <div id="uploadPreviewContainer" style="display:none">
+                        <img id="uploadPreviewImg" class="img-fluid w-100">
+                    </div>
+                </div>
+                <button type="button" class="btn btn-primary rounded-0 w-100 py-2" id="uploadCardBtn">
+                    <i class="fa fa-upload me-1"></i> UPLOAD
+                </button>
+            </div>
+        </div>
+
+        <input type="file" id="applicant_photo" name="applicant_photo"
+               accept="image/*" class="d-none"
+               data-crop="true" data-crop-mode="photo"
+               data-crop-trigger="#uploadCardBtn, #uploadDropZone"
+               data-crop-dropzone="#uploadDropZone"
+               data-preview="uploadPreviewImg"
+               data-preview-container="uploadPreviewContainer"
+               data-drop-zone="uploadDropZone">
+
+
+    </div>
+</div>
+
+<script>
+/**
+ * Pre-filled data preview — shows existing applicant photo when available
+ */
+(function() {
+  document.addEventListener('DOMContentLoaded', function() {
+    {% set photoSrc = data.applicant_photo is defined and data.applicant_photo ? data.applicant_photo : null %}
+    {% if photoSrc %}
+    var img = document.getElementById('uploadPreviewImg');
+    var ct = document.getElementById('uploadPreviewContainer');
+    var dz = document.getElementById('uploadDropZone');
+    if (img) { img.src = '{{ photoSrc }}'; img.style.display = 'block'; }
+    if (ct) ct.style.display = 'block';
+    if (dz) { dz.style.backgroundImage = 'none'; dz.style.background = '#F2F2F2'; }
+    {% endif %}
+  });
+})();
+</script>

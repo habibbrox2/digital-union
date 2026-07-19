@@ -82,7 +82,7 @@
         <table border="0" width="99%" align="center" style="margin-top:15pt;">
             <tr>
                 <td style="padding-left:37.5pt; font-size:12pt;">
-                    This person is confirmed to be a permanent resident of {{ union.union_name_en|default(union.union_name_bn) }} and is entitled to receive this certificate.
+                    This person is confirmed to be {% if (citizen.resident|default('permanent')) == 'temporary' %}a temporary resident{% else %}a permanent resident{% endif %} of {{ union.union_name_en|default(union.union_name_bn) }} and is entitled to receive this certificate.
                 </td>
             </tr>
         </table>

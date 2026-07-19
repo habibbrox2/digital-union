@@ -1,0 +1,775 @@
+/* ================================================================
+   Smart Union Parishad - Search Form Styles
+   Bengali Search Form UI | Production Ready | Responsive
+   ================================================================ */
+
+/* ================================================================
+   GOOGLE FONTS (loaded via HTML link tag as well)
+   ================================================================ */
+
+/* ================================================================
+   CSS CUSTOM PROPERTIES
+   ================================================================ */
+:root {
+  --primary-blue: #1696e7;
+  --primary-blue-dark: #0f7bc4;
+  --primary-blue-darker: #0c63a0;
+  --danger: #d32f2f;
+  --danger-light: #ef4444;
+  --border-color: #d1d5db;
+  --border-focus: #1696e7;
+  --text-primary: #111827;
+  --text-muted: #6b7280;
+  --gray-bg: #d9d9d9;
+  --white: #ffffff;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.1);
+  --shadow-lg: 0 8px 24px rgba(0,0,0,0.12);
+  --radius: 4px;
+  --transition: 0.2s ease;
+  --font-bengali: 'Noto Sans Bengali', 'Hind Siliguri', 'Kalpurush', 'SolaimanLipi', sans-serif;
+}
+
+/* ================================================================
+   BASE
+   ================================================================ */
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--font-bengali);
+  color: var(--text-primary);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ================================================================
+   SEARCH FORM PAGE LAYOUT
+   ================================================================ */
+.search-form-page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px 40px;
+}
+
+/* CSS Grid Layout - Desktop: 1fr 250px */
+.search-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 250px;
+  gap: 32px;
+  align-items: start;
+}
+
+/* ================================================================
+   RULES TITLE
+   ================================================================ */
+.rules-title {
+  text-align: center;
+  color: #ef4444;
+  font-size: 36px;
+  font-weight: 700;
+  margin: 0;
+  padding-top: 25px;
+  line-height: 1.3;
+}
+
+.rules-divider {
+  border: none;
+  height: 1px;
+  background: #e5e7eb;
+  margin: 16px auto 20px;
+  max-width: 100%;
+}
+
+/* ================================================================
+   INSTRUCTIONS
+   ================================================================ */
+.instructions-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 28px;
+}
+
+.instructions-list li {
+  color: #d32f2f;
+  font-size: 18px;
+  line-height: 1.8;
+  padding: 2px 0;
+  position: relative;
+  padding-left: 20px;
+}
+
+.instructions-list li::before {
+  content: '\2022';
+  position: absolute;
+  left: 4px;
+  color: #d32f2f;
+  font-weight: 700;
+}
+
+/* ================================================================
+   SEARCH FORM
+   ================================================================ */
+.search-form {
+  width: 100%;
+}
+
+/* --- Form Row --- */
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+
+/* --- Form Group --- */
+.form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.form-group label {
+  color: #111827;
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.form-group label .required {
+  color: #ef4444;
+  font-weight: 700;
+}
+
+/* --- Select / Input Base --- */
+.form-select,
+.form-input {
+  width: 100%;
+  height: 48px;
+  padding: 0 14px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  background: var(--white);
+  font-family: var(--font-bengali);
+  font-size: 15px;
+  color: var(--text-primary);
+  outline: none;
+  transition: border-color var(--transition), box-shadow var(--transition);
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+}
+
+/* Select arrow */
+.form-select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b7280' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  padding-right: 38px;
+  cursor: pointer;
+}
+
+.form-select:hover {
+  border-color: #9ca3af;
+}
+
+.form-select:focus,
+.form-input:focus {
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 3px rgba(22, 150, 231, 0.15);
+}
+
+.form-select.error,
+.form-input.error {
+  border-color: var(--danger);
+  box-shadow: 0 0 0 3px rgba(211, 47, 47, 0.12);
+}
+
+.form-select::placeholder,
+.form-input::placeholder {
+  color: #9ca3af;
+  font-size: 14px;
+}
+
+/* --- Search Input Row --- */
+.search-input-row {
+  display: flex;
+  gap: 12px;
+  align-items: stretch;
+}
+
+.search-input-row .form-input {
+  flex: 1;
+}
+
+/* --- Search Button --- */
+.btn-search {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 140px;
+  min-width: 140px;
+  height: 48px;
+  padding: 0 20px;
+  background: var(--primary-blue);
+  color: var(--white);
+  border: none;
+  border-radius: var(--radius);
+  font-family: var(--font-bengali);
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: background var(--transition), transform var(--transition), box-shadow var(--transition);
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-search:hover {
+  background: var(--primary-blue-dark);
+  box-shadow: 0 4px 12px rgba(22, 150, 231, 0.3);
+  transform: translateY(-1px);
+}
+
+.btn-search:active {
+  background: var(--primary-blue-darker);
+  transform: translateY(0);
+}
+
+.btn-search:focus-visible {
+  outline: 2px solid var(--primary-blue);
+  outline-offset: 2px;
+}
+
+.btn-search .icon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+/* --- Loading State --- */
+.btn-search.loading {
+  pointer-events: none;
+  opacity: 0.85;
+}
+
+.btn-search .spinner {
+  display: none;
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-top-color: var(--white);
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+.btn-search.loading .spinner {
+  display: inline-block;
+}
+
+.btn-search.loading .btn-text {
+  display: none;
+}
+
+.btn-search.loading .icon {
+  display: none;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* --- Validation Message --- */
+.validation-message {
+  display: none;
+  font-size: 13px;
+  color: var(--danger);
+  margin-top: 6px;
+  min-height: 0;
+}
+
+.validation-message.visible {
+  display: block;
+}
+
+/* ================================================================
+   UPLOAD CARD
+   ================================================================ */
+.upload-card {
+  width: 250px;
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: var(--shadow-md);
+  border: 1px solid #e5e7eb;
+  background: var(--white);
+  cursor: pointer;
+  transition: box-shadow var(--transition), transform var(--transition);
+  position: relative;
+}
+
+.upload-card:hover {
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-2px);
+}
+
+.upload-card:focus-within {
+  box-shadow: 0 0 0 3px rgba(22, 150, 231, 0.2), var(--shadow-md);
+}
+
+/* --- Upload Top Area --- */
+.upload-top {
+  height: 255px;
+  background: var(--gray-bg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Upload placeholder content */
+.upload-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  transition: opacity var(--transition);
+}
+
+.upload-placeholder .upload-icon {
+  width: 48px;
+  height: 48px;
+  color: #6b7280;
+  opacity: 0.6;
+}
+
+.upload-placeholder .upload-text {
+  font-size: 15px;
+  color: #4b5563;
+  font-weight: 500;
+  line-height: 1.5;
+}
+
+.upload-placeholder .upload-hint {
+  font-size: 12px;
+  color: #9ca3af;
+}
+
+/* --- Image Preview --- */
+.upload-preview-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: none;
+  transition: opacity 0.3s ease;
+}
+
+.upload-preview-img.visible {
+  display: block;
+}
+
+/* --- Upload Overlay (on hover over preview) --- */
+.upload-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.4);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  opacity: 0;
+  transition: opacity var(--transition);
+  color: var(--white);
+}
+
+.upload-card:hover .upload-overlay {
+  opacity: 1;
+}
+
+.upload-overlay .overlay-icon {
+  width: 36px;
+  height: 36px;
+}
+
+.upload-overlay .overlay-text {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* --- Drag & Drop Highlight --- */
+.upload-card.drag-over .upload-top {
+  background: #bfdbfe;
+  border: 2px dashed var(--primary-blue);
+}
+
+.upload-card.drag-over .upload-overlay {
+  opacity: 0;
+}
+
+/* --- Upload Bottom Button --- */
+.upload-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  height: 38px;
+  background: var(--primary-blue);
+  color: var(--white);
+  border: none;
+  font-family: var(--font-bengali);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  transition: background var(--transition);
+}
+
+.upload-btn:hover {
+  background: var(--primary-blue-dark);
+}
+
+.upload-btn:focus-visible {
+  outline: 2px solid var(--primary-blue);
+  outline-offset: -2px;
+}
+
+.upload-btn .btn-icon {
+  width: 16px;
+  height: 16px;
+}
+
+/* Hidden file input */
+.upload-file-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0,0,0,0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* --- Validation Badge on Preview --- */
+.upload-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  z-index: 2;
+  display: none;
+}
+
+.upload-badge.success {
+  display: block;
+  background: rgba(34, 197, 94, 0.9);
+  color: var(--white);
+}
+
+.upload-badge.warning {
+  display: block;
+  background: rgba(245, 158, 11, 0.9);
+  color: var(--white);
+}
+
+.upload-badge.error {
+  display: block;
+  background: rgba(211, 47, 47, 0.9);
+  color: var(--white);
+}
+
+/* --- Image size info --- */
+.upload-size-info {
+  display: none;
+  position: absolute;
+  bottom: 8px;
+  left: 8px;
+  right: 8px;
+  padding: 4px 8px;
+  background: rgba(0,0,0,0.6);
+  color: var(--white);
+  font-size: 11px;
+  border-radius: 4px;
+  text-align: center;
+  z-index: 2;
+}
+
+.upload-size-info.visible {
+  display: block;
+}
+
+/* ================================================================
+   RESULTS SECTION
+   ================================================================ */
+.search-results {
+  margin-top: 32px;
+  grid-column: 1 / -1;
+}
+
+.search-results .results-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 16px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.results-empty {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--text-muted);
+  font-size: 16px;
+}
+
+.results-empty .empty-icon {
+  width: 64px;
+  height: 64px;
+  color: #d1d5db;
+  margin-bottom: 16px;
+}
+
+/* Results Table */
+.results-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--font-bengali);
+  font-size: 14px;
+}
+
+.results-table th {
+  background: #f9fafb;
+  color: var(--text-primary);
+  font-weight: 600;
+  text-align: left;
+  padding: 12px 16px;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+.results-table td {
+  padding: 10px 16px;
+  border-bottom: 1px solid #f3f4f6;
+  color: #374151;
+}
+
+.results-table tr:hover td {
+  background: #f9fafb;
+}
+
+.results-table .status-badge {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.status-badge.approved {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.status-badge.pending {
+  background: #fef9c3;
+  color: #854d0e;
+}
+
+.status-badge.rejected {
+  background: #fce4ec;
+  color: #b91c1c;
+}
+
+/* ================================================================
+   RESPONSIVE - TABLET (max-width: 1024px)
+   ================================================================ */
+@media (max-width: 1024px) {
+  .search-form-grid {
+    grid-template-columns: 1fr;
+    gap: 28px;
+  }
+
+  .upload-card {
+    width: 100%;
+    max-width: 350px;
+    margin: 0 auto;
+  }
+
+  .upload-top {
+    height: 220px;
+  }
+}
+
+/* ================================================================
+   RESPONSIVE - TABLET SMALL (max-width: 768px)
+   ================================================================ */
+@media (max-width: 768px) {
+  .search-form-page {
+    padding: 0 16px 32px;
+  }
+
+  .rules-title {
+    font-size: 28px;
+    padding-top: 20px;
+  }
+
+  .instructions-list li {
+    font-size: 16px;
+    line-height: 1.7;
+  }
+
+  .form-row {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .search-input-row {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .btn-search {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .upload-card {
+    max-width: 300px;
+  }
+
+  .upload-top {
+    height: 200px;
+  }
+}
+
+/* ================================================================
+   RESPONSIVE - MOBILE (max-width: 480px)
+   ================================================================ */
+@media (max-width: 480px) {
+  .search-form-page {
+    padding: 0 12px 24px;
+  }
+
+  .rules-title {
+    font-size: 24px;
+    padding-top: 16px;
+  }
+
+  .rules-divider {
+    margin: 12px auto 16px;
+  }
+
+  .instructions-list li {
+    font-size: 14px;
+    line-height: 1.6;
+    padding-left: 16px;
+  }
+
+  .form-group label {
+    font-size: 14px;
+  }
+
+  .form-select,
+  .form-input {
+    height: 44px;
+    font-size: 14px;
+  }
+
+  .search-input-row {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .btn-search {
+    width: 100%;
+    min-width: 0;
+    height: 44px;
+    font-size: 15px;
+  }
+
+  .upload-card {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .upload-top {
+    height: 220px;
+  }
+
+  .search-form-grid {
+    gap: 20px;
+  }
+}
+
+/* ================================================================
+   UTILITY CLASSES
+   ================================================================ */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0,0,0,0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Focus visible for keyboard users */
+*:focus-visible {
+  outline: 2px solid var(--primary-blue);
+  outline-offset: 2px;
+}
+
+/* ================================================================
+   ANIMATIONS
+   ================================================================ */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.fade-in {
+  animation: fadeIn 0.3s ease forwards;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  75% { transform: translateX(4px); }
+}
+
+.shake {
+  animation: shake 0.3s ease;
+}
+
+/* ================================================================
+   PRINT STYLES
+   ================================================================ */
+@media print {
+  .upload-card,
+  .btn-search {
+    display: none;
+  }
+
+  .search-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .instructions-list li {
+    color: #333;
+  }
+}

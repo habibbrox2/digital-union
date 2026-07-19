@@ -1,0 +1,58 @@
+{# partials/forms/photo_upload_card.twig #}
+<div class="upload-card" id="uploadCard">
+  <div class="upload-card-top" id="uploadDropZone">
+    <div class="upload-card-icon">
+      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+        <polyline points="17 8 12 3 7 8"/>
+        <line x1="12" y1="3" x2="12" y2="15"/>
+      </svg>
+    </div>
+    <div class="upload-card-text">
+      <p class="upload-card-title">আবেদনকারীর ছবি দিন</p>
+      <p class="upload-card-size">৩০০ × ৩০০ মিঃ পিঃ আকারে</p>
+    </div>
+    <div class="upload-card-preview" id="uploadPreviewContainer" style="display:none;">
+      <img id="uploadPreviewImg" src="" alt="Preview">
+    </div>
+  </div>
+  <div class="upload-card-bottom">
+    <button type="button" class="upload-card-btn" id="uploadCardBtn">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+        <polyline points="17 8 12 3 7 8"/>
+        <line x1="12" y1="3" x2="12" y2="15"/>
+      </svg>
+      আপলোড
+    </button>
+  </div>
+  <input type="file" id="applicant_photo" name="applicant_photo" class="upload-card-input" accept="image/*"
+         data-crop="true" data-crop-mode="photo">
+</div>
+
+<script>
+(function() {
+  // Pre-filled data preview — crop handled by ImageCropper.autoInit()
+  document.addEventListener('DOMContentLoaded', function() {
+    {% if data.applicant_photo is defined and data.applicant_photo %}
+    var img = document.getElementById('uploadPreviewImg');
+    var ct = document.getElementById('uploadPreviewContainer');
+    var icon = document.querySelector('.upload-card-icon');
+    var txt = document.querySelector('.upload-card-text');
+    if (img) { img.src = '{{ data.applicant_photo }}'; img.style.display = 'block'; }
+    if (ct) ct.style.display = 'flex';
+    if (icon) icon.style.display = 'none';
+    if (txt) txt.style.display = 'none';
+    {% elseif data.photo_url is defined and data.photo_url %}
+    var img = document.getElementById('uploadPreviewImg');
+    var ct = document.getElementById('uploadPreviewContainer');
+    var icon = document.querySelector('.upload-card-icon');
+    var txt = document.querySelector('.upload-card-text');
+    if (img) { img.src = '{{ data.photo_url }}'; img.style.display = 'block'; }
+    if (ct) ct.style.display = 'flex';
+    if (icon) icon.style.display = 'none';
+    if (txt) txt.style.display = 'none';
+    {% endif %}
+  });
+})();
+</script>

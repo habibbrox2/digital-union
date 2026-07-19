@@ -1,15 +1,15 @@
-<div class="row align-items-center g-3 photo-section">
-  <!-- বাম পাশে ইনপুট -->
-  <div class="col-md-6">
-    <label for="photo" class="form-label fw-semibold">ছবি আপলোড করুন</label>
-    <input type="file" id="photo" name="photo" class="form-control" accept="image/*">
-  </div>
+{% set govt_label = 'col-lg-2 col-md-3 col-12' %}
+{% set govt_input = 'col-lg-4 col-md-3 col-12' %}
 
-  <!-- ডান পাশে প্রিভিউ -->
-  <div class="col-md-6">
+<div class="upload-grid">
+  <div class="upload-photo">
+    <label for="applicant_photo" class="form-label mb-0">ছবি আপলোড করুন</label>
+    <input type="file" id="applicant_photo" name="applicant_photo" class="form-control" accept="image/*">
+  </div>
+  <div class="upload-preview">
     <div class="image-overlay position-relative">
       <img id="photo_preview"
-           src="{{ data.photo_url ?? '/assets/images/default.jpg' }}"
+           src="{{ data.applicant_photo ?? data.photo_url ?? '/assets/images/default.jpg' }}"
            class="image-previewer img-fluid rounded shadow-sm"
            alt="ছবি প্রিভিউ">
       <div class="overlay d-flex justify-content-center align-items-center">
@@ -19,29 +19,33 @@
   </div>
 </div>
 
-<!-- Applicant Name -->
-<div class="row mb-3">
-  <div class="col-md-6">
-    <label for="applicant_name" class="form-label">আবেদনকারীর নাম</label>
-    <input type="text" id="applicant_name" name="applicant_name" class="form-control"
-           placeholder="আবেদনকারীর নাম"
-           value="{{ data.applicant_name is defined and data.applicant_name ? data.applicant_name : (data.name_bn is defined ? data.name_bn : '') }}">
-  </div>
+{# Applicant Name + Phone (pairing two Bangla fields together) #}
+<div class="row align-items-center mb-3">
+    <div class="{{ govt_label }}">
+        <label for="applicant_name" class="form-label mb-0">আবেদনকারীর নাম <span class="text-danger">*</span></label>
+    </div>
+    <div class="{{ govt_input }}">
+        <input type="text" id="applicant_name" name="applicant_name" class="form-control"
+               placeholder="আবেদনকারীর নাম"
+               value="{{ data.applicant_name is defined and data.applicant_name ? data.applicant_name : (data.name_bn is defined ? data.name_bn : '') }}">
+    </div>
+    <div class="{{ govt_label }}">
+        <label for="applicant_phone" class="form-label mb-0">আবেদনকারীর মোবাইল নম্বর <span class="text-danger">*</span></label>
+    </div>
+    <div class="{{ govt_input }}">
+        <input type="text" id="applicant_phone" name="applicant_phone" class="form-control"
+               placeholder="আপনার মোবাইল নম্বর লিখুন" value="{{ data.applicant_phone ?? '' }}">
+    </div>
 </div>
 
-<!-- Applicant Phone -->
-<div class="row mb-4">
-  <div class="col-md-6">
-    <label for="applicant_phone" class="form-label">আবেদনকারীর মোবাইল নম্বর</label>
-    <input type="text" id="applicant_phone" name="applicant_phone" class="form-control"
-           placeholder="আপনার মোবাইল নম্বর লিখুন" value="{{ data.applicant_phone ?? '' }}">
-  </div>
-</div>
-
-<!-- Documents Upload -->
-<div class="row mb-3">
-  <label class="form-label">প্রয়োজনীয় ডকুমেন্ট আপলোড করুন</label>
-  <div id="documents_container"></div>
+{# Documents Upload — full width for dynamic rows #}
+<div class="row align-items-start mb-3">
+    <div class="{{ govt_label }}">
+        <label class="form-label mb-0">প্রয়োজনীয় ডকুমেন্ট আপলোড করুন</label>
+    </div>
+    <div class="col-lg-10 col-md-9 col-12">
+        <div id="documents_container"></div>
+    </div>
 </div>
 
 <script>
@@ -91,7 +95,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 ownNameRadio.checked = true;
             }
             applicantNameField.value = banglaName;
-            applicantNameField.readOnly = true;
+            applicantNameField.readOnly = false;
             applicantNameField.style.backgroundColor = '#e9ecef';
         };
 
@@ -109,10 +113,10 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     /** ---------------------- ছবি প্রিভিউ ---------------------- **/
-    document.getElementById('photo').addEventListener('change', function(e){
+    document.getElementById('applicant_photo').addEventListener('change', function(e){
         const file = e.target.files[0];
         if (!file) return;
-        if (!file.type.startsWith('image/')) return alert('শুধুমাত্র ছবি আপলোড করুন');
+        if (!file.type.startsWith('image/')) return Swal.fire('Error', 'শুধুমাত্র ছবি আপলোড করুন', 'error');
         document.getElementById('photo_preview').src = URL.createObjectURL(file);
     });
 
@@ -137,7 +141,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         row.innerHTML = `
             <div class="col-md-5">
-                <input type="file" name="documents[]" class="form-control file-input">
+                <input type="file" name="documents[]" class="form-control file-input" aria-label="ডকুমেন্ট ফাইল">
             </div>
             <div class="col-md-5 preview-area">${previewHTML}</div>
             <div class="col-md-2 d-flex gap-2">

@@ -1,18 +1,66 @@
 /* =====================================================================
-   CompactDatepicker Modern CSS - Enhanced Version
+   CompactDatepicker Modern CSS - Refined Variables Version
    ===================================================================== */
+
+:root {
+    --dp-bg: #fff;
+    --dp-border: #d1d5db;
+    --dp-shadow: 0 8px 24px rgba(0,0,0,0.12);
+    --dp-radius: 8px;
+    --dp-font-size: 14px;
+    --dp-width: 250px;
+    --dp-arrow-bg: #f3f4f6;
+    --dp-arrow-hover-bg: #008B8B;
+    --dp-arrow-hover-color: #fff;
+    --dp-select-bg: #fff;
+    --dp-select-border: #d1d5db;
+    --dp-select-focus: #008B8B;
+    --dp-th-bg: #f9fafb;
+    --dp-th-color: #6b7280;
+    --dp-th-weekend-color: #ef4444;
+    --dp-btn-bg: #f9fafb;
+    --dp-btn-color: #1f2937;
+    --dp-btn-hover-bg: #008B8B;
+    --dp-btn-hover-color: #fff;
+    --dp-btn-radius: 6px;
+    --dp-today-border: #f59e0b;
+    --dp-today-bg: #fffbeb;
+    --dp-today-color: #b45309;
+    --dp-today-hover-bg: #f59e0b;
+    --dp-selected-bg: #008B8B;
+    --dp-selected-color: #fff;
+    --dp-disabled-bg: #f3f4f6;
+    --dp-disabled-color: #d1d5db;
+    --dp-footer-gap: 6px;
+    --dp-today-btn-bg: #f59e0b;
+    --dp-today-btn-color: #fff;
+    --dp-clear-btn-bg: #ef4444;
+    --dp-clear-btn-color: #fff;
+    --dp-dark-bg: #1f2937;
+    --dp-dark-border: #374151;
+    --dp-dark-text: #e5e7eb;
+    --dp-dark-select-bg: #374151;
+    --dp-dark-select-color: #e5e7eb;
+    --dp-dark-arrow-bg: #374151;
+    --dp-dark-th-bg: #374151;
+    --dp-dark-th-color: #9ca3af;
+    --dp-dark-btn-bg: #374151;
+    --dp-dark-btn-color: #e5e7eb;
+    --dp-dark-today-bg: #451a03;
+    --dp-dark-selected-bg: #007A7A;
+}
 
 /* ---------------------- Main Container ---------------------- */
 .vs-datepicker {
     position: absolute;
-    background: #fff;
-    border: 1px solid #ccc;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-    border-radius: 8px;
-    padding: 8px;
-    font-size: 14px;
+    background: var(--dp-bg);
+    border: 1px solid var(--dp-border);
+    box-shadow: var(--dp-shadow);
+    border-radius: var(--dp-radius);
+    padding: 10px;
+    font-size: var(--dp-font-size);
     z-index: 9999;
-    width: 240px;
+    width: var(--dp-width);
     max-width: 95vw;
     user-select: none;
     display: flex;
@@ -24,7 +72,7 @@
 @keyframes vsFadeIn {
     from {
         opacity: 0;
-        transform: translateY(4px);
+        transform: translateY(-6px);
     }
     to {
         opacity: 1;
@@ -43,23 +91,24 @@
 }
 
 .vs-datepicker .month-arrow {
-    font-weight: bold;
-    padding: 4px 8px;
+    font-weight: 600;
+    padding: 4px 10px;
     cursor: pointer;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    background: #f5f5f5;
-    transition: all 0.2s;
+    border: 1px solid var(--dp-select-border);
+    border-radius: var(--dp-btn-radius);
+    background: var(--dp-arrow-bg);
+    transition: all 0.2s ease;
     font-size: 14px;
-    line-height: 1;
+    line-height: 1.2;
+    color: var(--dp-btn-color);
 }
 
 .vs-datepicker .month-arrow:hover,
 .vs-datepicker .month-arrow:focus {
-    background: #4caf50;
-    color: #fff;
+    background: var(--dp-arrow-hover-bg);
+    color: var(--dp-arrow-hover-color);
     outline: none;
-    border-color: #4caf50;
+    border-color: var(--dp-arrow-hover-bg);
 }
 
 .vs-datepicker .month-arrow:active {
@@ -72,22 +121,24 @@
 }
 
 .vs-datepicker select {
-    font-size: 14px;
+    font-size: 13px;
     padding: 4px 6px;
-    border-radius: 4px;
-    border: 1px solid #ccc;
+    border-radius: var(--dp-btn-radius);
+    border: 1px solid var(--dp-select-border);
     text-align: center;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all 0.2s ease;
+    background: var(--dp-select-bg);
+    color: var(--dp-btn-color);
 }
 
 .vs-datepicker select:hover {
-    border-color: #999;
+    border-color: var(--dp-select-focus);
 }
 
 .vs-datepicker select:focus {
-    border-color: #4caf50;
-    box-shadow: 0 0 0 2px rgba(76,175,80,0.2);
+    border-color: var(--dp-select-focus);
+    box-shadow: 0 0 0 2px rgba(0,139,139,0.2);
     outline: none;
 }
 
@@ -101,16 +152,18 @@
 /* ---------------------- Table Head (Weekdays) ---------------------- */
 .vs-datepicker thead th {
     font-weight: 600;
-    font-size: 13px;
+    font-size: 12px;
     padding: 6px 0;
-    color: #555;
-    background: #f0f0f0;
-    border-bottom: 1px solid #ddd;
+    color: var(--dp-th-color);
+    background: var(--dp-th-bg);
+    border-bottom: 1px solid var(--dp-border);
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
 }
 
 .vs-datepicker thead th:first-child,
 .vs-datepicker thead th:last-child {
-    color: #e53935;
+    color: var(--dp-th-weekend-color);
 }
 
 /* ---------------------- Table Body ---------------------- */
@@ -132,13 +185,14 @@
 
 /* ---------------------- Day Buttons ---------------------- */
 .vs-datepicker td button {
-    width: 30px;
-    height: 30px;
+    width: 32px;
+    height: 32px;
     border: none;
-    background: #f5f5f5;
-    border-radius: 6px;
+    background: var(--dp-btn-bg);
+    color: var(--dp-btn-color);
+    border-radius: var(--dp-btn-radius);
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all 0.15s ease;
     font-size: 13px;
     line-height: 1;
     font-weight: 500;
@@ -146,69 +200,74 @@
 
 .vs-datepicker td button:hover, 
 .vs-datepicker td button:focus {
-    background: #4caf50;
-    color: #fff;
+    background: var(--dp-btn-hover-bg);
+    color: var(--dp-btn-hover-color);
     outline: none;
-    transform: scale(1.05);
+    transform: scale(1.08);
 }
 
 .vs-datepicker td button:active {
-    transform: scale(0.95);
+    transform: scale(0.92);
 }
 
 .vs-datepicker td button:focus-visible {
-    outline: 2px solid #4caf50;
+    outline: 2px solid var(--dp-select-focus);
     outline-offset: 2px;
 }
 
 /* Today (not selected) */
 .vs-datepicker td button.today {
-    border: 2px solid #ff9800;
-    background: #fff7e6;
-    color: #e65100;
+    border: 2px solid var(--dp-today-border);
+    background: var(--dp-today-bg);
+    color: var(--dp-today-color);
     font-weight: 600;
 }
 
-.vs-datepicker td button.today:hover {
-    background: #ff9800;
+.vs-datepicker td button.today:hover,
+.vs-datepicker td button.today:focus {
+    background: var(--dp-today-hover-bg);
     color: #fff;
+    border-color: var(--dp-today-hover-bg);
 }
 
 /* Selected day */
 .vs-datepicker td button.selected {
-    background: #2196f3;
-    color: #fff;
+    background: var(--dp-selected-bg);
+    color: var(--dp-selected-color);
     font-weight: 600;
 }
 
 .vs-datepicker td button.selected:hover {
-    background: #1976d2;
+    background: #007A7A;
+    transform: scale(1.08);
 }
 
 /* Today + Selected */
 .vs-datepicker td button.today.selected {
-    background: #1976d2;
-    border-color: #1976d2;
-    color: #fff;
+    background: var(--dp-selected-bg);
+    border-color: var(--dp-selected-bg);
+    color: var(--dp-selected-color);
 }
 
 /* Disabled dates */
-.vs-datepicker td button.disabled {
-    background: #eee;
-    color: #aaa;
+.vs-datepicker td button.disabled,
+.vs-datepicker td button:disabled {
+    background: var(--dp-disabled-bg);
+    color: var(--dp-disabled-color);
     cursor: not-allowed;
     opacity: 0.5;
 }
 
-.vs-datepicker td button.disabled:hover {
-    background: #eee;
-    color: #aaa;
+.vs-datepicker td button.disabled:hover,
+.vs-datepicker td button:disabled:hover {
+    background: var(--dp-disabled-bg);
+    color: var(--dp-disabled-color);
     transform: none;
 }
 
 /* Weekend dates */
 .vs-datepicker td.weekend button {
-    color: #d32f2f;
+    color: var(--dp-th-weekend-color);
 }
 
 /* ---------------------- Footer Section ---------------------- */
@@ -219,33 +278,35 @@
     width: 100%;
     justify-content: space-between;
     align-items: center;
+    border-top: 1px solid var(--dp-border);
+    padding-top: 8px;
 }
 
 /* Today Button */
 .vs-datepicker .today-btn {
     flex: 1;
-    padding: 8px 12px;
-    background: #ff9800;
-    color: #fff;
+    padding: 8px 14px;
+    background: var(--dp-today-btn-bg);
+    color: var(--dp-today-btn-color);
     border: none;
-    border-radius: 6px;
+    border-radius: var(--dp-btn-radius);
     cursor: pointer;
     font-weight: 600;
     font-size: 13px;
-    transition: all 0.2s;
+    transition: all 0.2s ease;
     text-align: center;
 }
 
 .vs-datepicker .today-btn:hover, 
 .vs-datepicker .today-btn:focus {
-    background: #fb8c00;
+    background: #e69009;
     outline: none;
     transform: translateY(-1px);
-    box-shadow: 0 2px 6px rgba(251, 140, 0, 0.3);
+    box-shadow: 0 2px 8px rgba(245, 158, 11, 0.35);
 }
 
 .vs-datepicker .today-btn:active {
-    transform: scale(0.98);
+    transform: scale(0.97);
 }
 
 /* Clear Button */
@@ -253,15 +314,15 @@
     width: 36px;
     height: 36px;
     padding: 0;
-    background: #f44336;
-    color: #fff;
+    background: var(--dp-clear-btn-bg);
+    color: var(--dp-clear-btn-color);
     border: none;
-    border-radius: 6px;
+    border-radius: var(--dp-btn-radius);
     cursor: pointer;
     font-weight: bold;
     font-size: 18px;
     line-height: 1;
-    transition: all 0.2s;
+    transition: all 0.2s ease;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -270,10 +331,10 @@
 
 .vs-datepicker .clear-btn:hover, 
 .vs-datepicker .clear-btn:focus {
-    background: #d32f2f;
+    background: #dc2626;
     outline: none;
     transform: translateY(-1px) rotate(90deg);
-    box-shadow: 0 2px 6px rgba(244, 67, 54, 0.3);
+    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.35);
 }
 
 .vs-datepicker .clear-btn:active {
@@ -322,45 +383,47 @@
 /* ---------------------- Dark Mode Support (Optional) ---------------------- */
 @media (prefers-color-scheme: dark) {
     .vs-datepicker {
-        background: #2a2a2a;
-        border-color: #444;
-        color: #e0e0e0;
+        background: var(--dp-dark-bg);
+        border-color: var(--dp-dark-border);
+        color: var(--dp-dark-text);
     }
     
     .vs-datepicker select {
-        background: #333;
-        color: #e0e0e0;
-        border-color: #555;
+        background: var(--dp-dark-select-bg);
+        color: var(--dp-dark-select-color);
+        border-color: var(--dp-dark-border);
     }
     
     .vs-datepicker .month-arrow {
-        background: #333;
-        color: #e0e0e0;
-        border-color: #555;
+        background: var(--dp-dark-arrow-bg);
+        color: var(--dp-dark-text);
+        border-color: var(--dp-dark-border);
     }
     
     .vs-datepicker thead th {
-        background: #333;
-        color: #bbb;
-        border-color: #444;
+        background: var(--dp-dark-th-bg);
+        color: var(--dp-dark-th-color);
+        border-color: var(--dp-dark-border);
     }
     
     .vs-datepicker td button {
-        background: #333;
-        color: #e0e0e0;
+        background: var(--dp-dark-btn-bg);
+        color: var(--dp-dark-btn-color);
     }
     
-    .vs-datepicker td button:hover {
-        background: #4caf50;
+    .vs-datepicker td button:hover,
+    .vs-datepicker td button:focus {
+        background: var(--dp-btn-hover-bg);
+        color: var(--dp-btn-hover-color);
     }
     
     .vs-datepicker td button.today {
-        background: #3a2a1a;
-        border-color: #ff9800;
+        background: var(--dp-dark-today-bg);
+        border-color: var(--dp-today-border);
     }
     
     .vs-datepicker td button.selected {
-        background: #1976d2;
+        background: var(--dp-dark-selected-bg);
     }
 }
 

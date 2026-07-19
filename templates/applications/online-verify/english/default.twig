@@ -21,7 +21,7 @@
                         <br />
                         <font class="subheader-font">
                             {{ union.upazila_name_en|default(union.upazila_name_bn) }}, {{ union.district_name_en|default(union.district_name_bn) }}<br>
-                            Mobile: {{ union.phone }}, Email: {{ union.email }} <br>
+                            Mobile: {{ union.phone }}, Email: {{ union.email }}<br>
                             Website: {{ union.website }}
                         </font>
                     </td>
@@ -29,54 +29,62 @@
                 </tr>
             </table>
 
-            <table style="width:95%; margin-left:48px;border-color:lightgray;border-collapse:collapse;margin-top:7.5pt;" cellpadding="0" cellspacing="0">
+            <table style="width:95%; margin-left:48px; border-color:lightgray; border-collapse:collapse; margin-top:7.5pt;" cellpadding="0" cellspacing="0">
                 <tr>
-                    <td colspan="2" style="text-align:center;font-size:18.75pt;font-weight:bold;padding-bottom: 3.75pt">
-                        <u>Citizen Certificate Verification</u>
+                    <td colspan="2" style="text-align:center; font-size:18.75pt; font-weight:bold; padding-bottom:3.75pt">
+                        <u>{{ citizen.certificate_type_en|default('Citizen Certificate') }}</u>
                     </td>
                 </tr>
                 <tr>
                     <td>
-                        <table border="1" style="width: 600px;border-color:lightgray;border-collapse:collapse;" cellpadding="0" cellspacing="0">
+                        <table border="1" style="width:600px; border-color:lightgray; border-collapse:collapse;" cellpadding="0" cellspacing="0">
                             <tr>
-                                <td style="width:97.5pt; text-align:center;font-weight:700;font-size:13.5pt;">Certificate No:</td>
+                                <td style="width:97.5pt; text-align:center; font-weight:700; font-size:13.5pt;">Certificate No:</td>
                                 {% set sonod_number = citizen.sonod_number %}
                                 {% for digit in sonod_number | split('') %}
-                                    <td style="text-align:center; font-weight:bold; font-size:15pt; padding: 3.75pt;">{{ digit }}</td>
+                                    <td style="text-align:center; font-weight:bold; font-size:15pt; padding:3.75pt;">{{ digit }}</td>
                                 {% endfor %}
                             </tr>
                         </table>
                     </td>
-                    <td rowspan="2" valign="top" style="text-align: center; padding-left: 15pt;">
-                        {% if citizen.photo %}
-                            <img src="{{ citizen.photo }}" height="75pt" width="75pt" style="" alt="profile" />
+                    <td rowspan="2" valign="top" style="text-align:center; padding-left:15pt;">
+                        {% if citizen.applicant_photo %}
+                            <img src="{{ url }}/{{ citizen.applicant_photo }}" height="75pt" width="75pt" alt="profile" />
                         {% else %}
                             <div style="height:75pt; width:75pt; background:#ccc; text-align:center; line-height:75pt; font-size:10.5pt;">No Photo</div>
                         {% endif %}
                     </td>
                 </tr>
                 <tr>
-                    <td colspan="1" style="font-size:13.5pt; text-indent:37.5pt; padding-top: 3.75pt; padding-bottom: 3.75pt;">This is to certify that,</td>
+                    <td colspan="1" style="font-size:13.5pt; text-indent:37.5pt; padding-top:3.75pt; padding-bottom:3.75pt;">
+                        This is to certify that,
+                    </td>
                 </tr>
             </table>
 
-            <table class="jolchap" align="center" border="0" width="99%" cellspacing="0" style="border-collapse:collapse;margin:0 auto;table-layout:fixed;">
+            <table class="jolchap" align="center" border="0" width="99%" cellspacing="0" style="border-collapse:collapse; margin:0 auto; table-layout:fixed;">
                 <tr>
-                    <td align="left" style="font-size:12pt;text-indent:41.25pt; width: 150px; padding-left: 37.5pt">Name</td>
+                    <td align="left" style="font-size:12pt; text-indent:41.25pt; width:150px; padding-left:37.5pt">Name</td>
                     <td><font style="font-size:12pt;">: {{ citizen.name_en|default(citizen.name_bn) }}</font></td>
                 </tr>
                 <tr>
-                    <td align="left" style="font-size:12pt;text-indent:41.25pt; width: 150px; padding-left: 37.5pt">Father's Name</td>
+                    <td align="left" style="font-size:12pt; text-indent:41.25pt; width:150px; padding-left:37.5pt">Father's Name</td>
                     <td><font style="font-size:12pt;">: {{ citizen.father_name_en|default(citizen.father_name_bn) }}</font></td>
                 </tr>
                 <tr>
-                    <td align="left" style="font-size:12pt;text-indent:41.25pt; width: 150px; padding-left: 37.5pt">Mother's Name</td>
+                    <td align="left" style="font-size:12pt; text-indent:41.25pt; width:150px; padding-left:37.5pt">Mother's Name</td>
                     <td><font style="font-size:12pt;">: {{ citizen.mother_name_en|default(citizen.mother_name_bn) }}</font></td>
                 </tr>
+                {% if citizen.marital_status == 'Married' %}
                 <tr>
-                    <td nowrap align="left" style="font-size:12pt;text-indent:41.25pt; width: 150px; padding-left: 37.5pt;vertical-align:top;">Present Address</td>
+                    <td align="left" style="font-size:12pt; text-indent:41.25pt; width:150px; padding-left:37.5pt">Spouse's Name</td>
+                    <td><font style="font-size:12pt;">: {{ citizen.spouse_name_en|default(citizen.spouse_name_bn)|default('N/A') }}</font></td>
+                </tr>
+                {% endif %}
+                <tr>
+                    <td nowrap align="left" style="font-size:12pt; text-indent:41.25pt; width:150px; padding-left:37.5pt; vertical-align:top;">Present Address</td>
                     <td style="vertical-align:top;">
-                        <p style="line-height:18.75pt;font-size:12pt;">
+                        <p style="line-height:18.75pt; font-size:12pt;">
                             : Village: {{ citizen.present_village_en|default(citizen.present_village_bn) }}
                             <br> &nbsp; Post Office: {{ citizen.present_postoffice_en|default(citizen.present_postoffice_bn) }}
                             <br> &nbsp; Upazila: {{ citizen.present_upazila_en|default(citizen.present_upazila_bn) }}
@@ -85,9 +93,9 @@
                     </td>
                 </tr>
                 <tr>
-                    <td nowrap align="left" style="font-size:12pt;text-indent:41.25pt; width: 150px; padding-left: 37.5pt; vertical-align:top;">Permanent Address</td>
+                    <td nowrap align="left" style="font-size:12pt; text-indent:41.25pt; width:150px; padding-left:37.5pt; vertical-align:top;">Permanent Address</td>
                     <td style="vertical-align:top;">
-                        <p style="line-height:18.75pt;font-size:12pt;">
+                        <p style="line-height:18.75pt; font-size:12pt;">
                             : Village: {{ citizen.permanent_village_en|default(citizen.permanent_village_bn) }}
                             <br> &nbsp; Post Office: {{ citizen.permanent_postoffice_en|default(citizen.permanent_postoffice_bn) }}
                             <br> &nbsp; Upazila: {{ citizen.permanent_upazila_en|default(citizen.permanent_upazila_bn) }}
@@ -96,49 +104,536 @@
                     </td>
                 </tr>
                 <tr>
-                    <td align="left" nowrap style="font-size:12pt;text-indent:41.25pt; width: 150px; padding-left: 37.5pt">Ward No</td>
+                    <td align="left" nowrap style="font-size:12pt; text-indent:41.25pt; width:150px; padding-left:37.5pt">Ward No</td>
                     <td><font style="font-size:12pt;">: {{ citizen.permanent_ward_no }}</font></td>
                 </tr>
                 <tr>
-                    <td align="left" nowrap style="font-size:12pt;text-indent:41.25pt; width: 150px; padding-left: 37.5pt">National ID</td>
-                    <td><font style="font-size:12pt;">: {{ citizen.nid }}</font></td>
+                    <td align="left" nowrap style="font-size:12pt; text-indent:41.25pt; width:200px; padding-left:37.5pt">
+                        {% if citizen.birth_id %}
+                            Birth Registration No
+                        {% elseif citizen.nid %}
+                            National ID No
+                        {% else %}
+                            Passport No
+                        {% endif %}
+                    </td>
+                    <td>
+                        <font style="font-size:12pt;">:
+                            {% if citizen.birth_id %}
+                                {{ citizen.birth_id }}
+                            {% elseif citizen.nid %}
+                                {{ citizen.nid }}
+                            {% elseif citizen.passport_no %}
+                                {{ citizen.passport_no }}
+                            {% endif %}
+                        </font>
+                    </td>
                 </tr>
                 <tr>
-                    <td align="left" nowrap style="font-size:12pt;text-indent:41.25pt; width: 150px; padding-left: 37.5pt">Birth Registration</td>
-                    <td><font style="font-size:12pt;">: {{ citizen.birth_id }}</font></td>
-                </tr>
-                <tr>
-                    <td align="left" nowrap style="font-size:12pt;text-indent:41.25pt; width: 150px; padding-left: 37.5pt">Date</td>
+                    <td align="left" nowrap style="font-size:12pt; text-indent:41.25pt; width:150px; padding-left:37.5pt">Date of Issue</td>
                     <td><font style="font-size:12pt;">: {{ citizen.issue_date|date('d-m-Y') }}</font></td>
                 </tr>
             </table>
 
-            <table border="0" width="98%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin:0 auto;padding-top:7.5pt;">
+            {# ═══════════════════════════════════════════════════════
+               CERTIFICATE BODY — per certificate_type
+               Each block contains:
+               1. Detailed paragraph
+               2. Closing good-wishes line
+            ═══════════════════════════════════════════════════════ #}
+
+            {% if certificate_type == 'nagorik' %}
+            {# ── Citizen Certificate ── #}
+            <table border="0" width="98%" cellpadding="0" cellspacing="0" style="border-collapse:collapse; margin:0 auto; padding-top:7.5pt;">
                 <tr>
                     <td style="font-size:12pt; padding-left:37.5pt;" height="60pt">
-                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {{ citizen.name_en|default(citizen.name_bn) }} is a permanent resident of {{ union.union_name_en|default(union.union_name_bn) }}. To the best of my knowledge, this person has never been involved in any activities subversive to the state or detrimental to public order.
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                        {{ citizen.name_en|default(citizen.name_bn) }} is a <strong>{% if (citizen.resident|default('permanent')) == 'temporary' %}temporary{% else %}permanent{% endif %} resident</strong>
+                        of Ward No. {{ citizen.permanent_ward_no }} under {{ union.union_name_en|default(union.union_name_bn) }}.
+                        He/She is a Bangladeshi citizen by birth and is personally known to me.
+                        To the best of my knowledge, this person is honest, law-abiding and has never been involved in any activities subversive to the state or detrimental to public order.
                     </td>
                 </tr>
                 <tr>
-                    <td style="padding-left:54pt; font-size:12pt; height: 15pt">
-                        This certificate is issued for official use.
+                    <td style="padding-left:54pt; font-size:12pt; height:15pt;">
+                        I wish him/her all-round well-being and prosperity.
                     </td>
                 </tr>
             </table>
 
-            <table border="0" width="93%" align="center" style="margin-top:15pt;">
+            {% elseif certificate_type == 'trade' %}
+            {# ── Trade License Certificate ── #}
+            <table border="0" width="98%" cellpadding="0" cellspacing="0" style="border-collapse:collapse; margin:0 auto; padding-top:7.5pt;">
                 <tr>
-                    <td style="font-size:11.25pt; text-align:right; padding-top: 15pt;">
-                        Issued by: {{ union.union_name_en|default(union.union_name_bn) }} <br>
-                        Authorized Officer: _________________ <br>
-                        Date: {{ 'now'|date('d-m-Y') }}
+                    <td style="font-size:12pt; padding-left:37.5pt;" height="60pt">
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                        {{ citizen.name_en|default(citizen.name_bn) }} is a registered trader under {{ union.union_name_en|default(union.union_name_bn) }}.
+                        He/She has been conducting business in an honest and reputable manner for a considerable period of time and renews the trade license on a regular basis every year.
+                        To the best of my knowledge, he/she complies with all applicable government regulations and conducts business in a lawful manner.
+                    </td>
+                </tr>
+                <tr>
+                    <td style="padding-left:54pt; font-size:12pt; height:15pt;">
+                        I wish him/her continued business success and all-round prosperity.
                     </td>
                 </tr>
             </table>
+
+            {% elseif certificate_type == 'warish' %}
+            {# ── Inheritance / Warish Certificate ── #}
+            <table border="0" width="98%" cellpadding="0" cellspacing="0" style="border-collapse:collapse; margin:0 auto; padding-top:7.5pt;">
+                <tr>
+                    <td style="font-size:12pt; padding-left:37.5pt;" height="60pt">
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                        {{ citizen.name_en|default(citizen.name_bn) }} is a legal heir of the deceased and is entitled to inherit the relevant property.
+                        To the best of my knowledge, he/she is a genuine family member of the deceased and is legally qualified to claim the inheritance.
+                        This certificate is issued for use in any legal or administrative proceedings related to the estate.
+                    </td>
+                </tr>
+                <tr>
+                    <td style="padding-left:54pt; font-size:12pt; height:15pt;">
+                        I wish him/her all-round well-being and prosperity.
+                    </td>
+                </tr>
+            </table>
+
+            {% elseif certificate_type == 'character' %}
+            {# ── Character Certificate ── #}
+            <table border="0" width="98%" cellpadding="0" cellspacing="0" style="border-collapse:collapse; margin:0 auto; padding-top:7.5pt;">
+                <tr>
+                    <td style="font-size:12pt; padding-left:37.5pt;" height="60pt">
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                        {{ citizen.name_en|default(citizen.name_bn) }} is a <strong>{% if (citizen.resident|default('permanent')) == 'temporary' %}temporary{% else %}permanent{% endif %} resident</strong>
+                        of Ward No. {{ citizen.permanent_ward_no }} under {{ union.union_name_en|default(union.union_name_bn) }}.
+                        He/She is a Bangladeshi citizen by birth and is personally known to me.
+                        His/Her moral character and conduct are exemplary and widely respected in the community.
+                        To the best of my knowledge, he/she has never been involved in any unlawful or antisocial activities.
+                    </td>
+                </tr>
+                <tr>
+                    <td style="padding-left:54pt; font-size:12pt; height:15pt;">
+                        I wish him/her all-round well-being and prosperity.
+                    </td>
+                </tr>
+            </table>
+
+            {% elseif certificate_type == 'new-voter' %}
+            {# ── New Voter Certificate ── #}
+            <table border="0" width="98%" cellpadding="0" cellspacing="0" style="border-collapse:collapse; margin:0 auto; padding-top:7.5pt;">
+                <tr>
+                    <td style="font-size:12pt; padding-left:37.5pt;" height="60pt">
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                        {{ citizen.name_en|default(citizen.name_bn) }} is a <strong>{% if (citizen.resident|default('permanent')) == 'temporary' %}temporary{% else %}permanent{% endif %} resident</strong>
+                        of Ward No. {{ citizen.permanent_ward_no }} under {{ union.union_name_en|default(union.union_name_bn) }}.
+                        He/She is a Bangladeshi citizen by birth and is personally known to me.
+                        His/Her name was not included in the electoral roll during the last voter list update due to absence from home at the time of enumeration.
+                        He/She is now applying for inclusion in the voter list as a resident of the said ward.
+                    </td>
+                </tr>
+                <tr>
+                    <td style="padding-left:54pt; font-size:12pt; height:15pt;">
+                        I wish him/her all-round well-being and prosperity.
+                    </td>
+                </tr>
+            </table>
+
+            {% elseif certificate_type == 'voter' %}
+            {# ── Voter Transfer Certificate ── #}
+            <table border="0" width="98%" cellpadding="0" cellspacing="0" style="border-collapse:collapse; margin:0 auto; padding-top:7.5pt;">
+                <tr>
+                    <td style="font-size:12pt; padding-left:37.5pt;" height="60pt">
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                        {{ citizen.name_en|default(citizen.name_bn) }} is a registered voter of Ward No. {{ citizen.permanent_ward_no }}
+                        under {{ union.union_name_en|default(union.union_name_bn) }}.
+                        He/She intends to transfer his/her voter ID to another constituency.
+                        To the best of my knowledge, he/she is a valid voter of this ward and there is no impediment to the transfer of his/her voter registration.
+                    </td>
+                </tr>
+                <tr>
+                    <td style="padding-left:54pt; font-size:12pt; height:15pt;">
+                        I wish him/her all-round well-being and prosperity.
+                    </td>
+                </tr>
+            </table>
+
+            {% elseif certificate_type == 'vumihin' %}
+            {# ── Landless Certificate ── #}
+            <table border="0" width="98%" cellpadding="0" cellspacing="0" style="border-collapse:collapse; margin:0 auto; padding-top:7.5pt;">
+                <tr>
+                    <td style="font-size:12pt; padding-left:37.5pt;" height="60pt">
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                        {{ citizen.name_en|default(citizen.name_bn) }} is a landless citizen residing under {{ union.union_name_en|default(union.union_name_bn) }}.
+                        To the best of my knowledge, he/she does not own any land or homestead in his/her own name.
+                        He/She is living in extremely poor and vulnerable conditions.
+                        On humanitarian grounds, it is respectfully requested that the concerned authority consider including him/her in the government rehabilitation programme.
+                    </td>
+                </tr>
+                <tr>
+                    <td style="padding-left:54pt; font-size:12pt; height:15pt;">
+                        I wish him/her all-round well-being and prosperity.
+                    </td>
+                </tr>
+            </table>
+
+            {% elseif certificate_type == 'death' %}
+            {# ── Death Certificate ── #}
+            <table border="0" width="98%" cellpadding="0" cellspacing="0" style="border-collapse:collapse; margin:0 auto; padding-top:7.5pt;">
+                <tr>
+                    <td style="font-size:12pt; padding-left:37.5pt;" height="60pt">
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                        {{ data.deceased_name }} was a resident under {{ union.union_name_en|default(union.union_name_bn) }}.
+                        He/She passed away on {{ data.death_date | date('d-m-Y') }}.
+                        At the time of death, his/her approximate age was {{ data.age | default('') }} years.
+                        The fact of his/her death is commonly known in the locality and this certificate is issued accordingly.
+                    </td>
+                </tr>
+                <tr>
+                    <td style="padding-left:54pt; font-size:12pt; height:15pt;">
+                        May the Almighty grant his/her soul eternal peace.
+                    </td>
+                </tr>
+            </table>
+
+            {% elseif certificate_type == 'yearlyincome' %}
+            {# ── Annual Income Certificate ── #}
+            <table border="0" width="98%" cellpadding="0" cellspacing="0" style="border-collapse:collapse; margin:0 auto; padding-top:7.5pt;">
+                <tr>
+                    <td style="font-size:12pt; padding-left:37.5pt;" height="60pt">
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                        {{ citizen.name_en|default(citizen.name_bn) }} is a <strong>{% if (citizen.resident|default('permanent')) == 'temporary' %}temporary{% else %}permanent{% endif %} resident</strong>
+                        of Ward No. {{ citizen.permanent_ward_no }} under {{ union.union_name_en|default(union.union_name_bn) }}
+                        and is personally known to me.
+                        To the best of my knowledge, his/her estimated annual household income is approximately
+                        BDT {{ data.income_amount }} ({{ data.income_amount_word | default('') }}).
+                        This certificate is issued for the purpose of availing various government and non-government services.
+                    </td>
+                </tr>
+                <tr>
+                    <td style="padding-left:54pt; font-size:12pt; height:15pt;">
+                        I wish him/her all-round well-being and prosperity.
+                    </td>
+                </tr>
+            </table>
+
+            {% elseif certificate_type == 'family' %}
+            {# ── Family Certificate ── #}
+            <table border="0" width="98%" cellpadding="0" cellspacing="0" style="border-collapse:collapse; margin:0 auto; padding-top:7.5pt;">
+                <tr>
+                    <td style="font-size:12pt; padding-left:37.5pt;" height="60pt">
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                        {{ citizen.name_en|default(citizen.name_bn) }} is a <strong>{% if (citizen.resident|default('permanent')) == 'temporary' %}temporary{% else %}permanent{% endif %} resident</strong>
+                        of Ward No. {{ citizen.permanent_ward_no }} under {{ union.union_name_en|default(union.union_name_bn) }}.
+                        The details of his/her family members are as follows:
+                        <br><br>
+                        {% if citizen.family_members is defined and citizen.family_members is not empty %}
+                        <table border="1" style="width:90%; margin-left:30px; border-collapse:collapse; font-size:11.25pt;">
+                            <tr style="background:#f0f0f0; font-weight:bold;">
+                                <td style="padding:5px;">Sl. No.</td>
+                                <td style="padding:5px;">Name</td>
+                                <td style="padding:5px;">Relation</td>
+                                <td style="padding:5px;">Age</td>
+                            </tr>
+                            {% for member in citizen.family_members %}
+                            <tr>
+                                <td style="padding:5px;">{{ loop.index }}</td>
+                                <td style="padding:5px;">{{ member.name_en|default(member.name_bn) }}</td>
+                                <td style="padding:5px;">{{ member.relation_en|default(member.relation_bn) }}</td>
+                                <td style="padding:5px;">{{ member.age }}</td>
+                            </tr>
+                            {% endfor %}
+                        </table>
+                        {% endif %}
+                    </td>
+                </tr>
+                <tr>
+                    <td style="padding-left:54pt; font-size:12pt; height:15pt;">
+                        I wish him/her all-round well-being and prosperity.
+                    </td>
+                </tr>
+            </table>
+
+            {% elseif certificate_type == 'obibahito' %}
+            {# ── Unmarried Certificate ── #}
+            <table border="0" width="98%" cellpadding="0" cellspacing="0" style="border-collapse:collapse; margin:0 auto; padding-top:7.5pt;">
+                <tr>
+                    <td style="font-size:12pt; padding-left:37.5pt;" height="60pt">
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                        {{ citizen.name_en|default(citizen.name_bn) }} is a <strong>{% if (citizen.resident|default('permanent')) == 'temporary' %}temporary{% else %}permanent{% endif %} resident</strong>
+                        of Ward No. {{ citizen.permanent_ward_no }} under {{ union.union_name_en|default(union.union_name_bn) }}.
+                        To the best of my knowledge, he/she has not yet entered into the bond of matrimony.
+                        His/Her moral character and conduct are good and commendable.
+                        He/She has not been involved in any unlawful activities.
+                    </td>
+                </tr>
+                <tr>
+                    <td style="padding-left:54pt; font-size:12pt; height:15pt;">
+                        I wish him/her all-round well-being and prosperity.
+                    </td>
+                </tr>
+            </table>
+
+            {% elseif certificate_type == 'bibahito' %}
+            {# ── Married Certificate ── #}
+            <table border="0" width="98%" cellpadding="0" cellspacing="0" style="border-collapse:collapse; margin:0 auto; padding-top:7.5pt;">
+                <tr>
+                    <td style="font-size:12pt; padding-left:37.5pt;" height="60pt">
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                        {{ citizen.name_en|default(citizen.name_bn) }} is a married citizen residing under {{ union.union_name_en|default(union.union_name_bn) }}.
+                        The marriage was solemnized on {{ data.marriage_date | date('d-m-Y') }}.
+                        The marriage was conducted in accordance with social and religious customs and is publicly known in the locality.
+                        This certificate is issued accordingly.
+                    </td>
+                </tr>
+                <tr>
+                    <td style="padding-left:54pt; font-size:12pt; height:15pt;">
+                        I wish him/her all-round well-being and prosperity.
+                    </td>
+                </tr>
+            </table>
+
+            {% elseif certificate_type == 'ekoinam' %}
+            {# ── Same Name Certificate ── #}
+            <table border="0" width="98%" cellpadding="0" cellspacing="0" style="border-collapse:collapse; margin:0 auto; padding-top:7.5pt;">
+                <tr>
+                    <td style="font-size:12pt; padding-left:37.5pt;" height="60pt">
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                        He/She is a <strong>{% if (citizen.resident|default('permanent')) == 'temporary' %}temporary{% else %}permanent{% endif %} resident</strong>
+                        of Ward No. {{ citizen.permanent_ward_no }} under {{ union.union_name_en|default(union.union_name_bn) }}.
+                        To the best of my knowledge, {{ citizen.name_en|default(citizen.name_bn) }} also known as {{ citizen.extra.nickname_en|default(citizen.extra.nickname_bn) }} is the same individual, recognised under both names.
+                        Although both names appear in various documents, they refer to the same person.
+                        This certificate is issued accordingly.
+                    </td>
+                </tr>
+                <tr>
+                    <td style="padding-left:54pt; font-size:12pt; height:15pt;">
+                        I wish him/her all-round well-being and prosperity.
+                    </td>
+                </tr>
+            </table>
+
+            {% elseif certificate_type == 'punobibaho' %}
+            {# ── Non-Remarriage Certificate ── #}
+            <table border="0" width="98%" cellpadding="0" cellspacing="0" style="border-collapse:collapse; margin:0 auto; padding-top:7.5pt;">
+                <tr>
+                    <td style="font-size:12pt; padding-left:37.5pt;" height="60pt">
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                        {{ citizen.name_en|default(citizen.name_bn) }} is a resident of Ward No. {{ citizen.permanent_ward_no }}
+                        under {{ union.union_name_en|default(union.union_name_bn) }}.
+                        To the best of my knowledge, he/she was previously married but has not remarried since.
+                        He/She is currently living independently.
+                        This certificate is issued accordingly.
+                    </td>
+                </tr>
+                <tr>
+                    <td style="padding-left:54pt; font-size:12pt; height:15pt;">
+                        I wish him/her all-round well-being and prosperity.
+                    </td>
+                </tr>
+            </table>
+
+            {% elseif certificate_type == 'protibondi' %}
+            {# ── Disability Certificate ── #}
+            <table border="0" width="98%" cellpadding="0" cellspacing="0" style="border-collapse:collapse; margin:0 auto; padding-top:7.5pt;">
+                <tr>
+                    <td style="font-size:12pt; padding-left:37.5pt;" height="60pt">
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                        {{ citizen.name_en|default(citizen.name_bn) }} is a <strong>{% if (citizen.resident|default('permanent')) == 'temporary' %}temporary{% else %}permanent{% endif %} resident</strong>
+                        of Ward No. {{ citizen.permanent_ward_no }} under {{ union.union_name_en|default(union.union_name_bn) }}.
+                        To the best of my knowledge, he/she is genuinely speech and hearing impaired.
+                        The disability is congenital or caused by an accident.
+                        He/She is applying for government disability allowance and related services.
+                        It is respectfully requested that the concerned authority take appropriate measures in his/her favour.
+                    </td>
+                </tr>
+                <tr>
+                    <td style="padding-left:54pt; font-size:12pt; height:15pt;">
+                        I wish him/her all-round well-being and prosperity.
+                    </td>
+                </tr>
+            </table>
+
+            {% elseif certificate_type == 'onapotti' %}
+            {# ── No Objection Certificate ── #}
+            <table border="0" width="98%" cellpadding="0" cellspacing="0" style="border-collapse:collapse; margin:0 auto; padding-top:7.5pt;">
+                <tr>
+                    <td style="font-size:12pt; padding-left:37.5pt;" height="60pt">
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                        {{ citizen.name_en|default(citizen.name_bn) }} is a <strong>{% if (citizen.resident|default('permanent')) == 'temporary' %}temporary{% else %}permanent{% endif %} resident</strong>
+                        of Ward No. {{ citizen.permanent_ward_no }} under {{ union.union_name_en|default(union.union_name_bn) }}
+                        and is personally known to me.
+                        To the best of my knowledge, he/she is not involved in any objectionable, unlawful or immoral activities.
+                        His/Her character and conduct are commendable and he/she is known as an upright citizen in the community.
+                        This certificate is issued accordingly.
+                    </td>
+                </tr>
+                <tr>
+                    <td style="padding-left:54pt; font-size:12pt; height:15pt;">
+                        I wish him/her all-round well-being and prosperity.
+                    </td>
+                </tr>
+            </table>
+
+            {% elseif certificate_type == 'prottyon' %}
+            {# ── General Attestation ── #}
+            <table border="0" width="98%" cellpadding="0" cellspacing="0" style="border-collapse:collapse; margin:0 auto; padding-top:7.5pt;">
+                <tr>
+                    <td style="font-size:12pt; padding-left:37.5pt;" height="60pt">
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                        {{ citizen.name_en|default(citizen.name_bn) }} is a <strong>{% if (citizen.resident|default('permanent')) == 'temporary' %}temporary{% else %}permanent{% endif %} resident</strong>
+                        of Ward No. {{ citizen.permanent_ward_no }} under {{ union.union_name_en|default(union.union_name_bn) }}.
+                        He/She is personally known to me.
+                        His/Her moral character is good and he/she is known to be of sound reputation in the community.
+                        He/She has never been associated with any antisocial or unlawful activities.
+                    </td>
+                </tr>
+                <tr>
+                    <td style="padding-left:54pt; font-size:12pt; height:15pt;">
+                        I wish him/her all-round well-being and prosperity.
+                    </td>
+                </tr>
+            </table>
+
+            {% elseif certificate_type == 'onumoti' %}
+            {# ── Permission Letter ── #}
+            <table border="0" width="98%" cellpadding="0" cellspacing="0" style="border-collapse:collapse; margin:0 auto; padding-top:7.5pt;">
+                <tr>
+                    <td style="font-size:12pt; padding-left:37.5pt;" height="60pt">
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                        {{ citizen.name_en|default(citizen.name_bn) }} is a <strong>{% if (citizen.resident|default('permanent')) == 'temporary' %}temporary{% else %}permanent{% endif %} resident</strong>
+                        of Ward No. {{ citizen.permanent_ward_no }} under {{ union.union_name_en|default(union.union_name_bn) }}
+                        and is personally known to me.
+                        He/She has voluntarily sought permission to join {{ citizen.extra.permission_reason_en|default(citizen.extra.permission_reason_bn) }},
+                        and I hereby grant permission accordingly.
+                        His/Her moral character is good and he/she is a law-abiding citizen.
+                    </td>
+                </tr>
+                <tr>
+                    <td style="padding-left:54pt; font-size:12pt; height:15pt;">
+                        I wish him/her all-round well-being and prosperity.
+                    </td>
+                </tr>
+            </table>
+
+            {% elseif certificate_type == 'rastakhonon' %}
+            {# ── Road Excavation Permission ── #}
+            <table border="0" width="98%" cellpadding="0" cellspacing="0" style="border-collapse:collapse; margin:0 auto; padding-top:7.5pt;">
+                <tr>
+                    <td style="font-size:12pt; padding-left:37.5pt;" height="60pt">
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                        In response to the application submitted by {{ citizen.name_en|default(citizen.name_bn) }},
+                        permission is hereby granted to carry out excavation work on the road under {{ union.union_name_en|default(union.union_name_bn) }}.
+                        The excavation must be completed within the stipulated time frame and the road must be restored to its original condition upon completion of the work.
+                        The applicant shall bear full responsibility for any damage caused during the process.
+                    </td>
+                </tr>
+                <tr>
+                    <td style="padding-left:54pt; font-size:12pt; height:15pt;">
+                        I wish him/her all-round well-being and prosperity.
+                    </td>
+                </tr>
+            </table>
+
+            {% elseif certificate_type == 'sonaton' %}
+            {# ── Sanatana Religion Certificate ── #}
+            <table border="0" width="98%" cellpadding="0" cellspacing="0" style="border-collapse:collapse; margin:0 auto; padding-top:7.5pt;">
+                <tr>
+                    <td style="font-size:12pt; padding-left:37.5pt;" height="60pt">
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                        {{ citizen.name_en|default(citizen.name_bn) }} is a <strong>{% if (citizen.resident|default('permanent')) == 'temporary' %}temporary{% else %}permanent{% endif %} resident</strong>
+                        of Ward No. {{ citizen.permanent_ward_no }} under {{ union.union_name_en|default(union.union_name_bn) }}.
+                        To the best of my knowledge, he/she follows the Sanatana (Hindu) religion and regularly participates in religious rites and community activities.
+                        He/She is known as a devout and upright citizen within the community.
+                        This certificate is issued accordingly.
+                    </td>
+                </tr>
+                <tr>
+                    <td style="padding-left:54pt; font-size:12pt; height:15pt;">
+                        I wish him/her all-round well-being and prosperity.
+                    </td>
+                </tr>
+            </table>
+
+            {% elseif certificate_type == 'nodibanga' %}
+            {# ── River Erosion Certificate ── #}
+            <table border="0" width="98%" cellpadding="0" cellspacing="0" style="border-collapse:collapse; margin:0 auto; padding-top:7.5pt;">
+                <tr>
+                    <td style="font-size:12pt; padding-left:37.5pt;" height="60pt">
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                        {{ citizen.name_en|default(citizen.name_bn) }} is a victim of river erosion who has suffered significant loss.
+                        His/Her homestead and dwelling have been completely submerged and lost due to river erosion.
+                        He/She is currently living temporarily in this locality.
+                        On humanitarian grounds, it is respectfully requested that the concerned authority consider including him/her in the government rehabilitation programme at the earliest.
+                    </td>
+                </tr>
+                <tr>
+                    <td style="padding-left:54pt; font-size:12pt; height:15pt;">
+                        I wish him/her all-round well-being and prosperity.
+                    </td>
+                </tr>
+            </table>
+
+            {% elseif certificate_type == 'Onnanno' %}
+            {# ── Other / Miscellaneous Certificate ── #}
+            <table border="0" width="98%" cellpadding="0" cellspacing="0" style="border-collapse:collapse; margin:0 auto; padding-top:7.5pt;">
+                <tr>
+                    <td style="font-size:12pt; padding-left:37.5pt;" height="60pt">
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                        {{ citizen.name_en|default(citizen.name_bn) }} is a <strong>{% if (citizen.resident|default('permanent')) == 'temporary' %}temporary{% else %}permanent{% endif %} resident</strong>
+                        of Ward No. {{ citizen.permanent_ward_no }} under {{ union.union_name_en|default(union.union_name_bn) }}
+                        and is personally known to me.
+                        After verifying the necessary information pertaining to the above-named individual, this certificate is issued accordingly.
+                        It is requested that the concerned authority take appropriate action as necessary.
+                    </td>
+                </tr>
+                <tr>
+                    <td style="padding-left:54pt; font-size:12pt; height:15pt;">
+                        I wish him/her all-round well-being and prosperity.
+                    </td>
+                </tr>
+            </table>
+
+            {% else %}
+            {# ── Default Fallback ── #}
+            <table border="0" width="98%" cellpadding="0" cellspacing="0" style="border-collapse:collapse; margin:0 auto; padding-top:7.5pt;">
+                <tr>
+                    <td style="font-size:12pt; padding-left:37.5pt;" height="60pt">
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                        {{ citizen.name_en|default(citizen.name_bn) }} is a <strong>{% if (citizen.resident|default('permanent')) == 'temporary' %}temporary{% else %}permanent{% endif %} resident</strong>
+                        of Ward No. {{ citizen.permanent_ward_no }} under {{ union.union_name_en|default(union.union_name_bn) }}.
+                        This certificate is issued in accordance with the information provided above.
+                        The concerned authority is requested to extend necessary cooperation.
+                    </td>
+                </tr>
+                <tr>
+                    <td style="padding-left:54pt; font-size:12pt; height:15pt;">
+                        I wish him/her all-round well-being and prosperity.
+                    </td>
+                </tr>
+            </table>
+            {% endif %}
+
+            {# ═══════════════════════════════════════════════════════
+               ATTACHMENT — applies to ALL certificate types
+            ═══════════════════════════════════════════════════════ #}
+            <table border="0" width="99%" style="border-collapse:collapse; margin:5px auto; height:100px;" cellspacing="0" cellpadding="0">
+                <tbody>
+                    <tr>
+                        <td style="font-size:11.25pt; text-indent:52.5pt; width:150px; font-weight:bold; padding-left:41.25pt; padding-top:7.5pt; height:37.5pt;">
+                            <span>Attachment:</span>
+                        </td>
+                        <td style="font-size:11.25pt;">
+                            &nbsp; He/She is a <strong>{% if (citizen.resident|default('permanent')) == 'temporary' %}temporary{% else %}permanent{% endif %} resident</strong>
+                            of {{ union.union_name_en|default(union.union_name_bn) }} and is personally known to me.
+                            To the best of my knowledge, he/she is not involved in any activity contrary to law and order.
+                            His/Her character and conduct are good.
+                            I wish him/her all-round well-being and prosperity.
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+
+
 
         </div>
     </div>
 </section>
-
-
-

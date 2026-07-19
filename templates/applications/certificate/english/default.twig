@@ -168,7 +168,11 @@
                     </div>
                 </td>
                 <td width="20%">
-                    <img src="{{ url }}/assets/img/band-cross.png" alt="X" class="logo">
+                    {% if union.stamp_logo_url is defined and union.stamp_logo_url %}
+                        <img src="{{ url ~ union.stamp_logo_url }}" alt="Stamp" class="logo">
+                    {% else %}
+                        <img src="{{ url }}/assets/img/band-cross.png" alt="X" class="logo">
+                    {% endif %}
                 </td>
             </tr>
         </table>
@@ -304,7 +308,7 @@
 </table>
 
             <!-- Paragraph Section -->
-            {% include 'applications/certificate_paragraph.twig' with { certificate_type: certificate_type, data: data } %}
+            {% include 'applications/certificate_paragraph_english.twig' with { certificate_type: certificate_type, data: data } %}
 
 
 

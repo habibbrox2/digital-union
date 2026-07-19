@@ -5,113 +5,254 @@
 
 {% block content %}
 {% include 'components/sweetAlert.twig' %}
-<link href="https://fonts.maateen.me/solaiman-lipi/font.css" rel="stylesheet">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
-<script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+
+<div class="error-wrapper">
+    <div class="error-card">
+
+        {% if error_code == 400 %}
+            <div class="error-icon-box warning">
+                <i class="bi bi-exclamation-triangle-fill"></i>
+            </div>
+            <h2 class="error-code">৪০০</h2>
+            <h3 class="error-title">ভুল অনুরোধ</h3>
+            <p class="error-desc">আপনার পাঠানো অনুরোধটি সঠিক নয়। দয়া করে পুনরায় চেষ্টা করুন।</p>
+
+        {% elseif error_code == 401 %}
+            <div class="error-icon-box locked">
+                <i class="bi bi-shield-lock-fill"></i>
+            </div>
+            <h2 class="error-code">৪০১</h2>
+            <h3 class="error-title">অনুমতি নেই</h3>
+            <p class="error-desc">আপনি লগইন করেননি বা আপনার সেশন শেষ হয়ে গেছে।</p>
+            <a href="/login" class="btn-action login">
+                <i class="bi bi-box-arrow-in-right me-1"></i> লগইন করুন
+            </a>
+
+        {% elseif error_code == 403 %}
+            <div class="error-icon-box danger">
+                <i class="bi bi-lock-fill"></i>
+            </div>
+            <h2 class="error-code">৪০৩</h2>
+            <h3 class="error-title">প্রবেশ নিষেধ</h3>
+            <p class="error-desc">আপনার এই পৃষ্ঠায় প্রবেশের অনুমতি নেই।</p>
+
+        {% elseif error_code == 404 %}
+            <div class="error-icon-box info">
+                <i class="bi bi-search"></i>
+            </div>
+            <h2 class="error-code">৪০৪</h2>
+            <h3 class="error-title">পৃষ্ঠা পাওয়া যায়নি</h3>
+            <p class="error-desc">আপনি যে পৃষ্ঠাটি খুঁজছেন সেটি বিদ্যমান নয়।</p>
+
+        {% elseif error_code == 500 %}
+            <div class="error-icon-box bug">
+                <i class="bi bi-bug-fill"></i>
+            </div>
+            <h2 class="error-code">৫০০</h2>
+            <h3 class="error-title">সার্ভার সমস্যা</h3>
+            <p class="error-desc">আমাদের সার্ভারে একটি সমস্যা হয়েছে। পরে আবার চেষ্টা করুন।</p>
+
+        {% elseif error_code == 503 %}
+            <div class="error-icon-box warning">
+                <i class="bi bi-cone-striped"></i>
+            </div>
+            <h2 class="error-code">৫০৩</h2>
+            <h3 class="error-title">সার্ভিস বন্ধ</h3>
+            <p class="error-desc">সার্ভার বর্তমানে ব্যস্ত বা রক্ষণাবেক্ষণে আছে।</p>
+
+        {% else %}
+            <div class="error-icon-box unknown">
+                <i class="bi bi-shield-fill-exclamation"></i>
+            </div>
+            <h2 class="error-code">{{ error_code }}</h2>
+            <h3 class="error-title">অজানা ত্রুটি</h3>
+            <p class="error-desc">{{ error_message|default('দুঃখিত, কিছু ভুল হয়েছে।') }}</p>
+        {% endif %}
+
+        <div class="error-actions">
+            <a href="/" class="btn-action home">
+                <i class="bi bi-house-door-fill me-1"></i> হোম পেইজে ফিরে যান
+            </a>
+            <button onclick="history.back()" class="btn-action back">
+                <i class="bi bi-arrow-left me-1"></i> পূর্ববর্তী পৃষ্ঠা
+            </button>
+        </div>
+
+        {% if error_message and error_code >= 500 %}
+        <div class="error-detail">
+            <details>
+                <summary><i class="bi bi-info-circle me-1"></i> বিস্তারিত তথ্য</summary>
+                <pre>{{ error_message }}</pre>
+            </details>
+        </div>
+        {% endif %}
+    </div>
+</div>
 
 <style>
-    body {
-        background: linear-gradient(to right, #fdfbfb, #ebedee);
-        font-family: 'SolaimanLipi', sans-serif;
-    }
-    .error-container {
-        max-width: 600px;
-        margin: 80px auto;
-        background-color: #ffffff;
-        border-radius: 20px;
-        box-shadow: 0 12px 30px rgba(0, 0, 0, 0.1);
-        padding: 40px 30px;
-        text-align: center;
-    }
-    .error-container h3 {
-        color: #dc3545;
-        font-size: 28px;
-        font-weight: 700;
-        margin-top: 20px;
-        margin-bottom: 15px;
-    }
-    .error-container p {
-        font-size: 18px;
-        color: #333;
-        margin-bottom: 30px;
-    }
-    .btn-home {
-        font-size: 16px;
-        padding: 12px 30px;
-        border-radius: 30px;
-        transition: all 0.3s ease;
-    }
-    .btn-home:hover {
-        background-color: #0d6efd;
-        color: #fff;
-    }
-    .lottie-wrapper {
-        width: 200px;
-        margin: 0 auto;
-    }
-    .custom-login-btn {
-        padding: 8px 18px;
-        font-weight: 600;
-        border-radius: 30px;
-        background-color: #28a745;
-        color: #fff;
-        text-decoration: none;
-        box-shadow: 0 4px 8px rgba(40, 167, 69, 0.3);
-        transition: background-color 0.3s ease, box-shadow 0.3s ease;
-    }
-    .custom-login-btn:hover {
-        background-color: #218838;
-        box-shadow: 0 6px 12px rgba(33, 136, 56, 0.5);
-        color: #fff;
-    }
+.error-wrapper {
+    min-height: 70vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+}
+
+.error-card {
+    background: #fff;
+    border-radius: 24px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.06);
+    border: 1px solid rgba(0,0,0,0.06);
+    padding: 3rem 2.5rem;
+    max-width: 480px;
+    width: 100%;
+    text-align: center;
+    animation: cardEntrance 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    opacity: 0;
+    transform: translateY(20px);
+}
+
+@keyframes cardEntrance {
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.error-icon-box {
+    width: 88px;
+    height: 88px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1.5rem;
+    font-size: 2.4rem;
+    animation: iconPulse 2s ease-in-out infinite;
+    transition: transform 0.3s ease;
+}
+.error-icon-box:hover { transform: scale(1.08); }
+
+@keyframes iconPulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(0,0,0,0.08); }
+    50% { box-shadow: 0 0 0 12px rgba(0,0,0,0.02); }
+}
+
+.error-icon-box.warning { background: rgba(255,193,7,0.12); color: #f39c12; }
+.error-icon-box.locked { background: rgba(13,110,253,0.1); color: #0d6efd; }
+.error-icon-box.danger { background: rgba(220,53,69,0.1); color: #dc3545; }
+.error-icon-box.info { background: rgba(13,202,240,0.1); color: #0dcaf0; }
+.error-icon-box.bug { background: rgba(220,53,69,0.1); color: #dc3545; }
+.error-icon-box.unknown { background: rgba(108,117,125,0.1); color: #6c757d; }
+
+.error-code {
+    font-size: 3.5rem;
+    font-weight: 800;
+    color: #1e293b;
+    line-height: 1;
+    margin-bottom: 0.25rem;
+    letter-spacing: -1px;
+}
+
+.error-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #334155;
+    margin-bottom: 0.75rem;
+}
+
+.error-desc {
+    font-size: 0.95rem;
+    color: #64748b;
+    line-height: 1.6;
+    margin-bottom: 2rem;
+    max-width: 320px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.error-actions {
+    display: flex;
+    gap: 0.75rem;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.btn-action {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.6rem 1.5rem;
+    border-radius: 50px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.25s ease;
+    cursor: pointer;
+    border: none;
+}
+.btn-action.home {
+    background: #008B8B;
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(0,139,139,0.25);
+}
+.btn-action.home:hover {
+    background: #007A7A;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0,139,139,0.3);
+    color: #fff;
+}
+.btn-action.login {
+    background: #0d6efd;
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(13,110,253,0.25);
+}
+.btn-action.login:hover {
+    background: #0b5ed7;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(13,110,253,0.3);
+    color: #fff;
+}
+.btn-action.back {
+    background: #f1f5f9;
+    color: #475569;
+}
+.btn-action.back:hover {
+    background: #e2e8f0;
+    transform: translateY(-2px);
+    color: #1e293b;
+}
+
+.error-detail {
+    margin-top: 1.5rem;
+    text-align: left;
+}
+.error-detail details {
+    background: #f8fafc;
+    border-radius: 12px;
+    padding: 0.75rem 1rem;
+    border: 1px solid #e2e8f0;
+}
+.error-detail summary {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #64748b;
+    cursor: pointer;
+    user-select: none;
+}
+.error-detail pre {
+    margin-top: 0.75rem;
+    font-size: 0.8rem;
+    color: #dc3545;
+    background: #fef2f2;
+    padding: 0.75rem;
+    border-radius: 8px;
+    overflow-x: auto;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+@media (max-width: 480px) {
+    .error-card { padding: 2rem 1.5rem; }
+    .error-code { font-size: 2.8rem; }
+    .error-icon-box { width: 72px; height: 72px; font-size: 2rem; }
+}
 </style>
 
-<div class="error-container">
-    <div class="lottie-wrapper">
-        <lottie-player
-            src="https://lottie.host/7401522f-2d8b-4049-ad18-eb0edb6af224/CE9lFrNlEH.json"
-            background="transparent"
-            speed="1"
-            loop
-            autoplay>
-        </lottie-player>
-    </div>
-
-    {% if error_code == 400 %}
-        <h3><i class="bi bi-exclamation-triangle-fill"></i> ভুল অনুরোধ (400)</h3>
-        <p>আপনার পাঠানো অনুরোধটি সঠিক নয়। দয়া করে পুনরায় চেষ্টা করুন।</p>
-
-    {% elseif error_code == 401 %}
-        <h3><i class="bi bi-shield-lock-fill"></i> অনুমতি নেই (401)</h3>
-        <p>আপনি লগইন করেননি বা আপনার সেশন শেষ হয়ে গেছে।</p>
-        <a href="/login" class="custom-login-btn d-inline-flex align-items-center">
-            <i class="bi bi-box-arrow-in-right me-2"></i> লগইন করুন
-        </a>
-
-    {% elseif error_code == 403 %}
-        <h3><i class="bi bi-lock-fill"></i> প্রবেশ নিষেধ (403)</h3>
-        <p>আপনার এই পৃষ্ঠায় প্রবেশের অনুমতি নেই।</p>
-
-    {% elseif error_code == 404 %}
-        <h3><i class="bi bi-search"></i> পৃষ্ঠা পাওয়া যায়নি (404)</h3>
-        <p>আপনি যে পৃষ্ঠাটি খুঁজছেন সেটি বিদ্যমান নয়।</p>
-
-    {% elseif error_code == 500 %}
-        <h3><i class="bi bi-bug-fill"></i> সার্ভার সমস্যা (500)</h3>
-        <p>আমাদের সার্ভারে একটি সমস্যা হয়েছে। পরে আবার চেষ্টা করুন।</p>
-
-    {% elseif error_code == 503 %}
-        <h3><i class="bi bi-cone-striped"></i> সার্ভিস অস্থায়ীভাবে বন্ধ (503)</h3>
-        <p>সার্ভার বর্তমানে ব্যস্ত বা রক্ষণাবেক্ষণে আছে।</p>
-
-    {% else %}
-        <h3><i class="bi bi-shield-fill-exclamation"></i> অজানা ত্রুটি{% if error_code %} ({{ error_code }}){% endif %}</h3>
-        <p>{{ error_message|default('দুঃখিত, কিছু ভুল হয়েছে।') }}</p>
-    {% endif %}
-
-    <a href="/" class="btn btn-outline-primary btn-home mt-3">
-        <i class="bi bi-house-door-fill"></i> হোম পেইজে ফিরে যান
-    </a>
-</div>
 {% endblock %}

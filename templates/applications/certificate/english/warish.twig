@@ -150,7 +150,11 @@ table.warish-table td {
                     </div>
                     </td>
                     <td>
-                     <img src="{{ url }}/assets/img/band-cross.png" alt="X" class="logo" style="height: 60pt; width: 60pt;">
+                        {% if union.stamp_logo_url is defined and union.stamp_logo_url %}
+                            <img src="{{ url ~ union.stamp_logo_url }}" alt="Stamp" class="logo" style="height: 60pt; width: 60pt;">
+                        {% else %}
+                            <img src="{{ url }}/assets/img/band-cross.png" alt="X" class="logo" style="height: 60pt; width: 60pt;">
+                        {% endif %}
                     </td>
                 </tr>
             </table>
@@ -231,7 +235,7 @@ table.warish-table td {
             </table>
 
             <!-- Warish Statement -->
-            <table><tr><td class="warish-statement"> &nbsp; &nbsp;&nbsp; &nbsp; was a permanent resident of this union. He/She died in {{ (data.extra.death_date ?? (data.birth_date ?? '')) | date('Y') }}. At the time of death, he/she left behind the following heirs.</td></tr></table>
+            <table><tr><td class="warish-statement"> &nbsp; &nbsp;&nbsp; &nbsp; was {% if (data.resident|default('permanent')) == 'temporary' %}a temporary resident{% else %}a permanent resident{% endif %} of this union. He/She died in {{ (data.extra.death_date ?? (data.birth_date ?? '')) | date('Y') }}. At the time of death, he/she left behind the following heirs.</td></tr></table>
 
             <!-- Warish List -->
             <table class="warish-table {% if data.warish_members|length > 10 %}warish-compact{% endif %}">

@@ -1,45 +1,81 @@
-{# templates/settings/edit-ownership-type.twig #}
 {% extends 'layout.twig' %}
 
 {% block title %}মালিকানার ধরণ সম্পাদনা করুন{% endblock %}
 {% block header_title %}{{ header_title|default('মালিকানার ধরণ সম্পাদনা করুন') }}{% endblock %}
 
 {% block content %}
-
 {% if not is_logged_in %}
     {% set redirect = "<script>window.location.href='/#';</script>" %}
     {{ redirect|raw }}
 {% endif %}
 
-<h2>Edit Ownership Type</h2>
-
-{% if status %}
-    <div class="alert alert-{{ status == 'success' ? 'success' : 'danger' }}">
-        {{ message }}
-    </div>
-{% endif %}
-
-<form method="POST">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-    <input type="hidden" name="id" value="{{ ownershipType.id }}">
-
-    <div class="form-group">
-        <label for="ownership_name_bn">Ownership Name (Bangla)</label>
-        <input type="text" id="ownership_name_bn" name="ownership_name_bn" class="form-control" 
-               value="{{ ownershipType.ownership_name_bn }}" placeholder="বাংলায় মালিকানার নাম লিখুন" required>
+<div class="container-fluid px-0">
+    <!-- Page Header -->
+    <div class="d-flex align-items-center justify-content-between mb-4">
+        <div>
+            <h3 class="mb-1 fw-bold" style="font-size: 1.5rem; color: #1e293b;">{{ header_title }}</h3>
+            <p class="text-muted mb-0" style="font-size: 0.9rem;">
+                <i class="bi bi-pencil-square me-1"></i>
+                মালিকানা প্রকার সম্পাদনা করুন
+            </p>
+        </div>
+        <a href="/settings/ownership-types" class="btn btn-outline-secondary rounded-pill px-3">
+            <i class="bi bi-arrow-left me-1"></i> ফিরে যান
+        </a>
     </div>
 
-    <div class="form-group">
-        <label for="ownership_name_en">Ownership Name (English)</label>
-        <input type="text" id="ownership_name_en" name="ownership_name_en" class="form-control" 
-               value="{{ ownershipType.ownership_name_en }}" placeholder="Enter ownership name in English" required>
+    {% if status %}
+        <div class="alert alert-{{ status == 'success' ? 'success' : 'danger' }} modern-alert d-flex align-items-center gap-2 mb-4" role="alert">
+            <i class="bi bi-{{ status == 'success' ? 'check-circle-fill' : 'exclamation-triangle-fill' }} fs-5"></i>
+            <span>{{ message }}</span>
+            <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    {% endif %}
+
+    <!-- Edit Form Section Card -->
+    <div class="section-card">
+        <div class="d-flex align-items-center gap-2 mb-4">
+            <div class="section-header-icon">
+                <i class="bi bi-pencil-square"></i>
+            </div>
+            <h5 class="section-title mb-0">
+                <i class="bi bi-pencil-square text-primary me-2"></i>
+                মালিকানা প্রকার সম্পাদনা করুন
+            </h5>
+        </div>
+
+        <form method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <input type="hidden" name="id" value="{{ ownershipType.id }}">
+
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label for="ownership_name_bn" class="form-label fw-semibold small text-secondary">মালিকানার নাম (বাংলা) <span class="text-danger">*</span></label>
+                    <input type="text" id="ownership_name_bn" name="ownership_name_bn" class="form-control input-enhanced" 
+                           value="{{ ownershipType.ownership_name_bn }}" placeholder="যেমন: একক মালিকানা" required>
+                </div>
+                <div class="col-md-6">
+                    <label for="ownership_name_en" class="form-label fw-semibold small text-secondary">মালিকানার নাম (ইংরেজি) <span class="text-danger">*</span></label>
+                    <input type="text" id="ownership_name_en" name="ownership_name_en" class="form-control input-enhanced" 
+                           value="{{ ownershipType.ownership_name_en }}" placeholder="e.g. Sole Proprietorship" required>
+                </div>
+            </div>
+
+            <div class="d-flex gap-2 mt-4 pt-3 border-top">
+                <button type="submit" class="btn btn-primary rounded-pill px-4 shadow-sm">
+                    <i class="bi bi-check-circle me-1"></i> আপডেট করুন
+                </button>
+                <a href="{{ previous_url }}" class="btn btn-outline-secondary rounded-pill px-4">
+                    <i class="bi bi-x-circle me-1"></i> বাতিল
+                </a>
+            </div>
+        </form>
     </div>
+</div>
 
-    <button type="submit" class="btn btn-primary">Update Ownership Type</button>
-</form>
-
-<a href="{{ previous_url }}" class="btn btn-secondary">Back</a>
-
+<style>
+@media (max-width: 768px) {
+    .section-card { padding: 1rem !important; }
+}
+</style>
 {% endblock %}
-
-

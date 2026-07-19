@@ -27,6 +27,9 @@
     <!-- Alert Messages -->
     {% include 'components/sweetAlert.twig' %}
 
+    <!-- CSRF Token for AJAX requests -->
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
     <!-- Search & Filter Form -->
     <div class="card mb-4 shadow-sm">
         <div class="card-body">
@@ -236,13 +239,31 @@ document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => {
 });
 
 // Delete user handler
+const csrfToken = document.querySelector('input[name="csrf_token"]')?.value || '';
 document.querySelectorAll('.delete-user-btn').forEach(btn => {
-    btn.addEventListener('click', function() {
+    btn.addEventListener('click', async function() {
         const userId = this.getAttribute('data-id');
-        if (confirm('{{ "এই ব্যবহারকারী মুছতে চান? এই পদক্ষেপটি পূর্ববর্তী নয়।" }}')) {
+        const result = await Swal.fire({
+            title: 'ব্যবহারকারী মুছবেন?',
+            text: 'এই ব্যবহারকারী স্থায়ীভাবে মুছে যাবে। এই পদক্ষেপটি পূর্ববর্তী নয়।',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc3545',
+            confirmButtonText: '<i class="bi bi-trash3 me-1"></i> হ্যাঁ, মুছুন',
+            cancelButtonText: '<i class="bi bi-x-circle me-1"></i> বাতিল',
+            reverseButtons: true,
+            customClass: { confirmButton: 'btn btn-danger rounded-pill px-4', cancelButton: 'btn btn-outline-secondary rounded-pill px-4' },
+            buttonsStyling: false
+        });
+        if (result.isConfirmed) {
             const form = document.createElement('form');
             form.method = 'POST';
             form.action = `/users/delete/${userId}`;
+            const csrfInput = document.createElement('input');
+            csrfInput.type = 'hidden';
+            csrfInput.name = 'csrf_token';
+            csrfInput.value = csrfToken;
+            form.appendChild(csrfInput);
             document.body.appendChild(form);
             form.submit();
         }

@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔴 Critical Error Alert</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #fdf2f2;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .email-container {
+            max-width: 620px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(220, 53, 69, 0.15);
+        }
+        .header {
+            background: linear-gradient(135deg, #dc3545 0%, #b91c1c 100%);
+            color: #ffffff;
+            padding: 36px 30px;
+            text-align: center;
+        }
+        .header h1 { font-size: 26px; margin-bottom: 8px; }
+        .header .badge {
+            display: inline-block;
+            background: rgba(255,255,255,0.2);
+            padding: 6px 20px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+        .content { padding: 36px 30px; color: #1f2937; }
+        .content p { margin-bottom: 14px; font-size: 15px; }
+        .error-box {
+            background: #fef2f2;
+            border-left: 5px solid #dc3545;
+            padding: 18px;
+            margin: 20px 0;
+            border-radius: 6px;
+        }
+        .error-box .error-type {
+            font-size: 18px;
+            font-weight: 700;
+            color: #b91c1c;
+            margin-bottom: 6px;
+        }
+        .error-box .error-msg {
+            font-size: 15px;
+            color: #991b1b;
+            word-break: break-word;
+        }
+        .info-table {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            margin: 20px 0;
+            overflow: hidden;
+        }
+        .info-table .row {
+            display: flex;
+            padding: 10px 18px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .info-table .row:last-child { border-bottom: none; }
+        .info-table .label {
+            font-weight: 600;
+            color: #475569;
+            min-width: 110px;
+            flex-shrink: 0;
+        }
+        .info-table .value {
+            color: #1e293b;
+            word-break: break-word;
+        }
+        .severity-high {
+            display: inline-block;
+            background: #dc3545;
+            color: #fff;
+            padding: 3px 14px;
+            border-radius: 12px;
+            font-size: 13px;
+            font-weight: 700;
+        }
+        .button-container { text-align: center; margin: 30px 0; }
+        .button {
+            display: inline-block;
+            background: linear-gradient(135deg, #dc3545 0%, #b91c1c 100%);
+            color: #ffffff;
+            text-decoration: none;
+            padding: 14px 36px;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            transition: transform 0.2s;
+        }
+        .button:hover { transform: translateY(-2px); }
+        .footer {
+            background: #f8fafc;
+            padding: 20px 30px;
+            text-align: center;
+            border-top: 1px solid #e2e8f0;
+            color: #64748b;
+            font-size: 13px;
+        }
+        .footer p { margin-bottom: 4px; }
+        @media only screen and (max-width: 600px) {
+            body { padding: 10px; }
+            .header { padding: 28px 18px; }
+            .header h1 { font-size: 22px; }
+            .content { padding: 28px 18px; }
+            .info-table .row { flex-direction: column; gap: 4px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <div class="header">
+            <h1>🔴 Critical System Error</h1>
+            <p>সার্ভারে একটি গুরুতর ত্রুটি সনাক্ত করা হয়েছে</p>
+            <div class="badge">{{ error_type | default('UNKNOWN') }}</div>
+        </div>
+
+        <div class="content">
+            <p>প্রিয় <strong>{{ mail_from_name | default('লগ ধাকা') }} অ্যাডমিন</strong>,</p>
+
+            <p>নিচের গুরুতর ত্রুটিটি ঘটেছে — <strong>অবিলম্বে পদক্ষেপ নিন</strong>।</p>
+
+            <div class="error-box">
+                <div class="error-type">{{ error_type | default('UNKNOWN ERROR') }}</div>
+                <div class="error-msg">{{ error_message | default('No message provided') }}</div>
+            </div>
+
+            <div class="info-table">
+                <div class="row">
+                    <span class="label">📁 ফাইল</span>
+                    <span class="value">{{ error_file | default('Unknown') }} (লাইন {{ error_line | default('?') }})</span>
+                </div>
+                <div class="row">
+                    <span class="label">🛣️ Route</span>
+                    <span class="value">{{ error_route | default('Unknown') }}</span>
+                </div>
+                <div class="row">
+                    <span class="label">🌐 IP</span>
+                    <span class="value">{{ client_ip | default('Unknown') }}</span>
+                </div>
+                <div class="row">
+                    <span class="label">⏰ সময়</span>
+                    <span class="value">{{ error_time | default('now') }}</span>
+                </div>
+            </div>
+
+            <div class="button-container">
+                <a href="{{ site_url | default('') }}/admin/logs" class="button">📋 লগ দেখুন</a>
+            </div>
+
+            {% if backtrace is defined and backtrace is not empty %}
+            <details style="margin: 16px 0;">
+                <summary style="cursor:pointer;color:#475569;font-weight:600;">🔍 Backtrace (Click to expand)</summary>
+                <pre style="background:#f1f5f9;padding:14px;border-radius:6px;margin-top:8px;font-size:12px;overflow-x:auto;line-height:1.5;color:#334155;">{{ backtrace }}</pre>
+            </details>
+            {% endif %}
+
+            <p style="margin-top: 20px;">
+                <strong>প্রস্তাবিত পদক্ষেপ:</strong>
+            </p>
+            <ul style="margin-left: 18px;margin-bottom: 18px;">
+                <li style="margin-bottom:6px;">লগ ফাইল পরীক্ষা করুন: <code style="background:#f1f5f9;padding:2px 6px;border-radius:3px;">storage/logs/error.log</code></li>
+                <li style="margin-bottom:6px;">ত্রুটির কারণ নির্ধারণ করে সমাধান করুন</li>
+                <li style="margin-bottom:6px;">প্রয়োজনে সার্ভার রিস্টার্ট করুন</li>
+            </ul>
+
+            <p style="margin-top: 20px;">
+                <strong>ধন্যবাদ,</strong><br>
+                {{ mail_from_name | default('লগ ধাকা') }} — Error Monitoring System
+            </p>
+        </div>
+
+        <div class="footer">
+            <p>&copy; {{ "now" | date("Y") }} {{ mail_from_name | default('লগ ধাকা') }}. সর্বস্বত্ব সংরক্ষিত।</p>
+            <p>এই ইমেইলটি গুরুতর সিস্টেম ত্রুটির জন্য স্বয়ংক্রিয়ভাবে পাঠানো হয়েছে।</p>
+        </div>
+    </div>
+</body>
+</html>

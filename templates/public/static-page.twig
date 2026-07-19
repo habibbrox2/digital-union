@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>স্মার্ট ইউপি, ঢাকা</title>
+    <link rel="shortcut icon" href="{{ url }}/assets/images/icon/favicon.png" type="image/png">
+    <link rel="stylesheet" href="{{ url }}/assets/css/other/bootstrap.min.css">
+    <link rel="stylesheet" href="{{ url }}/assets/css/other/font-awesome.min.css">
+    <link rel="stylesheet" href="https://pro.fontawesome.com/releases/v5.10.0/css/all.css">
+    <link rel="stylesheet" href="{{ url }}/assets/css/other/combined.public.css?t={{ "now"|date("Hiss") }}">
+    <style>
+        body { background: #f4f7fb; color: #172d4a; }
+        .page-banner { background: #1685db; border-radius: 10px; padding: 1rem 1.25rem; margin-bottom: 1.75rem; color: #ffffff; }
+        .page-banner h2 { margin: 0; font-size: 1.15rem; font-weight: 700; }
+        .page-banner p { margin: 0.35rem 0 0; font-size: 0.96rem; opacity: 0.9; }
+        .union-section { margin-bottom: 1.6rem; }
+        .union-header { background: #c9dff1; color: #0f3d74; border-radius: 8px; padding: 0.75rem 1rem; font-size: 0.96rem; font-weight: 700; text-align: center; }
+        .person-card { background: #ffffff; border: 1px solid #d9e4f4; border-radius: 18px; padding: 1.3rem; }
+        .person-card-inner { gap: 1.4rem; }
+        .person-image-wrap { width: 160px; height: 160px; min-width: 160px; border-radius: 50%; overflow: hidden; background: #ffffff; display: flex; align-items: center; justify-content: center; border: 5px solid #ffffff; box-shadow: 0 18px 40px rgba(13, 56, 105, 0.12); }
+        .person-image { width: 100%; height: 100%; object-fit: cover; }
+        .person-details { padding-left: 1rem; }
+        .person-details h4 { font-size: 1.2rem; font-weight: 700; margin-bottom: 0.25rem; color: #101f3b; }
+        .designation { color: #192f59; font-weight: 700; margin-bottom: 0.9rem; font-size: 0.97rem; }
+        .person-meta { color: #4f5f7d; margin-bottom: 0.4rem; line-height: 1.65; }
+        .person-meta strong { color: #0d3a77; font-weight: 700; }
+        .app-section { margin-top: 3rem; }
+        .app-header { text-align: center; margin-bottom: 1.5rem; }
+        .app-header h4 { font-size: 1.4rem; color: #0d3d76; font-weight: 700; margin-bottom: 0.5rem; }
+        .app-header .app-underline { width: 90px; height: 4px; display: inline-block; background: #0d3d76; border-radius: 999px; }
+        .app-screenshot-card { background: #ffffff; border: 1px solid #d7e5f4; border-radius: 18px; padding: 0.9rem; }
+        .app-screenshot-card img { max-width: 100%; height: auto; display: block; margin: 0 auto; }
+        .download-box { background: transparent; border: none; padding: 0; }
+        .download-box h5 { color: #0f3f7d; font-weight: 700; font-size: 1rem; margin-bottom: 1rem; }
+        .playstore-btn { max-width: 190px; }
+        @media (max-width: 767px) {
+            .page-banner { padding: 0.95rem 1rem; }
+            .person-card { padding: 1.15rem; }
+            .person-image-wrap { width: 140px; height: 140px; min-width: 140px; }
+        }
+    </style>
+</head>
+<body class="body-bg">
+    <div id="wrapper">
+
+    <header class="site-header py-3 shadow-sm bg-white">
+        <div class="container-fluid">
+            <div class="row align-items-center g-2">
+                <div class="col-4 col-md-4 text-start text-md-center">
+                    <a href="https://lgdhaka.com">
+                        <img class="site-logo img-fluid" 
+                             src="{{ url }}/assets/images/dijital union logo.png" 
+                             alt="Logo">
+                    </a>
+                </div>
+                <div class="col-4 col-md-4 text-center">
+                    <h3 class="site-title mb-0 fw-bold d-none d-sm-block" style="font-size: calc(1.2rem + 0.5vw);">
+                        স্মার্ট ইউপি, ঢাকা
+                    </h3>
+                    <h6 class="site-title mb-0 fw-bold d-block d-sm-none">স্মার্ট ইউপি</h6>
+                </div>
+                <div class="col-4 col-md-4 text-end text-md-center">
+                    {% if auth_user %}
+                        <div class="user-profile d-flex align-items-center justify-content-end justify-content-md-center">
+                            <div class="user-info d-none d-md-block me-2">
+                                <span class="user-name d-block fw-bold text-dark">
+                                    {{ auth_user.name_bn ?: auth_user.name_en }}
+                                </span>
+                                <div class="user-links small">
+                                    <a href="/dashboard" class="text-decoration-none">ড্যাশবোর্ড</a> |
+                                    <a href="/logout" class="text-decoration-none text-danger">লগআউট</a>
+                                </div>
+                            </div>
+                            <div class="dropdown">
+                                <img class="user-avatar rounded-circle border border-2 border-primary p-1 shadow-sm" 
+                                     src="{% if is_superadmin %}{{ auth_user.profile_picture_url ?: '/assets/images/administrator.png' }}{% else %}{{ auth_user.profile_picture_url ?: '/assets/images/default.png' }}{% endif %}" 
+                                     alt="{{ auth_user.name_bn ?: auth_user.name_en }}"
+                                     style="width: 45px; height: 45px; cursor: pointer; object-fit: cover;"
+                                     data-bs-toggle="dropdown">
+                                <ul class="dropdown-menu dropdown-menu-end d-md-none">
+                                    <li class="dropdown-header">{{ auth_user.name_bn ?: auth_user.name_en }}</li>
+                                    <li><a class="dropdown-item" href="/dashboard">ড্যাশবোর্ড</a></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item text-danger" href="/logout">লগআউট</a></li>
+                                </ul>
+                            </div>
+                        </div>
+                    {% else %}
+                        <a href="/login" class="btn btn-primary btn-sm px-4 rounded-pill shadow-sm">লগইন</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </header>
+
+<main>
+<div class="container py-4">
+    <div class="page-banner text-center">
+        <h2>{{ page_subtitle }}</h2>
+    </div>
+
+    {% for employee in employees %}
+    <div class="union-section">
+        <div class="row g-4 align-items-center mb-3">
+            <div class="col-12 col-md-6">
+                <div class="union-header">{{ employee.union_name }}</div>
+            </div>
+        </div>
+        <div class="row g-4">
+            {% for person in employee.persons|slice(0, 2) %}
+            <div class="col-12 col-md-6">
+                <div class="person-card">
+                    <div class="person-card-inner row g-3 align-items-center">
+                        <div class="col-auto">
+                            <div class="person-image-wrap">
+                                <img src="{{ person.image }}" alt="{{ person.name ?: 'Chairman' }}" class="person-image" onerror="this.src='{{ url }}/assets/images/default.png'">
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="person-details">
+                                <h4>{{ person.name }}</h4>
+                                <p class="designation">{{ person.designation }}</p>
+                                <p class="person-meta"><strong>মোবাইল :</strong> {{ person.mobile ?: 'উপলব্ধ নেই' }}</p>
+                                <p class="person-meta"><strong>ইমেইল :</strong> {{ person.email ?: 'উপলব্ধ নেই' }}</p>
+                                <p class="person-meta"><strong>নির্বাচনী এলাকার নাম :</strong> {{ person.electoral_area ?: 'উপলব্ধ নেই' }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endfor %}
+
+    <section class="app-section">
+        <div class="app-header">
+            <h4>মোবাইল অ্যাপ্লিকেশন</h4>
+            <span class="app-underline"></span>
+        </div>
+        <div class="row g-3 align-items-center">
+            <div class="col-12 col-md-8">
+                <div class="row row-cols-3 row-cols-sm-5 g-3">
+                    {% for i in 1..5 %}
+                    <div class="col">
+                        <div class="app-screenshot-card">
+                            <img src="{{ url }}/assets/images/apps/app{{ i }}.png" class="img-fluid rounded" alt="App Screen {{ i }}">
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="col-12 col-md-4">
+                <div class="download-box text-center">
+                    <h5>ডাউনলোড করতে গুগল প্লেতে ক্লিক করুন</h5>
+                    <a href="https://play.google.com/store/apps/details?id=com.dhaka.smartUnion" target="_blank">
+                        <img src="{{ url }}/assets/images/apps/playstore.png" class="img-fluid playstore-btn" alt="Google Play Store">
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+</main>
+
+<footer class="footer-bg py-5 border-top mt-5">
+    <div class="container">
+        <div class="row g-4">
+            <div class="col-md-4 col-sm-6">
+                <div class="footer-item d-flex align-items-start text-start">
+                    <img src="{{ url }}/assets/images/union_logo.png" alt="Logo" class="footer-logo-small me-3" style="width: 50px; height: auto;">
+                    <div class="footer-text">
+                        <p class="mb-1 text-light fw-bold">পরিকল্পনা ও বাস্তবায়নে:</p>
+                        <p class="mb-0 text-light opacity-75">জেলা প্রশাসন, ঢাকা।</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 col-sm-6">
+                <div class="footer-item d-flex align-items-start text-start">
+                    <img src="{{ url }}/assets/images/union_logo.png" alt="Logo" class="footer-logo-small me-3" style="width: 50px; height: auto;">
+                    <div class="footer-text">
+                        <p class="mb-1 text-light fw-bold">ব্যবস্থাপনা ও তত্ত্বাবধানে:</p>
+                        <p class="mb-0 text-light opacity-75">জেলা প্রশাসন, ঢাকা।</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 col-sm-12">
+                <div class="footer-item d-flex align-items-start text-start">
+                    <a href="http://innovationit.com.bd/" target="_blank" class="me-3">
+                        <img src="{{ url }}/assets/images/logo_iit.png" alt="Innovation IT" class="footer-logo-large" style="width: 65px; height: auto;">
+                    </a>
+                    <div class="footer-text">
+                        <p class="mb-1 text-light fw-bold">কারিগরি সহায়তায়:</p>
+                        <p class="mb-0">
+                            <a href="http://innovationit.com.bd/" target="_blank" class="text-decoration-none text-light opacity-75">ইনোভেশন আইটি</a>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</footer>
+
+    </div>
+
+<script src="{{ url }}/assets/js/csrf.js?t={{ "now"|date("Hiss") }}"></script>
+</body>
+</html>

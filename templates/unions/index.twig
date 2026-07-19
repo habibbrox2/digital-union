@@ -90,12 +90,11 @@
                             <a href="/unions/edit/{{ union.union_id }}" class="btn btn-warning btn-sm flex-fill">
                                 <i class="bi bi-pencil-fill"></i> Edit
                             </a>
-                            <form method="post" action="/unions/delete/{{ union.union_id }}" onsubmit="return confirm('আপনি কি নিশ্চিত?');" class="d-inline flex-fill">
-                                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                                <button type="submit" class="btn btn-danger btn-sm w-100">
-                                    <i class="bi bi-trash-fill"></i> Delete
-                                </button>
-                            </form>
+                            <button type="button" class="btn btn-danger btn-sm w-100 delete-union-btn"
+                                    data-id="{{ union.union_id }}"
+                                    data-name="{{ union.union_name_bn }}">
+                                <i class="bi bi-trash-fill"></i> Delete
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -140,16 +139,15 @@
 <style>
 
 .glassy {
-    background: rgba(255,255,255,0.08);
-    backdrop-filter: blur(12px);
-    border-radius: 1rem;
-    border: 1px solid rgba(255,255,255,0.1);
+    background: #ffffff;
+    border-radius: 0.5rem;
+    border: 1px solid #ddd;
     transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .union-card:hover {
     transform: scale(1.02);
-    box-shadow: 0 12px 24px rgba(0,0,0,0.15);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
 }
 
 .card-title {
@@ -157,8 +155,8 @@
 }
 
 .form-control:focus, .form-select:focus {
-    box-shadow: 0 0 12px rgba(0,123,255,0.5);
-    border-color: #007bff;
+    box-shadow: 0 0 0 0.2rem rgba(0,139,139,0.15);
+    border-color: #008B8B;
 }
 
 ul.list-unstyled li {
@@ -190,6 +188,38 @@ ul.list-unstyled li {
             document.documentElement.scrollTop = 0;
         };
     }
+
+    // Delete union with SweetAlert confirmation
+    document.querySelectorAll('.delete-union-btn').forEach(btn => {
+        btn.addEventListener('click', async function() {
+            const unionId = this.dataset.id;
+            const unionName = this.dataset.name;
+            const result = await Swal.fire({
+                title: 'ইউনিয়ন মুছবেন?',
+                html: `আপনি কি <strong>"${unionName}"</strong> ইউনিয়নটি মুছে ফেলতে চান?<br><small class="text-muted">এই পদক্ষেপটি পূর্ববর্তী নয়।</small>`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#dc3545',
+                confirmButtonText: '<i class="bi bi-trash3 me-1"></i> হ্যাঁ, মুছুন',
+                cancelButtonText: '<i class="bi bi-x-circle me-1"></i> বাতিল',
+                reverseButtons: true,
+                customClass: { confirmButton: 'btn btn-danger rounded-pill px-4', cancelButton: 'btn btn-outline-secondary rounded-pill px-4' },
+                buttonsStyling: false
+            });
+            if (result.isConfirmed) {
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = '/unions/delete/' + unionId;
+                const csrfInput = document.createElement('input');
+                csrfInput.type = 'hidden';
+                csrfInput.name = 'csrf_token';
+                csrfInput.value = '{{ csrf_token }}';
+                form.appendChild(csrfInput);
+                document.body.appendChild(form);
+                form.submit();
+            }
+        });
+    });
 </script>
 {% endblock %}
 

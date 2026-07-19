@@ -8,118 +8,150 @@
 
 {% block content %}
 
-
-
-
 {% include 'components/sweetAlert.twig' %}
 <div class="container my-5 px-4">
     <div id="message"></div>
 
-    <div class="card mb-4 shadow-sm">
-        <div class="card-body">
-            <form id="search-applicant-form" class="row g-2 align-items-center">
-                <div class="col-md-10">
-                    <div class="input-group">
-                        <span class="input-group-text bg-light"><i class="fas fa-search text-secondary"></i></span>
-                        <input type="text" id="applicant_id_search" class="form-control" placeholder="আবেদনকারীর আইডি লিখুন...">
-                    </div>
+    <!-- Search Applicant Card -->
+    <div class="section-card section-appear mb-4 card-appear">
+        <div class="section-header-icon text-primary">
+            <i class="bi bi-search"></i>
+        </div>
+        <h6 class="section-title text-primary">
+            <i class="bi bi-person-search"></i> আবেদনকারী খুঁজুন
+        </h6>
+        <form id="search-applicant-form" class="row g-2 align-items-center">
+            <div class="col-md-10">
+                <div class="input-group">
+                    <span class="input-group-text bg-light"><i class="bi bi-search text-secondary"></i></span>
+                    <input type="text" id="applicant_id_search" class="form-control input-enhanced" placeholder="আবেদনকারীর আইডি লিখুন...">
                 </div>
-                <div class="col-md-2 d-grid">
-                    <button type="submit" id="search-btn" class="btn btn-primary">
-                        <i class="fas fa-search me-1"></i> খুঁজুন
-                    </button>
+            </div>
+            <div class="col-md-2 d-grid">
+                <button type="submit" id="search-btn" class="btn btn-primary">
+                    <i class="bi bi-search me-1"></i> খুঁজুন
+                </button>
+            </div>
+        </form>
+
+        <div id="reuse-options" class="mt-4" style="display:none;">
+            <hr>
+            <div id="reuse-links" class="d-flex flex-wrap gap-2"></div>
+        </div>
+    </div>
+
+    <!-- Header: Title + Filters -->
+    <div class="section-card section-appear mb-4">
+        <div class="section-header-icon text-success">
+            <i class="bi bi-file-earmark-text"></i>
+        </div>
+        <h6 class="section-title text-primary d-flex flex-wrap justify-content-between align-items-center">
+            <span><i class="bi bi-file-alt"></i> সকল {{certificate_type_bn}} <small class="text-muted ms-2" id="totalCount">(মোট: 0)</small></span>
+            <div class="d-flex gap-2">
+                {% if is_superadmin %}
+                <div class="input-group input-group-sm" style="max-width:200px;">
+                    <label class="input-group-text bg-white small" for="unionFilter">ইউনিয়ন</label>
+                    <select class="form-select form-select-sm" id="unionFilter">
+                        <option value="">সকল</option>
+                        {% for u in unions %}
+                            <option value="{{ u.union_id }}">{{ u.union_name_bn }}</option>
+                        {% endfor %}
+                    </select>
                 </div>
-            </form>
+                {% endif %}
+                <a href="/{{ go_url }}/apply" class="btn btn-success btn-sm">
+                    <i class="bi bi-plus-circle me-1"></i> নতুন আবেদন
+                </a>
+            </div>
+        </h6>
 
-            <div id="reuse-options" class="mt-4" style="display:none;">
-                <div id="reuse-links" class="d-flex flex-wrap gap-2"></div>
+        <div class="row g-3">
+            <div class="col-md-6">
+                <div class="input-group">
+                    <span class="input-group-text bg-light"><i class="bi bi-search text-secondary"></i></span>
+                    <input type="text" id="liveSearch" class="form-control input-enhanced" placeholder="নাম বা সনদ/পরিচয়পত্র নং দিন...">
+                </div>
+            </div>
+            <div class="col-md-3 offset-md-3">
+                <div class="input-group">
+                    <label class="input-group-text bg-white" for="recordsPerPage">রেকর্ড</label>
+                    <select class="form-select" id="recordsPerPage">
+                        <option value="10" selected>10</option>
+                        <option value="25">25</option>
+                        <option value="50">50</option>
+                        <option value="100">100</option>
+                    </select>
+                </div>
             </div>
         </div>
     </div>
 
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h3 class="fw-bold text-primary mb-0">
-            <i class="fas fa-file-alt me-2"></i> সকল {{certificate_type_bn}} 
-            <small id="totalCount" class="text-muted ms-2">(মোট: 0)</small>
-        </h3>
-        {% if is_superadmin %}
-        <div class="col-md-3">
-            <div class="input-group shadow-sm">
-                <label class="input-group-text bg-white" for="unionFilter">ইউনিয়ন</label>
-                <select class="form-select" id="unionFilter">
-                    <option value="">সকল</option>
-                    {% for u in unions %}
-                        <option value="{{ u.union_id }}">{{ u.union_name_bn }}</option>
-                    {% endfor %}
-                </select>
-            </div>
+    <!-- Table Section -->
+    <div class="section-card section-appear">
+        <div class="section-header-icon text-info">
+            <i class="bi bi-table"></i>
         </div>
-        {% endif %}
+        <h6 class="section-title text-info">
+            <i class="bi bi-list-ul"></i> আবেদনের তালিকা
+        </h6>
 
-        <a href="/{{ go_url }}/apply" class="btn btn-success px-4 shadow-sm">
-            <i class="fas fa-plus-circle me-1"></i> নতুন আবেদন
-        </a>
-    </div>
-
-    <div class="row g-3 mb-4">
-        <div class="col-md-6">
-            <div class="input-group shadow-sm">
-                <span class="input-group-text bg-light"><i class="fas fa-search text-secondary"></i></span>
-                <input type="text" id="liveSearch" class="form-control" placeholder="নাম বা সনদ/পরিচয়পত্র নং দিন...">
-            </div>
+        <div class="table-responsive rounded-3">
+            <table class="table table-hover align-middle mb-0 table-enhanced">
+                <thead class="table-primary text-center">
+                    <tr>
+                        <th class="sortable" data-sort-by="application_id" data-sort-order="desc" aria-sort="none">
+                            সনদ/আবেদন নং <i class="fas fa-sort float-end"></i>
+                        </th>
+                        <th class="sortable" data-sort-by="apply_date" data-sort-order="asc" aria-sort="none">
+                            আবেদনের তারিখ <i class="fas fa-sort float-end"></i>
+                        </th>
+                        <th class="sortable" data-sort-by="name_bn" data-sort-order="asc" aria-sort="none">
+                            নাম <i class="fas fa-sort float-end"></i>
+                        </th>
+                        <th class="sortable" data-sort-by="identity_no" data-sort-order="asc" aria-sort="none">
+                            পরিচয়পত্র নং <i class="fas fa-sort float-end"></i>
+                        </th>
+                        <th class="sortable" data-sort-by="status" data-sort-order="asc" aria-sort="none">
+                            অবস্থা <i class="fas fa-sort float-end"></i>
+                        </th>
+                        <th>ঠিকানা</th>
+                        <th>অ্যাকশন</th>
+                    </tr>
+                </thead>
+                <tbody id="sonodTableBody" class="text-center">
+                    <tr>
+                        <td colspan="7" class="text-muted py-4" id="noDataRow" style="display: none;">
+                            <i class="bi bi-info-circle me-2 text-secondary fs-5"></i> কোনো তথ্য পাওয়া যায়নি।
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
         </div>
-        <div class="col-md-3 offset-md-3">
-            <div class="input-group shadow-sm">
-                <label class="input-group-text bg-white" for="recordsPerPage">রেকর্ড</label>
-                <select class="form-select" id="recordsPerPage">
-                    <option value="10" selected>10</option>
-                    <option value="25">25</option>
-                    <option value="50">50</option>
-                    <option value="100">100</option>
-                </select>
-            </div>
-        </div>
-    </div>
 
-    <div class="table-responsive shadow-sm rounded">
-        <table class="table table-hover align-middle mb-0">
-            <thead class="table-primary text-center">
-                <tr>
-                    <th class="sortable" data-sort-by="application_id" data-sort-order="desc" aria-sort="none">
-                        সনদ/আবেদন নং <i class="fas fa-sort float-end"></i>
-                    </th>
-                    <th class="sortable" data-sort-by="apply_date" data-sort-order="asc" aria-sort="none">
-                        আবেদনের তারিখ <i class="fas fa-sort float-end"></i>
-                    </th>
-                    <th class="sortable" data-sort-by="name_bn" data-sort-order="asc" aria-sort="none">
-                        নাম <i class="fas fa-sort float-end"></i>
-                    </th>
-                    <th class="sortable" data-sort-by="identity_no" data-sort-order="asc" aria-sort="none">
-                        পরিচয়পত্র নং <i class="fas fa-sort float-end"></i>
-                    </th>
-                    <th class="sortable" data-sort-by="status" data-sort-order="asc" aria-sort="none">
-                        অবস্থা <i class="fas fa-sort float-end"></i>
-                    </th>
-                    <th>ঠিকানা</th>
-                    <th>অ্যাকশন</th>
-                </tr>
-            </thead>
-            <tbody id="sonodTableBody" class="text-center">
-                <tr>
-                    <td colspan="7" class="text-muted py-4" id="noDataRow" style="display: none;">
-                        <i class="fas fa-info-circle me-2 text-secondary fs-5"></i> কোনো তথ্য পাওয়া যায়নি。
-                    </td>
-                </tr>
-            </tbody>
-        </table>
+        <nav class="mt-4" aria-label="Pagination">
+            <ul class="pagination justify-content-center" id="pagination"></ul>
+        </nav>
     </div>
-
-    <nav class="mt-4" aria-label="Pagination">
-        <ul class="pagination justify-content-center" id="pagination"></ul>
-    </nav>
 </div>
 
 {% block scripts %}
+<script>
+// IntersectionObserver for section animations
+document.addEventListener('DOMContentLoaded', function() {
+    const observer = new IntersectionObserver(function(entries) {
+        entries.forEach(function(entry) {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('appeared');
+                observer.unobserve(entry.target);
+            }
+        });
+    }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+    document.querySelectorAll('.section-appear').forEach(function(el) {
+        observer.observe(el);
+    });
+});
+</script>
+
 <script>
 $('#search-applicant-form').on('submit', function (e) {
     e.preventDefault();
@@ -201,8 +233,6 @@ $('#search-applicant-form').on('submit', function (e) {
     });
 });
 </script>
-
-
 
 
 
@@ -463,7 +493,7 @@ $(document).ready(function () {
     function getActionButtons(application) {
         let buttons = "<div class='d-flex flex-wrap justify-content-center gap-1'>";
         let type = '{{ go_url |e('js') }}'; 
-        buttons += `<a href="/applications/${type}/view/${application.application_id}" class="btn btn-info btn-sm me-1" title="আবেদন দেখুন" target="_blank" rel="noopener noreferrer">
+        buttons += `<a href="/applications/${type}/approve/${application.application_id}" class="btn btn-info btn-sm me-1" title="আবেদন দেখুন" target="_blank" rel="noopener noreferrer">
                 <i class="fas fa-eye"></i></a>
             <a href="/applications/${type}/edit/${application.application_id}" class="btn btn-warning btn-sm me-1" title="সম্পাদনা করুন" target="_blank" rel="noopener noreferrer">
                 <i class="fas fa-pencil-alt"></i></a>`;
@@ -493,43 +523,65 @@ $(document).ready(function () {
 
 
     // On Hold button click handler
-    $(document).on("click", ".onHoldButton", function () {
-        let applicationId = $(this).data("id");
-        if (confirm("আপনি কি নিশ্চিতভাবে এই আবেদনটি স্থগিত করতে চান?")) {
-            $.ajax({
-                type: "POST",
-                url: "/applications/{{ url_path }}/on_hold",
-                data: { id: applicationId },
-                dataType: "json",
-                success: function (response) {
-                    displayMessage(response.status, response.message);
-                    if (response.status === "success") fetchApplications(currentPage, currentSearch, currentSortBy, currentSortOrder, recordsPerPage);
-                },
-                error: function (xhr, status, error) {
-                    displayMessage('error', `একটি ত্রুটি হয়েছে: ${xhr.responseText}`);
-                }
-            });
-        }
+    $(document).on("click", ".onHoldButton", async function () {
+        const applicationId = $(this).data("id");
+        const result = await Swal.fire({
+            title: 'আবেদন স্থগিত করবেন?',
+            text: 'আবেদনটি স্থগিত করা হবে এবং পুনরায় সক্রিয় না করা পর্যন্ত প্রক্রিয়া করা যাবে না।',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#6c757d',
+            confirmButtonText: '<i class="bi bi-pause-circle me-1"></i> হ্যাঁ, স্থগিত করুন',
+            cancelButtonText: '<i class="bi bi-x-circle me-1"></i> বাতিল',
+            reverseButtons: true,
+            customClass: { confirmButton: 'btn btn-secondary rounded-pill px-4', cancelButton: 'btn btn-outline-secondary rounded-pill px-4' },
+            buttonsStyling: false
+        });
+        if (!result.isConfirmed) return;
+        $.ajax({
+            type: "POST",
+            url: "/applications/{{ url_path }}/on_hold",
+            data: { id: applicationId },
+            dataType: "json",
+            success: function (response) {
+                displayMessage(response.status, response.message);
+                if (response.status === "success") fetchApplications(currentPage, currentSearch, currentSortBy, currentSortOrder, recordsPerPage);
+            },
+            error: function (xhr, status, error) {
+                displayMessage('error', `একটি ত্রুটি হয়েছে: ${xhr.responseText}`);
+            }
+        });
     });
 
     // Reactivate button click handler
-    $(document).on("click", ".reactivateButton", function () {
-        let applicationId = $(this).data("id");
-        if (confirm("আপনি কি নিশ্চিতভাবে এই আবেদনটি পুনরায় একটিভ করতে চান?")) {
-            $.ajax({
-                type: "POST",
-                url: "/applications/{{ url_path }}/reactivate",
-                data: { id: applicationId },
-                dataType: "json",
-                success: function (response) {
-                    displayMessage(response.status, response.message);
-                    if (response.status === "success") fetchApplications(currentPage, currentSearch, currentSortBy, currentSortOrder, recordsPerPage);
-                },
-                error: function (xhr, status, error) {
-                    displayMessage('error', `একটি ত্রুটি হয়েছে: ${xhr.responseText}`);
-                }
-            });
-        }
+    $(document).on("click", ".reactivateButton", async function () {
+        const applicationId = $(this).data("id");
+        const result = await Swal.fire({
+            title: 'আবেদন পুনরায় সক্রিয় করবেন?',
+            text: 'স্থগিতকৃত আবেদনটি পুনরায় সক্রিয় করা হবে এবং প্রক্রিয়া করা যাবে।',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#28a745',
+            confirmButtonText: '<i class="bi bi-play-circle me-1"></i> হ্যাঁ, সক্রিয় করুন',
+            cancelButtonText: '<i class="bi bi-x-circle me-1"></i> বাতিল',
+            reverseButtons: true,
+            customClass: { confirmButton: 'btn btn-success rounded-pill px-4', cancelButton: 'btn btn-outline-secondary rounded-pill px-4' },
+            buttonsStyling: false
+        });
+        if (!result.isConfirmed) return;
+        $.ajax({
+            type: "POST",
+            url: "/applications/{{ url_path }}/reactivate",
+            data: { id: applicationId },
+            dataType: "json",
+            success: function (response) {
+                displayMessage(response.status, response.message);
+                if (response.status === "success") fetchApplications(currentPage, currentSearch, currentSortBy, currentSortOrder, recordsPerPage);
+            },
+            error: function (xhr, status, error) {
+                displayMessage('error', `একটি ত্রুটি হয়েছে: ${xhr.responseText}`);
+            }
+        });
     });
 
     function formatAddress(application) {
@@ -613,31 +665,36 @@ $(document).ready(function () {
         fetchApplications(currentPage, currentSearch, currentSortBy, currentSortOrder, recordsPerPage);
     });
 
-    $(document).on("click", ".deleteButton", function () {
-        let applicationId = $(this).data("id");
-
-        // if (!canDelete) { // Twig/JS থেকে পারমিশন চেক
-        //     displayMessage('error', 'আপনার অনুমতি নেই।');
-        //     return;
-        // }
-
-        if (confirm("আপনি কি নিশ্চিতভাবে এই আবেদনটি মুছে ফেলতে চান?")) {
-            $.ajax({
-                type: "POST",
-                url: "/applications/{{ url_path }}/delete",
-                data: { applicationId: applicationId },
-                dataType: "json",
-                success: function (response) {
-                    displayMessage(response.status, response.message);
-                    if (response.status === "success") {
-                        fetchApplications(currentPage, currentSearch, currentSortBy, currentSortOrder, recordsPerPage);
-                    }
-                },
-                error: function (xhr, status, error) {
-                    displayMessage('error', `একটি ত্রুটি হয়েছে: ${xhr.responseText}`);
+    $(document).on("click", ".deleteButton", async function () {
+        const applicationId = $(this).data("id");
+        const result = await Swal.fire({
+            title: 'আবেদন মুছবেন?',
+            text: 'এই আবেদনটি স্থায়ীভাবে মুছে যাবে। এই পদক্ষেপটি পূর্ববর্তী নয়।',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc3545',
+            confirmButtonText: '<i class="bi bi-trash3 me-1"></i> হ্যাঁ, মুছুন',
+            cancelButtonText: '<i class="bi bi-x-circle me-1"></i> বাতিল',
+            reverseButtons: true,
+            customClass: { confirmButton: 'btn btn-danger rounded-pill px-4', cancelButton: 'btn btn-outline-secondary rounded-pill px-4' },
+            buttonsStyling: false
+        });
+        if (!result.isConfirmed) return;
+        $.ajax({
+            type: "POST",
+            url: "/applications/{{ url_path }}/delete",
+            data: { applicationId: applicationId },
+            dataType: "json",
+            success: function (response) {
+                displayMessage(response.status, response.message);
+                if (response.status === "success") {
+                    fetchApplications(currentPage, currentSearch, currentSortBy, currentSortOrder, recordsPerPage);
                 }
-            });
-        }
+            },
+            error: function (xhr, status, error) {
+                displayMessage('error', `একটি ত্রুটি হয়েছে: ${xhr.responseText}`);
+            }
+        });
     });
 
 
@@ -699,4 +756,3 @@ $(document).ready(function () {
 </script>
 {% endblock %}
 {% endblock %}
-

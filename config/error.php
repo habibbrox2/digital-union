@@ -1,6 +1,38 @@
 <?php
 
 /**
+ * ════════════════════════════════════════════════════════
+ * Comprehensive Error Handling Configuration
+ * ════════════════════════════════════════════════════════
+ *
+ * Global PHP error/exception/shutdown handlers — স্তর ১-৩
+ * - set_error_handler()     → রানটাইম errors (warnings, notices, deprecated)
+ * - set_exception_handler() → uncaught exceptions
+ * - register_shutdown_function() → fatal errors (parse, core, compile)
+ *
+ * renderError() & docError() → Manual HTTP error pages
+ * ════════════════════════════════════════════════════════
+ */
+
+// ──────────── Global Error Handlers (স্তর ১-৩) ────────────
+
+if (class_exists('ErrorHandler')) {
+    // স্তর ১: সব ধরনের PHP errors ধরবে
+    set_error_handler(['ErrorHandler', 'handleError']);
+    
+    // স্তর ২: Uncaught exceptions ধরবে
+    set_exception_handler(['ErrorHandler', 'handleException']);
+    
+    // স্তর ৩: Fatal errors (যা normal handlers মিস করে) ধরবে
+    register_shutdown_function(['ErrorHandler', 'handleShutdown']);
+    
+    // স্তর ৫: Log rotation (50MB হলে rotate করবে, 5 generations রাখবে)
+    ErrorHandler::rotateLog();
+}
+
+// ──────────── Manual HTTP Error Page Renderer ────────────
+
+/**
  * Global error renderer
  * Twig না থাকলেও safe fallback দেবে
  */

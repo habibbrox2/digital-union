@@ -1,25 +1,35 @@
 {# partials/forms/business_info.twig #}
 
-<div class="row mb-3">
-    <div class="col-md-6">
-        <label for="business_name_en" class="form-label">প্রতিষ্ঠানের নাম (ইংরেজিতে)</label>
+{% set govt_label = 'col-lg-2 col-md-3 col-12' %}
+{% set govt_input = 'col-lg-4 col-md-3 col-12' %}
+
+{# Business Name (EN + BN pair) #}
+<div class="row align-items-center mb-3 gx-4 gy-3">
+    <div class="{{ govt_label }}">
+        <label for="business_name_en" class="form-label mb-0">প্রতিষ্ঠানের নাম (ইংরেজিতে)</label>
+    </div>
+    <div class="{{ govt_input }}">
         <input type="text" name="business_name_en" id="business_name_en" class="form-control"
                placeholder="Enter business name in English"
                value="{{ data.business_name_en ?? '' }}">
     </div>
-    <div class="col-md-6">
-        <label for="business_name_bn" class="form-label">প্রতিষ্ঠানের নাম (বাংলায়)</label>
-        <input type="text" name="business_name_bn" id="business_name_bn" class="form-control"
+    <div class="{{ govt_label }}">
+        <label for="business_name_bn" class="form-label mb-0">প্রতিষ্ঠানের নাম (বাংলায়) <span class="text-danger">*</span></label>
+    </div>
+    <div class="{{ govt_input }}">
+        <input type="text" name="business_name_bn" id="business_name_bn" class="form-control bangla"
                placeholder="প্রতিষ্ঠানের নাম বাংলায় লিখুন"
                value="{{ data.business_name_bn ?? '' }}">
     </div>
 </div>
 
-<div class="row mb-3">
-    <div class="col-md-6">
-        <label for="business_ownership_type" class="form-label">প্রতিষ্ঠানের মালিকানার ধরণ *</label>
-        <select name="business_ownership_type" id="business_ownership_type" class="form-control" required
-                aria-placeholder="মালিকানার ধরন নির্বাচন করুন">
+{# Ownership Type + Business Type (both Bangla selects) #}
+<div class="row align-items-center mb-3 gx-4 gy-3">
+    <div class="{{ govt_label }}">
+        <label for="business_ownership_type" class="form-label mb-0">প্রতিষ্ঠানের মালিকানার ধরণ <span class="text-danger">*</span></label>
+    </div>
+    <div class="{{ govt_input }}">
+        <select name="business_ownership_type" id="business_ownership_type" class="form-control" required>
             <option value="">চিহ্নিত করুন</option>
             {% for type in data.ownership_types %}
                 <option value="{{ type.id }}" {% if data.ownership_type_id == type.id %}selected{% endif %}>
@@ -28,11 +38,11 @@
             {% endfor %}
         </select>
     </div>
-
-    <div class="col-md-6">
-        <label for="business_type" class="form-label">ব্যবসার ধরন *</label>
-        <select name="business_type" id="business_type" class="form-control" required
-                aria-placeholder="ব্যবসার ধরন নির্বাচন করুন">
+    <div class="{{ govt_label }}">
+        <label for="business_type" class="form-label mb-0">ব্যবসার ধরন <span class="text-danger">*</span></label>
+    </div>
+    <div class="{{ govt_input }}">
+        <select name="business_type" id="business_type" class="form-control" required>
             <option value="">চিহ্নিত করুন</option>
             {% for type in data.business_types %}
                 <option value="{{ type.id }}" {% if data.business_type_id == type.id %}selected{% endif %}>
@@ -43,26 +53,35 @@
     </div>
 </div>
 
-<div class="row mb-3">
-    <div class="col-md-6">
-        <label for="tin_no" class="form-label">টিআইএন (TIN) নম্বর</label>
-        <input type="text" name="tin_no" id="tin_no" class="form-control"
-               placeholder="Enter TIN number"
-               value="{{ data.tin_no ?? '' }}">
+{# TIN + VAT (both English inputs) #}
+<div class="row align-items-center mb-3 gx-4 gy-3">
+    <div class="{{ govt_label }}">
+        <label for="tax_id" class="form-label mb-0">টিআইএন (TIN) নম্বর</label>
     </div>
-    <div class="col-md-6">
-        <label for="vat_no" class="form-label">ভ্যাট (VAT) রেজিস্ট্রেশন নম্বর</label>
-        <input type="text" name="vat_no" id="vat_no" class="form-control"
+    <div class="{{ govt_input }}">
+        <input type="text" name="tax_id" id="tax_id" class="form-control"
+               placeholder="Enter TIN number"
+               value="{{ data.tax_id ?? '' }}">
+    </div>
+    <div class="{{ govt_label }}">
+        <label for="vat_id" class="form-label mb-0">ভ্যাট (VAT) রেজিস্ট্রেশন নম্বর</label>
+    </div>
+    <div class="{{ govt_input }}">
+        <input type="text" name="vat_id" id="vat_id" class="form-control"
                placeholder="Enter VAT registration number"
-               value="{{ data.vat_no ?? '' }}">
+               value="{{ data.vat_id ?? '' }}">
     </div>
 </div>
 
-<div class="row mb-3">
-    <div class="col-md-6">
-        <label for="paid_up_capital" class="form-label">পরিশোধিত মূলধন *</label>
+{# Paid-up Capital (single field — takes first half of row) #}
+<div class="row align-items-center mb-3 gx-4 gy-3">
+    <div class="{{ govt_label }}">
+        <label for="paid_up_capital" class="form-label mb-0">পরিশোধিত মূলধন <span class="text-danger">*</span></label>
+    </div>
+    <div class="{{ govt_input }}">
         <input type="text" name="paid_up_capital" id="paid_up_capital" class="form-control"
                placeholder="পরিশোধিত মূলধন লিখুন"
                value="{{ data.paid_up_capital ?? '' }}">
     </div>
+    {# Right half intentionally empty for symmetry #}
 </div>

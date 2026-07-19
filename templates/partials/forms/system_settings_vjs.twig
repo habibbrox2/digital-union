@@ -148,15 +148,27 @@ if(unionSelect){
                             if (el) el.value = data[f] || '';
                         });
                         // Show existing logo
-                        const logoPreview = document.querySelector('#unionFormContainer img');
+                        let logoPreview = document.querySelector('#unionFormContainer img[alt="Union Logo"]');
                         if (logoPreview) logoPreview.src = data.logo_url || '';
                         else if (data.logo_url) {
                             const img = document.createElement('img');
                             img.src = data.logo_url;
                             img.alt = "Union Logo";
-                            img.className = "img-fluid mt-2";
+                            img.className = "img-fluid mt-2 border rounded";
                             img.style.maxHeight = "100px";
                             document.getElementById('union_logo').after(img);
+                        }
+
+                        // Show existing stamp logo
+                        let stampPreview = document.querySelector('#unionFormContainer img[alt="Union Stamp Logo"]');
+                        if (stampPreview) stampPreview.src = data.stamp_logo_url || '';
+                        else if (data.stamp_logo_url) {
+                            const img = document.createElement('img');
+                            img.src = data.stamp_logo_url;
+                            img.alt = "Union Stamp Logo";
+                            img.className = "img-fluid mt-2 border rounded";
+                            img.style.maxHeight = "100px";
+                            document.getElementById('union_stamp_logo').after(img);
                         }
                         // Cascade
                         loadGeo(0, 1, divisionSelect, data.division_name_en, function (divisionId) {
@@ -220,7 +232,8 @@ if (unionForm) {
         // union logo
         const logoInput = document.getElementById('union_logo');
         if(logoInput && logoInput.files.length>0) fd.set('union_logo', logoInput.files[0]);
-
+        const stampInput = document.getElementById('union_stamp_logo');
+        if(stampInput && stampInput.files.length>0) fd.set('union_stamp_logo', stampInput.files[0]);
 
         fd.set('csrf_token', getCsrfToken());
 

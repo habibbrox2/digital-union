@@ -5,18 +5,18 @@
 
 global $router, $mysqli, $twig;
 
+$authService = new AuthService($mysqli);
 require_once __DIR__ . '/../config/roles.php';
-require_once __DIR__ . '/../classes/RolesManager.php';
-require_once __DIR__ . '/../classes/PermissionsManager.php';
-require_once __DIR__ . '/../classes/AuthManager.php';
-require_once __DIR__ . '/../helpers/rbac_helpers.php';
+require_once __DIR__ . '/../models/RolesManager.php';
+require_once __DIR__ . '/../models/PermissionsManager.php';
+require_once __DIR__ . '/../models/AuthManager.php';
 require_once __DIR__ . '/../helpers/sweetalertHelper.php';
 
 // =============================================================================
 // AUTHENTICATION MIDDLEWARE
 // =============================================================================
 
-$requireSuperadmin = function() use ($mysqli) {
+$requireSuperadmin = function() use ($mysqli, $authService) {
     $auth = new AuthManager($mysqli);
     $auth->requireLogin();
     $user = $auth->getUserData(false);
@@ -24,7 +24,7 @@ $requireSuperadmin = function() use ($mysqli) {
         http_response_code(401);
         exit('অননুমোদিত');
     }
-    if (!isSuperadmin($user['user_id'], $mysqli)) {
+    if (!$authService->isSuperadmin((int)$user['user_id'])) {
         http_response_code(403);
         exit('নিষিদ্ধ: শুধুমাত্র সুপারঅ্যাডমিন');
     }
@@ -39,14 +39,13 @@ $requireSuperadmin = function() use ($mysqli) {
  * GET /roles
  * List all roles with action buttons for superadmin
  */
-$router->get('/roles', function() use ($mysqli, $twig, $requireSuperadmin) {
-    ensure_can('manage_roles', 'roles');
+$router->get('/roles', function() use ($mysqli, $twig, $requireSuperadmin, $authService) {
+    $authService->ensureCan('manage_roles', 'roles');
     $rolesManager = new RolesManager($mysqli);
     $roles = $rolesManager->getAll();
 
     echo $twig->render('roles/index.twig', [
         'roles' => $roles,
-        'pageTitle' => 'Roles Management',
         'header_title' => 'Roles Management',
         'title' => 'Roles Management'
     ]);
@@ -56,12 +55,11 @@ $router->get('/roles', function() use ($mysqli, $twig, $requireSuperadmin) {
  * GET /roles/add
  * Show role creation form (superadmin only)
  */
-$router->get('/roles/add', function() use ($twig, $requireSuperadmin) {
-    ensure_role_level(ROLE_LEVEL_SUPERADMIN);
-    ensure_can('manage_roles', 'roles');
+$router->get('/roles/add', function() use ($twig, $requireSuperadmin, $authService) {
+    $authService->ensureRoleLevel(ROLE_LEVEL_SUPERADMIN);
+    $authService->ensureCan('manage_roles', 'roles');
     
     echo $twig->render('roles/add_role.twig', [
-        'pageTitle' => 'Add New Role',
         'title' => 'Add New Role',
         'header_title' => 'Add New Role'
     ]);
@@ -71,9 +69,9 @@ $router->get('/roles/add', function() use ($twig, $requireSuperadmin) {
  * POST /roles/add
  * Handle role creation (superadmin only)
  */
-$router->post('/roles/add', function() use ($mysqli, $twig, $requireSuperadmin) {
-    ensure_role_level(ROLE_LEVEL_SUPERADMIN);
-    ensure_can('manage_roles', 'roles');
+$router->post('/roles/add', function() use ($mysqli, $twig, $requireSuperadmin, $authService) {
+    $authService->ensureRoleLevel(ROLE_LEVEL_SUPERADMIN);
+    $authService->ensureCan('manage_roles', 'roles');
 
     // CSRF handled by middleware; removed inline verification
 
@@ -111,8 +109,8 @@ $router->post('/roles/add', function() use ($mysqli, $twig, $requireSuperadmin) 
  * GET /roles/{id}
  * View single role details with permissions count
  */
-$router->get('/roles/{id}', function($id) use ($mysqli, $twig, $requireSuperadmin) {
-    ensure_can('manage_roles', 'roles');
+$router->get('/roles/{id}', function($id) use ($mysqli, $twig, $requireSuperadmin, $authService) {
+    $authService->ensureCan('manage_roles', 'roles');
     $rolesManager = new RolesManager($mysqli);
     $role = $rolesManager->getRoleById((int)$id);
     
@@ -137,9 +135,16 @@ $router->get('/roles/{id}', function($id) use ($mysqli, $twig, $requireSuperadmi
 // ROLE EDITING
 // =============================================================================
 
-$router->get('/roles/{id}/edit', function($id) use ($mysqli, $twig, $requireSuperadmin) {
-    ensure_role_level(ROLE_LEVEL_SUPERADMIN);
-    ensure_can('manage_roles', 'roles');
+// Redirect for /roles/edit/{id} -> /roles/{id}/edit
+$router->get('/roles/edit/{id}', function($id) use ($mysqli, $twig, $requireSuperadmin) {
+    // Redirect to the correct route pattern
+    header('Location: /roles/' . ((int)$id) . '/edit');
+    exit;
+});
+
+$router->get('/roles/{id}/edit', function($id) use ($mysqli, $twig, $requireSuperadmin, $authService) {
+    $authService->ensureRoleLevel(ROLE_LEVEL_SUPERADMIN);
+    $authService->ensureCan('manage_roles', 'roles');
     $rolesManager = new RolesManager($mysqli);
     $role = $rolesManager->getRoleById((int)$id);
 
@@ -150,15 +155,14 @@ $router->get('/roles/{id}/edit', function($id) use ($mysqli, $twig, $requireSupe
 
     echo $twig->render('roles/edit_role.twig', [
         'role' => $role,
-        'pageTitle' => 'Edit Role',
         'title' => 'Edit Role',
         'header_title' => 'Edit Role'
     ]);
 });
 
-$router->post('/roles/{id}/edit', function($id) use ($mysqli, $twig, $requireSuperadmin) {
-    ensure_role_level(ROLE_LEVEL_SUPERADMIN);
-    ensure_can('manage_roles', 'roles');
+$router->post('/roles/{id}/edit', function($id) use ($mysqli, $twig, $requireSuperadmin, $authService) {
+    $authService->ensureRoleLevel(ROLE_LEVEL_SUPERADMIN);
+    $authService->ensureCan('manage_roles', 'roles');
 
     // CSRF handled by middleware; removed inline verification
 
@@ -199,9 +203,9 @@ $router->post('/roles/{id}/edit', function($id) use ($mysqli, $twig, $requireSup
 // ROLE DELETION
 // =============================================================================
 
-$router->get('/roles/{id}/delete', function($id) use ($mysqli, $twig, $requireSuperadmin) {
-    ensure_role_level(ROLE_LEVEL_SUPERADMIN);
-    ensure_can('manage_roles', 'roles');
+$router->get('/roles/{id}/delete', function($id) use ($mysqli, $twig, $requireSuperadmin, $authService) {
+    $authService->ensureRoleLevel(ROLE_LEVEL_SUPERADMIN);
+    $authService->ensureCan('manage_roles', 'roles');
     $rolesManager = new RolesManager($mysqli);
     $role = $rolesManager->getRoleById((int)$id);
 
@@ -217,9 +221,9 @@ $router->get('/roles/{id}/delete', function($id) use ($mysqli, $twig, $requireSu
     ]);
 });
 
-$router->post('/roles/{id}/delete', function($id) use ($mysqli, $twig, $requireSuperadmin) {
-    ensure_role_level(ROLE_LEVEL_SUPERADMIN);
-    ensure_can('manage_roles', 'roles');
+$router->post('/roles/{id}/delete', function($id) use ($mysqli, $twig, $requireSuperadmin, $authService) {
+    $authService->ensureRoleLevel(ROLE_LEVEL_SUPERADMIN);
+    $authService->ensureCan('manage_roles', 'roles');
 
     // CSRF handled by middleware; removed inline verification
 
@@ -245,9 +249,9 @@ $router->post('/roles/{id}/delete', function($id) use ($mysqli, $twig, $requireS
 // ROLE PERMISSION MANAGEMENT
 // =============================================================================
 
-$router->get('/roles/{id}/permissions', function($id) use ($mysqli, $twig, $requireSuperadmin) {
-    ensure_role_level(ROLE_LEVEL_SUPERADMIN);
-    ensure_can('manage_roles', 'roles');
+$router->get('/roles/{id}/permissions', function($id) use ($mysqli, $twig, $requireSuperadmin, $authService) {
+    $authService->ensureRoleLevel(ROLE_LEVEL_SUPERADMIN);
+    $authService->ensureCan('manage_roles', 'roles');
     $rolesManager = new RolesManager($mysqli);
     $role = $rolesManager->getRoleById((int)$id);
 
@@ -263,9 +267,9 @@ $router->get('/roles/{id}/permissions', function($id) use ($mysqli, $twig, $requ
     ]);
 });
 
-$router->get('/api/roles/{id}/permissions', function($id) use ($mysqli, $requireSuperadmin) {
+$router->get('/api/roles/{id}/permissions', function($id) use ($mysqli, $requireSuperadmin, $authService) {
     header('Content-Type: application/json');
-    ensure_can('manage_roles', 'roles');
+    $authService->ensureCan('manage_roles', 'roles');
 
     $rolesManager = new RolesManager($mysqli);
     $role = $rolesManager->getRoleById((int)$id);
@@ -293,9 +297,9 @@ $router->get('/api/roles/{id}/permissions', function($id) use ($mysqli, $require
     echo json_encode($result);
 });
 
-$router->post('/roles/{id}/permissions', function($id) use ($mysqli, $requireSuperadmin) {
-    ensure_role_level(ROLE_LEVEL_SUPERADMIN);
-    ensure_can('manage_roles', 'roles');
+$router->post('/roles/{id}/permissions', function($id) use ($mysqli, $requireSuperadmin, $authService) {
+    $authService->ensureRoleLevel(ROLE_LEVEL_SUPERADMIN);
+    $authService->ensureCan('manage_roles', 'roles');
     
     // CSRF handled by middleware; removed inline verification
 
@@ -319,9 +323,9 @@ $router->post('/roles/{id}/permissions', function($id) use ($mysqli, $requireSup
 // API ENDPOINTS
 // =============================================================================
 
-$router->get('/api/roles', function() use ($mysqli, $requireSuperadmin) {
+$router->get('/api/roles', function() use ($mysqli, $requireSuperadmin, $authService) {
     header('Content-Type: application/json');
-    ensure_can('manage_roles', 'roles');
+    $authService->ensureCan('manage_roles', 'roles');
     
     $rolesManager = new RolesManager($mysqli);
     $roles = $rolesManager->getAll();
@@ -332,9 +336,9 @@ $router->get('/api/roles', function() use ($mysqli, $requireSuperadmin) {
     ]);
 });
 
-$router->get('/api/roles/{id}', function($id) use ($mysqli, $requireSuperadmin) {
+$router->get('/api/roles/{id}', function($id) use ($mysqli, $requireSuperadmin, $authService) {
     header('Content-Type: application/json');
-    ensure_can('manage_roles', 'roles');
+    $authService->ensureCan('manage_roles', 'roles');
     
     $rolesManager = new RolesManager($mysqli);
     $role = $rolesManager->getRoleById((int)$id);

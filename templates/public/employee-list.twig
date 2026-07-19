@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>স্মার্ট ইউপি, ঢাকা</title>
+    <link rel="shortcut icon" href="{{ url }}/assets/images/icon/favicon.png" type="image/png">
+    <link rel="stylesheet" href="{{ url }}/assets/css/other/bootstrap.min.css">
+    <link rel="stylesheet" href="{{ url }}/assets/css/other/font-awesome.min.css">
+    <link rel="stylesheet" href="https://pro.fontawesome.com/releases/v5.10.0/css/all.css">
+    <link rel="stylesheet" href="{{ url }}/assets/css/other/combined.public.css?t={{ "now"|date("Hiss") }}">
+    <style>
+        body.bg-light { background-color: #f8f9fa; }
+        .site-header {
+            background: #fff;
+            border-bottom: 1px solid #dee2e6;
+        }
+        .site-logo {
+            max-height: 55px;
+        }
+        .bg-white-break {
+            background: #fff;
+        }
+        @media (max-width: 576px) {
+            .site-logo {
+                max-height: 40px;
+            }
+        }
+    </style>
+</head>
+<body class="bg-light">
+
+    {% include 'public/_partials/header.twig' with {
+        page_title: page_title|default('স্মার্ট ইউপি, ঢাকা')
+    } %}
+
+    <main class="bg-white-break min-vh-100">
+        <div class="container py-5">
+            <div class="panel panel-info">
+                <div class="panel-heading text-center">
+                    <h4>{{ page_title is defined ? page_title : '' }}</h4>
+                    <p class="text-muted mb-0">ঢাকা জেলার সকল ইউপি {{ page_title is defined ? page_title : '' }} বৃন্দ</p>
+                </div>
+                <div class="panel-body">
+                    <div id="employee-list">
+                        <div class="text-center py-5">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">লোড হচ্ছে...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    {% include 'public/_partials/footer.twig' %}
+
+    <script src="{{ url }}/assets/js/csrf.js?t={{ "now"|date("Hiss") }}"></script>
+    <script>
+    jQuery(document).ready(function($) {
+        var API_BASE = '{{ url }}/api';
+        var pageSlug = '{{ page_slug|default("chairman") }}';
+        var pageData = {{ page_data|default("null")|raw }};
+        
+        function renderEmployees(data) {
+            if (!data || !data.length) {
+                $('#employee-list').html('<div class="alert alert-warning text-center">কোন তথ্য পাওয়া যায়নি।</div>');
+                return;
+            }
+            
+            var html = '<div class="row g-4">';
+            $.each(data, function(idx, item) {
+                var imgSrc = item.image_url ? item.image_url : '{{ url }}/assets/images/default.png';
+                var unionName = item.union_name || '';
+                var name = item.name || '';
+                var designation = item.designation || '';
+                var mobile = item.mobile || '';
+                var email = item.email || '';
+                var areaName = item.electoral_area || '';
+                
+                html += '<div class="col-md-6 col-lg-4">';
+                html += '<div class="card h-100 border-0 shadow-sm">';
+                html += '<div class="card-body text-center">';
+                html += '<img src="' + imgSrc + '" alt="' + name + '" class="rounded-circle border border-3 border-info p-1 mb-3" style="width:100px;height:100px;object-fit:cover;">';
+                html += '<h5 class="fw-bold">' + name + '</h5>';
+                html += '<p class="text-primary">' + designation + '</p>';
+                if (unionName) {
+                    html += '<h6 class="text-muted">' + unionName + '</h6>';
+                }
+                html += '<hr>';
+                html += '<div class="text-start small">';
+                if (mobile) {
+                    html += '<p class="mb-1"><i class="fas fa-mobile-alt me-2 text-primary"></i><span>' + mobile + '</span></p>';
+                }
+                if (email) {
+                    html += '<p class="mb-0"><i class="fas fa-envelope me-2 text-primary"></i><span>' + email + '</span></p>';
+                }
+                if (areaName) {
+                    html += '<p class="mb-0 mt-1"><i class="fas fa-map-marker-alt me-2 text-primary"></i><span>' + areaName + '</span></p>';
+                }
+                html += '</div></div></div></div>';
+            });
+            html += '</div>';
+            $('#employee-list').html(html);
+        }
+        
+        function loadEmployees() {
+            if (pageData) {
+                renderEmployees(pageData);
+                return;
+            }
+            $.ajax({
+                url: API_BASE + '/public/' + pageSlug,
+                method: 'GET',
+                dataType: 'json',
+                success: function(res) {
+                    if (res.success && res.data) {
+                        renderEmployees(res.data);
+                    } else {
+                        renderEmployees([]);
+                    }
+                },
+                error: function() {
+                    $.ajax({
+                        url: API_BASE + '/employees/' + pageSlug,
+                        method: 'GET',
+                        dataType: 'json',
+                        success: function(res) {
+                            if (res.success && res.data) {
+                                renderEmployees(res.data);
+                            } else {
+                                renderEmployees([]);
+                            }
+                        },
+                        error: function() {
+                            $('#employee-list').html('<div class="alert alert-danger text-center">তথ্য লোড করতে সমস্যা হয়েছে।</div>');
+                        }
+                    });
+                }
+            });
+        }
+        
+        loadEmployees();
+    });
+    </script>
+</body>
+</html>

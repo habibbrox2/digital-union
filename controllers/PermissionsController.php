@@ -5,18 +5,18 @@
 
 global $router, $mysqli, $twig;
 
+$authService = new AuthService($mysqli);
 require_once __DIR__ . '/../config/roles.php';
-require_once __DIR__ . '/../classes/PermissionsManager.php';
-require_once __DIR__ . '/../classes/RolesManager.php';
-require_once __DIR__ . '/../classes/AuthManager.php';
-require_once __DIR__ . '/../helpers/rbac_helpers.php';
+require_once __DIR__ . '/../models/PermissionsManager.php';
+require_once __DIR__ . '/../models/RolesManager.php';
+require_once __DIR__ . '/../models/AuthManager.php';
 require_once __DIR__ . '/../helpers/sweetalertHelper.php';
 
 // =============================================================================
 // AUTHENTICATION MIDDLEWARE
 // =============================================================================
 
-$requireSuperadmin = function() use ($mysqli) {
+$requireSuperadmin = function() use ($mysqli, $authService) {
     $auth = new AuthManager($mysqli);
     $auth->requireLogin();
     $user = $auth->getUserData(false);
@@ -24,7 +24,7 @@ $requireSuperadmin = function() use ($mysqli) {
         http_response_code(401);
         exit('অননুমোদিত');
     }
-    if (!isSuperadmin($user['user_id'], $mysqli)) {
+    if (!$authService->isSuperadmin((int)$user['user_id'])) {
         http_response_code(403);
         exit('নিষিদ্ধ: শুধুমাত্র সুপারঅ্যাডমিন');
     }
@@ -39,8 +39,8 @@ $requireSuperadmin = function() use ($mysqli) {
  * GET /permissions
  * List all permissions grouped by module
  */
-$router->get('/permissions', function () use ($mysqli, $twig, $requireSuperadmin) {
-    ensure_can('manage_permissions', 'permissions');
+$router->get('/permissions', function () use ($mysqli, $twig, $requireSuperadmin, $authService) {
+    $authService->ensureCan('manage_permissions', 'permissions');
     
     $pm = new PermissionsManager($mysqli);
     $modules = $pm->getAllModules();
@@ -58,7 +58,6 @@ $router->get('/permissions', function () use ($mysqli, $twig, $requireSuperadmin
         'modules' => $modules,
         'permissionsByModule' => $permissionsByModule,
         'permissions' => $allPerms,
-        'pageTitle' => 'Permissions Management',
         'title' => 'Permissions Management',
         'header_title' => 'Permissions Management'
     ]);
@@ -73,26 +72,24 @@ $router->get('/permissions', function () use ($mysqli, $twig, $requireSuperadmin
  * Display role-based permissions management interface
  * (User-based permissions have been removed - role-based only)
  */
-$router->get('/manage-permissions', function () use ($mysqli, $twig, $requireSuperadmin) {
-    ensure_can('manage_permissions', 'permissions');
+$router->get('/manage-permissions', function () use ($mysqli, $twig, $requireSuperadmin, $authService) {
+    $authService->ensureCan('manage_permissions', 'permissions');
     
     $rm = new RolesManager($mysqli);
     $pm = new PermissionsManager($mysqli);
     
     $roles = $rm->getAllRoles();
-    $permissions = $pm->getAllPermissions();
-    
-    // Get assigned permissions for each role
-    $assignedRolePermissions = [];
-    foreach ($roles as $role) {
-        $assignedRolePermissions[$role['role_id']] = $rm->getPermissionsByRole($role['role_id']);
-        // Convert to indexed array for template
-        $indexed = [];
-        foreach ($assignedRolePermissions[$role['role_id']] as $perm) {
-            $indexed[$perm['permission_id']] = $perm;
+    $permissions = $pm->getAllPermissions();        // Get assigned permissions for each role
+        $assignedRolePermissions = [];
+        foreach ($roles as $role) {
+            $assignedRolePermissions[$role['role_id']] = $rm->getPermissionsByRole($role['role_id']);
+            // Convert to indexed array for template
+            $indexed = [];
+            foreach ($assignedRolePermissions[$role['role_id']] as $perm) {
+                $indexed[$perm['id']] = $perm;
+            }
+            $assignedRolePermissions[$role['role_id']] = $indexed;
         }
-        $assignedRolePermissions[$role['role_id']] = $indexed;
-    }
     
     
     
@@ -101,7 +98,6 @@ $router->get('/manage-permissions', function () use ($mysqli, $twig, $requireSup
         'permissions' => $permissions,
         'assigned_role_permissions' => $assignedRolePermissions,
         'assigned_user_permissions' => [], // Empty - user permissions removed
-        'pageTitle' => 'Manage Permissions',
         'title' => 'Manage Permissions',
         'header_title' => 'Manage Permissions'
     ]);
@@ -112,10 +108,10 @@ $router->get('/manage-permissions', function () use ($mysqli, $twig, $requireSup
  * Save role-based permission assignments
  * (User-based permissions have been removed - role-based only)
  */
-$router->post('/manage-permissions', function () use ($mysqli, $twig, $requireSuperadmin) {
+$router->post('/manage-permissions', function () use ($mysqli, $twig, $requireSuperadmin, $authService) {
     $auth = new AuthManager($mysqli);
     $user = $auth->getUserData(false);
-    ensure_can('manage_permissions', 'permissions');
+    $authService->ensureCan('manage_permissions', 'permissions');
     
     // CSRF handled by middleware; removed inline verification
     $rm = new RolesManager($mysqli);
@@ -131,7 +127,7 @@ $router->post('/manage-permissions', function () use ($mysqli, $twig, $requireSu
             
             // Get current permissions
             $currentPerms = $rm->getPermissionsByRole($roleId);
-            $currentPermIds = array_column($currentPerms, 'permission_id');
+            $currentPermIds = array_column($currentPerms, 'id');
             
             // Find additions and removals
             $toAdd = array_diff($permissionIds, $currentPermIds);
@@ -162,16 +158,15 @@ $router->post('/manage-permissions', function () use ($mysqli, $twig, $requireSu
  * GET /permissions/add
  * Show add permission form
  */
-$router->get('/permissions/add', function() use ($mysqli, $twig, $requireSuperadmin) {
-    ensure_role_level(ROLE_LEVEL_SUPERADMIN);
-    ensure_can('manage_permissions', 'permissions');
+$router->get('/permissions/add', function() use ($mysqli, $twig, $requireSuperadmin, $authService) {
+    $authService->ensureRoleLevel(ROLE_LEVEL_SUPERADMIN);
+    $authService->ensureCan('manage_permissions', 'permissions');
     
     $pm = new PermissionsManager($mysqli);
     $modules = $pm->getAllModules();
     
     echo $twig->render('permissions/add_permission.twig', [
-        'modules' => $modules,
-        'pageTitle' => 'Add New Permission'
+        'modules' => $modules
     ]);
 });
 
@@ -179,9 +174,9 @@ $router->get('/permissions/add', function() use ($mysqli, $twig, $requireSuperad
  * POST /permissions/add
  * Create permission
  */
-$router->post('/permissions/add', function() use ($mysqli, $twig, $requireSuperadmin) {
-    ensure_role_level(ROLE_LEVEL_SUPERADMIN);
-    ensure_can('manage_permissions', 'permissions');
+$router->post('/permissions/add', function() use ($mysqli, $twig, $requireSuperadmin, $authService) {
+    $authService->ensureRoleLevel(ROLE_LEVEL_SUPERADMIN);
+    $authService->ensureCan('manage_permissions', 'permissions');
 
     // CSRF handled by middleware; removed inline verification
 
@@ -238,9 +233,9 @@ $router->post('/permissions/add', function() use ($mysqli, $twig, $requireSupera
 /**
  * GET /permissions/{id}/edit
  */
-$router->get('/permissions/{id}/edit', function($id) use ($mysqli, $twig, $requireSuperadmin) {
-    ensure_role_level(ROLE_LEVEL_SUPERADMIN);
-    ensure_can('manage_permissions', 'permissions');
+$router->get('/permissions/{id}/edit', function($id) use ($mysqli, $twig, $requireSuperadmin, $authService) {
+    $authService->ensureRoleLevel(ROLE_LEVEL_SUPERADMIN);
+    $authService->ensureCan('manage_permissions', 'permissions');
 
     $pm = new PermissionsManager($mysqli);
     $perm = $pm->getPermissionById((int)$id);
@@ -255,7 +250,6 @@ $router->get('/permissions/{id}/edit', function($id) use ($mysqli, $twig, $requi
         echo $twig->render('permissions/edit_permission.twig', [
         'permission' => $perm,
         'modules' => $modules,
-        'pageTitle' => 'Edit Permission',
         'title' => 'Edit Permission',
         'header_title' => 'Edit Permission'
     ]);
@@ -264,9 +258,9 @@ $router->get('/permissions/{id}/edit', function($id) use ($mysqli, $twig, $requi
 /**
  * POST /permissions/{id}/edit
  */
-$router->post('/permissions/{id}/edit', function($id) use ($mysqli, $twig, $requireSuperadmin) {
-    ensure_role_level(ROLE_LEVEL_SUPERADMIN);
-    ensure_can('manage_permissions', 'permissions');
+$router->post('/permissions/{id}/edit', function($id) use ($mysqli, $twig, $requireSuperadmin, $authService) {
+    $authService->ensureRoleLevel(ROLE_LEVEL_SUPERADMIN);
+    $authService->ensureCan('manage_permissions', 'permissions');
 
     // CSRF handled by middleware; removed inline verification
 
@@ -315,9 +309,9 @@ $router->post('/permissions/{id}/edit', function($id) use ($mysqli, $twig, $requ
 /**
  * GET /permissions/{id}/delete
  */
-$router->get('/permissions/{id}/delete', function($id) use ($mysqli, $twig, $requireSuperadmin) {
-    ensure_role_level(ROLE_LEVEL_SUPERADMIN);
-    ensure_can('manage_permissions', 'permissions');
+$router->get('/permissions/{id}/delete', function($id) use ($mysqli, $twig, $requireSuperadmin, $authService) {
+    $authService->ensureRoleLevel(ROLE_LEVEL_SUPERADMIN);
+    $authService->ensureCan('manage_permissions', 'permissions');
 
     $pm = new PermissionsManager($mysqli);
     $perm = $pm->getPermissionById((int)$id);
@@ -337,9 +331,9 @@ $router->get('/permissions/{id}/delete', function($id) use ($mysqli, $twig, $req
 /**
  * POST /permissions/{id}/delete
  */
-$router->post('/permissions/{id}/delete', function($id) use ($mysqli, $twig, $requireSuperadmin) {
-    ensure_role_level(ROLE_LEVEL_SUPERADMIN);
-    ensure_can('manage_permissions', 'permissions');
+$router->post('/permissions/{id}/delete', function($id) use ($mysqli, $twig, $requireSuperadmin, $authService) {
+    $authService->ensureRoleLevel(ROLE_LEVEL_SUPERADMIN);
+    $authService->ensureCan('manage_permissions', 'permissions');
 
     // CSRF handled by middleware; removed inline verification
 
@@ -369,9 +363,9 @@ $router->post('/permissions/{id}/delete', function($id) use ($mysqli, $twig, $re
  * GET /api/permissions
  * List all permissions (JSON)
  */
-$router->get('/api/permissions', function () use ($mysqli, $requireSuperadmin) {
+$router->get('/api/permissions', function () use ($mysqli, $requireSuperadmin, $authService) {
     header('Content-Type: application/json');
-    ensure_can('manage_permissions', 'permissions');
+    $authService->ensureCan('manage_permissions', 'permissions');
     
     $pm = new PermissionsManager($mysqli);
     $perms = $pm->getAllPermissions();
@@ -387,9 +381,9 @@ $router->get('/api/permissions', function () use ($mysqli, $requireSuperadmin) {
  * GET /api/permissions/{id}
  * Get single permission (JSON)
  */
-$router->get('/api/permissions/{id}', function($id) use ($mysqli, $requireSuperadmin) {
+$router->get('/api/permissions/{id}', function($id) use ($mysqli, $requireSuperadmin, $authService) {
     header('Content-Type: application/json');
-    ensure_can('manage_permissions', 'permissions');
+    $authService->ensureCan('manage_permissions', 'permissions');
     
     $pm = new PermissionsManager($mysqli);
     $perm = $pm->getPermissionById((int)$id);
@@ -410,9 +404,9 @@ $router->get('/api/permissions/{id}', function($id) use ($mysqli, $requireSupera
  * GET /api/permissions/search
  * Search permissions by name (JSON)
  */
-$router->get('/api/permissions/search', function() use ($mysqli, $requireSuperadmin) {
+$router->get('/api/permissions/search', function() use ($mysqli, $requireSuperadmin, $authService) {
     header('Content-Type: application/json');
-    ensure_can('manage_permissions', 'permissions');
+    $authService->ensureCan('manage_permissions', 'permissions');
     
     $query = trim($_GET['q'] ?? '');
     $module = trim($_GET['module'] ?? '');
@@ -446,9 +440,9 @@ $router->get('/api/permissions/search', function() use ($mysqli, $requireSuperad
  * GET /api/permissions/module/{module}
  * Get permissions by module (JSON)
  */
-$router->get('/api/permissions/module/{module}', function($module) use ($mysqli, $requireSuperadmin) {
+$router->get('/api/permissions/module/{module}', function($module) use ($mysqli, $requireSuperadmin, $authService) {
     header('Content-Type: application/json');
-    ensure_can('manage_permissions', 'permissions');
+    $authService->ensureCan('manage_permissions', 'permissions');
     
     $pm = new PermissionsManager($mysqli);
     $perms = $pm->getPermissionsByModule($module);
@@ -466,7 +460,7 @@ $router->get('/api/permissions/module/{module}', function($module) use ($mysqli,
  * Check if current user has a specific permission
  * Query: ?permission=permission_name
  */
-$router->get('/api/check-permission', function() use ($mysqli) {
+$router->get('/api/check-permission', function() use ($mysqli, $authService) {
     header('Content-Type: application/json');
     
     $permission = trim($_GET['permission'] ?? '');
@@ -496,14 +490,8 @@ $router->get('/api/check-permission', function() use ($mysqli) {
         
         $userId = $user['user_id'];
         
-        // Check if user is superadmin (role_id = 1)
-        $stmt = $mysqli->prepare("SELECT role_id FROM users WHERE user_id = ? LIMIT 1");
-        $stmt->bind_param("i", $userId);
-        $stmt->execute();
-        $result = $stmt->get_result()->fetch_assoc();
-        $stmt->close();
-        
-        if ($result && (int)$result['role_id'] === 1) {
+        // Check if user is superadmin
+        if ($authService->isSuperadmin($userId)) {
             // Superadmin has all permissions
             echo json_encode([
                 'success' => true,
@@ -545,9 +533,9 @@ $router->get('/api/check-permission', function() use ($mysqli) {
  * GET /permissions/assign
  * Show permission assignment interface
  */
-$router->get('/permissions/assign', function () use ($mysqli, $twig) {
-    ensure_role_level(ROLE_LEVEL_SUPERADMIN);
-    ensure_can('manage_permissions');
+$router->get('/permissions/assign', function () use ($mysqli, $twig, $authService) {
+    $authService->ensureRoleLevel(ROLE_LEVEL_SUPERADMIN);
+    $authService->ensureCan('manage_permissions');
     
     $rm = new RolesManager($mysqli);
     $pm = new PermissionsManager($mysqli);
@@ -573,7 +561,6 @@ $router->get('/permissions/assign', function () use ($mysqli, $twig) {
         'roles' => $roles,
         'permissions' => $permissions,
         'assigned_role_permissions' => $assignedRolePermissions,
-        'pageTitle' => 'Assign Permissions',
         'title' => 'Assign Permissions',
         'header_title' => 'Assign Permissions'
     ]);
@@ -583,9 +570,9 @@ $router->get('/permissions/assign', function () use ($mysqli, $twig) {
  * POST /permissions/assign
  * Save permission assignments
  */
-$router->post('/permissions/assign', function () use ($mysqli) {
-    ensure_role_level(ROLE_LEVEL_SUPERADMIN);
-    ensure_can('manage_permissions');
+$router->post('/permissions/assign', function () use ($mysqli, $authService) {
+    $authService->ensureRoleLevel(ROLE_LEVEL_SUPERADMIN);
+    $authService->ensureCan('manage_permissions');
     
     // CSRF handled by middleware; removed inline verification
     
@@ -629,9 +616,9 @@ $router->post('/permissions/assign', function () use ($mysqli) {
  * POST /permissions/assign/{roleId}
  * Save permission assignments per role (AJAX)
  */
-$router->post('/permissions/assign/{roleId}', function ($roleId) use ($mysqli) {
-    ensure_role_level(ROLE_LEVEL_SUPERADMIN);
-    ensure_can('manage_permissions');
+$router->post('/permissions/assign/{roleId}', function ($roleId) use ($mysqli, $authService) {
+    $authService->ensureRoleLevel(ROLE_LEVEL_SUPERADMIN);
+    $authService->ensureCan('manage_permissions');
     
     $rm = new RolesManager($mysqli);
     $pm = new PermissionsManager($mysqli);
@@ -668,9 +655,9 @@ $router->post('/permissions/assign/{roleId}', function ($roleId) use ($mysqli) {
  * GET /api/roles/{id}/permissions
  * Get permissions assigned to a role (JSON)
  */
-$router->get('/api/roles/{id}/permissions', function($id) use ($mysqli, $requireSuperadmin) {
+$router->get('/api/roles/{id}/permissions', function($id) use ($mysqli, $requireSuperadmin, $authService) {
     header('Content-Type: application/json');
-    ensure_can('manage_permissions', 'permissions');
+    $authService->ensureCan('manage_permissions', 'permissions');
     
     $rm = new RolesManager($mysqli);
     $perms = $rm->getPermissionsByRole((int)$id);
@@ -686,9 +673,9 @@ $router->get('/api/roles/{id}/permissions', function($id) use ($mysqli, $require
  * POST /api/roles/{id}/permissions/save
  * Save permissions for a role (JSON API)
  */
-$router->post('/api/roles/{id}/permissions/save', function($id) use ($mysqli, $requireSuperadmin) {
+$router->post('/api/roles/{id}/permissions/save', function($id) use ($mysqli, $requireSuperadmin, $authService) {
     header('Content-Type: application/json');
-    ensure_can('manage_permissions', 'permissions');
+    $authService->ensureCan('manage_permissions', 'permissions');
     
     $roleId = (int)$id;
     $rm = new RolesManager($mysqli);
@@ -733,9 +720,9 @@ $router->post('/api/roles/{id}/permissions/save', function($id) use ($mysqli, $r
  * GET /permissions/revoke/{roleId}/{permissionId}
  * Show revoke confirmation page
  */
-$router->get('/permissions/revoke/{roleId}/{permissionId}', function($roleId, $permissionId) use ($mysqli, $twig) {
-    ensure_role_level(ROLE_LEVEL_SUPERADMIN);
-    ensure_can('manage_permissions');
+$router->get('/permissions/revoke/{roleId}/{permissionId}', function($roleId, $permissionId) use ($mysqli, $twig, $authService) {
+    $authService->ensureRoleLevel(ROLE_LEVEL_SUPERADMIN);
+    $authService->ensureCan('manage_permissions');
     
     $rm = new RolesManager($mysqli);
     $pm = new PermissionsManager($mysqli);
@@ -754,7 +741,6 @@ $router->get('/permissions/revoke/{roleId}/{permissionId}', function($roleId, $p
     echo $twig->render('permissions/revoke_permission.twig', [
         'role' => $role,
         'permission' => $permission,
-        'pageTitle' => 'Revoke Permission',
         'title' => 'Revoke Permission',
         'header_title' => 'Revoke Permission'
     ]);
@@ -764,9 +750,9 @@ $router->get('/permissions/revoke/{roleId}/{permissionId}', function($roleId, $p
  * POST /permissions/revoke/{roleId}/{permissionId}
  * Revoke permission from role
  */
-$router->post('/permissions/revoke/{roleId}/{permissionId}', function($roleId, $permissionId) use ($mysqli) {
-    ensure_role_level(ROLE_LEVEL_SUPERADMIN);
-    ensure_can('manage_permissions');
+$router->post('/permissions/revoke/{roleId}/{permissionId}', function($roleId, $permissionId) use ($mysqli, $authService) {
+    $authService->ensureRoleLevel(ROLE_LEVEL_SUPERADMIN);
+    $authService->ensureCan('manage_permissions');
     
     $roleId = (int)$roleId;
     $permissionId = (int)$permissionId;
@@ -783,9 +769,9 @@ $router->post('/permissions/revoke/{roleId}/{permissionId}', function($roleId, $
  * POST /api/permissions/{roleId}/revoke/{permissionId}
  * Revoke permission via AJAX
  */
-$router->post('/api/permissions/{roleId}/revoke/{permissionId}', function($roleId, $permissionId) use ($mysqli) {
+$router->post('/api/permissions/{roleId}/revoke/{permissionId}', function($roleId, $permissionId) use ($mysqli, $authService) {
     header('Content-Type: application/json');
-    ensure_can('manage_permissions');
+    $authService->ensureCan('manage_permissions');
     
     $roleId = (int)$roleId;
     $permissionId = (int)$permissionId;

@@ -178,7 +178,7 @@
         <table border="0px" width="99%"  align="center" style="border-collapse:collapse;margin:4px auto; " cellspacing="0" cellpadding="0">
             <tr>
                 <td style="padding-left: 50px; height: 25px;"> 
-                    <font style="font-size:16px; padding-left:30px;">অত্র ইউনিয়নের স্থায়ী বাসিন্দা । নিম্নে তালিকা ভুক্ত সদস্যগণ তাহার পরিবারের সদস্যঃ-</font>
+                    <font style="font-size:16px; padding-left:30px;">অত্র ইউনিয়নের {% if (citizen.resident|default('permanent')) == 'temporary' %}অস্থায়ী বাসিন্দা{% else %}স্থায়ী বাসিন্দা{% endif %} । নিম্নে তালিকা ভুক্ত সদস্যগণ তাহার পরিবারের সদস্যঃ-</font>
                 </td>
             </tr>
         </table>

@@ -291,6 +291,81 @@ if (!function_exists('sendNewDeviceLoginAlert')) {
 }
 
 /**
+ * Send critical error alert to admin(s)
+ * Called automatically by ErrorHandler when FATAL or UNCAUGHT EXCEPTION occurs
+ *
+ * @param string $errorType   Error type (e.g. 'FATAL ERROR', 'UNCAUGHT EXCEPTION')
+ * @param string $message     Error message
+ * @param string $file        File where error occurred
+ * @param int    $line        Line number
+ * @param array  $context     Additional context (route, IP, backtrace, etc.)
+ * @return bool
+ */
+if (!function_exists('sendCriticalErrorAlert')) {
+    function sendCriticalErrorAlert(
+        string $errorType,
+        string $message,
+        string $file,
+        int $line,
+        array $context = []
+    ): bool {
+        try {
+            // Check if alerting is enabled
+            if (!defined('SEND_CRITICAL_ERROR_ALERT') || !SEND_CRITICAL_ERROR_ALERT) {
+                return false;
+            }
+
+            // Get admin alert email(s)
+            $adminEmail = defined('CRITICAL_ERROR_ALERT_EMAIL') ? CRITICAL_ERROR_ALERT_EMAIL : '';
+            if (empty($adminEmail)) {
+                // Fallback to MAIL_FROM_ADDRESS if no dedicated alert email configured
+                $adminEmail = defined('MAIL_FROM_ADDRESS') ? MAIL_FROM_ADDRESS : '';
+            }
+            if (empty($adminEmail) || !filter_var($adminEmail, FILTER_VALIDATE_EMAIL)) {
+                error_log("CriticalErrorAlert: No valid admin email configured");
+                return false;
+            }
+
+            if (!class_exists('EmailService')) {
+                error_log("CriticalErrorAlert: EmailService class not found");
+                return false;
+            }
+
+            $emailService = new EmailService();
+
+            // Build template data
+            $siteUrl = defined('SITE_URL') ? SITE_URL : '';
+            $mailFromName = defined('MAIL_FROM_NAME') ? MAIL_FROM_NAME : 'লগ ধাকা';
+
+            $data = [
+                'error_type'    => $errorType,
+                'error_message' => $message,
+                'error_file'    => $file,
+                'error_line'    => $line,
+                'error_route'   => $context['route'] ?? ($_SERVER['REQUEST_METHOD'] ?? 'CLI') . ' ' . ($_SERVER['REQUEST_URI'] ?? 'unknown'),
+                'client_ip'     => $context['client_ip'] ?? ($_SERVER['REMOTE_ADDR'] ?? 'Unknown'),
+                'error_time'    => date('Y-m-d H:i:s'),
+                'backtrace'     => $context['backtrace'] ?? ($context['trace'] ?? ''),
+                'subject'       => "🔴 [{$errorType}] গুরুতর সিস্টেম ত্রুটি — অবিলম্বে পদক্ষেপ নিন",
+                'mail_from_name' => $mailFromName,
+                'site_url'      => $siteUrl,
+            ];
+
+            return $emailService->sendTemplate(
+                $adminEmail,
+                'critical_error_alert',
+                $data,
+                $data['subject']
+            );
+        } catch (Exception $e) {
+            error_log("CriticalErrorAlert failed: {$e->getMessage()}");
+            return false;
+        }
+    }
+}
+
+
+/**
  * Send custom email
  * @param string $to Recipient email
  * @param string $subject Email subject (Bengali recommended)

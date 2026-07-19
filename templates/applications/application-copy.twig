@@ -150,7 +150,7 @@
                 <td colspan="2"> : {{ detail.apply_date|date('d-m-Y')|bn}}</td>
             </tr>
             <tr>
-                <td> সনদের প্রকার</td>
+                <td> সনদের ধরণ</td>
                 <td colspan="5"> : {{ certificate_type_bn|default(detail.certificate_type_bn|default(detail.certificate_type)) }}</td>
             </tr>
             <tr>
@@ -367,7 +367,7 @@
         <table class="info">
             <tr>
                 <td>অনুযায তারিখ</td>
-                <td>: {{ follow_up_date|date('d-m-Y')|bn if follow_up_date is defined else 'N/A' }}</td>
+                <td>: {{ follow_up_date ? follow_up_date|date('d-m-Y')|bn : 'N/A' }}</td>
             </tr>
             <tr>
                 <td>অনুযাযক</td>

@@ -7,145 +7,544 @@
 
 {% block content %}
 {% include 'components/sweetAlert.twig' %}
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/uikit@3.16.23/dist/css/uikit.min.css" />
+
 <style>
-.uk-container-small {
-    max-width: 900px;  /* আপনার পছন্দমতো ছোট মান */
-    margin-left: auto;
-    margin-right: auto;
-    padding-left: 15px;
-    padding-right: 15px;
-}
+    .approve-page-header .header-icon-wrapper {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 56px;
+        height: 56px;
+        border-radius: 16px;
+        background: linear-gradient(135deg, #008B8B, #00B4B4);
+        color: #fff;
+        font-size: 24px;
+        margin-bottom: 12px;
+        box-shadow: 0 6px 20px rgba(0,139,139,0.3);
+        animation: floatIcon 3s ease-in-out infinite;
+    }
+    @keyframes floatIcon {
+        0%, 100% { transform: translateY(0px); }
+        50% { transform: translateY(-6px); }
+    }
+    .photo-wrapper { display: flex; justify-content: center; }
+    .photo-ring { position: relative; display: inline-block; cursor: pointer; }
+    .applicant-photo {
+        border-radius: 50%;
+        object-fit: cover;
+        border: 4px solid #fff;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.12), 0 0 0 2px rgba(0,139,139,0.2);
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .photo-ring:hover .applicant-photo {
+        transform: scale(1.05);
+        box-shadow: 0 8px 28px rgba(0,0,0,0.18), 0 0 0 3px rgba(0,139,139,0.35);
+    }
+    .photo-ring-overlay {
+        position: absolute; inset: 0; border-radius: 50%;
+        background: rgba(0,0,0,0.3);
+        display: flex; align-items: center; justify-content: center;
+        color: #fff; font-size: 1.5rem; opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+    .photo-ring:hover .photo-ring-overlay { opacity: 1; }
 
-    </style>
+    /* ===== Photo Lightbox Rotation ===== */
+    .photo-lightbox-image {
+        transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .photo-lightbox-image.rotate-90  { transform: rotate(90deg); }
+    .photo-lightbox-image.rotate-180 { transform: rotate(180deg); }
+    .photo-lightbox-image.rotate-270 { transform: rotate(270deg); }
 
-<div class="uk-container uk-margin-large-top uk-container-small">
+    /* ===== Photo Lightbox Keyboard Hint ===== */
+    .photo-lightbox-hint {
+        position: absolute;
+        bottom: 28px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 1060;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        background: rgba(0,0,0,0.5);
+        backdrop-filter: blur(6px);
+        padding: 8px 16px;
+        border-radius: 24px;
+        color: rgba(255,255,255,0.7);
+        font-size: 0.78rem;
+        transition: opacity 0.4s ease, transform 0.4s ease;
+        opacity: 0;
+        transform: translateX(-50%) translateY(10px);
+        pointer-events: none;
+    }
+    .photo-lightbox-modal.show .photo-lightbox-hint {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+        transition-delay: 0.6s;
+    }
+    .photo-lightbox-hint .rotation-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 32px;
+        height: 22px;
+        background: rgba(255,255,255,0.15);
+        border-radius: 11px;
+        padding: 0 6px;
+        font-size: 0.7rem;
+        font-weight: 600;
+        color: #fff;
+        letter-spacing: 0.3px;
+        transition: all 0.3s ease;
+    }
+    .photo-lightbox-hint .rotation-help {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        opacity: 0.6;
+    }
+    .photo-lightbox-hint .rotation-help i {
+        font-size: 0.7rem;
+    }
+    .photo-lightbox-close,
+    .photo-lightbox-download {
+        position: absolute;
+        z-index: 1060;
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        background: rgba(255,255,255,0.15);
+        border: none;
+        color: #fff;
+        font-size: 1.2rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.25s ease;
+        backdrop-filter: blur(4px);
+        text-decoration: none;
+    }
+    .photo-lightbox-close { top: 20px; right: 24px; }
+    .photo-lightbox-download { top: 20px; left: 24px; }
+    .photo-lightbox-close:hover,
+    .photo-lightbox-download:hover {
+        background: rgba(255,255,255,0.3);
+        transform: scale(1.1) rotate(0deg);
+    }
+    .photo-lightbox-close:hover { transform: scale(1.1) rotate(90deg); }
+    .photo-lightbox-download:hover { transform: scale(1.1) translateY(-2px); }
+    .photo-lightbox-close:focus-visible,
+    .photo-lightbox-download:focus-visible {
+        outline: 3px solid #fff;
+        outline-offset: 3px;
+    }
+    @media (max-width: 576px) {
+        .photo-lightbox-hint {
+            bottom: 16px;
+            padding: 5px 12px;
+            font-size: 0.7rem;
+            gap: 6px;
+        }
+        .photo-lightbox-hint .rotation-badge {
+            min-width: 26px;
+            height: 18px;
+            font-size: 0.65rem;
+        }
+    }
 
-    <h2 class="uk-heading-line"><span>{{ title }}</span></h2>
-    <h4 class="uk-text-muted uk-margin-medium-bottom">{{ header_title }}</h4>
+    /* ===== Document Gallery Trigger Overlay ===== */
+    .doc-gallery-trigger {
+        position: relative;
+        cursor: pointer;
+        overflow: hidden;
+    }
+    .doc-gallery-trigger img {
+        transition: transform 0.4s ease, filter 0.4s ease;
+    }
+    .doc-gallery-trigger:hover img {
+        transform: scale(1.08);
+        filter: brightness(0.7);
+    }
+    .doc-gallery-overlay {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        color: #fff;
+        font-size: 1.2rem;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+        pointer-events: none;
+    }
+    .doc-gallery-overlay span {
+        font-size: 0.65rem;
+        font-weight: 500;
+        letter-spacing: 0.3px;
+        text-transform: uppercase;
+    }
+    .doc-gallery-trigger:hover .doc-gallery-overlay {
+        opacity: 1;
+    }
 
-    <div class="uk-card uk-card-default uk-card-body uk-box-shadow-small">
+    /* ===== Document Gallery Navigation Arrows ===== */
+    .doc-gallery-nav {
+        position: absolute;
+        z-index: 1061;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 52px;
+        height: 52px;
+        border-radius: 50%;
+        background: rgba(255,255,255,0.12);
+        border: none;
+        color: #fff;
+        font-size: 1.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        backdrop-filter: blur(4px);
+        opacity: 0;
+    }
+    .photo-lightbox-modal.show .doc-gallery-nav {
+        opacity: 1;
+        transition-delay: 0.2s;
+    }
+    .doc-gallery-prev { left: 18px; }
+    .doc-gallery-next { right: 18px; }
+    .doc-gallery-nav:hover {
+        background: rgba(255,255,255,0.25);
+        transform: translateY(-50%) scale(1.1);
+    }
+    .doc-gallery-nav:active {
+        transform: translateY(-50%) scale(0.95);
+    }
+    .doc-gallery-nav:focus-visible {
+        outline: 3px solid #fff;
+        outline-offset: 3px;
+    }
 
+    /* ===== Document Gallery Top Bar ===== */
+    .doc-gallery-topbar {
+        position: absolute;
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 1060;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        background: rgba(0,0,0,0.5);
+        backdrop-filter: blur(6px);
+        padding: 7px 18px;
+        border-radius: 24px;
+        color: rgba(255,255,255,0.8);
+        font-size: 0.8rem;
+        transition: opacity 0.4s ease, transform 0.4s ease;
+        opacity: 0;
+        transform: translateX(-50%) translateY(-10px);
+        pointer-events: none;
+        max-width: calc(100vw - 140px);
+    }
+    .photo-lightbox-modal.show .doc-gallery-topbar {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+        transition-delay: 0.4s;
+    }
+    .doc-gallery-counter {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 42px;
+        height: 22px;
+        background: rgba(255,255,255,0.15);
+        border-radius: 11px;
+        padding: 0 8px;
+        font-size: 0.72rem;
+        font-weight: 700;
+        color: #fff;
+        letter-spacing: 0.5px;
+        white-space: nowrap;
+    }
+    .doc-gallery-filename {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 300px;
+        font-size: 0.78rem;
+        opacity: 0.75;
+    }
+    @media (max-width: 768px) {
+        .doc-gallery-nav {
+            width: 40px;
+            height: 40px;
+            font-size: 1.1rem;
+        }
+        .doc-gallery-prev { left: 10px; }
+        .doc-gallery-next { right: 10px; }
+        .doc-gallery-topbar {
+            top: 12px;
+            padding: 5px 12px;
+            gap: 8px;
+            font-size: 0.7rem;
+            max-width: calc(100vw - 100px);
+        }
+        .doc-gallery-filename { max-width: 120px; }
+        .doc-gallery-counter { min-width: 32px; height: 18px; font-size: 0.65rem; }
+    }
+    @media (max-width: 576px) {
+        .doc-gallery-nav {
+            width: 34px;
+            height: 34px;
+            font-size: 0.95rem;
+        }
+        .doc-gallery-prev { left: 6px; }
+        .doc-gallery-next { right: 6px; }
+    }
 
-                {# আবেদনকারীর ছবি প্রিভিউ (যদি থাকে) #}
-                {% if application_details.applicant_photo %}
-                <div class="uk-margin-top uk-text-center">
-                    <img src="{{ application_details.applicant_photo }}" alt="Applicant Photo" class="uk-border-circle" style="max-width:150px; max-height:150px;">
+    /* ===== Documents Grid (reuse approve-page pattern) ===== */
+    .documents-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 1rem;
+    }
+    @media (max-width: 576px) {
+        .documents-grid {
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 0.75rem;
+        }
+    }
+    .document-card {
+        background: #fff;
+        border: 1px solid rgba(0,0,0,0.06);
+        border-radius: 12px;
+        overflow: hidden;
+        transition: all 0.3s ease;
+    }
+    .document-card:hover {
+        box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+        transform: translateY(-3px);
+        border-color: rgba(0,139,139,0.2);
+    }
+    .document-preview {
+        width: 100%;
+        height: 130px;
+        background: #f8f9fa;
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .document-preview img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: transform 0.4s ease;
+    }
+    .document-card:hover .document-preview img {
+        transform: scale(1.08);
+    }
+    .document-icon-big {
+        font-size: 2.5rem;
+        color: #adb5bd;
+    }
+    .document-info {
+        padding: 0.65rem 0.75rem;
+    }
+    .document-name {
+        display: block;
+        font-size: 0.78rem;
+        font-weight: 500;
+        color: #495057;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        margin-bottom: 0.5rem;
+    }
+    .document-actions {
+        display: flex;
+        gap: 0.35rem;
+    }
+    .document-view-btn {
+        font-size: 0.75rem;
+        padding: 0.25rem 0.65rem;
+        border-radius: 8px;
+    }
+</style>
+
+<div class="container my-5 px-4">
+
+    <!-- Page Header -->
+    <div class="text-center mb-5">
+        <div class="approve-page-header d-inline-block">
+            <div class="header-icon-wrapper">
+                <i class="bi bi-file-earmark-text"></i>
+            </div>
+            <h2 class="fw-bold mb-1" style="font-size: 1.6rem;">{{ title }}</h2>
+            <p class="text-muted mb-0">{{ header_title }}</p>
+        </div>
+    </div>
+
+    <!-- Main Content Card -->
+    <div class="section-card card-appear mb-4">
+        <div class="section-header-icon text-primary">
+            <i class="bi bi-person-badge"></i>
+        </div>
+        <h6 class="section-title text-primary">
+            <i class="bi bi-info-circle"></i> আবেদনের বিস্তারিত তথ্য
+        </h6>
+
+        {% if application_details.applicant_photo %}
+        <div class="photo-wrapper text-center mb-4">
+            <div class="photo-ring" data-bs-toggle="modal" data-bs-target="#viewPhotoLightbox">
+                <img src="{{ application_details.applicant_photo }}" alt="Applicant Photo" class="applicant-photo" style="width:120px;height:120px;" loading="lazy">
+                <div class="photo-ring-overlay">
+                    <i class="bi bi-zoom-in"></i>
                 </div>
-                {% endif %}
-        {# দুই কলামে বাংলা ও ইংরেজি তথ্য #}
-        <div uk-grid class="uk-child-width-1-2@s uk-grid-small uk-grid-match">
-
-            <div>
-                <h5 class="uk-heading-line uk-text-center"><span>Basic Info (বাংলা)</span></h5>
-                {% set basic_info_bn = {
-                    "নাম": application_details.name_bn,
-                    "পিতার নাম": application_details.father_name_bn,
-                    "মাতার নাম": application_details.mother_name_bn,
-                    "জন্ম তারিখ": application_details.birth_date,
-                    "লিঙ্গ": application_details.gender,
-                    "বৈবাহিক অবস্থা": application_details.marital_status,
-                    "স্বামী/স্ত্রীর নাম": application_details.spouse_name_bn ?: 'N/A',
-                    "পেশা": application_details.occupation ?: 'N/A'
-                } %}
-                {{ ui.display_info_block(basic_info_bn) }}
             </div>
+        </div>
+        {% endif %}
 
-            <div>
-                <h5 class="uk-heading-line uk-text-center"><span>Basic Info (English)</span></h5>
-                {% set basic_info_en = {
-                    "Name": application_details.name_en,
-                    "Father's Name": application_details.father_name_en,
-                    "Mother's Name": application_details.mother_name_en,
-                    "Resident Type": application_details.resident ?: 'N/A',
-                    "Religion": application_details.religion ?: 'N/A',
-                    "Spouse Name": application_details.spouse_name_en ?: 'N/A',
-                    "Educational Qualification": application_details.educational_qualification ?: 'N/A'
-                } %}
-                {{ ui.display_info_block(basic_info_en) }}
+        <!-- Basic Info: দুটি কলামে বাংলা ও ইংরেজি -->
+        <div class="row g-4 section-appear mb-4">
+            <div class="col-md-6">
+                <div class="form-section-inner">
+                    <h6 class="fw-bold text-success mb-3"><i class="bi bi-person-fill me-2"></i> Basic Info (বাংলা)</h6>
+                    {{ ui.display_info_block({
+                        "নাম": application_details.name_bn,
+                        "পিতার নাম": application_details.father_name_bn,
+                        "মাতার নাম": application_details.mother_name_bn,
+                        "জন্ম তারিখ": application_details.birth_date,
+                        "লিঙ্গ": application_details.gender,
+                        "বৈবাহিক অবস্থা": application_details.marital_status,
+                        "স্বামী/স্ত্রীর নাম": application_details.spouse_name_bn ?: 'N/A',
+                        "পেশা": application_details.occupation ?: 'N/A'
+                    }) }}
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="form-section-inner">
+                    <h6 class="fw-bold text-info mb-3"><i class="bi bi-person-fill me-2"></i> Basic Info (English)</h6>
+                    {{ ui.display_info_block({
+                        "Name": application_details.name_en,
+                        "Father's Name": application_details.father_name_en,
+                        "Mother's Name": application_details.mother_name_en,
+                        "Resident Type": application_details.resident ?: 'N/A',
+                        "Religion": application_details.religion ?: 'N/A',
+                        "Spouse Name": application_details.spouse_name_en ?: 'N/A',
+                        "Educational Qualification": application_details.educational_qualification ?: 'N/A'
+                    }) }}
+                </div>
             </div>
         </div>
 
-        <hr class="uk-divider-icon uk-margin-medium">
- 
-        <div uk-grid class="uk-child-width-1-2@s uk-grid-small uk-grid-match">
-            <div>
-                <h5 class="uk-heading-line uk-text-center"><span>Present Address (বাংলা)</span></h5>
-                {% set present_address_bn = {
-                    "হোল্ডিং নম্বর": application_details.present_holding_no,
-                    "রোড/ব্লক/সেক্টর": application_details.rbs_bn,
-                    "গ্রাম": application_details.present_village_bn,
-                    "ওয়ার্ড নম্বর": application_details.present_ward_no,
-                    "ডাকঘর": application_details.present_postoffice_bn,
-                    "ইউনিয়ন": application_details.present_union_bn,
-                    "উপজেলা": application_details.present_upazila_bn,
-                    "জেলা": application_details.present_district_bn
-                } %}
-                {{ ui.display_info_block(present_address_bn) }}
-            </div>
+        <hr class="my-4">
 
-            <div>
-                <h5 class="uk-heading-line uk-text-center"><span>Present Address (English)</span></h5>
-                {% set present_address_en = {
-                    "Holding No": application_details.present_holding_no,
-                    "Road/Block/Sector": application_details.rbs_en,
-                    "Village": application_details.present_village_en,
-                    "Ward No": application_details.present_ward_no,
-                    "Post Office": application_details.present_postoffice_en,
-                    "Union": application_details.present_union_en,
-                    "Upazila": application_details.present_upazila_en,
-                    "District": application_details.present_district_en
-                } %}
-                {{ ui.display_info_block(present_address_en) }}
+        <!-- Present Address -->
+        <div class="row g-4 section-appear mb-4">
+            <div class="col-md-6">
+                <div class="form-section-inner">
+                    <h6 class="fw-bold text-info mb-3"><i class="bi bi-geo-alt-fill me-2"></i> Present Address (বাংলা)</h6>
+                    {{ ui.display_info_block({
+                        "হোল্ডিং নম্বর": application_details.present_holding_no,
+                        "রোড/ব্লক/সেক্টর": application_details.rbs_bn,
+                        "গ্রাম": application_details.present_village_bn,
+                        "ওয়ার্ড নম্বর": application_details.present_ward_no,
+                        "ডাকঘর": application_details.present_postoffice_bn,
+                        "ইউনিয়ন": application_details.present_union_bn,
+                        "উপজেলা": application_details.present_upazila_bn,
+                        "জেলা": application_details.present_district_bn
+                    }) }}
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="form-section-inner">
+                    <h6 class="fw-bold text-info mb-3"><i class="bi bi-geo-alt-fill me-2"></i> Present Address (English)</h6>
+                    {{ ui.display_info_block({
+                        "Holding No": application_details.present_holding_no,
+                        "Road/Block/Sector": application_details.rbs_en,
+                        "Village": application_details.present_village_en,
+                        "Ward No": application_details.present_ward_no,
+                        "Post Office": application_details.present_postoffice_en,
+                        "Union": application_details.present_union_en,
+                        "Upazila": application_details.present_upazila_en,
+                        "District": application_details.present_district_en
+                    }) }}
+                </div>
+            </div>
+        </div>
+
+        <hr class="my-4">
+
+        <!-- Permanent Address -->
+        <div class="row g-4 section-appear mb-4">
+            <div class="col-md-6">
+                <div class="form-section-inner">
+                    <h6 class="fw-bold text-secondary mb-3"><i class="bi bi-house-fill me-2"></i> Permanent Address (বাংলা)</h6>
+                    {{ ui.display_info_block({
+                        "হোল্ডিং নম্বর": application_details.permanent_holding_no,
+                        "রোড/ব্লক/সেক্টর": application_details.rbs_bn,
+                        "গ্রাম": application_details.permanent_village_bn,
+                        "ওয়ার্ড নম্বর": application_details.permanent_ward_no,
+                        "ডাকঘর": application_details.permanent_postoffice_bn,
+                        "ইউনিয়ন": application_details.permanent_union_bn,
+                        "উপজেলা": application_details.permanent_upazila_bn,
+                        "জেলা": application_details.permanent_district_bn
+                    }) }}
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="form-section-inner">
+                    <h6 class="fw-bold text-secondary mb-3"><i class="bi bi-house-fill me-2"></i> Permanent Address (English)</h6>
+                    {{ ui.display_info_block({
+                        "Holding No": application_details.permanent_holding_no,
+                        "Road/Block/Sector": application_details.rbs_en,
+                        "Village": application_details.permanent_village_en,
+                        "Ward No": application_details.permanent_ward_no,
+                        "Post Office": application_details.permanent_postoffice_en,
+                        "Union": application_details.permanent_union_en,
+                        "Upazila": application_details.permanent_upazila_en,
+                        "District": application_details.permanent_district_en
+                    }) }}
+                </div>
             </div>
         </div>
 
-        <hr class="uk-divider-icon uk-margin-medium">
+        <hr class="my-4">
 
-        <div uk-grid class="uk-child-width-1-2@s uk-grid-small uk-grid-match">
-            <div>
-                <h5 class="uk-heading-line uk-text-center"><span>Permanent Address (বাংলা)</span></h5>
-                {% set permanent_address_bn = {
-                    "হোল্ডিং নম্বর": application_details.permanent_holding_no,
-                    "রোড/ব্লক/সেক্টর": application_details.rbs_bn,
-                    "গ্রাম": application_details.permanent_village_bn,
-                    "ওয়ার্ড নম্বর": application_details.permanent_ward_no,
-                    "ডাকঘর": application_details.permanent_postoffice_bn,
-                    "ইউনিয়ন": application_details.permanent_union_bn,
-                    "উপজেলা": application_details.permanent_upazila_bn,
-                    "জেলা": application_details.permanent_district_bn
-                } %}
-                {{ ui.display_info_block(permanent_address_bn) }}
-            </div>
-
-            <div>
-                <h5 class="uk-heading-line uk-text-center"><span>Permanent Address (English)</span></h5>
-                {% set permanent_address_en = {
-                    "Holding No": application_details.permanent_holding_no,
-                    "Road/Block/Sector": application_details.rbs_en,
-                    "Village": application_details.permanent_village_en,
-                    "Ward No": application_details.permanent_ward_no,
-                    "Post Office": application_details.permanent_postoffice_en,
-                    "Union": application_details.permanent_union_en,
-                    "Upazila": application_details.permanent_upazila_en,
-                    "District": application_details.permanent_district_en
-                } %}
-                {{ ui.display_info_block(permanent_address_en) }}
-            </div>
-        </div>
-        <hr class="uk-divider-icon uk-margin-medium">
-
-                {# Certificate Type অনুযায়ী আলাদা তথ্য দেখানো #}
-                {% if application_details.certificate_type == 'trade' %}
-                    <h4>ব্যবসার তথ্য (Business Details)</h4>
-                    {% if application_details.business_meta is defined and application_details.business_meta is not empty %}
-                        <ul>
-                            <li>ব্যবসার নাম: {{ application_details.business_meta.business_name_bn }}</li>
-                            <li>ব্যবসার ধরণ: {{ application_details.business_meta.business_type_bn }}</li>
-                            <li>মালিকানার ধরণ: {{ application_details.business_meta.ownership_type_bn }}</li>
-                            
-                            {# Full Business Address (Bangla) #}
-                            <li>ঠিকানা:
+        <!-- Certificate Type Specific Info -->
+        <div class="section-appear mb-4">
+            {% if application_details.certificate_type == 'trade' %}
+            <div class="section-card">
+                <div class="section-header-icon text-warning">
+                    <i class="bi bi-shop"></i>
+                </div>
+                <h6 class="section-title text-warning">
+                    <i class="bi bi-briefcase"></i> ব্যবসার তথ্য (Business Details)
+                </h6>
+                {% if application_details.business_meta is defined and application_details.business_meta is not empty %}
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <span class="info-label">ব্যবসার নাম</span>
+                            <span class="info-value">{{ application_details.business_meta.business_name_bn }}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">ব্যবসার ধরণ</span>
+                            <span class="info-value">{{ application_details.business_meta.business_type_bn }}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">মালিকানার ধরণ</span>
+                            <span class="info-value">{{ application_details.business_meta.ownership_type_bn }}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">ঠিকানা (বাংলা)</span>
+                            <span class="info-value">
                                 {{ application_details.business_meta.holding_no }},
                                 {{ application_details.business_meta.business_rbs_bn }},
                                 {{ application_details.business_meta.business_village_bn }},
@@ -154,10 +553,11 @@
                                 {{ application_details.business_meta.business_union_bn }},
                                 {{ application_details.business_meta.business_upazila_bn }},
                                 {{ application_details.business_meta.business_district_bn }}
-                            </li>
-                        
-                            {# Full Business Address (English) #}
-                            <li>Address (English):
+                            </span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Address (English)</span>
+                            <span class="info-value">
                                 {{ application_details.business_meta.holding_no }},
                                 {{ application_details.business_meta.business_rbs_en }},
                                 {{ application_details.business_meta.business_village_en }},
@@ -166,83 +566,493 @@
                                 {{ application_details.business_meta.business_union_en }},
                                 {{ application_details.business_meta.business_upazila_en }},
                                 {{ application_details.business_meta.business_district_en }}
-                            </li>
-                        </ul>
+                            </span>
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="bi bi-shop fs-1 text-muted"></i>
+                        <p class="text-muted fst-italic mt-2">ব্যবসার তথ্য পাওয়া যায়নি।</p>
+                    </div>
+                {% endif %}
+            </div>
 
-                    {% else %}
-                        <p>ব্যবসার তথ্য পাওয়া যায়নি।</p>
-                    {% endif %}
+            {% elseif application_details.certificate_type == 'warish' %}
+            <div class="section-card">
+                <div class="section-header-icon text-info">
+                    <i class="bi bi-people-fill"></i>
+                </div>
+                <h6 class="section-title text-info">
+                    <i class="bi bi-people"></i> ওয়ারিশ সদস্যদের তালিকা
+                </h6>
+                {% if application_details.warish_members is defined and application_details.warish_members is not empty %}
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle table-enhanced">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>#</th>
+                                    <th>নাম (Name)</th>
+                                    <th>সম্পর্ক (Relation)</th>
+                                    <th>জন্ম তারিখ/বয়স</th>
+                                    <th>এনআইডি (Nid)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for member in application_details.warish_members %}
+                                <tr>
+                                    <td>{{ loop.index }}</td>
+                                    <td>{{ member.name_bn ?: member.name_en ?: 'N/A' }}</td>
+                                    <td>{{ member.relation_bn ?: member.relation_en ?: 'N/A' }}</td>
+                                    <td>{{ member.birth_date ?: 'N/A' }}</td>
+                                    <td>{{ member.nid ?: 'N/A' }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="bi bi-people fs-1 text-muted"></i>
+                        <p class="text-muted fst-italic mt-2">ওয়ারিশ সদস্যদের তথ্য পাওয়া যায়নি।</p>
+                    </div>
+                {% endif %}
+            </div>
 
-        {% elseif application_details.certificate_type == 'warish' %}
-        <h4>ওয়ারিশ সদস্যদের তালিকা (Warish Members List)</h4>
-
-
-        {% if application_details.warish_members is defined and application_details.warish_members is not empty %}
-                <table class="uk-table uk-table-divider uk-table-hover">
-                    <thead>
-                        <tr>
-                            <th>#</th>
-                            <th>নাম (Name)</th>
-                            <th>সম্পর্ক (Relation)</th>
-                            <th>জন্ম তারিখ/বয়স (Date of Birth/Age)</th>
-                            <th>এনআইডি (Nid)</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for member in application_details.warish_members %}
-                            <tr>
-                                <td>{{ loop.index }}</td>
-                                <td>{{ member.name_bn ?: member.name_en ?: 'N/A' }}</td>
-                                <td>{{ member.relation_bn ?: member.relation_en ?: 'N/A' }}</td>
-                                <td>{{ member.birth_date ?: 'N/A' }}</td>
-                                <td>{{ member.nid ?: 'N/A' }}</td>
-                            </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
             {% else %}
-                <p>ওয়ারিশ সদস্যদের তথ্য পাওয়া যায়নি।</p>
+                <div class="text-center py-3 text-muted">
+                    <i class="bi bi-info-circle me-2"></i> এই সনদের জন্য বিশেষ তথ্য নেই।
+                </div>
             {% endif %}
-
-        {% else %}
-            <p>এই সনদের জন্য বিশেষ তথ্য নেই।</p>
-        {% endif %}
-
-
-        <hr class="uk-divider-icon uk-margin-medium">
-
-        <h5 class="uk-heading-line uk-text-center"><span>Applicant Details</span></h5>
-        {% set applicant_info = {
-            "Applicant Name": application_details.applicant_name,
-            "Applicant Phone": application_details.applicant_phone,
-            "Tracking Number": application_details.application_id,
-            "Sonod Number": application_details.sonod_number ?: 'N/A',
-            "Birth Certificate": application_details.birth_id ?: 'N/A',
-            "National ID": application_details.nid ?: 'N/A',
-            "Passport No": application_details.passport_no ?: 'N/A',
-            "Apply Date": application_details.apply_date|date("d M Y"),
-            "Status": ui.display_status_badge(application_details.status) | raw
-        } %}
-        <div class="uk-width-1-1 uk-margin">
-            {{ ui.display_info_block(applicant_info) }}
         </div>
-        
-        <hr class="uk-divider-icon uk-margin-medium">
 
-        <h5 class="uk-heading-line uk-text-center"><span>Attached Documents</span></h5>
-        {{ ui.display_documents_table(documents) }}
+        <hr class="my-4">
 
-        <div class="uk-flex uk-flex-wrap uk-flex-between uk-margin-large-top uk-gap-small">
-            <a href="/applications/{{ go_url }}/" class="uk-button uk-button-default">Back to List</a>
-            <a href="/{{ application_details.certificate_type }}_verify/application/{{ application_details.application_id }}/{{ application_details.union_id }}/0" class="uk-button uk-button-primary">Application Copy</a>
-            <a href="/applications/{{ go_url }}/edit/{{ application_details.application_id }}" class="uk-button uk-button-primary">Edit</a>
-            <a href="/applications/{{ go_url }}/approve/{{ application_details.application_id }}" class="uk-button uk-button-success">Approve</a>
-            <a href="/applications/{{ go_url }}/delete/{{ application_details.application_id }}" class="uk-button uk-button-danger" onclick="return confirm('Are you sure you want to delete this record?')">Delete</a>
+        <!-- Applicant Details -->
+        <div class="section-appear mb-4">
+            <div class="form-section-inner">
+                <h6 class="fw-bold text-primary mb-3"><i class="bi bi-person-lines-fill me-2"></i> Applicant Details</h6>
+                <div class="row">
+                    <div class="col-12">
+                        {{ ui.display_info_block({
+                            "Applicant Name": application_details.applicant_name,
+                            "Applicant Phone": application_details.applicant_phone,
+                            "Tracking Number": application_details.application_id,
+                            "Sonod Number": application_details.sonod_number ?: 'N/A',
+                            "Birth Certificate": application_details.birth_id ?: 'N/A',
+                            "National ID": application_details.nid ?: 'N/A',
+                            "Passport No": application_details.passport_no ?: 'N/A',
+                            "Apply Date": application_details.apply_date|date("d M Y"),
+                            "Status": ui.display_status_badge(application_details.status) | raw
+                        }) }}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <hr class="my-4">
+
+        <!-- Attached Documents -->
+        <div class="section-appear mb-4">
+            <div class="form-section-inner">
+                <h6 class="fw-bold mb-3">
+                    <i class="bi bi-paperclip me-2"></i> Attached Documents
+                    {% if documents is not empty %}
+                        <span class="badge bg-primary rounded-pill ms-2">{{ documents|length }}</span>
+                    {% endif %}
+                </h6>
+                {% if documents is empty %}
+                    <div class="text-center py-4">
+                        <i class="bi bi-file-earmark-x fs-1 text-muted"></i>
+                        <p class="text-muted fst-italic mt-2">কোনো ডকুমেন্ট আপলোড করা হয়নি।</p>
+                    </div>
+                {% else %}
+                    <div class="documents-grid" id="viewDocumentsGrid">
+                        {% for doc_path in documents %}
+                            {% set ext = doc_path|split('.')|last|lower %}
+                            {% set isImage = ext in ['jpg','jpeg','png','gif','webp'] %}
+                            <div class="document-card">
+                                <div class="document-preview{% if isImage %} doc-gallery-trigger{% endif %}"
+                                     {% if isImage %}
+                                     data-doc-url="{{ url }}/{{ doc_path }}"
+                                     data-doc-name="{{ doc_path|split('/')|last }}"
+                                     role="button"
+                                     tabindex="0"
+                                     aria-label="{{ doc_path|split('/')|last }} — পূর্ণ আকারে দেখুন"
+                                     {% endif %}>
+                                    {% if isImage %}
+                                        <img src="{{ url }}/{{ doc_path }}" alt="Document: {{ doc_path|split('/')|last }}" loading="lazy">
+                                        <div class="doc-gallery-overlay">
+                                            <i class="bi bi-arrows-fullscreen"></i>
+                                            <span>পূর্ণ আকার</span>
+                                        </div>
+                                    {% else %}
+                                        <a href="{{ doc_path }}" target="_blank" rel="noopener noreferrer" class="d-flex align-items-center justify-content-center w-100 h-100 text-decoration-none">
+                                            <div class="document-icon-big">
+                                                <i class="bi bi-file-earmark-text"></i>
+                                            </div>
+                                        </a>
+                                    {% endif %}
+                                </div>
+                                <div class="document-info">
+                                    <span class="document-name" title="{{ doc_path|split('/')|last }}">{{ doc_path|split('/')|last }}</span>
+                                    <div class="document-actions">
+                                        <a href="{{ doc_path }}" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-outline-primary document-view-btn">
+                                            <i class="bi bi-eye me-1"></i> View
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
         </div>
 
     </div>
+
+    <!-- Action Buttons -->
+    <div class="section-appear">
+        <div class="action-buttons-container">
+            <div class="action-group action-group-primary">
+                <a href="/applications/{{ go_url }}/" class="btn btn-outline-secondary action-btn">
+                    <i class="bi bi-arrow-left me-2"></i> Back to List
+                </a>
+                <a href="/{{ application_details.certificate_type }}_verify/application/{{ application_details.application_id }}/{{ application_details.union_id }}/0" class="btn btn-primary action-btn action-btn-view">
+                    <i class="bi bi-files me-2"></i> Application Copy
+                </a>
+                <a href="/applications/{{ go_url }}/edit/{{ application_details.application_id }}" class="btn btn-warning action-btn action-btn-reset">
+                    <i class="bi bi-pencil me-2"></i> Edit
+                </a>
+                <a href="/applications/{{ go_url }}/approve/{{ application_details.application_id }}" class="btn btn-success action-btn action-btn-approve">
+                    <i class="bi bi-check-circle me-2"></i> Approve
+                </a>
+                <button type="button" class="btn btn-danger action-btn action-btn-reject delete-application-btn"
+                        data-url="/applications/{{ go_url }}/delete/{{ application_details.application_id }}">
+                    <i class="bi bi-trash me-2"></i> Delete
+                </button>
+            </div>
+        </div>
+    </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/uikit@3.16.23/dist/js/uikit.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/uikit@3.16.23/dist/js/uikit-icons.min.js"></script>
+<!-- Photo Lightbox Modal -->
+<div class="modal fade photo-lightbox-modal" id="viewPhotoLightbox" tabindex="-1" aria-hidden="true" data-bs-backdrop="false" role="dialog" aria-modal="true" aria-label="আবেদনকারীর ছবি — পূর্ণ আকার">
+    <div class="modal-dialog modal-fullscreen modal-dialog-centered">
+        <div class="modal-content bg-transparent border-0">
+            <div class="modal-body p-0 d-flex align-items-center justify-content-center position-relative">
+                <button type="button"
+                        class="photo-lightbox-close"
+                        data-bs-dismiss="modal"
+                        aria-label="বন্ধ করুন"
+                        title="বন্ধ করুন (Esc)">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+                <!-- Download button -->
+                <a href="{{ application_details.applicant_photo }}"
+                   class="photo-lightbox-download"
+                   download="{{ application_details.name_bn|default('applicant')|replace({' ':'_', '/':'_'}) }}_photo.jpg"
+                   aria-label="ছবি ডাউনলোড করুন"
+                   title="ছবি ডাউনলোড করুন">
+                    <i class="bi bi-download"></i>
+                </a>
+                <!-- Rotation hint -->
+                <div class="photo-lightbox-hint" id="viewPhotoRotationHint" aria-live="polite" aria-atomic="true">
+                    <span class="rotation-badge" id="viewPhotoRotationBadge">0°</span>
+                    <span class="rotation-help"><i class="bi bi-arrow-left"></i> <i class="bi bi-arrow-right"></i> ঘোরান | <i class="bi bi-download"></i> ডাউনলোড</span>
+                </div>
+                <img src="{{ application_details.applicant_photo }}"
+                     alt="আবেদনকারীর ছবি — পূর্ণ আকার"
+                     class="photo-lightbox-image"
+                     id="viewPhotoLightboxImage"
+                     data-rotation="0">
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Document Gallery Modal -->
+<div class="modal fade photo-lightbox-modal" id="viewDocGallery" tabindex="-1" aria-hidden="true" data-bs-backdrop="false" role="dialog" aria-modal="true" aria-label="ডকুমেন্ট গ্যালারি">
+    <div class="modal-dialog modal-fullscreen modal-dialog-centered">
+        <div class="modal-content bg-transparent border-0">
+            <div class="modal-body p-0 d-flex align-items-center justify-content-center position-relative">
+                <button type="button"
+                        class="photo-lightbox-close"
+                        data-bs-dismiss="modal"
+                        aria-label="বন্ধ করুন"
+                        title="বন্ধ করুন (Esc)">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+                <a href="#"
+                   class="photo-lightbox-download"
+                   id="viewDocGalleryDownload"
+                   download="document.jpg"
+                   aria-label="ডকুমেন্ট ডাউনলোড করুন"
+                   title="ডকুমেন্ট ডাউনলোড করুন">
+                    <i class="bi bi-download"></i>
+                </a>
+                <button type="button"
+                        class="doc-gallery-nav doc-gallery-prev"
+                        id="viewDocGalleryPrev"
+                        aria-label="পূর্ববর্তী ডকুমেন্ট"
+                        title="পূর্ববর্তী (←)">
+                    <i class="bi bi-chevron-left"></i>
+                </button>
+                <button type="button"
+                        class="doc-gallery-nav doc-gallery-next"
+                        id="viewDocGalleryNext"
+                        aria-label="পরবর্তী ডকুমেন্ট"
+                        title="পরবর্তী (→)">
+                    <i class="bi bi-chevron-right"></i>
+                </button>
+                <div class="doc-gallery-topbar" id="viewDocGalleryTopbar">
+                    <span class="doc-gallery-counter" id="viewDocGalleryCounter">1 / 1</span>
+                    <span class="doc-gallery-filename" id="viewDocGalleryFilename">document.jpg</span>
+                </div>
+                <div class="photo-lightbox-hint" id="viewDocGalleryHint" aria-live="polite" aria-atomic="true">
+                    <span class="rotation-badge" id="viewDocGalleryRotationBadge">0°</span>
+                    <span class="rotation-help"><i class="bi bi-arrow-left"></i> <i class="bi bi-arrow-right"></i> ব্রাউজ করুন</span>
+                </div>
+                <img src=""
+                     alt="ডকুমেন্ট প্রিভিউ"
+                     class="photo-lightbox-image"
+                     id="viewDocGalleryImage"
+                     data-rotation="0">
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // IntersectionObserver for section animations
+    const observer = new IntersectionObserver(function(entries) {
+        entries.forEach(function(entry) {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('appeared');
+                observer.unobserve(entry.target);
+            }
+        });
+    }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+    document.querySelectorAll('.section-appear').forEach(function(el) {
+        observer.observe(el);
+    });
+
+    /* ===============================
+       Photo Lightbox Keyboard Navigation & Accessibility
+    =============================== */
+    const photoLightbox = document.getElementById('viewPhotoLightbox');
+    const photoLightboxImg = document.getElementById('viewPhotoLightboxImage');
+    const photoRotationBadge = document.getElementById('viewPhotoRotationBadge');
+    let photoKeyHandler = null;
+
+    if (photoLightbox && photoLightboxImg) {
+        photoLightbox.addEventListener('shown.bs.modal', function () {
+            const closeBtn = photoLightbox.querySelector('.photo-lightbox-close');
+            if (closeBtn) closeBtn.focus();
+
+            if (photoKeyHandler) {
+                document.removeEventListener('keydown', photoKeyHandler);
+            }
+            photoKeyHandler = function (e) {
+                if (e.key === 'Escape') {
+                    const modal = bootstrap.Modal.getInstance(photoLightbox);
+                    if (modal) modal.hide();
+                    return;
+                }
+                if (e.key === 'ArrowLeft') {
+                    e.preventDefault();
+                    let rot = parseInt(photoLightboxImg.dataset.rotation || '0', 10);
+                    rot = ((rot - 90) % 360 + 360) % 360;
+                    applyPhotoRotation(rot);
+                    return;
+                }
+                if (e.key === 'ArrowRight') {
+                    e.preventDefault();
+                    let rot = parseInt(photoLightboxImg.dataset.rotation || '0', 10);
+                    rot = ((rot + 90) % 360 + 360) % 360;
+                    applyPhotoRotation(rot);
+                    return;
+                }
+            };
+            document.addEventListener('keydown', photoKeyHandler);
+        });
+
+        photoLightbox.addEventListener('hidden.bs.modal', function () {
+            if (photoKeyHandler) {
+                document.removeEventListener('keydown', photoKeyHandler);
+                photoKeyHandler = null;
+            }
+            applyPhotoRotation(0);
+        });
+
+        function applyPhotoRotation(degrees) {
+            photoLightboxImg.dataset.rotation = degrees;
+            photoLightboxImg.classList.remove('rotate-90', 'rotate-180', 'rotate-270');
+            if (degrees !== 0) {
+                photoLightboxImg.classList.add('rotate-' + degrees);
+            }
+            if (photoRotationBadge) {
+                photoRotationBadge.textContent = degrees + '°';
+                photoRotationBadge.style.transform = 'scale(1.3)';
+                setTimeout(function () {
+                    photoRotationBadge.style.transform = 'scale(1)';
+                }, 150);
+            }
+        }
+    }
+
+    // Delete application with SweetAlert confirmation
+    document.querySelectorAll('.delete-application-btn').forEach(function(btn) {
+        btn.addEventListener('click', async function() {
+            const url = this.dataset.url;
+            const result = await Swal.fire({
+                title: 'আবেদন মুছবেন?',
+                text: 'এই আবেদনটি স্থায়ীভাবে মুছে যাবে। এই পদক্ষেপটি পূর্ববর্তী নয়।',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#dc3545',
+                confirmButtonText: '<i class="bi bi-trash3 me-1"></i> হ্যাঁ, মুছুন',
+                cancelButtonText: '<i class="bi bi-x-circle me-1"></i> বাতিল',
+                reverseButtons: true,
+                customClass: { confirmButton: 'btn btn-danger rounded-pill px-4', cancelButton: 'btn btn-outline-secondary rounded-pill px-4' },
+                buttonsStyling: false
+            });
+            if (result.isConfirmed) {
+                window.location.href = url;
+            }
+        });
+    });
+
+    /* ===============================
+       Document Gallery State & Navigation
+    =============================== */
+    const viewDocGallery = document.getElementById('viewDocGallery');
+    const vdgImg = document.getElementById('viewDocGalleryImage');
+    const vdgPrev = document.getElementById('viewDocGalleryPrev');
+    const vdgNext = document.getElementById('viewDocGalleryNext');
+    const vdgCounter = document.getElementById('viewDocGalleryCounter');
+    const vdgFilename = document.getElementById('viewDocGalleryFilename');
+    const vdgDownload = document.getElementById('viewDocGalleryDownload');
+    const vdgRotBadge = document.getElementById('viewDocGalleryRotationBadge');
+    let vdgItems = [];
+    let vdgIndex = 0;
+    let vdgKeyHandler = null;
+
+    function buildViewDocItems() {
+        const triggers = document.querySelectorAll('#viewDocumentsGrid .doc-gallery-trigger');
+        const items = [];
+        triggers.forEach(function (t) {
+            var url = t.getAttribute('data-doc-url');
+            var name = t.getAttribute('data-doc-name');
+            if (url) items.push({ url: url, name: name || 'document' });
+        });
+        return items;
+    }
+
+    function updateViewDocGallery() {
+        if (!vdgItems.length || !vdgImg) return;
+        var item = vdgItems[vdgIndex];
+        vdgImg.src = item.url;
+        vdgImg.alt = 'Document: ' + (item.name || '');
+        vdgImg.dataset.rotation = '0';
+        vdgImg.classList.remove('rotate-90', 'rotate-180', 'rotate-270');
+
+        if (vdgCounter) {
+            vdgCounter.textContent = (vdgIndex + 1) + ' / ' + vdgItems.length;
+            vdgCounter.style.transform = 'scale(1.2)';
+            setTimeout(function () { vdgCounter.style.transform = 'scale(1)'; }, 150);
+        }
+        if (vdgFilename) vdgFilename.textContent = item.name || '';
+        if (vdgDownload) {
+            vdgDownload.href = item.url;
+            vdgDownload.download = item.name || 'document.jpg';
+        }
+        if (vdgRotBadge) vdgRotBadge.textContent = '0°';
+
+        if (vdgPrev) {
+            vdgPrev.disabled = vdgIndex <= 0;
+            vdgPrev.style.opacity = vdgIndex <= 0 ? '0.3' : '';
+        }
+        if (vdgNext) {
+            vdgNext.disabled = vdgIndex >= vdgItems.length - 1;
+            vdgNext.style.opacity = vdgIndex >= vdgItems.length - 1 ? '0.3' : '';
+        }
+    }
+
+    function openViewDocGallery(index) {
+        vdgItems = buildViewDocItems();
+        if (!vdgItems.length) return;
+        vdgIndex = Math.max(0, Math.min(index, vdgItems.length - 1));
+        updateViewDocGallery();
+        var modal = new bootstrap.Modal(document.getElementById('viewDocGallery'));
+        modal.show();
+    }
+
+    // Click / Enter / Space on trigger elements
+    document.querySelectorAll('#viewDocumentsGrid .doc-gallery-trigger').forEach(function (el) {
+        el.addEventListener('click', function () {
+            var triggers = document.querySelectorAll('#viewDocumentsGrid .doc-gallery-trigger');
+            var idx = Array.from(triggers).indexOf(this);
+            openViewDocGallery(idx);
+        });
+        el.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                var triggers = document.querySelectorAll('#viewDocumentsGrid .doc-gallery-trigger');
+                var idx = Array.from(triggers).indexOf(this);
+                openViewDocGallery(idx);
+            }
+        });
+    });
+
+    // Nav button clicks
+    if (vdgPrev) {
+        vdgPrev.addEventListener('click', function () {
+            if (vdgIndex > 0) { vdgIndex--; updateViewDocGallery(); }
+        });
+    }
+    if (vdgNext) {
+        vdgNext.addEventListener('click', function () {
+            if (vdgIndex < vdgItems.length - 1) { vdgIndex++; updateViewDocGallery(); }
+        });
+    }
+
+    // Keyboard navigation
+    if (viewDocGallery) {
+        viewDocGallery.addEventListener('shown.bs.modal', function () {
+            var closeBtn = viewDocGallery.querySelector('.photo-lightbox-close');
+            if (closeBtn) closeBtn.focus();
+
+            if (vdgKeyHandler) document.removeEventListener('keydown', vdgKeyHandler);
+            vdgKeyHandler = function (e) {
+                if (e.key === 'Escape') {
+                    var modal = bootstrap.Modal.getInstance(viewDocGallery);
+                    if (modal) modal.hide();
+                    return;
+                }
+                if (e.key === 'ArrowLeft') {
+                    e.preventDefault();
+                    if (vdgIndex > 0) { vdgIndex--; updateViewDocGallery(); }
+                    return;
+                }
+                if (e.key === 'ArrowRight') {
+                    e.preventDefault();
+                    if (vdgIndex < vdgItems.length - 1) { vdgIndex++; updateViewDocGallery(); }
+                    return;
+                }
+            };
+            document.addEventListener('keydown', vdgKeyHandler);
+        });
+
+        viewDocGallery.addEventListener('hidden.bs.modal', function () {
+            if (vdgKeyHandler) {
+                document.removeEventListener('keydown', vdgKeyHandler);
+                vdgKeyHandler = null;
+            }
+            if (vdgRotBadge) vdgRotBadge.textContent = '0°';
+        });
+    }
+});
+</script>
+
 {% endblock %}

@@ -78,11 +78,11 @@
                                                         <input
                                                             type="checkbox"
                                                             name="role_permissions[{{ role.role_id }}][]"
-                                                            value="{{ permission.permission_id }}"
-                                                            id="role_perm_{{ role.role_id }}_{{ permission.permission_id }}"
+                                                            value="{{ permission.id }}"
+                                                            id="role_perm_{{ role.role_id }}_{{ permission.id }}"
                                                             class="form-check-input position-relative"
                                                             {% if assigned_role_permissions[role.role_id] is defined 
-                                                                and assigned_role_permissions[role.role_id][permission.permission_id] is defined %}
+                                                                and assigned_role_permissions[role.role_id][permission.id] is defined %}
                                                                 checked
                                                             {% endif %}
                                                             {% if not isSuperadmin %}

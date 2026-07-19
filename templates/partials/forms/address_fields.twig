@@ -1,6 +1,8 @@
-<div class="row">
+{% set govt_label = 'col-lg-2 col-md-3 col-12' %}
+{% set govt_input = 'col-lg-4 col-md-3 col-12' %}
+
+<div class="address-section">
     {% if data is defined and data[prefix~'_address_id'] is defined and data[prefix~'_address_id'] %}
-     
     <script>
         $(document).ready(function() {
             var addressId = '{{ data[prefix~'_address_id'] }}';
@@ -10,13 +12,32 @@
                     method: 'GET',
                     dataType: 'json',
                     success: function(addr){
-                        const fields = ['village_en','village_bn','rbs_en','rbs_bn','holding_no','ward_no','district_en','district_bn','upazila_en','upazila_bn','union_en','union_bn','postoffice_en','postoffice_bn'];
-                        fields.forEach(function(f){
-                            const el = $("#{{ prefix }}_"+f);
-                            if(el.length && addr[f] !== undefined){
-                                el.val(addr[f]);
+                        // Map data keys to actual element IDs (IDs differ from names for district/upazila/union)
+                        const fieldMap = {
+                            'village_en': 'village_en',
+                            'village_bn': 'village_bn',
+                            'rbs_en': 'rbs_en',
+                            'rbs_bn': 'rbs_bn',
+                            'holding_no': 'holding_no',
+                            'ward_no': 'ward_no',
+                            'district_en': 'district_id',  // actual ID
+                            'district_bn': 'district',      // actual ID
+                            'upazila_en': 'upazila_id',     // actual ID
+                            'upazila_bn': 'upazila',        // actual ID
+                            'union_en': 'union_id',         // actual ID
+                            'union_bn': 'union',            // actual ID
+                            'postoffice_en': 'postoffice_en',
+                            'postoffice_bn': 'postoffice_bn'
+                        };
+                        for (const [dataKey, elementId] of Object.entries(fieldMap)) {
+                            const el = $("#{{ prefix }}_" + elementId);
+                            if (el.length && addr[dataKey] !== undefined) {
+                                el.val(addr[dataKey]);
+                                // Highlight prefilled fields
+                                el.css('background-color', '#d4edda');
+                                el.css('border', '2px solid #c3e6cb');
                             }
-                        });
+                        }
                         if(addr['district_en']){
                             $("#{{ prefix }}_district_id").val(addr['district_en']).trigger('change');
                         }
@@ -34,40 +55,60 @@
 
     {% endif %}
 
-
-
-
-    {# Village/Mahalla #}
-    <div class="row mb-3"> <div class="col-md-6">
-            <label for="{{ prefix }}_village_en" class="form-label">গ্রাম/মহল্লা (ইংরেজিতে)</label>
-            <input type="text" name="{{ prefix }}_village_en" id="{{ prefix }}_village_en" class="form-control" placeholder="Enter village or neighborhood (English)" value="{{ data[prefix~'_village_en']|default('') }}">
+    {# === Village/Mahalla (EN + BN pair) === #}
+    <div class="row align-items-center mb-3">
+        <div class="{{ govt_label }}">
+            <label for="{{ prefix }}_village_en" class="form-label mb-0">গ্রাম/মহল্লা (ইংরেজিতে)</label>
         </div>
-        <div class="col-md-6">
-            <label for="{{ prefix }}_village_bn" class="form-label">গ্রাম/মহল্লা (বাংলায়) <span class="text-danger">*</span></label>
-            <input type="text" name="{{ prefix }}_village_bn" id="{{ prefix }}_village_bn" class="form-control bangla" placeholder="গ্রামের নাম/মহল্লা লিখুন" required value="{{ data[prefix~'_village_bn']|default('') }}">
+        <div class="{{ govt_input }}">
+            <input type="text" name="{{ prefix }}_village_en" id="{{ prefix }}_village_en" class="form-control"
+                   placeholder="Enter village or neighborhood (English)"
+                   value="{{ data[prefix~'_village_en']|default('') }}">
         </div>
-    </div>
-
-    {# Road/Block/Sector #}
-    <div class="row mb-3">
-        <div class="col-md-6">
-            <label for="{{ prefix }}_rbs_en" class="form-label">রোড/ব্লক/সেক্টর (ইংরেজিতে)</label>
-            <input type="text" name="{{ prefix }}_rbs_en" id="{{ prefix }}_rbs_en" class="form-control" placeholder="Enter road/block/sector (English)" value="{{ data[prefix~'_rbs_en']|default('') }}">
+        <div class="{{ govt_label }}">
+            <label for="{{ prefix }}_village_bn" class="form-label mb-0">গ্রাম/মহল্লা (বাংলায়) <span class="text-danger">*</span></label>
         </div>
-        <div class="col-md-6">
-            <label for="{{ prefix }}_rbs_bn" class="form-label">রোড/ব্লক/সেক্টর (বাংলায়)</label>
-            <input type="text" name="{{ prefix }}_rbs_bn" id="{{ prefix }}_rbs_bn" class="form-control" placeholder="রোড/ব্লক/সেক্টর লিখুন" value="{{ data[prefix~'_rbs_bn']|default('') }}">
+        <div class="{{ govt_input }}">
+            <input type="text" name="{{ prefix }}_village_bn" id="{{ prefix }}_village_bn" class="form-control bangla"
+                   placeholder="গ্রামের নাম/মহল্লা লিখুন" required
+                   value="{{ data[prefix~'_village_bn']|default('') }}">
         </div>
     </div>
 
-    {# Holding No & Ward #}
-    <div class="row mb-3">
-        <div class="col-md-6">
-            <label for="{{ prefix }}_holding_no" class="form-label">হোল্ডিং নং</label>
-            <input type="text" name="{{ prefix }}_holding_no" id="{{ prefix }}_holding_no" class="form-control" placeholder="হোল্ডিং নম্বর লিখুন" value="{{ data[prefix~'_holding_no']|default('') }}">
+    {# === Road/Block/Sector (EN + BN pair) === #}
+    <div class="row align-items-center mb-3">
+        <div class="{{ govt_label }}">
+            <label for="{{ prefix }}_rbs_en" class="form-label mb-0">রোড/ব্লক/সেক্টর (ইংরেজিতে)</label>
         </div>
-        <div class="col-md-6">
-            <label for="{{ prefix }}_ward_no" class="form-label">ওয়ার্ড নং <span class="text-danger">*</span></label>
+        <div class="{{ govt_input }}">
+            <input type="text" name="{{ prefix }}_rbs_en" id="{{ prefix }}_rbs_en" class="form-control"
+                   placeholder="Enter road/block/sector (English)"
+                   value="{{ data[prefix~'_rbs_en']|default('') }}">
+        </div>
+        <div class="{{ govt_label }}">
+            <label for="{{ prefix }}_rbs_bn" class="form-label mb-0">রোড/ব্লক/সেক্টর (বাংলায়)</label>
+        </div>
+        <div class="{{ govt_input }}">
+            <input type="text" name="{{ prefix }}_rbs_bn" id="{{ prefix }}_rbs_bn" class="form-control"
+                   placeholder="রোড/ব্লক/সেক্টর লিখুন"
+                   value="{{ data[prefix~'_rbs_bn']|default('') }}">
+        </div>
+    </div>
+
+    {# === Holding No + Ward No (paired together) === #}
+    <div class="row align-items-center mb-3">
+        <div class="{{ govt_label }}">
+            <label for="{{ prefix }}_holding_no" class="form-label mb-0">হোল্ডিং নং</label>
+        </div>
+        <div class="{{ govt_input }}">
+            <input type="text" name="{{ prefix }}_holding_no" id="{{ prefix }}_holding_no" class="form-control"
+                   placeholder="হোল্ডিং নম্বর লিখুন"
+                   value="{{ data[prefix~'_holding_no']|default('') }}">
+        </div>
+        <div class="{{ govt_label }}">
+            <label for="{{ prefix }}_ward_no" class="form-label mb-0">ওয়ার্ড নং <span class="text-danger">*</span></label>
+        </div>
+        <div class="{{ govt_input }}">
             <select name="{{ prefix }}_ward_no" id="{{ prefix }}_ward_no" class="form-control" required>
                 <option value="">ওয়ার্ড নির্বাচন করুন</option>
                 {% for i in 1..9 %}
@@ -77,57 +118,89 @@
         </div>
     </div>
 
-    {# District #}
-    <div class="row mb-3">
-        <div class="col-md-6">
-            <label for="{{ prefix }}_district_id" class="form-label">জেলা (ইংরেজিতে) <span class="text-danger">*</span></label>
-            <select name="{{ prefix }}_district_en" id="{{ prefix }}_district_id" class="form-control" required data-selected="{{ data[prefix~'_district_en']|default('') }}">
+    {# === District (EN select + BN text) === #}
+    <div class="row align-items-center mb-3">
+        <div class="{{ govt_label }}">
+            <label for="{{ prefix }}_district_id" class="form-label mb-0">জেলা (ইংরেজিতে) <span class="text-danger">*</span></label>
+        </div>
+        <div class="{{ govt_input }}">
+            <select name="{{ prefix }}_district_en" id="{{ prefix }}_district_id" class="form-control" required
+                    data-selected="{{ data[prefix~'_district_en']|default('') }}">
                 <option value="">জেলা নির্বাচন করুন</option>
             </select>
         </div>
-        <div class="col-md-6">
-            <label for="{{ prefix }}_district" class="form-label">জেলা (বাংলায়)</label>
-            <input type="text" name="{{ prefix }}_district_bn" id="{{ prefix }}_district" class="form-control" readonly placeholder="স্বয়ংক্রিয়ভাবে পূরণ হবে" value="{{ data[prefix~'_district_bn']|default('') }}">
+        <div class="{{ govt_label }}">
+            <label for="{{ prefix }}_district" class="form-label mb-0">জেলা (বাংলায়)</label>
+        </div>
+        <div class="{{ govt_input }}">
+            <input type="text" name="{{ prefix }}_district_bn" id="{{ prefix }}_district" class="form-control"
+                   placeholder="স্বয়ংক্রিয়ভাবে পূরণ হবে"
+                   value="{{ data[prefix~'_district_bn']|default('') }}">
         </div>
     </div>
 
-    {# Upazila/Thana #}
-    <div class="row mb-3">
-        <div class="col-md-6">
-            <label for="{{ prefix }}_upazila_id" class="form-label">উপজেলা/থানা (ইংরেজিতে) <span class="text-danger">*</span></label>
-            <select name="{{ prefix }}_upazila_en" id="{{ prefix }}_upazila_id" class="form-control" required data-selected="{{ data[prefix~'_upazila_en']|default('') }}">
+    {# === Upazila/Thana (EN select + BN text) === #}
+    <div class="row align-items-center mb-3">
+        <div class="{{ govt_label }}">
+            <label for="{{ prefix }}_upazila_id" class="form-label mb-0">উপজেলা/থানা (ইংরেজিতে) <span class="text-danger">*</span></label>
+        </div>
+        <div class="{{ govt_input }}">
+            <select name="{{ prefix }}_upazila_en" id="{{ prefix }}_upazila_id" class="form-control" required
+                    data-selected="{{ data[prefix~'_upazila_en']|default('') }}">
                 <option value="">উপজেলা নির্বাচন করুন</option>
             </select>
         </div>
-        <div class="col-md-6">
-            <label for="{{ prefix }}_upazila" class="form-label">উপজেলা/থানা (বাংলায়)</label>
-            <input type="text" name="{{ prefix }}_upazila_bn" id="{{ prefix }}_upazila" class="form-control" readonly placeholder="স্বয়ংক্রিয়ভাবে পূরণ হবে" value="{{ data[prefix~'_upazila_bn']|default('') }}">
+        <div class="{{ govt_label }}">
+            <label for="{{ prefix }}_upazila" class="form-label mb-0">উপজেলা/থানা (বাংলায়)</label>
+        </div>
+        <div class="{{ govt_input }}">
+            <input type="text" name="{{ prefix }}_upazila_bn" id="{{ prefix }}_upazila" class="form-control"
+                   placeholder="স্বয়ংক্রিয়ভাবে পূরণ হবে"
+                   value="{{ data[prefix~'_upazila_bn']|default('') }}">
         </div>
     </div>
 
-    {# Union #}
-    <div class="row mb-3">
-        <div class="col-md-6">
-            <label for="{{ prefix }}_union_id" class="form-label">ইউনিয়ন (ইংরেজিতে) <span class="text-danger">*</span></label>
-            <select name="{{ prefix }}_union_en" id="{{ prefix }}_union_id" class="form-control" data-selected="{{ data[prefix~'_union_en']|default('') }}">
+    {# === Union (EN select + BN text) === #}
+    <div class="row align-items-center mb-3">
+        <div class="{{ govt_label }}">
+            <label for="{{ prefix }}_union_id" class="form-label mb-0">ইউনিয়ন (ইংরেজিতে) <span class="text-danger">*</span></label>
+        </div>
+        <div class="{{ govt_input }}">
+            <select name="{{ prefix }}_union_en" id="{{ prefix }}_union_id" class="form-control"
+                    data-selected="{{ data[prefix~'_union_en']|default('') }}">
                 <option value="">ইউনিয়ন নির্বাচন করুন</option>
             </select>
         </div>
-        <div class="col-md-6">
-            <label for="{{ prefix }}_union" class="form-label">ইউনিয়ন (বাংলায়)</label>
-            <input type="text" name="{{ prefix }}_union_bn" id="{{ prefix }}_union" class="form-control" readonly placeholder="স্বয়ংক্রিয়ভাবে পূরণ হবে" value="{{ data[prefix~'_union_bn']|default('') }}">
+        <div class="{{ govt_label }}">
+            <label for="{{ prefix }}_union" class="form-label mb-0">ইউনিয়ন (বাংলায়)</label>
+        </div>
+        <div class="{{ govt_input }}">
+            <input type="text" name="{{ prefix }}_union_bn" id="{{ prefix }}_union" class="form-control"
+                   placeholder="স্বয়ংক্রিয়ভাবে পূরণ হবে"
+                   value="{{ data[prefix~'_union_bn']|default('') }}">
         </div>
     </div>
 
-    {# Post Office #}
-    <div class="row mb-3">
-        <div class="col-md-6">
-            <label for="{{ prefix }}_postoffice_en" class="form-label">পোষ্ট অফিস (ইংরেজিতে)</label>
-            <input type="text" name="{{ prefix }}_postoffice_en" id="{{ prefix }}_postoffice_en" class="form-control" placeholder="Enter post office name (English)" value="{{ data[prefix~'_postoffice_en']|default('') }}">
+    {# === Post Office (EN autocomplete + BN text) === #}
+    <div class="row align-items-center mb-3">
+        <div class="{{ govt_label }}">
+            <label for="{{ prefix }}_postoffice_en" class="form-label mb-0">পোষ্ট অফিস (ইংরেজিতে)</label>
         </div>
-        <div class="col-md-6">
-            <label for="{{ prefix }}_postoffice_bn" class="form-label">পোষ্ট অফিস (বাংলায়) <span class="text-danger">*</span></label>
-            <input type="text" name="{{ prefix }}_postoffice_bn" id="{{ prefix }}_postoffice_bn" class="form-control bangla" placeholder="পোষ্ট অফিসের নাম লিখুন" required value="{{ data[prefix~'_postoffice_bn']|default('') }}">
+        <div class="{{ govt_input }}">
+            <div class="autocomplete-wrapper">
+                <input type="text" name="{{ prefix }}_postoffice_en" id="{{ prefix }}_postoffice_en"
+                       class="form-control" placeholder="পোষ্ট অফিস লিখুন বা নির্বাচন করুন"
+                       value="{{ data[prefix~'_postoffice_en']|default('') }}" autocomplete="off">
+                <ul class="autocomplete-dropdown postoffice-dropdown" id="{{ prefix }}_postoffice_list"></ul>
+            </div>
+        </div>
+        <div class="{{ govt_label }}">
+            <label for="{{ prefix }}_postoffice_bn" class="form-label mb-0">পোষ্ট অফিস (বাংলায়) <span class="text-danger">*</span></label>
+        </div>
+        <div class="{{ govt_input }}">
+            <input type="text" name="{{ prefix }}_postoffice_bn" id="{{ prefix }}_postoffice_bn"
+                   class="form-control bangla" placeholder="পোষ্ট অফিসের নাম লিখুন" required
+                   value="{{ data[prefix~'_postoffice_bn']|default('') }}">
         </div>
     </div>
 
@@ -136,12 +209,18 @@
 <script>
 $(document).ready(function () {
     const prefixes = ['business', 'present', 'permanent'];
+    window.postOfficeDebug = window.postOfficeDebug ?? true;
+    window.postOfficeDebugLog = window.postOfficeDebugLog || function () {
+        if (window.postOfficeDebug && window.console) {
+            console.log.apply(console, arguments);
+        }
+    };
 
-    function isPrefixAvailable(prefix) {
+    window.isPrefixAvailable = window.isPrefixAvailable || function(prefix) {
         return $(`#${prefix}_district_id`).length > 0;
     }
 
-    function populateDropdown(selector, data) {
+    window.populateDropdown = window.populateDropdown || function(selector, data) {
         if (!$(selector).length) return;
 
         const selectedValue = $(selector).data('selected');
@@ -163,12 +242,12 @@ $(document).ready(function () {
         });
     }
 
-    function resetDropdown(selector) {
+    window.resetDropdown = window.resetDropdown || function(selector) {
         if ($(selector).length)
             $(selector).empty().append('<option value="">চিহ্নিত করুন</option>');
     }
 
-    function fetchGeoData(geoOrder, parentGeoId, dropdownSelector, nextGeoOrder = null, nextGeoIdSelector = null, callback = null) {
+    window.fetchGeoData = window.fetchGeoData || function(geoOrder, parentGeoId, dropdownSelector, nextGeoOrder = null, nextGeoIdSelector = null, callback = null) {
         if (!dropdownSelector || !$(dropdownSelector).length) return;
 
         $.ajax({
@@ -252,11 +331,112 @@ $(document).ready(function () {
         $(`#${prefix}_union_id`).change(function () {
             const nameBn = $(this).find('option:selected').data('name-bn') || '';
             $(`#${prefix}_union`).val(nameBn);
+            const unionSelect = $(this);
+            const unionName = unionSelect.find('option:selected').data('name-en') || unionSelect.val();
+            window.postOfficeDebugLog('[post-office] union change', {
+                prefix: prefix,
+                unionName: unionName,
+                unionBn: nameBn
+            });
+            if (unionName) {
+                fetchPostOffices(
+                    unionName,
+                    `#${prefix}_postoffice_en`,
+                    `#${prefix}_postoffice_bn`
+                );
+            }
+        });
+
+        $(`#${prefix}_postoffice_en`).on('input change', function () {
+            const wrapper = $(this).closest('.autocomplete-wrapper');
+            const dropdown = wrapper.find('.autocomplete-dropdown');
+            const map = dropdown.data('bn-map') || {};
+            const val = String($(this).val()).trim().toLowerCase();
+            if (val && map[val]) {
+                $(`#${prefix}_postoffice_bn`).val(map[val]);
+            }
         });
     });
 
+    // ✅ Fetch post offices by union name (custom dropdown)
+    window.fetchPostOffices = window.fetchPostOffices || function(unionName, inputSelector, bnInputSelector) {
+        if (!unionName) return;
+        const input = $(inputSelector);
+        if (!input.length) return;
+
+        const dropdown = input.siblings('.autocomplete-dropdown');
+        if (!dropdown.length) return;
+
+        // Clear previous items
+        dropdown.empty().removeClass('show');
+        dropdown.data('bn-map', {});
+        dropdown.data('items', []);
+        window.postOfficeDebugLog('[post-office] fetch start', {
+            unionName: unionName,
+            inputSelector: inputSelector,
+            bnInputSelector: bnInputSelector
+        });
+
+        $.ajax({
+            url: '/api/post-offices',
+            method: 'GET',
+            data: { union_name: unionName },
+            dataType: 'json',
+            success: function (res) {
+                window.postOfficeDebugLog('[post-office] fetch response', res);
+                if (res.status !== 'success' || !res.data) return;
+
+                const currentVal = String(input.val()).trim().toLowerCase();
+                const map = {};
+                const items = [];
+
+                $.each(res.data, function (_, item) {
+                    const enName = item.en_name || '';
+                    if (enName) map[enName.trim().toLowerCase()] = item.bn_name || '';
+                    items.push(item);
+
+                    const li = $('<li>');
+                    li.data('en', enName);
+                    li.data('bn', item.bn_name || '');
+                    li.html([
+                        '<span class="postoffice-name">',
+                            $('<span>').text(enName + (item.post_code ? '-' + item.post_code : '')).html(),
+                        '</span>',
+                        item.bn_name ? '<span class="postoffice-bn">' + $('<span>').text(item.bn_name).html() + '</span>' : ''
+                    ].join(''));
+
+                    li.on('mousedown', function(e) {
+                        e.preventDefault();
+                        const thisItem = $(this);
+                        input.val(thisItem.data('en'));
+                        $(bnInputSelector).val(thisItem.data('bn'));
+                        dropdown.removeClass('show');
+                        input.focus();
+                    });
+
+                    dropdown.append(li);
+                });
+
+                dropdown.data('bn-map', map);
+                dropdown.data('items', items);
+
+                // Auto-fill BN if current value matches an option
+                if (currentVal && map[currentVal]) {
+                    $(bnInputSelector).val(map[currentVal]);
+                }
+
+                // Do NOT auto-show dropdown during prefill
+                // Dropdown will open only on user focus/click/input via showPostOfficeDropdown
+            },
+            error: function (err) {
+                window.postOfficeDebugLog('[post-office] fetch error', err);
+                console.error('Post offices fetch error:', err);
+            }
+        });
+    }
+
     // ✅ Generic address copy function
-    function copyAddress(from, to) {
+    window.copyAddress = window.copyAddress || function(from, to) {
         if (!isPrefixAvailable(from) || !isPrefixAvailable(to)) return;
 
         const fields = ['village_en', 'village_bn', 'rbs_en', 'rbs_bn', 'holding_no', 'ward_no', 'postoffice_en', 'postoffice_bn'];
@@ -291,7 +471,7 @@ $(document).ready(function () {
     }
 
     // ✅ Compare two addresses
-    function addressesMatch(prefix1, prefix2) {
+    window.addressesMatch = window.addressesMatch || function(prefix1, prefix2) {
         const fields = [
             'village_en', 'village_bn', 'rbs_en', 'rbs_bn',
             'holding_no', 'ward_no', 'postoffice_en', 'postoffice_bn',
@@ -304,7 +484,7 @@ $(document).ready(function () {
     }
 
     // ✅ Bind address copy + auto check/uncheck
-    function bindAddressSync(from, to, checkboxSelector) {
+    window.bindAddressSync = window.bindAddressSync || function(from, to, checkboxSelector) {
         $(checkboxSelector).change(function () {
             if ($(this).is(":checked")) {
                 copyAddress(from, to);
@@ -336,6 +516,93 @@ $(document).ready(function () {
     // ✅ Manual button to copy present to permanent
     $("#copy_present_to_permanent").click(function () {
         copyAddress('present', 'permanent');
+    });
+
+    // ===== Custom Autocomplete Dropdown: show/filter on click/focus/input =====
+    function showPostOfficeDropdown(input) {
+        const wrapper = $(input).closest('.autocomplete-wrapper');
+        const dropdown = wrapper.find('.autocomplete-dropdown');
+        if (!dropdown.length) return;
+        const items = dropdown.data('items');
+        if (!items || items.length === 0) return;
+
+        const val = $(input).val().toLowerCase();
+        let visibleCount = 0;
+        dropdown.find('li').each(function() {
+            const en = ($(this).data('en') || '').toLowerCase();
+            const match = !val || en.includes(val);
+            $(this).toggle(match);
+            if (match) visibleCount++;
+        });
+
+        if (visibleCount > 0) {
+            dropdown.addClass('show');
+        } else {
+            dropdown.removeClass('show');
+        }
+    }
+
+    $(document).on('focus click', '.autocomplete-wrapper input[type="text"]', function() {
+        showPostOfficeDropdown(this);
+    });
+
+    $(document).on('input', '.autocomplete-wrapper input[type="text"]', function() {
+        showPostOfficeDropdown(this);
+    });
+
+    // Hide on blur (with delay for click capture)
+    $(document).on('blur', '.autocomplete-wrapper input[type="text"]', function() {
+        const wrapper = $(this).closest('.autocomplete-wrapper');
+        const dropdown = wrapper.find('.autocomplete-dropdown');
+        setTimeout(function() {
+            dropdown.removeClass('show');
+        }, 200);
+    });
+
+    // Keyboard navigation
+    $(document).on('keydown', '.autocomplete-wrapper input[type="text"]', function(e) {
+        const wrapper = $(this).closest('.autocomplete-wrapper');
+        const dropdown = wrapper.find('.autocomplete-dropdown');
+        if (!dropdown.length || !dropdown.hasClass('show')) return;
+
+        const items = dropdown.find('li:visible');
+        if (items.length === 0) return;
+
+        let active = dropdown.find('li.active');
+        let idx = active.length > 0 ? items.index(active) : -1;
+
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            idx = Math.min(idx + 1, items.length - 1);
+            items.removeClass('active').eq(idx).addClass('active');
+            items[idx].scrollIntoView({ block: 'nearest' });
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            items.removeClass('active');
+            if (idx > 0) {
+                idx--;
+                items.eq(idx).addClass('active');
+                items[idx].scrollIntoView({ block: 'nearest' });
+            }
+        } else if (e.key === 'Enter') {
+            if (idx >= 0 && idx < items.length) {
+                e.preventDefault();
+                const item = items.eq(idx);
+                $(this).val(item.data('en'));
+                wrapper.closest('.row').find('[id$="_postoffice_bn"]').val(item.data('bn'));
+                dropdown.removeClass('show');
+            }
+        } else if (e.key === 'Tab') {
+            if (idx >= 0 && idx < items.length) {
+                // Select item but let Tab naturally move focus to next field
+                const item = items.eq(idx);
+                $(this).val(item.data('en'));
+                wrapper.closest('.row').find('[id$="_postoffice_bn"]').val(item.data('bn'));
+                dropdown.removeClass('show');
+            }
+        } else if (e.key === 'Escape') {
+            dropdown.removeClass('show');
+        }
     });
 
 });

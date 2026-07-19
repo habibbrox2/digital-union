@@ -1,66 +1,54 @@
 {# partials/forms/summary_section.twig #}
 
-<div class="card p-3 mb-4 shadow-sm border-primary g-3">
-    <h5 class="card-title text-center mb-3">আপনার তথ্যের সারসংক্ষেপ</h5>
-    
-    <div class="row mb-2">
-        <div class="col-md-6"><strong>আবেদনকারীর নাম:</strong></div>
-        <div class="col-md-6">{{ data.applicant_name|default(data.name_bn|default('-')) }}</div>
-    </div>
-
-    <div class="row mb-2">
-        <div class="col-md-6"><strong>মোবাইল নম্বর:</strong></div>
-        <div class="col-md-6">{{ data.applicant_phone|default('-') }}</div>
-    </div>
-
-    <div class="row mb-2">
-        <div class="col-md-6"><strong>জেলা:</strong></div>
-        <div class="col-md-6">{{ data.district_name|default('-') }}</div>
-    </div>
-
-    <div class="row mb-2">
-        <div class="col-md-6"><strong>উপজেলা:</strong></div>
-        <div class="col-md-6">{{ data.upazila_name|default('-') }}</div>
-    </div>
-
-    <div class="row mb-2">
-        <div class="col-md-6"><strong>ইউনিয়ন:</strong></div>
-        <div class="col-md-6">{{ data.union_name|default('-') }}</div>
-    </div>
-
-    <div class="row mb-2">
-        <div class="col-md-6"><strong>বর্তমান ঠিকানা:</strong></div>
-        <div class="col-md-6">
-            {% if data.present_address is defined %}
-                {{ data.present_address.house_no|default('') }},
-                {{ data.present_address.road_no|default('') }},
-                {{ data.present_address.area|default('') }},
-                {{ data.present_address.post_code|default('') }}
-            {% else %}
-                -
-            {% endif %}
+<div class="summary-panel">
+    <div class="summary-grid">
+        <div class="summary-row">
+            <div class="summary-label">আবেদনকারীর নাম:</div>
+            <div class="summary-value">{{ data.applicant_name|default(data.name_bn|default('-')) }}</div>
         </div>
-    </div>
-
-    <div class="row mb-2">
-        <div class="col-md-6"><strong>স্থায়ী ঠিকানা:</strong></div>
-        <div class="col-md-6">
-            {% if data.permanent_address is defined %}
-                {{ data.permanent_address.house_no|default('') }},
-                {{ data.permanent_address.road_no|default('') }},
-                {{ data.permanent_address.area|default('') }},
-                {{ data.permanent_address.post_code|default('') }}
-            {% else %}
-                -
-            {% endif %}
+        <div class="summary-row">
+            <div class="summary-label">মোবাইল নম্বর:</div>
+            <div class="summary-value">{{ data.applicant_phone|default('-') }}</div>
+        </div>
+        <div class="summary-row">
+            <div class="summary-label">জেলা:</div>
+            <div class="summary-value">{{ data.district_name|default('-') }}</div>
+        </div>
+        <div class="summary-row">
+            <div class="summary-label">উপজেলা:</div>
+            <div class="summary-value">{{ data.upazila_name|default('-') }}</div>
+        </div>
+        <div class="summary-row">
+            <div class="summary-label">ইউনিয়ন:</div>
+            <div class="summary-value">{{ data.union_name|default('-') }}</div>
+        </div>
+        <div class="summary-row">
+            <div class="summary-label">বর্তমান ঠিকানা:</div>
+            <div class="summary-value">
+                {% if data.present_address is defined %}
+                    {{ data.present_address.house_no|default('') }} {{ data.present_address.road_no|default('') }} {{ data.present_address.area|default('') }} {{ data.present_address.post_code|default('') }}
+                {% else %}
+                    -
+                {% endif %}
+            </div>
+        </div>
+        <div class="summary-row">
+            <div class="summary-label">স্থায়ী ঠিকানা:</div>
+            <div class="summary-value">
+                {% if data.permanent_address is defined %}
+                    {{ data.permanent_address.house_no|default('') }} {{ data.permanent_address.road_no|default('') }} {{ data.permanent_address.area|default('') }} {{ data.permanent_address.post_code|default('') }}
+                {% else %}
+                    -
+                {% endif %}
+            </div>
         </div>
     </div>
 
     {% if data.members is defined and data.members|length %}
-    <div class="mt-3">
-        <h6>পরিবারের সদস্যগণ:</h6>
-        <table class="table table-bordered table-sm">
-            <thead class="table-light">
+    <div class="summary-table-wrap">
+        <div class="summary-subtitle">পরিবারের সদস্যগণ</div>
+        <table class="summary-table">
+            <thead>
                 <tr>
                     <th>ক্রমিক</th>
                     <th>নাম (বাংলা)</th>
@@ -91,8 +79,8 @@
     {% endif %}
 
     {% if data.documents is defined and data.documents|length %}
-    <div class="mt-3">
-        <h6>আপলোড করা ডকুমেন্টসমূহ:</h6>
+    <div class="summary-docs">
+        <div class="summary-subtitle">আপলোড করা ডকুমেন্টসমূহ</div>
         <ul>
             {% for doc in data.documents %}
             <li><a href="{{ doc }}" target="_blank">ডকুমেন্ট {{ loop.index }}</a></li>
@@ -100,5 +88,4 @@
         </ul>
     </div>
     {% endif %}
-
 </div>

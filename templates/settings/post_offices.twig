@@ -1,0 +1,271 @@
+{% extends "layout.twig" %}
+
+{% block title %}{{ title }}{% endblock %}
+{% block header_title %}{{ header_title }}{% endblock %}
+
+{% block content %}
+{% include 'components/sweetAlert.twig' %}
+
+<div class="container py-4">
+    <div class="card shadow-lg border-0">
+        <div class="card-body">
+
+            <h2 class="mb-4 text-center text-primary">{{ header_title }}</h2>
+
+            <!-- Search -->
+            <div class="row mb-4 justify-content-center">
+                <div class="col-md-6">
+                    <input type="text" id="searchTerm" class="form-control form-control-lg" placeholder="🔍 অনুসন্ধান করুন (নাম, পোস্ট কোড, উপজেলা...)">
+                </div>
+            </div>
+
+            <!-- Form -->
+            <form id="poForm" class="row g-3 mb-5 p-4 bg-light rounded border">
+                <div id="responseMessage" class="col-12"></div>
+                <input type="hidden" name="id" id="id">
+
+                <div class="col-md-4">
+                    <label for="upazila_name" class="form-label fw-semibold">উপজেলা <span class="text-danger">*</span></label>
+                    <select name="upazila_name" id="upazila_name" class="form-select" required>
+                        <option value="">— উপজেলা নির্বাচন করুন —</option>
+                        {% for u in upazilas %}
+                            <option value="{{ u.name_en }}">{{ u.name_en }} ({{ u.name_bn }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-md-4">
+                    <label for="union_name" class="form-label fw-semibold">ইউনিয়ন <span class="text-danger">*</span></label>
+                    <select name="union_name" id="union_name" class="form-select" required>
+                        <option value="">— ইউনিয়ন নির্বাচন করুন —</option>
+                        {% for u in unions %}
+                            <option value="{{ u.name_en }}">{{ u.name_en }} ({{ u.name_bn }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-md-4">
+                    <label for="en_name" class="form-label fw-semibold">পোস্ট অফিস (ইংরেজি)</label>
+                    <input type="text" name="en_name" id="en_name" class="form-control" placeholder="Post office name (English)">
+                </div>
+
+                <div class="col-md-4">
+                    <label for="bn_name" class="form-label fw-semibold">পোস্ট অফিস (বাংলা)</label>
+                    <input type="text" name="bn_name" id="bn_name" class="form-control" placeholder="পোস্ট অফিসের নাম (বাংলায়)">
+                </div>
+
+                <div class="col-md-4">
+                    <label for="post_code" class="form-label fw-semibold">পোস্ট কোড</label>
+                    <input type="text" name="post_code" id="post_code" class="form-control" placeholder="যেমন: 1350">
+                </div>
+
+                <div class="col-12 text-end">
+                    <button type="button" id="cancelEdit" class="btn btn-secondary btn-lg px-4 me-2" style="display:none;">বাতিল</button>
+                    <button type="submit" class="btn btn-success btn-lg px-4">💾 সংরক্ষণ করুন</button>
+                </div>
+            </form>
+
+            <!-- Table -->
+            <div class="table-responsive mb-4">
+                <table class="table table-hover table-bordered align-middle" id="poTable">
+                    <thead class="table-primary">
+                        <tr>
+                            <th data-column="p.upazila_name" style="cursor:pointer;">উপজেলা ⬍</th>
+                            <th data-column="p.union_name" style="cursor:pointer;">ইউনিয়ন ⬍</th>
+                            <th data-column="p.en_name" style="cursor:pointer;">পোস্ট অফিস (ইং) ⬍</th>
+                            <th data-column="p.bn_name" style="cursor:pointer;">পোস্ট অফিস (বাং) ⬍</th>
+                            <th data-column="p.post_code" style="cursor:pointer;">পোস্ট কোড ⬍</th>
+                            <th class="text-center" style="width:160px;">অ্যাকশন</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            <div id="pagination" class="d-flex justify-content-center mt-4"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let currentPage = 1;
+    let currentSort = { column: 'p.upazila_name', direction: 'asc' };
+    let searchQuery = '';
+
+    function loadItems(page) {
+        page = page || currentPage;
+        currentPage = page;
+
+        $.post('/ajax/post-offices', {
+            action: 'filter',
+            page: page,
+            sortColumn: currentSort.column,
+            sortDirection: currentSort.direction,
+            search: searchQuery
+        }, function(data) {
+            const res = typeof data === 'string' ? JSON.parse(data) : data;
+
+            if (res.status !== 'success') {
+                $('#poTable tbody').html('<tr><td colspan="6" class="text-center text-danger">তথ্য লোড করতে ব্যর্থ</td></tr>');
+                return;
+            }
+
+            let html = '';
+            if (!res.data || !res.data.length) {
+                html = '<tr><td colspan="6" class="text-center text-muted">কোনো পোস্ট অফিস পাওয়া যায়নি</td></tr>';
+            } else {
+                res.data.forEach(function(item) {
+                    html += '<tr>' +
+                        '<td>' + escapeHtml(item.upazila_name) + '</td>' +
+                        '<td>' + escapeHtml(item.union_name) + '</td>' +
+                        '<td>' + escapeHtml(item.en_name) + '</td>' +
+                        '<td>' + escapeHtml(item.bn_name) + '</td>' +
+                        '<td>' + escapeHtml(item.post_code) + '</td>' +
+                        '<td class="text-center">' +
+                            '<button class="btn btn-sm btn-warning me-1" onclick="editItem(' + item.id + ')">সম্পাদনা</button>' +
+                            '<button class="btn btn-sm btn-danger" onclick="deleteItem(' + item.id + ')">মুছুন</button>' +
+                        '</td>' +
+                    '</tr>';
+                });
+            }
+
+            $('#poTable tbody').html(html);
+            renderPagination(res.total, page);
+        }).fail(function() {
+            $('#poTable tbody').html('<tr><td colspan="5" class="text-center text-danger">সার্ভার ত্রুটি</td></tr>');
+        });
+    }
+
+    function renderPagination(totalItems, currentPage) {
+        const itemsPerPage = 20;
+        const totalPages = Math.ceil(totalItems / itemsPerPage);
+
+        if (totalPages <= 1) {
+            $('#pagination').html('');
+            return;
+        }
+
+        let html = '<nav><ul class="pagination justify-content-center">';
+        for (let i = 1; i <= totalPages; i++) {
+            html += '<li class="page-item ' + (i === currentPage ? 'active' : '') + '">' +
+                '<a class="page-link" href="#" data-page="' + i + '">' + i + '</a></li>';
+        }
+        html += '</ul></nav>';
+        $('#pagination').html(html);
+    }
+
+    $(document).on('click', '#pagination .page-link', function(e) {
+        e.preventDefault();
+        const page = parseInt($(this).data('page'));
+        if (page && page !== currentPage) {
+            loadItems(page);
+        }
+    });
+
+    $('#searchTerm').on('input', function() {
+        searchQuery = $(this).val().trim();
+        loadItems(1);
+    });
+
+    $('#poTable thead th[data-column]').on('click', function() {
+        const col = $(this).data('column');
+        if (currentSort.column === col) {
+            currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
+        } else {
+            currentSort.column = col;
+            currentSort.direction = 'asc';
+        }
+        loadItems(1);
+    });
+
+    function editItem(id) {
+        $.post('/ajax/post-offices', { action: 'get', id: id }, function(data) {
+            const item = typeof data === 'string' ? JSON.parse(data) : data;
+            if (!item || item.status === 'error') {
+                Swal.fire('ত্রুটি', item.message || 'পাওয়া যায়নি', 'error');
+                return;
+            }
+            $('#id').val(item.id);
+            $('#upazila_name').val(item.upazila_name);
+            $('#union_name').val(item.union_name);
+            $('#en_name').val(item.en_name);
+            $('#bn_name').val(item.bn_name);
+            $('#post_code').val(item.post_code);
+            $('#cancelEdit').show();
+            $('html, body').animate({ scrollTop: $('#poForm').offset().top - 20 }, 500);
+        });
+    }
+
+    $('#cancelEdit').click(function() {
+        resetForm();
+    });
+
+    function resetForm() {
+        $('#poForm')[0].reset();
+        $('#id').val('');
+        $('#cancelEdit').hide();
+        $('#responseMessage').html('');
+    }
+
+    $('#poForm').on('submit', function(e) {
+        e.preventDefault();
+        const action = $('#id').val() ? 'update' : 'create';
+        const formData = $(this).serialize() + '&action=' + action;
+        let $btn = $(this).find('button[type="submit"]');
+        const restore = btnLoading($btn[0], 'সংরক্ষণ করা হচ্ছে...');
+
+        $.post('/ajax/post-offices', formData, function(data) {
+            const res = typeof data === 'string' ? JSON.parse(data) : data;
+            const msgClass = res.status === 'success' ? 'alert-success' : 'alert-danger';
+            $('#responseMessage').html(
+                '<div class="alert ' + msgClass + ' alert-dismissible fade show" role="alert">' +
+                    res.message +
+                    '<button type="button" class="btn-close" data-bs-dismiss="alert"></button>' +
+                '</div>'
+            );
+            if (res.status === 'success') {
+                resetForm();
+                loadItems(currentPage);
+            }
+            restore();
+        }).fail(function() {
+            $('#responseMessage').html(
+                '<div class="alert alert-danger alert-dismissible fade show" role="alert">সার্ভার ত্রুটি। আবার চেষ্টা করুন।</div>'
+            );
+            restore();
+        });
+    });
+
+    function deleteItem(id) {
+        Swal.fire({
+            title: 'নিশ্চিত?',
+            text: 'এই পোস্ট অফিসটি স্থায়ীভাবে মুছে যাবে।',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'হ্যাঁ, মুছুন!',
+            cancelButtonText: 'বাতিল'
+        }).then(function(result) {
+            if (result.isConfirmed) {
+                $.post('/ajax/post-offices', { action: 'delete', id: id }, function() {
+                    loadItems(currentPage);
+                });
+            }
+        });
+    }
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
+
+    $(document).ready(function() {
+        loadItems(1);
+    });
+</script>
+{% endblock %}

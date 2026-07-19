@@ -229,7 +229,7 @@ if (!function_exists('generateMigrationReport')) {
  */
 if (!function_exists('setupMigrationPermissions')) {
     function setupMigrationPermissions(mysqli $mysqli): void {
-        require_once __DIR__ . '/../classes/PermissionsManager.php';
+        require_once __DIR__ . '/../models/PermissionsManager.php';
         
         $permManager = new PermissionsManager($mysqli);
         

@@ -131,8 +131,13 @@
 
                             
                                 
-                                    <img src="https://lgdhaka.com/assets/images/application/default.jpg" height="80px"
-                                         width="80px"/>
+                                    {% if citizen.applicant_photo %}
+                                        <img src="{{ url ~ citizen.applicant_photo }}" height="80px"
+                                             width="80px"/>
+                                    {% else %}
+                                        <img src="{{ url }}/assets/images/application/default.jpg" height="80px"
+                                             width="80px"/>
+                                    {% endif %}
 
 
                                 

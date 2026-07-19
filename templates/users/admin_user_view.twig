@@ -40,7 +40,7 @@
                                 <code>@{{ profileData.username }}</code>
                             </p>
                             <div class="d-flex gap-2 flex-wrap">
-                                <span class="badge bg-info">{{ profileData.role_name ?? getRoleName(profileData.role_id) ?? 'সদস্য' }}</span>
+                                <span class="badge bg-info">{{ profileData.role_name|default(profileData.role_id ? getRoleName(profileData.role_id) : 'সদস্য') }}</span>
                                 {% if profileData.union_name_bn %}
                                 <span class="badge bg-secondary">{{ profileData.union_name_bn }}</span>
                                 {% endif %}
@@ -115,7 +115,7 @@
                         <div class="col-md-6">
                             <small class="text-muted d-block mb-1">{{ 'ভূমিকা' }}</small>
                             <strong class="d-block fs-6">
-                                <span class="badge bg-info">{{ profileData.role_name ?? getRoleName(profileData.role_id) ?? 'সদস্য' }}</span>
+                                <span class="badge bg-info">{{ profileData.role_name|default(profileData.role_id ? getRoleName(profileData.role_id) : 'সদস্য') }}</span>
                             </strong>
                         </div>
                         <div class="col-md-6">
@@ -124,13 +124,22 @@
                         </div>
                         <div class="col-md-6">
                             <small class="text-muted d-block mb-1">{{ 'স্থিতি' }}</small>
-                            <strong class="d-block fs-6">
-                                {% if profileData.status == 'active' %}
-                                <span class="badge bg-success">সক্রিয়</span>
-                                {% else %}
-                                <span class="badge bg-danger">নিষ্ক্রিয়</span>
+                            <div class="d-flex align-items-center gap-2 flex-wrap">
+                                <strong class="fs-6">
+                                    {% if profileData.status == 'active' %}
+                                    <span class="badge bg-success">সক্রিয়</span>
+                                    {% else %}
+                                    <span class="badge bg-danger">নিষ্ক্রিয়</span>
+                                    {% endif %}
+                                </strong>
+                                {% if profileData.status == 'inactive' %}
+                                <button type="button" class="btn btn-sm btn-success reactivate-user-btn"
+                                        data-id="{{ profileData.user_id }}"
+                                        data-username="{{ profileData.username }}">
+                                    <i class="fas fa-undo"></i> পুনরায় সক্রিয় করুন
+                                </button>
                                 {% endif %}
-                            </strong>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -283,15 +292,42 @@
 
 <style>
 .bg-gradient {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: #008B8B;
 }
 
 .text-gradient {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: #008B8B;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
 }
 </style>
 
+<script>
+document.addEventListener('DOMContentLoaded',function(){
+    var reactBtn=document.querySelector('.reactivate-user-btn');
+    if(reactBtn){
+        reactBtn.addEventListener('click',async function(){
+            var userId=this.dataset.id,username=this.dataset.username;
+            var confirm=await Swal.fire({title:'পুনরায় সক্রিয় করবেন?',html:'ব্যবহারকারী <strong>"'+username+'"</strong> আবার লগইন করতে পারবে।',icon:'question',showCancelButton:true,confirmButtonColor:'#28a745',confirmButtonText:'<i class="fas fa-undo me-1"></i> হ্যাঁ, সক্রিয় করুন!',cancelButtonText:'<i class="fas fa-times me-1"></i> বাতিল',reverseButtons:true,customClass:{confirmButton:'btn btn-success rounded-pill px-4',cancelButton:'btn btn-outline-secondary rounded-pill px-4'},buttonsStyling:false});
+            if(!confirm.isConfirmed)return;
+            Swal.fire({title:'সক্রিয় করা হচ্ছে...',text:'অনুগ্রহ করে অপেক্ষা করুন',allowOutsideClick:false,didOpen:function(){Swal.showLoading();}});
+            var csrf=document.querySelector('input[name="csrf_token"]')?.value||'{{ csrf_token }}';
+            var fd=new FormData();fd.append('csrf_token',csrf);
+            try{
+                var res=await fetch('/users/'+userId+'/toggle-status',{method:'POST',body:fd,headers:{'X-Requested-With':'XMLHttpRequest'}});
+                var data=await res.json();
+                if(res.ok&&data.success){
+                    Swal.fire({icon:'success',title:'সক্রিয়!',text:'"'+username+'" পুনরায় সক্রিয় করা হয়েছে।',timer:1500,showConfirmButton:false,toast:true,position:'top-end'}).then(function(){window.location.reload();});
+                }else{
+                    Swal.fire({icon:'error',title:data.alert?.title||'ত্রুটি',text:data.alert?.message||'সক্রিয় করতে ব্যর্থ',confirmButtonText:'ঠিক আছে'});
+                }
+            }catch(err){
+                console.error(err);
+                Swal.fire({icon:'error',title:'ত্রুটি',text:'সার্ভারে সমস্যা হয়েছে',confirmButtonText:'ঠিক আছে'});
+            }
+        });
+    }
+});
+</script>
 {% endblock %}

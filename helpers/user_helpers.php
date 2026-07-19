@@ -253,7 +253,8 @@ if (!function_exists('userExists')) {
             return false;
         }
         
-        $stmt->bind_param("i", (int)$userId);
+        $userIdInt = (int)$userId;
+        $stmt->bind_param("i", $userIdInt);
         $stmt->execute();
         $result = $stmt->get_result();
         
@@ -282,7 +283,8 @@ if (!function_exists('emailExists')) {
                  WHERE email = ? AND user_id != ? AND is_deleted = 0 
                  LIMIT 1"
             );
-            $stmt->bind_param("si", $email, (int)$excludeUserId);
+            $excludeIdInt = (int)$excludeUserId;
+            $stmt->bind_param("si", $email, $excludeIdInt);
         } else {
             $stmt = $mysqli->prepare(
                 "SELECT 1 FROM users 
@@ -318,7 +320,8 @@ if (!function_exists('usernameExists')) {
                  WHERE username = ? AND user_id != ? AND is_deleted = 0 
                  LIMIT 1"
             );
-            $stmt->bind_param("si", $username, (int)$excludeUserId);
+            $excludeIdInt = (int)$excludeUserId;
+            $stmt->bind_param("si", $username, $excludeIdInt);
         } else {
             $stmt = $mysqli->prepare(
                 "SELECT 1 FROM users 

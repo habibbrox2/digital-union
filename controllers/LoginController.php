@@ -1,42 +1,34 @@
 <?php
 /**
- * LoginController.php
- * Handles login, logout, password reset routes
- * CSRF Protected
+ * controllers/LoginController.php
+ * 
+ * Login, logout, password reset routes - pure closures using LoginService.
+ * No inline validation, no duplicated AJAX handling, no inline helper loading.
+ * All business logic is in modules/Services/LoginService.php.
  */
 
-// ✅ CSRF middleware should be loaded BEFORE this file
-// require_once __DIR__ . '/../config/csrf.php'; (in your main index.php)
-
-// ✅ Session should already be started by csrf.php
-// But we double-check here
+// Session check
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-// Auth init
-$auth = new AuthManager($mysqli);
+global $mysqli, $router, $twig;
 
-global $router;
+$loginService = new LoginService($mysqli);
+$auth = $loginService->getAuth();
 
 /*
 |--------------------------------------------------------------------------
 | GET : Login Page
 |--------------------------------------------------------------------------
 */
-$router->get('/login', function () {
-    global $twig, $auth;
-
-    // ✅ Redirect if already logged in
+$router->get('/login', function () use ($twig, $auth) {
     if ($auth->isLoggedIn()) {
         header('Location: /dashboard');
         exit;
     }
 
     $redirect = $_GET['redirect'] ?? ($_SESSION['redirect_after_login'] ?? '/dashboard');
-    $csrf_token = generateCsrfToken();
-    
-    // ✅ Check for timeout parameter
     $timeout = isset($_GET['timeout']) && $_GET['timeout'] == '1';
 
     echo $twig->render('login/login.twig', [
@@ -44,7 +36,7 @@ $router->get('/login', function () {
         'header_title'  => 'Login to Your Account',
         'redirect'      => $redirect,
         'timeout'       => $timeout,
-        'csrf_token'    => $csrf_token
+        'csrf_token'    => generateCsrfToken(),
     ]);
 });
 
@@ -63,15 +55,11 @@ $router->get('/admin', function () {
 | GET : Password Reset Page
 |--------------------------------------------------------------------------
 */
-$router->get('/password-reset', function () {
-    global $twig;
-
-    $csrf_token = generateCsrfToken();
-
+$router->get('/password-reset', function () use ($twig) {
     echo $twig->render('login/password_reset.twig', [
         'title'        => 'Password Reset',
         'header_title' => 'Reset Your Password',
-        'csrf_token'   => $csrf_token
+        'csrf_token'   => generateCsrfToken(),
     ]);
 });
 
@@ -80,11 +68,8 @@ $router->get('/password-reset', function () {
 | GET : New Password Page (with token)
 |--------------------------------------------------------------------------
 */
-$router->get('/reset-password', function () {
-    global $twig;
-
+$router->get('/reset-password', function () use ($twig) {
     $token = $_GET['token'] ?? '';
-    $csrf_token = generateCsrfToken();
 
     if (empty($token)) {
         errorAlert('ত্রুটি', 'অবৈধ রিসেট লিংক।');
@@ -96,7 +81,7 @@ $router->get('/reset-password', function () {
         'title'        => 'Set New Password',
         'header_title' => 'Set Your New Password',
         'token'        => $token,
-        'csrf_token'   => $csrf_token
+        'csrf_token'   => generateCsrfToken(),
     ]);
 });
 
@@ -107,11 +92,9 @@ $router->get('/reset-password', function () {
 */
 $router->get('/logout', function () use ($auth) {
     $auth->logout();
-    
-    // ✅ Set success message
-    session_start(); // Start new session for message
+
+    session_start();
     successAlert('সফল', 'আপনি সফলভাবে লগআউট হয়েছেন।');
-    
     header("Location: /login");
     exit;
 });
@@ -120,54 +103,27 @@ $router->get('/logout', function () use ($auth) {
 |--------------------------------------------------------------------------
 | POST : Login Handle
 |--------------------------------------------------------------------------
-| ✅ CSRF token automatically verified by middleware before reaching here
 */
-$router->post('/login', function () use ($auth) {
-    // ✅ Load email helper
-    require_once __DIR__ . '/../helpers/email_helper.php';
-    
-    // ✅ Sanitize inputs
-    $username = sanitize_input($_POST['username'] ?? '');
-    $password = $_POST['password'] ?? ''; // Don't trim passwords
-    $redirect = sanitize_input($_POST['redirect'] ?? '/dashboard');
+$router->post('/login', function () use ($loginService) {
+    $result = $loginService->handleLogin($_POST);
 
-    // ✅ Detect AJAX request
-    $isAjax = !empty($_POST['return_json']) || 
-              (function_exists('isAjaxRequest') && isAjaxRequest());
-
-    // ✅ Validate inputs
-    if (empty($username) || empty($password)) {
-        $success = false;
-        $message = "ইউজারনেম/ইমেইল এবং পাসওয়ার্ড প্রয়োজন";
-    } else {
-        // ✅ Attempt login
-        $result  = $auth->login($username, $password);
-        $success = $result['success'];
-        $message = $result['message'];
+    if ($loginService->isAjaxRequest()) {
+        $loginService->jsonResponse(
+            $result['success'],
+            $result['message'],
+            $result['redirect'],
+            $result['success'] ? 200 : 401
+        );
     }
 
-    // ✅ AJAX Response
-    if ($isAjax) {
-        header('Content-Type: application/json; charset=utf-8');
-        http_response_code($success ? 200 : 401);
-        
-        echo json_encode([
-            'success'  => $success,
-            'message'  => $message,
-            'redirect' => $success ? $redirect : null
-        ]);
-        exit;
-    }
-
-    // ✅ Normal Form Response
-    if ($success) {
-        // Clear any old redirect
+    if ($result['success']) {
         unset($_SESSION['redirect_after_login']);
         successAlert('সফল', 'লগইন সফল হয়েছে। রিডাইরেক্ট করা হচ্ছে...');
-        header("Location: " . $redirect);
+        header("Location: " . $result['redirect']);
     } else {
-        errorAlert('ত্রুটি', $message);
-        header("Location: /login" . ($redirect !== '/dashboard' ? '?redirect=' . urlencode($redirect) : ''));
+        errorAlert('ত্রুটি', $result['message']);
+        $redirectParam = $result['redirect'] !== '/dashboard' ? '?redirect=' . urlencode($result['redirect']) : '';
+        header("Location: /login" . $redirectParam);
     }
     exit;
 });
@@ -176,46 +132,23 @@ $router->post('/login', function () use ($auth) {
 |--------------------------------------------------------------------------
 | POST : Password Reset Request
 |--------------------------------------------------------------------------
-| ✅ CSRF protected
 */
-$router->post('/password-reset', function () use ($auth) {
-    // ✅ Load email helper
-    require_once __DIR__ . '/../helpers/email_helper.php';
-    
-    // ✅ Sanitize input
-    $email = sanitize_input($_POST['email'] ?? '');
-    
-    // ✅ Detect AJAX
-    $isAjax = !empty($_POST['return_json']) || 
-              (function_exists('isAjaxRequest') && isAjaxRequest());
+$router->post('/password-reset', function () use ($loginService) {
+    $result = $loginService->handlePasswordResetRequest($_POST);
 
-    // ✅ Validate email
-    if (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
-        $success = false;
-        $message = 'একটি বৈধ ইমেইল প্রদান করুন।';
-    } else {
-        $result = $auth->sendPasswordReset($email);
-        $success = $result['success'];
-        $message = $result['message'];
+    if ($loginService->isAjaxRequest()) {
+        $loginService->jsonResponse(
+            $result['success'],
+            $result['message'],
+            null,
+            $result['success'] ? 200 : 400
+        );
     }
 
-    // ✅ AJAX Response
-    if ($isAjax) {
-        header('Content-Type: application/json; charset=utf-8');
-        http_response_code($success ? 200 : 400);
-        
-        echo json_encode([
-            'success' => $success,
-            'message' => $message
-        ]);
-        exit;
-    }
-
-    // ✅ Normal Response
-    if ($success) {
-        successAlert('সফল', $message);
+    if ($result['success']) {
+        successAlert('সফল', $result['message']);
     } else {
-        errorAlert('ত্রুটি', $message);
+        errorAlert('ত্রুটি', $result['message']);
     }
 
     header("Location: /password-reset");
@@ -226,59 +159,25 @@ $router->post('/password-reset', function () use ($auth) {
 |--------------------------------------------------------------------------
 | POST : New Password Submit
 |--------------------------------------------------------------------------
-| ✅ CSRF protected
 */
-$router->post('/new-password', function () use ($auth) {
-    // ✅ Load email helper
-    require_once __DIR__ . '/../helpers/email_helper.php';
-    
-    // ✅ Sanitize inputs
-    $token       = sanitize_input($_POST['token'] ?? $_POST['reset_token'] ?? '');
-    $newPassword = $_POST['password'] ?? ''; // Don't sanitize password
-    $confirmPassword = $_POST['confirm_password'] ?? '';
-    
-    // ✅ Detect AJAX
-    $isAjax = !empty($_POST['return_json']) || 
-              (function_exists('isAjaxRequest') && isAjaxRequest());
+$router->post('/new-password', function () use ($loginService) {
+    $result = $loginService->handleNewPassword($_POST);
 
-    // ✅ Validate inputs
-    if (empty($token)) {
-        $success = false;
-        $message = 'টোকেন অনুপস্থিত।';
-    } elseif (empty($newPassword)) {
-        $success = false;
-        $message = 'পাসওয়ার্ড প্রদান করুন।';
-    } elseif (strlen($newPassword) < 6) {
-        $success = false;
-        $message = 'পাসওয়ার্ড কমপক্ষে ৬ অক্ষরের হতে হবে।';
-    } elseif ($newPassword !== $confirmPassword) {
-        $success = false;
-        $message = 'পাসওয়ার্ড মিলছে না।';
-    } else {
-        $result = $auth->resetPassword($token, $newPassword);
-        $success = $result['success'];
-        $message = $result['message'];
+    if ($loginService->isAjaxRequest()) {
+        $loginService->jsonResponse(
+            $result['success'],
+            $result['message'],
+            $result['success'] ? '/login' : null,
+            $result['success'] ? 200 : 400
+        );
     }
 
-    // ✅ AJAX Response
-    if ($isAjax) {
-        header('Content-Type: application/json; charset=utf-8');
-        http_response_code($success ? 200 : 400);
-        
-        echo json_encode([
-            'success' => $success,
-            'message' => $message,
-            'redirect' => $success ? '/login' : null
-        ]);
-        exit;
-    }
-
-    // ✅ Normal Response
-    if ($success) {
+    if ($result['success']) {
         successAlert('সফল', 'পাসওয়ার্ড সফলভাবে পরিবর্তিত হয়েছে। আপনি এখন লগইন করতে পারেন।');
         header("Location: /login");
     } else {
-        errorAlert('ত্রুটি', $message);
+        errorAlert('ত্রুটি', $result['message']);
+        $token = sanitize_input($_POST['token'] ?? $_POST['reset_token'] ?? '');
         header("Location: /reset-password?token=" . urlencode($token));
     }
     exit;
@@ -286,62 +185,44 @@ $router->post('/new-password', function () use ($auth) {
 
 /*
 |--------------------------------------------------------------------------
-| POST : Register Handle (Optional)
+| GET : Register Page
 |--------------------------------------------------------------------------
 */
-$router->post('/register', function () use ($auth) {
-    // ✅ Load email helper
-    require_once __DIR__ . '/../helpers/email_helper.php';
-    
-    // ✅ Sanitize inputs
-    $username = sanitize_input($_POST['username'] ?? '');
-    $email    = sanitize_input($_POST['email'] ?? '');
-    $password = $_POST['password'] ?? '';
-    $confirmPassword = $_POST['confirm_password'] ?? '';
-    $union_id = !empty($_POST['union_id']) ? (int)$_POST['union_id'] : null;
-    
-    // ✅ Detect AJAX
-    $isAjax = !empty($_POST['return_json']) || 
-              (function_exists('isAjaxRequest') && isAjaxRequest());
-
-    // ✅ Validate inputs
-    if (empty($username) || empty($email) || empty($password)) {
-        $success = false;
-        $message = 'সকল ফিল্ড পূরণ করুন।';
-    } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-        $success = false;
-        $message = 'বৈধ ইমেইল প্রদান করুন।';
-    } elseif (strlen($password) < 6) {
-        $success = false;
-        $message = 'পাসওয়ার্ড কমপক্ষে ৬ অক্ষরের হতে হবে।';
-    } elseif ($password !== $confirmPassword) {
-        $success = false;
-        $message = 'পাসওয়ার্ড মিলছে না।';
-    } else {
-        $result = $auth->register($username, $email, $password, $union_id);
-        $success = $result['success'];
-        $message = $result['message'];
-    }
-
-    // ✅ AJAX Response
-    if ($isAjax) {
-        header('Content-Type: application/json; charset=utf-8');
-        http_response_code($success ? 200 : 400);
-        
-        echo json_encode([
-            'success' => $success,
-            'message' => $message,
-            'redirect' => $success ? '/login' : null
-        ]);
+$router->get('/register', function () use ($twig, $auth) {
+    if ($auth->isLoggedIn()) {
+        header('Location: /dashboard');
         exit;
     }
 
-    // ✅ Normal Response
-    if ($success) {
-        successAlert('সফল', $message);
+    echo $twig->render('login/register.twig', [
+        'title'         => 'Register',
+        'header_title'  => 'নতুন অ্যাকাউন্ট তৈরি করুন',
+        'csrf_token'    => generateCsrfToken(),
+    ]);
+});
+
+/*
+|--------------------------------------------------------------------------
+| POST : Register Handle
+|--------------------------------------------------------------------------
+*/
+$router->post('/register', function () use ($loginService) {
+    $result = $loginService->handleRegistration($_POST);
+
+    if ($loginService->isAjaxRequest()) {
+        $loginService->jsonResponse(
+            $result['success'],
+            $result['message'],
+            $result['success'] ? '/login' : null,
+            $result['success'] ? 200 : 400
+        );
+    }
+
+    if ($result['success']) {
+        successAlert('সফল', $result['message']);
         header("Location: /login");
     } else {
-        errorAlert('ত্রুটি', $message);
+        errorAlert('ত্রুটি', $result['message']);
         header("Location: /register");
     }
     exit;

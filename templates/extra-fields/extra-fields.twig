@@ -212,7 +212,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Save fields
     document.getElementById('save_fields_btn').addEventListener('click', () => {
         const certType = certificateSelect.value;
-        if(!certType) return alert('Please select a certificate type.');
+        if(!certType) return Swal.fire('Error', 'Please select a certificate type.', 'error');
 
         const fields = Array.from(tableBody.querySelectorAll('tr')).map(r => ({
             field_id: r.querySelector('.field_id').value,
@@ -230,8 +230,8 @@ document.addEventListener('DOMContentLoaded', function() {
             body: JSON.stringify({certificate_type: certType, fields})
         })
         .then(res => res.json())
-        .then(data => alert(data.message))
-        .catch(err => console.error(err));
+        .then(data => Swal.fire('Success', data.message, 'success'))
+        .catch(err => Swal.fire('Error', 'Failed to save fields', 'error'));
     });
 });
 </script>

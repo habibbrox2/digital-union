@@ -1,0 +1,324 @@
+/* ================================================================
+   Login / Auth Pages Shared Styles
+   Used by: login.twig, password_reset.twig, reset_password.twig
+   ================================================================ */
+
+/* --- Reset & Base --- */
+*, *::before, *::after {
+    box-sizing: border-box;
+}
+
+html, body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* --- Fullscreen wrapper with background image --- */
+.login-dark {
+    height: 100%;
+    background: #475d62 url("../images/lg-bg.jpg");
+    background-size: cover;
+    background-position: center;
+    position: relative;
+}
+
+/* --- Centered form card --- */
+.login-dark form {
+    max-width: 400px;
+    width: 90%;
+    opacity: 0.92;
+    background-color: #ffffff;
+    padding: 40px;
+    border-radius: 4px;
+    transform: translate(-50%, -50%);
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    box-shadow: 3px 3px 4px rgba(0,0,0,0.8);
+}
+
+/* --- Logo area --- */
+.login-dark .illustration {
+    text-align: center;
+    padding: 5px 0 25px;
+}
+
+.login-dark .illustration img {
+    max-width: 160px;
+    height: auto;
+}
+
+/* --- Form inputs (bottom-border only style) --- */
+.login-dark form .form-control {
+    background: none;
+    border: none;
+    border-bottom: 1px solid #434a52;
+    border-radius: 0;
+    box-shadow: none;
+    outline: none;
+    color: #000000;
+    padding: 10px 12px;
+    font-size: 15px;
+    transition: border-color 0.2s ease;
+}
+
+.login-dark form .form-control:focus {
+    border-bottom-color: #008B8B;
+    border-bottom-width: 2px;
+}
+
+.login-dark form .form-control::placeholder {
+    color: #888;
+    opacity: 0.8;
+}
+
+/* --- Input group (for password toggle) --- */
+.login-dark form .input-group {
+    display: flex;
+    align-items: stretch;
+}
+
+.login-dark form .input-group .form-control {
+    flex: 1;
+}
+
+.login-dark form .input-group .btn-toggle {
+    background: none;
+    border: none;
+    border-bottom: 1px solid #434a52;
+    border-radius: 0;
+    color: #6f7a85;
+    padding: 10px 10px 10px 0;
+    cursor: pointer;
+    transition: color 0.2s ease;
+}
+
+.login-dark form .input-group .btn-toggle:hover {
+    color: #008B8B;
+}
+
+/* --- Form labels --- */
+.login-dark form .form-label {
+    display: block;
+    margin-bottom: 4px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #555;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+}
+
+/* --- Form help text --- */
+.login-dark form .form-text {
+    display: block;
+    margin-top: 4px;
+    font-size: 12px;
+    color: #888;
+}
+
+/* --- Primary button --- */
+.login-dark form .btn-primary {
+    background: #008B8B;
+    border: none;
+    border-radius: 4px;
+    padding: 11px;
+    box-shadow: none;
+    margin-top: 26px;
+    text-shadow: none;
+    outline: none;
+    font-size: 16px;
+    font-weight: 600;
+    width: 100%;
+    color: #ffffff;
+    cursor: pointer;
+    transition: background 0.2s ease, transform 0.1s ease;
+    position: relative;
+}
+
+.login-dark form .btn-primary:hover,
+.login-dark form .btn-primary:active {
+    background: #007A7A;
+}
+
+.login-dark form .btn-primary:active {
+    transform: translateY(1px);
+}
+
+.login-dark form .btn-primary:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* --- Loading spinner inside button --- */
+.btn-loading {
+    pointer-events: none;
+}
+
+.btn-loading::after {
+    content: '';
+    position: absolute;
+    width: 18px;
+    height: 18px;
+    top: 50%;
+    left: 50%;
+    margin-left: -9px;
+    margin-top: -9px;
+    border: 2px solid #ffffff;
+    border-radius: 50%;
+    border-top-color: transparent;
+    animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* --- Link styles --- */
+.login-dark form .forgot {
+    display: block;
+    text-align: center;
+    font-size: 12px;
+    color: #6f7a85;
+    opacity: 0.9;
+    text-decoration: none;
+    margin-top: 18px;
+    transition: opacity 0.2s ease;
+}
+
+.login-dark form .forgot:hover {
+    opacity: 1;
+    color: #008B8B;
+}
+
+.login-dark form .back-link {
+    display: block;
+    text-align: center;
+    font-size: 12px;
+    color: #6f7a85;
+    opacity: 0.9;
+    text-decoration: none;
+    margin-top: 18px;
+    transition: opacity 0.2s ease;
+}
+
+.login-dark form .back-link:hover {
+    opacity: 1;
+    color: #008B8B;
+}
+
+.login-dark form .home-link {
+    display: block;
+    text-align: center;
+    font-size: 12px;
+    color: #6f7a85;
+    opacity: 0.9;
+    text-decoration: none;
+    margin-top: 8px;
+    transition: opacity 0.2s ease;
+}
+
+.login-dark form .home-link:hover {
+    opacity: 1;
+    color: #008B8B;
+}
+
+/* --- Remember me checkbox --- */
+.login-dark form .form-check {
+    margin-top: 18px;
+    display: flex;
+    align-items: center;
+}
+
+.login-dark form .form-check-input {
+    width: 16px;
+    height: 16px;
+    margin-right: 8px;
+    cursor: pointer;
+    accent-color: #008B8B;
+}
+
+.login-dark form .form-check-label {
+    font-size: 14px;
+    color: #555;
+    cursor: pointer;
+    user-select: none;
+}
+
+/* --- Alert messages --- */
+.login-dark form .alert {
+    padding: 10px 14px;
+    margin-bottom: 18px;
+    border-radius: 3px;
+    font-size: 13px;
+    animation: fadeIn 0.3s ease-in;
+}
+
+.login-dark form .alert-danger {
+    background: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+.login-dark form .alert-success {
+    background: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.login-dark form .alert-info {
+    background: #d1ecf1;
+    color: #0c5460;
+    border: 1px solid #bee5eb;
+}
+
+.login-dark form .alert-warning {
+    background: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeeba;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* --- Timeout notice --- */
+.login-dark form .timeout-notice {
+    background: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeeba;
+    border-radius: 3px;
+    padding: 10px 14px;
+    margin-bottom: 18px;
+    text-align: center;
+    font-size: 13px;
+    animation: fadeIn 0.3s ease-out;
+}
+
+/* --- Form group spacing --- */
+.login-dark form .form-group {
+    margin-bottom: 16px;
+}
+
+/* --- Server-side validation error --- */
+.error {
+    color: red;
+}
+
+/* --- Bootstrap utility classes (standalone, no Bootstrap CSS) --- */
+.d-none { display: none !important; }
+.me-1 { margin-right: 0.25rem !important; }
+.me-2 { margin-right: 0.5rem !important; }
+
+/* --- Responsive --- */
+@media (max-width: 480px) {
+    .login-dark form {
+        padding: 30px 25px;
+        width: 95%;
+    }
+}

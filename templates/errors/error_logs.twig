@@ -1,51 +1,106 @@
 {% extends "layout.twig" %}
 
 {% block title %}Error Logs{% endblock %}
+{% block header_title %}Error Logs{% endblock %}
 
 {% block content %}
 {% include 'components/sweetAlert.twig' %}
-<div class="container my-5">
-    <h2 class="mb-4 text-info d-flex align-items-center gap-2">
-        ⚡ Error Log Viewer
-        <small class="text-muted">(Superadmin Only)</small>
-    </h2>
+<div class="container-fluid px-0">
 
-    {% if cleared %}
-        <div class="alert alert-success shadow-sm">✅ Log file has been cleared successfully.</div>
-    {% endif %}
-
-    <div class="d-flex flex-wrap gap-2 mb-3 align-items-center">
-        <button id="refreshBtn" class="btn btn-sm btn-primary shadow-sm">🔄 Refresh</button>
-        <button id="autoRefreshBtn" class="btn btn-sm btn-outline-info shadow-sm active" data-on="true">⏱️ Auto Refresh: ON</button>
-        <button id="copyBtn" class="btn btn-sm btn-outline-light shadow-sm">📋 Copy</button>
-        <a href="/admin/logs?action=download" class="btn btn-sm btn-success shadow-sm">⬇️ Download</a>
-        <a href="/admin/logs?action=clear" class="btn btn-sm btn-danger shadow-sm" onclick="return confirm('Are you sure you want to clear the log file?')">🧹 Clear</a>
-        <a href="/admin/dashboard" class="btn btn-sm btn-secondary shadow-sm ms-auto">🏠 Dashboard</a>
+    <!-- Header -->
+    <div class="d-flex flex-wrap align-items-center justify-content-between mb-4 gap-2">
+        <div>
+            <h4 class="mb-0 fw-bold" style="color: #1e293b;">
+                <i class="bi bi-bug me-2 text-danger"></i>Error Log Viewer
+            </h4>
+            <small class="text-muted">Superadmin Only — Real-time error monitoring</small>
+        </div>
     </div>
 
-    <div class="position-relative border rounded-3 shadow-sm" style="background:#0d1117; max-height:75vh; overflow:auto;">
-        <pre id="logContent"
-             class="m-0 p-3"
-             style="color:#c9d1d9; font-family:'Fira Code', monospace; white-space:pre-wrap; counter-reset: line;">
-            ⏳ Loading logs...
-        </pre>
+    {% if cleared %}
+    <div class="section-card p-3 mb-3 d-flex align-items-center gap-2" style="border-left: 4px solid #28a745;">
+        <i class="bi bi-check-circle-fill text-success"></i>
+        <span class="fw-medium">Log file has been cleared successfully.</span>
+    </div>
+    {% endif %}
+
+    <!-- Toolbar -->
+    <div class="section-card p-3 mb-3">
+        <div class="d-flex flex-wrap gap-2 align-items-center">
+            <button id="refreshBtn" class="btn btn-primary rounded-pill px-3 shadow-sm">
+                <i class="bi bi-arrow-repeat me-1"></i> Refresh
+            </button>
+            <button id="autoRefreshBtn" class="btn btn-outline-info rounded-pill px-3 active" data-on="true">
+                <i class="bi bi-clock-history me-1"></i> Auto Refresh: ON
+            </button>
+            <button id="copyBtn" class="btn btn-outline-secondary rounded-pill px-3">
+                <i class="bi bi-clipboard me-1"></i> Copy
+            </button>
+            <a href="/admin/logs?action=download" class="btn btn-success rounded-pill px-3 shadow-sm">
+                <i class="bi bi-download me-1"></i> Download
+            </a>
+            <button type="button" class="btn btn-outline-danger rounded-pill px-3" id="clearLogBtn">
+                <i class="bi bi-trash3 me-1"></i> Clear
+            </button>
+            <a href="/admin/dashboard" class="btn btn-outline-secondary rounded-pill px-3">
+                <i class="bi bi-speedometer2 me-1"></i> Dashboard
+            </a>
+            <div class="ms-auto w-auto" style="min-width:200px;">
+                <div class="input-group input-group-enhanced input-group-sm">
+                    <span class="input-group-text bg-light border-0"><i class="bi bi-search"></i></span>
+                    <input type="text" id="logSearchInput" class="form-control border-0" placeholder="ফিল্টার লগ..." autocomplete="off">
+                    <button class="btn btn-light border-0" type="button" id="logSearchClear" title="Clear" style="display:none;">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Log Viewer -->
+    <div class="section-card p-0 overflow-hidden">
+        <div class="d-flex align-items-center justify-content-between px-4 py-2 border-bottom" style="background: #f8f9fa;">
+            <div class="d-flex align-items-center gap-2 small text-muted">
+                <i class="bi bi-terminal"></i>
+                <span>Error Log Output</span>
+            </div>
+            <span id="logStats" class="small text-muted"></span>
+        </div>
+        <div class="position-relative" style="background: #0d1117;">
+            <pre id="logContent"
+                 class="m-0 p-4"
+                 style="color:#c9d1d9; font-family:'Fira Code', 'Cascadia Code', monospace; font-size:0.8rem; line-height:1.7; white-space:pre-wrap; max-height:70vh; overflow:auto; counter-reset: line;">
+                <span style="color:#6c757d;"><i class="bi bi-arrow-repeat me-1 bi-spin"></i> Loading logs...</span>
+            </pre>
+        </div>
     </div>
 </div>
 
 <style>
-    #logContent span.line::before {
-        counter-increment: line;
-        content: counter(line);
-        display: inline-block;
-        width: 2.5em;
-        margin-right: .75em;
-        color: #6c757d;
-        text-align: right;
-        user-select: none;
-    }
-    .highlight-error { color: #ff6b6b; font-weight: bold; }
-    .highlight-warning { color: #f4d03f; font-weight: bold; }
-    .highlight-exception { color: #f39c12; font-weight: bold; }
+.section-card{background:#fff;border-radius:16px;box-shadow:0 2px 8px rgba(0,0,0,0.04);border:1px solid rgba(0,0,0,0.06);}
+.input-group-enhanced{border:1px solid #ced4da;border-radius:6px;transition:border-color 0.2s ease,box-shadow 0.2s ease;}
+.input-group-enhanced:focus-within{border-color:#008B8B;box-shadow:0 0 0 0.2rem rgba(0,139,139,0.15);}
+.input-group-enhanced .form-control:focus{box-shadow:none;outline:none;}
+#logContent span.line::before {
+    counter-increment: line;
+    content: counter(line);
+    display: inline-block;
+    width: 2.8em;
+    margin-right: 1em;
+    color: #484f58;
+    text-align: right;
+    user-select: none;
+    font-size: 0.75rem;
+}
+.highlight-error { color: #ff6b6b; font-weight: 700; }
+.highlight-warning { color: #f4d03f; font-weight: 600; }
+.highlight-exception { color: #ff9f43; font-weight: 600; }
+#logContent::-webkit-scrollbar { width: 8px; height: 8px; }
+#logContent::-webkit-scrollbar-track { background: #161b22; }
+#logContent::-webkit-scrollbar-thumb { background: #30363d; border-radius: 4px; }
+#logContent::-webkit-scrollbar-thumb:hover { background: #484f58; }
+@keyframes bi-spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
+.bi-spin{animation:bi-spin 2s linear infinite;display:inline-block;}
 </style>
 
 <script>
@@ -54,65 +109,120 @@ document.addEventListener('DOMContentLoaded', () => {
     const refreshBtn = document.getElementById('refreshBtn');
     const copyBtn = document.getElementById('copyBtn');
     const autoRefreshBtn = document.getElementById('autoRefreshBtn');
+    const logStats = document.getElementById('logStats');
 
-    let logsLoadedOnce = false; // Prevent flicker on SPA reload
+    let logsLoadedOnce = false;
+    let rawLogLines = []; // Store raw escapeHtml'd lines for filtering
+    const clearLogBtn = document.getElementById('clearLogBtn');
+    const searchInput = document.getElementById('logSearchInput');
+    const searchClear = document.getElementById('logSearchClear');
+
+    function escapeHtml(str) {
+        return str.replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+    }
+
+    function highlightLine(line) {
+        return line
+            .replace(/error/gi, '<span class="highlight-error">$&</span>')
+            .replace(/warning/gi, '<span class="highlight-warning">$&</span>')
+            .replace(/exception/gi, '<span class="highlight-exception">$&</span>');
+    }
+
+    function renderLogs(filterText = '') {
+        const query = filterText.toLowerCase().trim();
+        if (rawLogLines.length === 0) {
+            logContent.innerHTML = '<span style="color:#6c757d;"><i class="bi bi-inbox me-1"></i> No log entries found.</span>';
+            if (logStats) logStats.textContent = '0 entries';
+            return;
+        }
+        let filtered = rawLogLines;
+        if (query) {
+            filtered = rawLogLines.filter(line => line.toLowerCase().includes(query));
+        }
+        if (filtered.length === 0) {
+            logContent.innerHTML = '<span style="color:#6c757d;"><i class="bi bi-search me-1"></i> No entries match "' + escapeHtml(filterText) + '".</span>';
+            if (logStats) logStats.textContent = '0 / ' + rawLogLines.length + ' entries';
+            return;
+        }
+        let html = filtered.map(line => `<span class="line">${highlightLine(line)}</span>`).join('\n');
+        logContent.innerHTML = html;
+        if (logStats) logStats.textContent = filtered.length + ' / ' + rawLogLines.length + ' entries';
+    }
 
     async function loadLogs(scrollBottom = false) {
         if (!logsLoadedOnce) {
-            logContent.textContent = "⏳ Loading logs...";
+            logContent.innerHTML = '<span style="color:#6c757d;"><i class="bi bi-arrow-repeat me-1 bi-spin"></i> Loading logs...</span>';
         }
         try {
             const res = await fetch('/admin/logs?ajax=1');
             const data = await res.json();
-
             logsLoadedOnce = true;
 
             if (data.logs && data.logs.length > 0) {
-                let html = data.logs.map(line => {
-                    // Escape HTML
-                    line = line.replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
-                    // Highlight keywords
-                    line = line
-                        .replace(/error/gi, '<span class="highlight-error">$&</span>')
-                        .replace(/warning/gi, '<span class="highlight-warning">$&</span>')
-                        .replace(/exception/gi, '<span class="highlight-exception">$&</span>');
-                    return `<span class="line">${line}</span>`;
-                }).join('\n');
-                logContent.innerHTML = html;
-
-                if (scrollBottom) logContent.scrollTop = logContent.scrollHeight;
+                rawLogLines = data.logs.map(line => escapeHtml(line));
+                renderLogs(searchInput?.value || '');
             } else {
-                logContent.innerHTML = "<span style='color:#aaa;'>⚙️ No log entries found.</span>";
+                rawLogLines = [];
+                renderLogs('');
             }
         } catch (err) {
-            logContent.textContent = "❌ Error loading logs: " + err;
+            logContent.innerHTML = '<span style="color:#ff6b6b;"><i class="bi bi-exclamation-circle me-1"></i> Error loading logs: ' + err.message + '</span>';
         }
     }
 
-    // Buttons
+    // Clear logs with SweetAlert confirmation
+    clearLogBtn?.addEventListener('click', async function() {
+        const result = await Swal.fire({
+            title: 'লগ ফাইল মুছে ফেলবেন?',
+            text: 'সমস্ত লগ এন্ট্রি স্থায়ীভাবে মুছে যাবে।',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc3545',
+            confirmButtonText: '<i class="bi bi-trash3 me-1"></i> হ্যাঁ, মুছুন',
+            cancelButtonText: '<i class="bi bi-x-circle me-1"></i> বাতিল',
+            reverseButtons: true,
+            customClass: { confirmButton: 'btn btn-danger rounded-pill px-4', cancelButton: 'btn btn-outline-secondary rounded-pill px-4' },
+            buttonsStyling: false
+        });
+        if (result.isConfirmed) {
+            window.location.href = '/admin/logs?action=clear';
+        }
+    });
+
+    // Search filter
+    searchInput?.addEventListener('input', function() {
+        searchClear.style.display = this.value ? '' : 'none';
+        renderLogs(this.value);
+    });
+    searchClear?.addEventListener('click', function() {
+        searchInput.value = '';
+        searchInput.focus();
+        searchClear.style.display = 'none';
+        renderLogs('');
+    });
+
     refreshBtn?.addEventListener('click', () => loadLogs(true));
 
     copyBtn?.addEventListener('click', () => {
         navigator.clipboard.writeText(logContent.innerText);
-        copyBtn.textContent = "✅ Copied!";
-        setTimeout(() => copyBtn.textContent = "📋 Copy", 1500);
+        copyBtn.innerHTML = '<i class="bi bi-check-lg me-1"></i> Copied!';
+        setTimeout(() => copyBtn.innerHTML = '<i class="bi bi-clipboard me-1"></i> Copy', 1500);
     });
 
     autoRefreshBtn?.addEventListener('click', () => {
         const on = autoRefreshBtn.dataset.on === "true";
         autoRefreshBtn.dataset.on = (!on).toString();
         autoRefreshBtn.classList.toggle('active');
-        autoRefreshBtn.textContent = on ? "⏸️ Auto Refresh: OFF" : "⏱️ Auto Refresh: ON";
+        autoRefreshBtn.innerHTML = on
+            ? '<i class="bi bi-pause-circle me-1"></i> Auto Refresh: OFF'
+            : '<i class="bi bi-clock-history me-1"></i> Auto Refresh: ON';
     });
 
-    // Auto-refresh every 30 sec
     setInterval(() => {
         if (autoRefreshBtn?.dataset.on === "true") loadLogs(true);
     }, 30000);
 
-    // Initial load
     loadLogs(true);
 });
 </script>
-
 {% endblock %}

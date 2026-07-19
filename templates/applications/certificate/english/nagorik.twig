@@ -51,7 +51,11 @@
 
                     </td>
                     <td>
-                     <img src="{{ url }}/assets/img/band-cross.png" alt="X" class="logo" height="60pt" width="60pt">
+                        {% if union.stamp_logo_url is defined and union.stamp_logo_url %}
+                            <img src="{{ url ~ union.stamp_logo_url }}" alt="Stamp" class="logo" height="60pt" width="60pt">
+                        {% else %}
+                            <img src="{{ url }}/assets/img/band-cross.png" alt="X" class="logo" height="60pt" width="60pt">
+                        {% endif %}
                     </td>
                 </tr>
             </table>
@@ -281,7 +285,7 @@
                 {% else %}
                     <tr>
                         <td style="padding: 7.5pt; line-height: 1.8; font-size: 12pt;">
-                            &nbsp;&nbsp;&nbsp;&nbsp; A permanent resident of this Union. By birth, he/she is a citizen of Bangladesh.
+                            &nbsp;&nbsp;&nbsp;&nbsp; {% if (data.resident|default('permanent')) == 'temporary' %}A temporary resident{% else %}A permanent resident{% endif %} of this Union. By birth, he/she is a citizen of Bangladesh.
                         </td>
                     </tr>
                     <tr>

@@ -1,208 +1,561 @@
 {% extends "layout.twig" %}
 
-{% block title %}সাধারণ আবেদন ফরম{% endblock %}
-
-{% block header_title %}সাধারণ আবেদন ফরম{% endblock %}
+{% block title %}  {{ certificate_type_bn ?? 'আবেদন ফরম' }} {% endblock %}
+{% block header_title %}  {{ certificate_type_bn ?? 'আবেদন ফরম' }} {% endblock %}
 
 {% block content %}
+{% include 'components/sweetAlert.twig' %}
+<link rel="stylesheet" href="/assets/css/forms.css?t={{ "now"|date("Hiss") }}">
+<script src="/assets/js/forms.js?t={{ "now"|date("Hiss") }}"></script>
 
-<link rel="stylesheet" href="/assets/css/forms.css">
-
-
-<div class="container mt-4 px-3">
-
-    <h2 id="formTitle" class="text-center my-4 fw-bold">আবেদন ফরম</h2>
-
-    {# নিয়মাবলী ও সাবমিট #}
-    {% include 'partials/forms/rules.twig' %} 
-
-        
+<div class="container form-page px-3">
+    <div class="form-shell">
+        <div class="form-hero">
+            <div id="formTitle">{{ certificate_type_bn ?? 'আবেদন ফরম' }}</div>
+        </div>
 
 
-    <form id="applicationForm" method="POST" action="" enctype="multipart/form-data">
-        <input type="hidden" id="certificate_type" name="certificate_type" value="{{ certificate_type }}">
-        
-            <fieldset class="border rounded p-3 mb-4">
-                <legend class="w-auto px-2">ইউনিয়ন বাছাই করুন</legend>
-                    <div class="row">
-                        <div class="col-md-4 mb-3">
-                            <label for="district_dropdown" class="form-label">জেলা</label>
-                            <select id="district_dropdown" name="district" class="form-control" required>
-                            <option value="3026" selected data-geo-code="3026" data-name-en="DHAKA" data-name-bn="ঢাকা" data-geo-id="25">ঢাকা</option> 
-                            </select>
-                        </div>
 
-                        <div class="col-md-4 mb-3">
-                            <label for="upazila_dropdown" class="form-label">উপজেলা</label>
-                            <select id="upazila_dropdown" name="upazila" class="form-control" required>
-                                <option value="">উপজেলা নির্বাচন করুন</option>
-                            </select>
-                        </div>
+        <!-- ================= Application Form ================= -->
+        <form id="applicationForm" method="POST"
+        action="{% if reuse_mode %}/applications/{{ certificate_type }}/apply{% elseif data is defined and data.application_id is defined %}/applications/{{ certificate_type }}/edit/{{ data.application_id }}{% else %}/applications/{{ certificate_type }}/apply{% endif %}"
+        enctype="multipart/form-data">
 
-                        <div class="col-md-4 mb-3">
-                            <label for="union_dropdown" class="form-label">ইউনিয়ন</label>
-                            <select id="union_dropdown" name="union_code" class="form-control" required>
-                                <option value="">ইউনিয়ন নির্বাচন করুন</option>
-                            </select>
-                        </div>
-                    </div>
-            </fieldset>
+        <!-- Hidden Inputs -->
+        {# certificate_type comes from the URL when prefilled (edit/reuse mode) — it never changes #}
+        {% if not reuse_mode and data.application_id is not defined %}
+            <input type="hidden" name="certificate_type" value="{{ certificate_type }}">
+        {% endif %}
+        {# Make certificate_type available to JS even when hidden input is omitted #}
+        <span id="certificate_type_data" data-certificate-type="{{ certificate_type }}" style="display:none"></span>
+
+        {# Only show application_id if not reuse_mode and data exists #}
+        {% if data.application_id is defined and not reuse_mode %}
+            <input type="hidden" name="application_id" value="{{ data.application_id }}">
+            <input type="hidden" id="sonod_number" name="sonod_number" value="{{ data.sonod_number ?? '' }}">
+        {% endif %}
 
 
-        {# ব্যক্তিগত তথ্য অংশ #}
-        <fieldset class="border rounded p-3 mb-4">
-            <legend class="w-auto px-2">ব্যক্তিগত তথ্য</legend>
-            {% include 'partials/forms/personal_info.twig' %}
+        <fieldset class="form-section">
+            {% if data.application_id is defined and not reuse_mode %}
+
+                {% include 'partials/forms/union_info_photo.twig' with { union: union, data: data } %}
+            {% else %}
+                {% include 'partials/forms/union_selection.twig' with { data: data } %}
+            {% endif %}
+
+
         </fieldset>
 
-         {% if certificate_type == 'family' %}
-            <fieldset class="border rounded p-3 mb-4">
-            <legend class="w-auto px-2">পরিবারের সদস্যগণের তালিকা</legend>
-                <div class="row">
-                <div class="col-12">
-                    <div id="warishMember">
-                        <div class="row g-2 warish_entry border rounded p-3 mb-2">
-                            <!-- ক্রমিক -->
-                            <div class="col-md-1">
-                                <input type="number" name="serial_no[]" class="form-control" placeholder="ক্রমিক" value="1">
-                            </div>
 
-                            <!-- নাম (বাংলায়) -->
-                            <div class="col-md-2">
-                                <input type="text" name="warish_name_bn[]" class="form-control" placeholder="নাম (বাংলায়)">
-                            </div>
 
-                            <!-- নাম (ইংরেজিতে) -->
-                            <div class="col-md-2">
-                                <input type="text" name="warish_name_en[]" class="form-control" placeholder="নাম (ইংরেজিতে)" pattern="^[a-zA-Z. ]+$">
-                            </div>
 
-                            <!-- সম্পর্ক (এক সিলেক্ট থেকে বাংলা+ইংরেজি) -->
-                            <div class="col-md-3">
-                                <select name="relation[]" class="form-control">
-                                    <option value="">সম্পর্ক নির্বাচন করুন</option>
-                                    <option value="পিতা|Father">পিতা (Father)</option>
-                                    <option value="মাতা|Mother">মাতা (Mother)</option>
-                                    <option value="স্ত্রী|Wife">স্ত্রী (Wife)</option>
-                                    <option value="স্বামী|Husband">স্বামী (Husband)</option>
-                                    <option value="পুত্র|Son">পুত্র (Son)</option>
-                                    <option value="কন্যা|Daughter">কন্যা (Daughter)</option>
-                                    <option value="ভাই|Brother">ভাই (Brother)</option>
-                                    <option value="বোন|Sister">বোন (Sister)</option>
-                                    <option value="দাদা|Grandfather (Paternal)">দাদা (Grandfather - Paternal)</option>
-                                    <option value="দাদি|Grandmother (Paternal)">দাদি (Grandmother - Paternal)</option>
-                                    <option value="নানা|Grandfather (Maternal)">নানা (Grandfather - Maternal)</option>
-                                    <option value="নানি|Grandmother (Maternal)">নানি (Grandmother - Maternal)</option>
-                                    <option value="নাতি|Grandson (Son’s son)">নাতি (Grandson - Son’s son)</option>
-                                    <option value="নাতনি|Granddaughter (Son’s daughter)">নাতনি (Granddaughter - Son’s daughter)</option>
-                                    <option value="দৌহিত্র|Grandson (Daughter’s son)">দৌহিত্র (Grandson - Daughter’s son)</option>
-                                    <option value="দৌহিত্রি|Granddaughter (Daughter’s daughter)">দৌহিত্রি (Granddaughter - Daughter’s daughter)</option>
-                                    <option value="চাচা|Uncle (Paternal)">চাচা (Uncle - Paternal)</option>
-                                    <option value="ফুপু|Aunt (Paternal)">ফুপু (Aunt - Paternal)</option>
-                                    <option value="মামা|Uncle (Maternal)">মামা (Uncle - Maternal)</option>
-                                    <option value="খালা|Aunt (Maternal)">খালা (Aunt - Maternal)</option>
-                                    <option value="ভাতিজা|Nephew (Brother’s son)">ভাতিজা (Nephew - Brother’s son)</option>
-                                    <option value="ভাতিজি|Niece (Brother’s daughter)">ভাতিজি (Niece - Brother’s daughter)</option>
-                                    <option value="ভাগ্নে|Nephew (Sister’s son)">ভাগ্নে (Nephew - Sister’s son)</option>
-                                    <option value="ভাগ্নি|Niece (Sister’s daughter)">ভাগ্নি (Niece - Sister’s daughter)</option>
-                                    <option value="সৎভাই|Stepbrother">সৎভাই (Stepbrother)</option>
-                                    <option value="সৎবোন|Stepsister">সৎবোন (Stepsister)</option>
-                                    <option value="পালকপুত্র|Foster Son">পালকপুত্র (Foster Son)</option>
-                                    <option value="পালককন্যা|Foster Daughter">পালককন্যা (Foster Daughter)</option>
-                                </select>
-                            </div>
 
-                            <!-- জন্ম তারিখ -->
-                            <div class="col-md-1">
-                                <input type="text" name="member_birth_date[]" class="form-control" placeholder="বয়স/দিন-মাস-বছর (যেমন: 21/01-01-2004)">
-                            </div>
 
-                            <!-- জাতীয় পরিচয়পত্র -->
-                            <div class="col-md-2">
-                                <input type="text" name="relation_nid[]" class="form-control" placeholder="জাতীয় পরিচয়পত্র" pattern="^[0-9]+$">
-                            </div>
 
-                            <!-- বৈবাহিক অবস্থা -->
-                            <div class="col-md-2">
-                                <select name="marrage_state[]" class="form-control">
-                                    <option value="">বৈবাহিক অবস্থা</option>
-                                    <option value="অবিবাহিত">অবিবাহিত</option>
-                                    <option value="বিবাহিত">বিবাহিত</option>
-                                </select>
-                            </div>
+        {% if certificate_type == 'trade' %}
+        <!-- ================= Business Info ================= -->
+        <fieldset class="form-section">
+            <legend>ব্যবসায়িক তথ্য</legend>
+            {% include 'partials/forms/business_info.twig' with { data: data } %}
+        </fieldset>
+        {% endif %}
 
-                            <!-- জীবিত/মৃত -->
-                            <div class="col-md-2">
-                                <select name="is_dead[]" class="form-control">
-                                    <option value="">জীবিত/মৃত</option>
-                                    <option value="0">জীবিত</option>
-                                    <option value="1">মৃত</option>
-                                </select>
-                            </div>
-
-                            <!-- মুছুন বাটন -->
-                            <div class="col-md-2 text-end">
-                                <button type="button" class="btn btn-danger remove_warish" style="display: none;">মুছুন</button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- নতুন ওয়ারিশ বাটন -->
-                    <button type="button" id="add_warish" class="btn btn-info mt-2">নতুন ওয়ারিশ</button>
-
-                    <!-- ভ্যালিডেশন মেসেজ -->
-                    <div class="mt-2" id="emptyError" style="display: none;">
-                        <span class="text-danger">দুঃখিত! ওয়ারিশের অবশ্যই বাংলায় নাম এবং সম্পর্ক দিতে হবে।</span>
-                    </div>
-                </div>
-            </div>
+        <!-- ================= Personal Info ================= -->
+        <fieldset class="form-section">
+            <legend>ব্যক্তিগত তথ্য</legend>
+            {% include 'partials/forms/personal_info.twig' with { data: data } %}
         </fieldset>
 
-         {% endif %}
+        <!-- ================= Warish/Family Members ================= -->
+        {% if certificate_type in ['family', 'warish'] %}
+        <fieldset class="form-section">
+            <legend>পরিবারের সদস্যগণের তালিকা</legend>
+            {% include 'partials/forms/warish_entry.twig' %}
+        </fieldset>
+        {% endif %}
 
-        {# বর্তমান ঠিকানা #}
-        <fieldset class="border rounded p-3 mb-4">
-            <legend class="w-auto px-2">বর্তমান ঠিকানা</legend>
+        <!-- ================= Present Address ================= -->
+        <fieldset class="form-section">
+            <legend>বর্তমান ঠিকানা</legend>
             <div id="present_address_fields">
-                {% include 'partials/forms/address_fields.twig' with { prefix: 'present' } %}
+                {% include 'partials/forms/address_fields.twig' with { prefix: 'present', data: data } %}
             </div>
         </fieldset>
 
-        {# স্থায়ী ঠিকানা #}
-        <fieldset class="border rounded p-3 mb-4">
-            <legend class="w-auto px-2">স্থায়ী ঠিকানা</legend>
-
-            <!-- Copy Present to Permanent Checkbox -->
+        <!-- ================= Permanent Address ================= -->
+        <fieldset class="form-section">
+            <legend>স্থায়ী ঠিকানা</legend>
             <div class="form-check mb-2">
-                <input type="checkbox" id="copy_present_to_permanent" class="form-check-input">
+                <input type="checkbox" class="form-check-input" id="copy_present_to_permanent">
                 <label for="copy_present_to_permanent" class="form-check-label">
                     বর্তমান ঠিকানা এবং স্থায়ী ঠিকানা একই
                 </label>
             </div>
-
             <div id="permanent_address_fields">
-                {% include 'partials/forms/address_fields.twig' with { prefix: 'permanent' } %}
+                {% include 'partials/forms/address_fields.twig' with { prefix: 'permanent', data: data } %}
             </div>
         </fieldset>
+        
+        {% if certificate_type == 'trade' %}
+            <!-- ব্যবসার ঠিকানা -->
+            <fieldset class="form-section">
+                <legend>ব্যবসার ঠিকানা</legend>
+                <div class="form-check mb-1">
+                    <input class="form-check-input" type="checkbox" id="copy_present_to_business">
+                    <label class="form-check-label" for="copy_present_to_business">
+                        বর্তমান ঠিকানা থেকে ব্যবসায়িক ঠিকানা কপি করুন
+                    </label>
+                </div>
+                <div id="business_address_fields">
+                    {% include 'partials/forms/address_fields.twig' with { prefix: 'business', data: data } %}
+                </div>
+            </fieldset>
+        {% endif %}
+        <!-- ================= Documents & Submit ================= -->
+        <fieldset class="form-section">
+            <legend>যোগাযোগের ঠিকানা এবং ডকুমেন্ট আপলোড</legend>
+            
+            <div class="row mb-3 align-items-center">
+              <div class="col-lg-2 col-md-3 col-12">
+                <label for="applicant_name" class="form-label mb-0">আবেদনকারীর নাম</label>
+              </div>
+              <div class="col-lg-4 col-md-3 col-12">
+                <input type="text" id="applicant_name" name="applicant_name" class="form-control"
+                       placeholder="আবেদনকারীর নাম"
+                       value="{{ data.applicant_name is defined and data.applicant_name ? data.applicant_name : (data.name_bn is defined ? data.name_bn : '') }}">
+              </div>
+              <div class="col-lg-2 col-md-3 col-12">
+                <label for="applicant_phone" class="form-label mb-0">আবেদনকারীর মোবাইল নম্বর</label>
+              </div>
+              <div class="col-lg-4 col-md-3 col-12">
+                <input type="text" id="applicant_phone" name="applicant_phone" class="form-control"
+                       placeholder="আপনার মোবাইল নম্বর লিখুন" value="{{ data.applicant_phone ?? '' }}">
+              </div>
+            </div>
 
 
-        {# সারসংক্ষেপ অংশ #}
-        <fieldset class="border rounded p-3 mb-4">
-            <legend class="w-auto px-2">সারসংক্ষেপ</legend>
-            {% include 'partials/forms/summary_section.twig' %}
+
+            <div class="row align-items-start mb-3">
+              <div class="col-lg-2 col-md-3 col-12">
+                <label class="form-label mb-0">প্রয়োজনীয় ডকুমেন্ট আপলোড করুন</label>
+              </div>
+              <div class="col-lg-10 col-md-9 col-12">
+                <div id="documents_container"></div>
+              </div>
+            </div>
+
+            <button type="submit" class="text-center btn btn-lg px-5 submit-button">
+                {{ application ? 'আপডেট করুন' : 'জমা দিন' }}
+            </button>
         </fieldset>
+        </form>
 
-        <div class="d-flex justify-content-center mt-4">
-            <button type="submit" class="btn btn-success submit-button">জমা দিন</button>
-        </div>
-    </form>
+    </div>
 </div>
-    {# ফর্ম সাবমিশন এবং সফল মডাল হ্যান্ডলিং #}
-    {% include '/partials/forms/success_modal.twig' %}
 
-<script src="/assets/js/dynamic-sonod.js?t={{ "now"|date("Hiss") }}"></script>
-<script src="/assets/js/forms.js?t={{ "now"|date("Hiss") }}"></script>
+<!-- ================= Success Modal ================= -->
+{% include 'partials/forms/success_modal.twig' %}
+
+
+
+<script>
+(function () {
+    document.addEventListener('DOMContentLoaded', function () {
+
+        // ---------------- Mobile Number Validation ----------------
+        const mobileInput = document.getElementById('applicant_phone');
+        if (mobileInput) {
+            function convertToEnglishNumber(str) {
+                const bnNumbers = ['০','১','২','৩','৪','৫','৬','৭','৮','৯'];
+                return str.replace(/[০-৯]/g, m => bnNumbers.indexOf(m))
+                          .replace(/[۰-۹]/g, m => m.charCodeAt(0) - 1776);
+            }
+            mobileInput.addEventListener('input', function() {
+                let val = convertToEnglishNumber(this.value).replace(/\D/g, '');
+                this.value = val;
+                const warningId = 'mobile_warning';
+                document.getElementById(warningId)?.remove();
+                if(val.length > 0 && val.length < 11) {
+                    const warn = document.createElement('div');
+                    warn.id = warningId;
+                    warn.style.color = 'red';
+                    warn.style.fontSize = '0.85rem';
+                    warn.textContent = 'মোবাইল নম্বর অবশ্যই ১১ সংখ্যার হতে হবে।';
+                    mobileInput.parentNode.appendChild(warn);
+                }
+            });
+        }
+
+        // ---------------- Applicant Name Sync ----------------
+        const nameBnField = document.getElementById('name_bn');
+        const applicantNameField = document.getElementById('applicant_name');
+        const ownNameRadio = document.getElementById('own_name');
+        const otherNameRadio = document.getElementById('other_name');
+
+        if (nameBnField && applicantNameField) {
+            const syncApplicantName = function () {
+                const banglaName = nameBnField.value || '';
+                if (otherNameRadio && otherNameRadio.checked) {
+                    applicantNameField.readOnly = false;
+                    applicantNameField.style.backgroundColor = '';
+                    if (!applicantNameField.value) {
+                        applicantNameField.value = banglaName;
+                    }
+                    return;
+                }
+                if (ownNameRadio) ownNameRadio.checked = true;
+                applicantNameField.value = banglaName;
+                applicantNameField.readOnly = false;
+                applicantNameField.style.backgroundColor = '#e9ecef';
+            };
+            nameBnField.addEventListener('input', function() {
+                if (!otherNameRadio || !otherNameRadio.checked) {
+                    applicantNameField.value = this.value || '';
+                }
+            });
+            document.querySelectorAll('input[name="applicant_name_option"]').forEach(radio => {
+                radio.addEventListener('change', syncApplicantName);
+            });
+            syncApplicantName();
+        }
+
+        // ---------------- Document Upload ----------------
+        const container = document.getElementById('documents_container');
+        if (container) {
+            function createDocumentRow(url = null) {
+                const row = document.createElement('div');
+                row.className = 'row align-items-center document-row mb-2';
+                let previewHTML = '';
+                if (url) {
+                    if (url.match(/\.(jpg|jpeg|png|gif)$/i)) {
+                        previewHTML = `<img src="${url}" class="img-fluid rounded shadow-sm" style="max-width:100px">`;
+                    } else if (url.match(/\.pdf$/i)) {
+                        previewHTML = `<a href="${url}" target="_blank">PDF দেখুন</a>`;
+                    } else {
+                        const name = url.split('/').pop();
+                        previewHTML = `<a href="${url}" target="_blank">${name}</a>`;
+                    }
+                }
+                row.innerHTML = `
+                    <div class="col-md-5">
+                        <input type="file" name="documents[]" class="form-control file-input">
+                    </div>
+                    <div class="col-md-5 preview-area">${previewHTML}</div>
+                    <div class="col-md-2 d-flex gap-2">
+                        <button type="button" class="btn btn-add-doc icon-only" title="নতুন ফাইল">
+                            <i class="bi bi-plus"></i>
+                        </button>
+                        <button type="button" class="btn btn-remove-file icon-only" title="মুছে ফেলুন">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </div>
+                `;
+                container.appendChild(row);
+            }
+            container.addEventListener('click', e => {
+                const btn = e.target.closest('button');
+                if(!btn) return;
+                if(btn.classList.contains('btn-add-doc')) createDocumentRow();
+                if(btn.classList.contains('btn-remove-file')) btn.closest('.document-row').remove();
+            });
+            container.addEventListener('change', e => {
+                if(!e.target.classList.contains('file-input')) return;
+                const file = e.target.files[0];
+                const previewArea = e.target.closest('.document-row').querySelector('.preview-area');
+                previewArea.innerHTML = '';
+                if(!file) return;
+                if(file.type.startsWith('image/')){
+                    const img = document.createElement('img');
+                    img.src = URL.createObjectURL(file);
+                    img.className = 'img-fluid rounded shadow-sm';
+                    img.style.maxWidth = '100px';
+                    previewArea.appendChild(img);
+                } else if(file.type === 'application/pdf'){
+                    const link = document.createElement('a');
+                    link.href = URL.createObjectURL(file);
+                    link.target = '_blank';
+                    link.textContent = 'PDF দেখুন';
+                    previewArea.appendChild(link);
+                } else {
+                    const span = document.createElement('span');
+                    span.textContent = file.name;
+                    previewArea.appendChild(span);
+                }
+            });
+            // Preload existing documents
+            const docs = {{ data.documents|default([])|json_encode|raw }};
+            if (Array.isArray(docs) && docs.length) {
+                docs.forEach(url => createDocumentRow(url));
+            } else {
+                createDocumentRow();
+            }
+        }
+
+        // ---------------- Applicant Photo Preview ----------------
+        const photoInput = document.getElementById('applicant_photo');
+        const photoPreview = document.getElementById('uploadPreviewImg');
+        if (photoInput && photoPreview) {
+            photoInput.addEventListener('change', function () {
+                const file = this.files[0];
+                if (!file) return;
+                photoPreview.src = URL.createObjectURL(file);
+            });
+        }
+
+        // ---------------- extraData init ----------------
+        try {
+            window.extraData = {{ extra_data|default({})|json_encode|raw }};
+        } catch(e) {
+            window.extraData = {};
+        }
+
+        // ---------------- helper ----------------
+        const escapeHtml = str => str == null ? '' : String(str).replace(/[&<>"']/g,
+            m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])
+        );
+        const updateLabelAndPlaceholder = (labelEl, inputEl, text) => {
+            if (!labelEl) return;
+            const span = labelEl.querySelector('span');
+            labelEl.textContent = text;
+            if (span) labelEl.appendChild(span);
+            if (inputEl) inputEl.placeholder = text;
+        };
+
+        // ---------------- fetch extra fields ----------------
+        async function fetchExtraFields(){
+            if (window.extraFieldsCache) return window.extraFieldsCache;
+            try {
+                const res = await fetch('/api/v2/extra-fields/json', {cache:'no-store'});
+                if (!res.ok) throw new Error('HTTP '+res.status);
+                const data = await res.json();
+                window.extraFieldsCache = data;
+                return data;
+            } catch(err){
+                console.error(err);
+                return {};
+            }
+        }
+
+        // ---------------- datepicker init ----------------
+        function initDatepickers(root=document){
+            root.querySelectorAll('.datepicker').forEach(input=>{
+                if (window.jQuery && typeof $(input).datepicker==='function'){
+                    $(input).datepicker({
+                        format:'dd-mm-yyyy',
+                        autoclose:true,
+                        todayHighlight:true
+                    });
+                } else {
+                    input.placeholder = input.placeholder || 'দিন-মাস-বছর';
+                    input.setAttribute('inputmode','numeric');
+                }
+            });
+        }
+
+        // ---------------- create field HTML ----------------
+        function createFieldHTML(field, data={}){
+            const val = escapeHtml(data[field.id] || '');
+            const placeholder = escapeHtml(field.placeholder || field.label || '');
+            const label = escapeHtml(field.label || field.label_en || '');
+            const markDynamic = ' data-extra-field="1"'; // ডাইনামিক ফিল্ড চিহ্নিত করতে
+
+            if (field.count === 2){
+                const bnVal = escapeHtml(data[field.id+'_bn'] || '');
+                const enVal = escapeHtml(data[field.id+'_en'] || '');
+                const labelBn = escapeHtml(field.label_bn || field.label || '');
+                const labelEn = escapeHtml(field.label_en || field.label || '');
+                return `<div class="row mb-3">
+                    <div class="col-lg-2 col-md-3 col-12">
+                        <label for="${field.id}_en" class="form-label">${labelEn}</label>
+                    </div>
+                    <div class="col-lg-4 col-md-3 col-12">
+                        <input type="text" name="${field.id}_en" id="${field.id}_en" class="form-control"${markDynamic} value="${enVal}" placeholder="${placeholder} (ইংরেজিতে)">
+                    </div>
+                    <div class="col-lg-2 col-md-3 col-12">
+                        <label for="${field.id}_bn" class="form-label">${labelBn} <span class="text-danger">*</span></label>
+                    </div>
+                    <div class="col-lg-4 col-md-3 col-12">
+                        <input type="text" name="${field.id}_bn" id="${field.id}_bn" class="form-control bangla"${markDynamic} value="${bnVal}" placeholder="${placeholder} (বাংলায়)" required>
+                    </div>
+                </div>`;
+            }
+
+            switch(field.type){
+                case 'text':
+                case 'number':
+                case 'date':
+                    const inputClass = field.type==='date' ? 'form-control datepicker' : 'form-control';
+                    return `<div class="row mb-3 align-items-center">
+                        <div class="col-lg-2 col-md-3 col-12">
+                            <label for="${field.id}" class="form-label mb-0">${label} <span class="text-danger">*</span></label>
+                        </div>
+                        <div class="col-lg-4 col-md-3 col-12">
+                            <input type="${field.type==='date'?'text':field.type}" name="${field.id}" id="${field.id}" class="${inputClass}"${markDynamic} value="${val}" placeholder="${placeholder}">
+                        </div>
+                    </div>`;
+                case 'textarea':
+                    return `<div class="row mb-3">
+                        <div class="col-lg-2 col-md-3 col-12">
+                            <label for="${field.id}" class="form-label">${label} <span class="text-danger">*</span></label>
+                        </div>
+                        <div class="col-lg-4 col-md-3 col-12">
+                            <textarea name="${field.id}" id="${field.id}" class="form-control"${markDynamic} rows="4" placeholder="${placeholder}">${val}</textarea>
+                        </div>
+                    </div>`;
+                case 'select':
+                    const options = (field.options||[])
+                        .map(opt => `<option value="${opt.value}" ${val==opt.value?'selected':''}>${opt.text}</option>`).join('');
+                    return `<div class="row mb-3 align-items-center">
+                        <div class="col-lg-2 col-md-3 col-12">
+                            <label for="${field.id}" class="form-label mb-0">${label} <span class="text-danger">*</span></label>
+                        </div>
+                        <div class="col-lg-4 col-md-3 col-12">
+                            <select name="${field.id}" id="${field.id}" class="form-control"${markDynamic}>
+                                <option value="">Select</option>${options}
+                            </select>
+                        </div>
+                    </div>`;
+                case 'label':
+                    return `<div class="col-lg-6 mb-2"><span id="${field.id}" class="form-label">${label}</span></div>`;
+                default:
+                    return `<div class="row mb-3 align-items-center">
+                        <div class="col-lg-2 col-md-3 col-12">
+                            <label for="${field.id}" class="form-label mb-0">${label} <span class="text-danger">*</span></label>
+                        </div>
+                        <div class="col-lg-4 col-md-3 col-12">
+                            <input type="text" name="${field.id}" id="${field.id}" class="form-control"${markDynamic} value="${val}" placeholder="${placeholder}">
+                        </div>
+                    </div>`;
+            }
+        }
+
+        // ---------------- init extra fields ----------------
+        async function initExtraFields(){
+            const extraFields = await fetchExtraFields();
+            const certInput = document.querySelector('input[name="certificate_type"]');
+            const certificateType = certInput ? certInput.value : null;
+            if (!certificateType || !extraFields[certificateType]) return extraFields;
+
+            const fragment = document.createDocumentFragment();
+            extraFields[certificateType].forEach(field=>{
+                if (field.type==='label') return;
+                const html = createFieldHTML(field, window.extraData);
+                const container = document.createElement('div');
+                container.innerHTML = html;
+                const target = document.getElementById(field.orderAfter) || document.querySelector(`[name="${field.orderAfter}"]`);
+                if (target){
+                    const baseRow = target.closest('.row') || target;
+                    baseRow.insertAdjacentElement('afterend', container);
+                } else {
+                    fragment.appendChild(container);
+                }
+            });
+
+            const form = document.getElementById('applicationForm') || document.body;
+            form.appendChild(fragment);
+            initDatepickers();
+            return extraFields;
+        }
+
+        // ---------------- form submit ----------------
+        function initFormSubmit(){
+            const form = document.getElementById('applicationForm');
+            if (!form) return;
+
+            form.addEventListener('submit', function (e) {
+                try {
+                    const payload = {};
+                    const dynamicInputs = form.querySelectorAll('[data-extra-field="1"]');
+                    dynamicInputs.forEach(input=>{
+                        if (input.name) payload[input.name] = input.value;
+                    });
+                    let hidden = form.querySelector('input[name="extra_data"]');
+                    if (!hidden) {
+                        hidden = document.createElement('input');
+                        hidden.type = 'hidden';
+                        hidden.name = 'extra_data';
+                        form.appendChild(hidden);
+                    }
+                    hidden.value = JSON.stringify(payload);
+                } catch(err){ console.error(err); }
+            }, {capture:true}); // capture=true so it fires early
+        }
+
+        function updateLabelsByCertificateType(extraFields, certType){
+            if (!extraFields[certType]) return;
+            extraFields[certType].forEach(field=>{
+                if (field.type!=='label') return;
+                if (field.count===2){
+                    const enLabelEl = document.querySelector('label[for="'+field.id+'_en"]');
+                    const bnLabelEl = document.querySelector('label[for="'+field.id+'_bn"]');
+                    const enInput = document.getElementById(field.id+'_en');
+                    const bnInput = document.getElementById(field.id+'_bn');
+
+                    // ইংরেজি
+                    updateLabelAndPlaceholderSafe(enLabelEl, enInput, (field.label_en || field.label || '') + ' (ইংরেজিতে)');
+
+                    // বাংলা
+                    updateLabelAndPlaceholderSafe(bnLabelEl, bnInput, (field.label_bn || field.label || '') + ' (বাংলায়)');
+                } else {
+                    const labelEl = document.querySelector('label[for="'+field.id+'"]');
+                    const inputEl = document.getElementById(field.id);
+
+                    updateLabelAndPlaceholderSafe(labelEl, inputEl, field.label || '');
+                }
+            });
+        }
+        function updateLabelAndPlaceholderSafe(labelEl, inputEl, text){
+            if(labelEl) labelEl.textContent = text;
+
+            if(inputEl){
+                if(inputEl.classList.contains('datepicker')){
+                    // datepicker হলে placeholder update করব না
+                } else {
+                    inputEl.placeholder = text;
+                }
+            }
+        }
+
+
+        // ---------------- initialize ----------------
+        (async ()=>{
+            const extraFields = await initExtraFields();
+            window.extraFieldsCache = extraFields;
+            initFormSubmit();
+
+            const certificateTypeInput = document.querySelector('input[name="certificate_type"]');
+            if (certificateTypeInput){
+                updateLabelsByCertificateType(extraFields, certificateTypeInput.value);
+                certificateTypeInput.addEventListener('change', async e=>{
+                    window.extraFieldsCache = await initExtraFields();
+                    if (window.toggleSpouseFields) window.toggleSpouseFields();
+                    updateLabelsByCertificateType(extraFields, e.target.value);
+                });
+            }
+        })();
+    });
+})();
+</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 {% endblock %}
-

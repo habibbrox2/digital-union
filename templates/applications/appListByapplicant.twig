@@ -278,7 +278,7 @@
 </div>
 <script>
 if (typeof jQuery === 'undefined') {
-    alert('jQuery not loaded!');
+    Swal.fire('Error', 'jQuery not loaded!', 'error');
 } else {
     console.log('jQuery version:', jQuery.fn.jquery);
 }

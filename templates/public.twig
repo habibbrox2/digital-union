@@ -11,10 +11,21 @@
 
     <link rel="shortcut icon" href="{{ url }}/assets/images/icon/favicon.png" type="image/png">
     <link rel="stylesheet" href="{{ url }}/assets/css/other/bootstrap.min.css">
-    <link rel="stylesheet" href="{{ url }}/assets/css/other/bootstrap-v3.1.0.min.css">
     <link rel="stylesheet" href="{{ url }}/assets/css/other/font-awesome.min.css">
     <link rel="stylesheet" href="https://pro.fontawesome.com/releases/v5.10.0/css/all.css">
     <link rel="stylesheet" href="{{ url }}/assets/css/other/combined.public.css?t={{ "now"|date("Hiss") }}">
+    <style>
+        .body-bg {
+            background-image: url('/assets/images/bg_main2.gif') !important;
+            background-repeat: repeat-y !important;
+            background-position: center top !important;
+            background-attachment: fixed !important;
+            background-color: transparent !important;
+        }
+        #wrapper {
+            background-color: transparent !important;
+        }
+    </style>
 
 </head>
 
@@ -27,7 +38,7 @@
 	        <div class="row align-items-center g-2">
 	            
 	            <div class="col-4 col-md-4 text-start text-md-center">
-	                <a href="https://lgdhaka.com">
+	                <a href="https://lgdhaka.co">
 	                    <img class="site-logo img-fluid" 
 	                         src="{{ url }}/assets/images/dijital union logo.png" 
 	                         alt="Logo">
@@ -214,54 +225,54 @@
                             <div class="row row-cols-2 row-cols-sm-3 row-cols-md-6 g-3 text-center">
                                 
                                 <div class="col col-sm-2">
-                                    <a href="https://lgdhaka.com/chairman">
+                                    <a href="/chairman">
                                         <div class="service-box">
-                                            <img src="https://lgdhaka.com/assets/images/default.png" alt="Chairman">
+                                            <img src="{{ url }}/assets/images/default.png" alt="Chairman">
                                             <div class="section-title">চেয়ারম্যান</div>
                                         </div>
                                     </a>
                                 </div>
             
                                 <div class="col col-sm-2">
-                                    <a href="https://lgdhaka.com/secretary">
+                                    <a href="/secretary">
                                         <div class="service-box">
-                                            <img src="https://lgdhaka.com/assets/images/default.png" alt="Secretary">
+                                            <img src="{{ url }}/assets/images/default.png" alt="Secretary">
                                             <div class="section-title">ইউপি প্রশাসনিক কর্মকর্তা</div>
                                         </div>
                                     </a>
                                 </div>
             
                                 <div class="col col-sm-2">
-                                    <a href="https://lgdhaka.com/computer_operator">
+                                    <a href="/computer_operator">
                                         <div class="service-box">
-                                            <img src="https://lgdhaka.com/assets/images/default.png" alt="Accountant">
+                                            <img src="{{ url }}/assets/images/default.png" alt="Accountant">
                                             <div class="section-title" style="font-size: 15px;">হিসাব সহকারী</div>
                                         </div>
                                     </a>
                                 </div>
             
                                 <div class="col col-sm-2">
-                                    <a href="https://lgdhaka.com/member">
+                                    <a href="/member">
                                         <div class="service-box">
-                                            <img src="https://lgdhaka.com/assets/images/default.png" alt="Member">
+                                            <img src="{{ url }}/assets/images/default.png" alt="Member">
                                             <div class="section-title">মেম্বার</div>
                                         </div>
                                     </a>
                                 </div>
             
                                 <div class="col col-sm-2">
-                                    <a href="https://lgdhaka.com/village_police">
+                                    <a href="/village_police">
                                         <div class="service-box">
-                                            <img src="https://lgdhaka.com/assets/images/default.png" alt="Village Police">
+                                            <img src="{{ url }}/assets/images/default.png" alt="Village Police">
                                             <div class="section-title">গ্রামপুলিশ</div>
                                         </div>
                                     </a>
                                 </div>
             
                                 <div class="col col-sm-2">
-                                    <a href="https://lgdhaka.com/udc">
+                                    <a href="/udc">
                                         <div class="service-box">
-                                            <img src="https://lgdhaka.com/assets/images/default.png" alt="Entrepreneur">
+                                            <img src="{{ url }}/assets/images/default.png" alt="Entrepreneur">
                                             <div class="section-title">উদ্যোক্তা</div>
                                         </div>
                                     </a>
@@ -284,33 +295,33 @@
                 <div class="row row-cols-2 row-cols-sm-3 row-cols-md-6 g-3 text-center">
                     
                     {% set services = [
-                        {'name': 'নাগরিক সনদ', 'icon': url ~ '/assets/images/icon/nagorik.png', 'url': '/nagorik-sonod/apply'},
-                        {'name': 'ট্রেড লাইসেন্স', 'icon': url ~ '/assets/images/icon/Trade License.png', 'url': '/trade-license/apply'},
-                        {'name': 'ওয়ারিশ সনদ', 'icon': url ~ '/assets/images/icon/owaris.png', 'url': '/warish-sonod/apply'},
-                        {'name': 'চারিত্রিক সনদ', 'icon': url ~ '/assets/images/icon/character certificate.png', 'url': '/character-sonod/apply'},
-                        {'name': 'নতুন ভোটার', 'icon': url ~ '/assets/images/icon/votar id.png', 'url': '/new-voter/apply'},
-                        {'name': 'ভূমিহীন সনদ', 'icon': url ~ '/assets/images/icon/landscape.png', 'url': '/vumihin-sonod/apply'},
-                        {'name': 'মৃত্যু প্রত্যয়ন', 'icon': url ~ '/assets/images/icon/death.png', 'url': '/mrityu-sonod/apply'},
-                        {'name': 'বার্ষিক আয়', 'icon': url ~ '/assets/images/icon/yearly income.png', 'url': '/barshik-aye-sonod/apply'},
-                        {'name': 'অবিবাহিত সনদ', 'icon': 'https://lgdhaka.com/assets/images/icon/unmarrage.png', 'url': '/obibahito-sonod/apply'},
-                        {'name': 'বিবাহিত সনদ', 'icon': 'https://lgdhaka.com/assets/images/icon/bibahito.png', 'url': '/bibahito-sonod/apply'},
-                        {'name': 'একই নামের প্রত্যয়ন', 'icon': 'https://lgdhaka.com/assets/images/icon/akenamercertificate.png', 'url': '/eko-namiyo-sonod/apply'},
-                        {'name': 'পুনঃ বিবাহ না হওয়া সনদ', 'icon': 'https://lgdhaka.com/assets/images/icon/punno_bibaho.png', 'url': '/punobibaho-sonod/apply'},
-                        {'name': 'প্রকৃত বাকঁ ও শ্রবন প্রতিবন্ধী', 'icon': 'https://lgdhaka.com/assets/images/icon/potibondi.png', 'url': '/protibondhi-sonod/apply'},
-                        {'name': 'পারিবারিক সনদ', 'icon': url ~ '/assets/images/icon/family.png', 'url': '/poribar-sodosso-sonod/apply'},
-                        {'name': 'প্রত্যয়নপত্র', 'icon': url ~ '/assets/images/icon/pottoyon.png', 'url': '/prottyon-potro/apply'},
-                        {'name': 'অনুমতি পত্র', 'icon': url ~ '/assets/images/icon/permission.png', 'url': '/onumoti-potro/apply'},
-                        {'name': 'ভোটার স্থানান্তর', 'icon': url ~ '/assets/images/icon/votar id.png', 'url': '/voter-sonod/apply'},
-                        {'name': 'রাস্তা খনন', 'icon': url ~ '/assets/images/icon/roadexcavation.png', 'url': '/rasta-khonon-onapotti/apply'},
-                        {'name': 'সনাতন ধর্ম', 'icon': url ~ '/assets/images/icon/swastika.png', 'url': '/sonaton-dhormio-sonod/apply'},
-                        {'name': 'নদী ভাঙন', 'icon': url ~ '/assets/images/icon/river.png', 'url': '/nodibhanga-sonod/apply'},
-                        {'name': 'বয়স প্রত্যয়ন', 'icon': url ~ '/assets/images/icon/character certificate.png', 'url': '/anumanik-boyosh-protyon/apply'},
-                        {'name': 'প্রত্যয়ন (অন্যান্য)', 'icon': url ~ '/assets/images/icon/pottoyon.png', 'url': '/protyonpotro-onnanno/apply'}
+                        {'name': 'নাগরিক সনদ', 'icon': url ~ '/assets/images/icon/nagorik.png', 'slug': 'nagorik-sonod', 'cert_type': 'nagorik'},
+                        {'name': 'ট্রেড লাইসেন্স', 'icon': url ~ '/assets/images/icon/Trade License.png', 'slug': 'trade-license', 'cert_type': 'trade'},
+                        {'name': 'ওয়ারিশ সনদ', 'icon': url ~ '/assets/images/icon/owaris.png', 'slug': 'warish-sonod', 'cert_type': 'warish'},
+                        {'name': 'চারিত্রিক সনদ', 'icon': url ~ '/assets/images/icon/character certificate.png', 'slug': 'character-sonod', 'cert_type': 'character'},
+                        {'name': 'নতুন ভোটার', 'icon': url ~ '/assets/images/icon/votar id.png', 'slug': 'new-voter', 'cert_type': 'new-voter'},
+                        {'name': 'ভূমিহীন সনদ', 'icon': url ~ '/assets/images/icon/landscape.png', 'slug': 'vumihin-sonod', 'cert_type': 'vumihin'},
+                        {'name': 'মৃত্যু প্রত্যয়ন', 'icon': url ~ '/assets/images/icon/death.png', 'slug': 'mrityu-sonod', 'cert_type': 'death'},
+                        {'name': 'বার্ষিক আয়', 'icon': url ~ '/assets/images/icon/yearly income.png', 'slug': 'barshik-aye-sonod', 'cert_type': 'yearlyincome'},
+                        {'name': 'অবিবাহিত সনদ', 'icon': 'https://lgdhaka.com/assets/images/icon/unmarrage.png', 'slug': 'obibahito-sonod', 'cert_type': 'obibahito'},
+                        {'name': 'বিবাহিত সনদ', 'icon': 'https://lgdhaka.com/assets/images/icon/bibahito.png', 'slug': 'bibahito-sonod', 'cert_type': 'bibahito'},
+                        {'name': 'একই নামের প্রত্যয়ন', 'icon': 'https://lgdhaka.com/assets/images/icon/akenamercertificate.png', 'slug': 'eko-namiyo-sonod', 'cert_type': 'ekoinam'},
+                        {'name': 'পুনঃ বিবাহ না হওয়া সনদ', 'icon': 'https://lgdhaka.com/assets/images/icon/punno_bibaho.png', 'slug': 'punobibaho-sonod', 'cert_type': 'punobibaho'},
+                        {'name': 'প্রকৃত বাকঁ ও শ্রবন প্রতিবন্ধী', 'icon': 'https://lgdhaka.com/assets/images/icon/potibondi.png', 'slug': 'protibondhi-sonod', 'cert_type': 'protibondi'},
+                        {'name': 'পারিবারিক সনদ', 'icon': url ~ '/assets/images/icon/family.png', 'slug': 'poribar-sodosso-sonod', 'cert_type': 'family'},
+                        {'name': 'প্রত্যয়নপত্র', 'icon': url ~ '/assets/images/icon/pottoyon.png', 'slug': 'prottyon-potro', 'cert_type': 'prottyon'},
+                        {'name': 'অনুমতি পত্র', 'icon': url ~ '/assets/images/icon/permission.png', 'slug': 'onumoti-potro', 'cert_type': 'onumoti'},
+                        {'name': 'ভোটার স্থানান্তর', 'icon': url ~ '/assets/images/icon/votar id.png', 'slug': 'voter-sonod', 'cert_type': 'voter'},
+                        {'name': 'রাস্তা খনন', 'icon': url ~ '/assets/images/icon/roadexcavation.png', 'slug': 'rasta-khonon-onapotti', 'cert_type': 'rastakhonon'},
+                        {'name': 'সনাতন ধর্ম', 'icon': url ~ '/assets/images/icon/swastika.png', 'slug': 'sonaton-dhormio-sonod', 'cert_type': 'sonaton'},
+                        {'name': 'নদী ভাঙন', 'icon': url ~ '/assets/images/icon/river.png', 'slug': 'nodibhanga-sonod', 'cert_type': 'nodibanga'},
+                        {'name': 'বয়স প্রত্যয়ন', 'icon': url ~ '/assets/images/icon/character certificate.png', 'slug': 'anumanik-boyosh-protyon', 'cert_type': 'anumanik-boyosh-protyon'},
+                        {'name': 'প্রত্যয়ন (অন্যান্য)', 'icon': url ~ '/assets/images/icon/pottoyon.png', 'slug': 'protyonpotro-onnanno', 'cert_type': 'protyonpotro-onnanno'}
                     ] %}
 
                     {% for service in services %}
                     <div class="col col-sm-2 mb-3">
-                        <a href="{{ service.url }}" class="text-decoration-none">
+                        <a href="/apply/{{ encrypt_url(service.cert_type ?? service.slug) }}" class="text-decoration-none">
                             <div class="service-box">
                                 <img src="{{ service.icon }}" alt="{{ service.name }}">
                                 <div class="section-title">{{ service.name }}</div>
@@ -665,7 +676,7 @@ jQuery(document).ready(function ($) {
                 btn.prop('disabled', false);
             },
             error: function () {
-                alert('কিছু সমস্যা হয়েছে!');
+                Swal.fire('Error', 'কিছু সমস্যা হয়েছে!', 'error');
             }
         });
     });

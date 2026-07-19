@@ -1,10 +1,31 @@
 class CompactDatepicker {
-    constructor(input) {
+    constructor(input, options = {}) {
         this.input = input;
+        this.options = {
+            minDate: input.dataset.minDate || options.minDate || null,
+            maxDate: input.dataset.maxDate || options.maxDate || null,
+            yearStart: parseInt(input.dataset.yearStart) || options.yearStart || 1935,
+            yearEnd: parseInt(input.dataset.yearEnd) || options.yearEnd || new Date().getFullYear() + 10,
+            ...options
+        };
         this.datepicker = null;
         this.currentDate = new Date();
         this.focusedButton = null;
         this.isOpen = false;
+        this._suppressInput = false;
+
+        // Bound handler references for cleanup
+        this._boundClick = (e) => {
+            if (this.isOpen && !this.input.contains(e.target) && !this.datepicker?.contains(e.target)) {
+                this.hideDatepicker();
+            }
+        };
+        this._boundScroll = () => {
+            if (this.isOpen && this.datepicker) this.positionDatepicker();
+        };
+        this._boundResize = () => {
+            if (this.isOpen && this.datepicker) this.positionDatepicker();
+        };
 
         if (!this.input.placeholder) this.input.placeholder = "dd-mm-yyyy";
         this.input.autocomplete = "off";
@@ -21,12 +42,12 @@ class CompactDatepicker {
         // Input click event
         this.input.addEventListener('click', () => this.showDatepicker());
 
-        // Global click handler for closing datepicker
-        document.addEventListener('click', (e) => {
-            if (this.isOpen && !this.input.contains(e.target) && !this.datepicker?.contains(e.target)) {
-                this.hideDatepicker();
-            }
-        });
+        // Global click handler for closing datepicker (cleaned up in destroy)
+        document.addEventListener('click', this._boundClick);
+
+        // Reposition on scroll/resize while open
+        window.addEventListener('scroll', this._boundScroll, { passive: true });
+        window.addEventListener('resize', this._boundResize, { passive: true });
 
         // Keydown handler
         this.input.addEventListener('keydown', (e) => this.handleInputKeydown(e));
@@ -40,14 +61,24 @@ class CompactDatepicker {
             this.input.dispatchEvent(new Event('input'));
         });
 
-        // Input handler
-        let lastValue = "";
-        this.input.addEventListener('input', () => this.handleInputChange());
+        // Input handler (with suppress flag to prevent re-trigger loops)
+        this.input.addEventListener('input', () => {
+            if (this._suppressInput) return;
+            this.handleInputChange();
+        });
 
         // Focus handler
         this.input.addEventListener('focus', () => {
-            if (!this.isOpen) {
+            if (!this.isOpen && !this.input.disabled) {
                 this.showDatepicker();
+            }
+        });
+
+        // Respect disabled attribute
+        this.input.addEventListener('pointerdown', (e) => {
+            if (this.input.disabled) {
+                e.preventDefault();
+                if (this.isOpen) this.hideDatepicker();
             }
         });
     }
@@ -120,6 +151,32 @@ class CompactDatepicker {
         }
     }
 
+    _parseDateStr(str) {
+        if (!str) return null;
+        // Try dd-mm-yyyy (our native format)
+        let m = str.match(/^(\d{2})-(\d{2})-(\d{4})$/);
+        if (m) return new Date(parseInt(m[3]), parseInt(m[2]) - 1, parseInt(m[1]));
+        // Try ISO yyyy-mm-dd or yyyy/mm/dd
+        m = str.match(/^(\d{4})[-\/](\d{2})[-\/](\d{2})$/);
+        if (m) return new Date(parseInt(m[1]), parseInt(m[2]) - 1, parseInt(m[3]));
+        // Try other parsable formats
+        const d = new Date(str);
+        return isNaN(d) ? null : d;
+    }
+
+    isWithinRange(date) {
+        const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+        if (this.options.minDate) {
+            const min = this._parseDateStr(this.options.minDate);
+            if (min && d < min) return false;
+        }
+        if (this.options.maxDate) {
+            const max = this._parseDateStr(this.options.maxDate);
+            if (max && d > max) return false;
+        }
+        return true;
+    }
+
     handleInputChange() {
         let val = this.convertBnToEnDigits(this.input.value);
         val = val.replace(/\D/g, '');
@@ -129,7 +186,10 @@ class CompactDatepicker {
         if (val.length >= 3) formatted += '-' + val.slice(2, 4);
         if (val.length >= 5) formatted += '-' + val.slice(4, 8);
 
+        // Suppress re-trigger when setting value programmatically
+        this._suppressInput = true;
         this.input.value = formatted;
+        this._suppressInput = false;
 
         const regex = /^(\d{2})-(\d{2})-(\d{4})$/;
         if (regex.test(formatted)) {
@@ -141,7 +201,11 @@ class CompactDatepicker {
                 parsed.getMonth() + 1 === parseInt(mm) &&
                 parsed.getFullYear() === parseInt(yyyy);
 
-            this.input.style.border = valid ? "2px solid green" : "2px solid red";
+            if (valid && !this.isWithinRange(parsed)) {
+                this.input.style.border = "2px solid red";
+            } else {
+                this.input.style.border = valid ? "2px solid green" : "2px solid red";
+            }
             
             if (valid) {
                 this.currentDate = parsed;
@@ -223,13 +287,13 @@ class CompactDatepicker {
         this.renderCalendar(this.currentDate);
         this.positionDatepicker();
 
-        requestAnimationFrame(() => {
-            this.focusFirstDate();
-        });
+        // Focus stays on the input so user can manually type dates.
+        // The calendar popup is still visible for visual selection.
     }
 
     positionDatepicker() {
         requestAnimationFrame(() => {
+            if (!this.datepicker) return;
             const rect = this.input.getBoundingClientRect();
             const dpHeight = this.datepicker.offsetHeight;
             const dpWidth = this.datepicker.offsetWidth;
@@ -272,6 +336,7 @@ class CompactDatepicker {
 
     handleKeyboard(e) {
         if (!this.focusedButton) return;
+        if (!this.datepicker) return;
 
         const buttons = Array.from(this.datepicker.querySelectorAll('td button:not(:disabled)'));
         const idx = buttons.indexOf(this.focusedButton);
@@ -332,6 +397,7 @@ class CompactDatepicker {
     }
 
     focusFirstDate() {
+        if (!this.datepicker) return;
         const buttons = Array.from(this.datepicker.querySelectorAll('td button:not(:disabled)'));
         if (buttons.length) {
             const inputDate = this.input.value.trim();
@@ -396,8 +462,7 @@ class CompactDatepicker {
             monthSelect.appendChild(opt);
         }
 
-        const currentYear = new Date().getFullYear();
-        for (let y = 1935; y <= currentYear + 10; y++) {
+        for (let y = this.options.yearStart; y <= this.options.yearEnd; y++) {
             const opt = document.createElement('option');
             opt.value = y;
             opt.textContent = y;
@@ -496,9 +561,18 @@ class CompactDatepicker {
                 btn.classList.add('today');
             }
 
-            btn.addEventListener('click', () => {
-                this.selectDate(new Date(year, month, day));
-            });
+            const dateObj = new Date(year, month, day);
+            const disabled = !this.isWithinRange(dateObj);
+
+            if (disabled) {
+                btn.disabled = true;
+                btn.classList.add('disabled');
+                btn.setAttribute('aria-disabled', 'true');
+            } else {
+                btn.addEventListener('click', () => {
+                    this.selectDate(dateObj);
+                });
+            }
 
             td.appendChild(btn);
             tr.appendChild(td);
@@ -541,6 +615,9 @@ class CompactDatepicker {
     }
 
     selectDate(d) {
+        // Validate against min/max
+        if (!this.isWithinRange(d)) return;
+
         const day = String(d.getDate()).padStart(2, '0');
         const month = String(d.getMonth() + 1).padStart(2, '0');
         const year = d.getFullYear();
@@ -553,6 +630,9 @@ class CompactDatepicker {
 
     destroy() {
         this.hideDatepicker();
+        document.removeEventListener('click', this._boundClick);
+        window.removeEventListener('scroll', this._boundScroll);
+        window.removeEventListener('resize', this._boundResize);
     }
 
     setDate(date) {

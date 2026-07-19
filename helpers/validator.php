@@ -124,7 +124,8 @@ if (!function_exists('validateUnique')) {
             return ['valid' => false, 'error' => 'ডাটাবেস ত্রুটি'];
         }
         
-        $stmt->bind_param("s", $data[$field]);
+        $value = $data[$field];
+        $stmt->bind_param("s", $value);
         $stmt->execute();
         $result = $stmt->get_result()->fetch_assoc();
         $stmt->close();

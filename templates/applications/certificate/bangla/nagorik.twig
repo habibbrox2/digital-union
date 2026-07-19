@@ -36,7 +36,11 @@
 
                     </td>
                     <td>
-                     <img src="{{ url }}/assets/img/band-cross.png" alt="X" class="logo" height="60pt" width="60pt">
+                        {% if union.stamp_logo_url is defined and union.stamp_logo_url %}
+                            <img src="{{ url ~ union.stamp_logo_url }}" alt="Stamp" class="logo" height="60pt" width="60pt">
+                        {% else %}
+                            <img src="{{ url }}/assets/img/band-cross.png" alt="X" class="logo" height="60pt" width="60pt">
+                        {% endif %}
                     </td>
                 </tr>
             </table>
@@ -44,7 +48,7 @@
             <!-- Citizen Certificate Section -->
             <table style="width:100%; border-color:lightgray; border-collapse:collapse; margin-top: 4.5pt;" cellpadding="0" cellspacing="0">
                 <tr>
-                    <td colspan="2" style="text-align:center; font-size:13.5pt; font-weight:bold; padding-bottom: 3.75pt">
+                    <td colspan="2" style="text-align:center; font-size:14pt; font-weight:bold; padding-bottom: 3.75pt">
                         <u>{{ certificate_type_bn }}</u>
                     </td>
                 </tr>
@@ -87,7 +91,7 @@
                     <td>: {{ data.name_bn }}</td>
                     <td rowspan="4" valign="top" style="text-align: center; z-index: 10;">
                         {% if data.applicant_photo %}
-                            <img src="{{ url }}/{{ data.applicant_photo }}" height="75pt" width="75pt" alt="profile"
+                            <img src="{{ url ~ data.applicant_photo }}" height="75pt" width="75pt" alt="profile"
                                  style="overflow: hidden; z-index: 10; border-radius: 3.75pt; display: block; margin: 0 auto;" />
                         {% endif %}
                     </td>
@@ -246,7 +250,7 @@
                 {% else %}
                     <tr>
                         <td style="padding: 7.5pt; line-height: 1.8; font-size: 12pt;">
-                            &nbsp;&nbsp;&nbsp;&nbsp; অত্র ইউনিয়নের একজন স্থায়ী বাসিন্দা। তিনি জন্মগতভাবে বাংলাদেশের নাগরিক।
+                            &nbsp;&nbsp;&nbsp;&nbsp; অত্র ইউনিয়নের একজন {% if (data.resident|default('permanent')) == 'temporary' %}অস্থায়ী বাসিন্দা{% else %}স্থায়ী বাসিন্দা{% endif %}। তিনি জন্মগতভাবে বাংলাদেশের নাগরিক।
                         </td>
                     </tr>
                     <tr>
@@ -295,6 +299,10 @@
                         <font style="font-size:6pt;">www.innovationit.com.bd</font>
                     </td>
                     <td style="width: 75%; text-align:center;">
+                            <font style="font-size:8pt; font-weight:bold;">
+                                অল্প, স্বল্প খরচে সঠিক বিচার পেতে চলো যাই গ্রাম আদালতে。
+                            </font>
+                            <br/>
                         <font style="font-size:6pt;">{{ union.website }}- {{ union.email }}</font>
                     </td>
                 </tr>

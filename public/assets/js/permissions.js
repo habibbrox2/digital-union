@@ -214,7 +214,7 @@
                     if (typeof SweetAlertUtil !== 'undefined') {
                         SweetAlertUtil.toast(errorMsg, 'error');
                     } else {
-                        alert('Error: ' + errorMsg);
+                        Swal.fire('Error', errorMsg, 'error');
                     }
                 }
             })
@@ -230,7 +230,7 @@
                 if (typeof SweetAlertUtil !== 'undefined') {
                     SweetAlertUtil.toast('সংযোগে সমস্যা হয়েছে', 'error');
                 } else {
-                    alert('Error: ' + error.message);
+                    Swal.fire('Error', error.message, 'error');
                 }
             });
         },

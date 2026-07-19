@@ -128,7 +128,7 @@ jQuery(document).ready(function($) {
     $('.flex-caption').addClass('animated zoomIn');
     
     
-    $('.projects-highlightsssssss').slick({
+    $('.projects-highlights').slick({
       slidesToShow: 3,
       slidesToScroll: 1,
       autoplay: true,

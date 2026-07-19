@@ -253,7 +253,7 @@
     }
 
     .page-title {
-        color: #2c3e50;
+        color: var(--text-dark);
         font-weight: 600;
         font-size: 2rem;
     }
@@ -285,19 +285,19 @@
     }
 
     .stat-icon.bg-primary {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: var(--primary, #008B8B);
     }
 
     .stat-icon.bg-info {
-        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        background: var(--info, #17a2b8);
     }
 
     .stat-icon.bg-warning {
-        background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+        background: var(--warning, #ffc107);
     }
 
     .stat-icon.bg-success {
-        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        background: var(--success, #28a745);
     }
 
     .alert-custom {
@@ -315,7 +315,7 @@
     }
 
     .bg-gradient-primary {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: var(--primary, #008B8B);
     }
 
     .action-card {
@@ -336,19 +336,19 @@
     }
 
     .bg-primary-light {
-        background-color: #f0f4ff;
+        background-color: rgba(var(--primary-rgb), 0.08);
     }
 
     .bg-warning-light {
-        background-color: #fff8f0;
+        background-color: rgba(255, 193, 7, 0.1);
     }
 
     .bg-info-light {
-        background-color: #f0f8ff;
+        background-color: rgba(13, 110, 253, 0.08);
     }
 
     .bg-success-light {
-        background-color: #f0fff4;
+        background-color: rgba(40, 167, 69, 0.08);
     }
 
     .btn-group-sm .btn {
@@ -366,8 +366,8 @@
     }
 
     .badge-light {
-        background-color: #e9ecef;
-        color: #495057;
+        background-color: var(--bs-light, #e9ecef);
+        color: var(--bs-secondary-color, #495057);
     }
 
     @media (max-width: 768px) {

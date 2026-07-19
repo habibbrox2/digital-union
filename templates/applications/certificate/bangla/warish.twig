@@ -125,7 +125,7 @@ table.warish-table td {
 }
 
 .instructions-md-top {
-        margin-top: 22.5pt !important;
+        margin-top: 20pt !important;
 
 }
 
@@ -167,7 +167,11 @@ table.warish-table td {
 
                     </td>
                     <td>
-                     <img src="{{ url }}/assets/img/band-cross.png" alt="X" class="logo">
+                        {% if union.stamp_logo_url is defined and union.stamp_logo_url %}
+                            <img src="{{ url ~ union.stamp_logo_url }}" alt="Stamp" class="logo">
+                        {% else %}
+                            <img src="{{ url }}/assets/img/band-cross.png" alt="X" class="logo">
+                        {% endif %}
                     </td>
                 </tr>
             </table>
@@ -261,7 +265,7 @@ table.warish-table td {
             মৃত্যুবরণ করেন। মৃত্যুকালে তিনি নিম্নলিখিত ওয়ারিশগণকে রাখিয়া মৃত্যুবরণ করেন।</td></tr></table>
 
             <!-- Warish List -->
-            <table class="warish-table {% if data.warish_members|length > 10 %}warish-compact{% endif %}">
+            <table class="warish-table {% if data.warish_members|length > 7 %}warish-compact{% endif %}">
 
                 <tr>
                     <th>ক্রমিক নং</th><th>নাম</th><th>সম্পর্ক</th>
@@ -306,7 +310,7 @@ table.warish-table td {
             
             
 
-            <table class="instructions {% if data.warish_members|length > 10 %}instructions-md-top{% endif %}">
+            <table class="instructions {% if data.warish_members|length > 7 %}instructions-md-top{% endif %}">
                 <tr>
                     <td style="border-right:1px solid black; border-top:1px solid black; text-align:center; width: 25%;">
                         <img src="https://quickchart.io/qr?text={{ url }}/verify/warish_bn/{{ data.sonod_number }}/{{ union.union_code }}/1&margin=1&size=300" height="110" width="110">

@@ -184,6 +184,17 @@
                         {% endif %}
                     </div>
                 </div>
+
+                {# Union Stamp Logo #}
+                <div class="col-md-6">
+                    <label class="form-label">Union Stamp Logo</label>
+                    <div class="d-flex align-items-center gap-3">
+                        <input type="file" name="union_stamp_logo" id="union_stamp_logo" class="form-control">
+                        {% if union_settings.stamp_logo_url %}
+                            <img src="{{ union_settings.stamp_logo_url }}" alt="Union Stamp Logo" class="img-fluid border rounded" style="max-height:100px;">
+                        {% endif %}
+                    </div>
+                </div>
             </div>
         </div>
         <div class="card-footer text-center">
@@ -226,8 +237,8 @@
     }
     
     .union-select-wrapper select:focus {
-        border-color: #0d6efd;
-        box-shadow: 0 0 0 0.2rem rgba(13,110,253,.15);
+        border-color: #008B8B;
+        box-shadow: 0 0 0 0.2rem rgba(0,139,139,.15);
     }
     
     .union-select-wrapper option[value=""] {

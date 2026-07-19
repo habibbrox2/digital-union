@@ -141,15 +141,22 @@ profileForm.addEventListener('submit', async function(e){
         return;
     }
 
-    const res = await fetch('/profile/update', { method: 'POST', body: formData });
-    const data = await res.json();
+    const restoreBtn = btnLoading(e.submitter);
+    try {
+        const res = await fetch('/profile/update', { method: 'POST', body: formData });
+        const data = await res.json();
 
-    if(data.success){
-        Swal.fire(data.alert.title, data.alert.message, data.alert.type).then(()=> {
-            if(data.redirect) window.location.href = data.redirect;
-        });
-    } else {
-        Swal.fire(data.alert.title, data.alert.message, data.alert.type);
+        if(data.success){
+            Swal.fire(data.alert.title, data.alert.message, data.alert.type).then(()=> {
+                if(data.redirect) window.location.href = data.redirect;
+            });
+        } else {
+            Swal.fire(data.alert.title, data.alert.message, data.alert.type);
+        }
+    } catch(err) {
+        Swal.fire('ত্রুটি', 'সার্ভারের সাথে সংযোগ ব্যর্থ', 'error');
+    } finally {
+        restoreBtn();
     }
 });
 
@@ -166,15 +173,22 @@ passwordForm.addEventListener('submit', async function(e){
     }
 
     const formData = new FormData(passwordForm);
-    const res = await fetch('/profile/change-password', { method: 'POST', body: formData });
-    const data = await res.json();
+    const restoreBtn = btnLoading(e.submitter);
+    try {
+        const res = await fetch('/profile/change-password', { method: 'POST', body: formData });
+        const data = await res.json();
 
-    if(data.success){
-        Swal.fire(data.alert.title, data.alert.message, data.alert.type).then(()=> {
-            if(data.redirect) window.location.href = data.redirect;
-        });
-    } else {
-        Swal.fire(data.alert.title, data.alert.message, data.alert.type);
+        if(data.success){
+            Swal.fire(data.alert.title, data.alert.message, data.alert.type).then(()=> {
+                if(data.redirect) window.location.href = data.redirect;
+            });
+        } else {
+            Swal.fire(data.alert.title, data.alert.message, data.alert.type);
+        }
+    } catch(err) {
+        Swal.fire('ত্রুটি', 'সার্ভারের সাথে সংযোগ ব্যর্থ', 'error');
+    } finally {
+        restoreBtn();
     }
 });
 </script>

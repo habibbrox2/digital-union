@@ -6,257 +6,829 @@
 
 {% block content %}
 {% include 'components/sweetAlert.twig' %}
-{% if not is_logged_in %}
-    {% set redirect = "<script>window.location.href='/#';</script>" %}
-    {{ redirect|raw }}
-{% endif %}
+<div class="container-fluid px-0">
 
-<div class="container mt-4">
-    <h3>{{ header_title }}</h3>
-    {% if status %}
-        <div class="alert alert-{{ status == 'success' ? 'success' : 'danger' }}">
-            {{ message }}
-        </div>
-    {% endif %}
-
-    <!-- ব্যবসার ধরণ যোগ করুন ফর্ম -->
-    <form method="post" action="/settings/business-types/add" class="mb-4">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-
-        <div class="row">
-            <div class="col-md-6">
-                <div class="form-group">
-                    <label for="business_name_bn">ব্যবসার নাম (বাংলা)</label>
-                    <input type="text" class="form-control" id="business_name_bn" name="business_name_bn" placeholder="ব্যবসার নাম লিখুন" required>
+    <!-- Stats Banner -->
+    <div class="row g-3 mb-4 stats-banner">
+        <div class="col-lg-4 col-md-6">
+            <div class="stat-card stat-card-primary">
+                <div class="stat-icon">
+                    <i class="bi bi-building-gear"></i>
                 </div>
-            </div>
-
-            <div class="col-md-6">
-                <div class="form-group">
-                    <label for="business_name_en">ব্যবসার নাম (ইংরেজি)</label>
-                    <input type="text" class="form-control" id="business_name_en" name="business_name_en" placeholder="Business name in English">
+                <div class="stat-info">
+                    <span class="stat-label">মোট ব্যবসার ধরণ</span>
+                    <span class="stat-value" id="totalCountDisplay">{{ totalRecords|default(0) }}</span>
                 </div>
             </div>
         </div>
-
-        <div class="row">
-            <div class="col-md-4">
-                <div class="form-group">
-                    <label for="license_fee">লাইসেন্স ফি</label>
-                    <input type="number" class="form-control" id="license_fee" name="license_fee" placeholder="লাইসেন্স ফি লিখুন" required>
+        <div class="col-lg-4 col-md-6">
+            <div class="stat-card stat-card-success">
+                <div class="stat-icon">
+                    <i class="bi bi-plus-circle"></i>
                 </div>
-            </div>
-
-            <div class="col-md-4">
-                <div class="form-group">
-                    <label for="vat_amount">ভ্যাট পরিমাণ</label>
-                    <input type="number" class="form-control" id="vat_amount" name="vat_amount" placeholder="ভ্যাট পরিমাণ লিখুন" required>
-                </div>
-            </div>
-
-            <div class="col-md-4">
-                <div class="form-group">
-                    <label for="occupation_tax">পেশা কর</label>
-                    <input type="number" class="form-control" id="occupation_tax" name="occupation_tax" placeholder="পেশা কর লিখুন" required>
+                <div class="stat-info">
+                    <span class="stat-label">সর্বশেষ যোগ</span>
+                    <span class="stat-value" id="lastAddedDisplay">
+                        {% if businessTypes|length > 0 %}
+                            {{ (businessTypes|first).business_name_bn }}
+                        {% else %}
+                            —
+                        {% endif %}
+                    </span>
                 </div>
             </div>
         </div>
-
-        <div class="row">
-            <div class="col-md-4">
-                <div class="form-group">
-                    <label for="income_tax">আয়কর/উৎসে কর</label>
-                    <input type="number" class="form-control" id="income_tax" name="income_tax" placeholder="আয়কর লিখুন">
+        <div class="col-lg-4 col-md-6">
+            <div class="stat-card stat-card-info">
+                <div class="stat-icon">
+                    <i class="bi bi-search"></i>
                 </div>
-            </div>
-
-            <div class="col-md-4">
-                <div class="form-group">
-                    <label for="signboard_tax">সাইনবোর্ড কর</label>
-                    <input type="number" class="form-control" id="signboard_tax" name="signboard_tax" placeholder="সাইনবোর্ড কর লিখুন">
-                </div>
-            </div>
-
-            <div class="col-md-4">
-                <div class="form-group">
-                    <label for="surcharge">সারচার্জ</label>
-                    <input type="number" class="form-control" id="surcharge" name="surcharge" placeholder="সারচার্জ লিখুন">
+                <div class="stat-info">
+                    <span class="stat-label">বর্তমানে দৃশ্যমান</span>
+                    <span class="stat-value"><span id="visibleCount">0</span> / <span id="totalCount">{{ totalRecords|default(0) }}</span></span>
                 </div>
             </div>
         </div>
-
-        <div class="row">
-            <div class="col-12 text-center">
-                <button type="submit" class="btn btn-primary mt-3">ব্যবসার ধরণ যোগ করুন</button>
-            </div>
-        </div>
-    </form>
-
- <!-- Search & Items per page -->
-    <div class="d-flex justify-content-between align-items-center mb-2">
-        <input type="text" id="searchInput" class="form-control w-50" placeholder="অনুসন্ধান করুন...">
-        <select id="itemsPerPage" class="form-control w-auto">
-            <option value="5">৫টি</option>
-            <option value="10" selected>১০টি</option>
-            <option value="20">২০টি</option>
-        </select>
     </div>
 
-    <!-- Table -->
-    <div class="table-responsive">
-        <table class="table table-bordered" id="businessTable">
-            <thead>
-                <tr>
-                    <th data-sort="number">আইডি <i class="bi bi-arrow-down-up"></i></th>
-                    <th data-sort="string">ব্যবসার নাম (বাংলা) <i class="bi bi-arrow-down-up"></i></th>
-                    <th data-sort="string">ব্যবসার নাম (ইংরেজি) <i class="bi bi-arrow-down-up"></i></th>
-                    <th data-sort="number">লাইসেন্স ফি <i class="bi bi-arrow-down-up"></i></th>
-                    <th data-sort="number">ভ্যাট <i class="bi bi-arrow-down-up"></i></th>
-                    <th data-sort="number">পেশা কর <i class="bi bi-arrow-down-up"></i></th>
-                    <th data-sort="number">আয়কর <i class="bi bi-arrow-down-up"></i></th>
-                    <th data-sort="number">সাইনবোর্ড কর <i class="bi bi-arrow-down-up"></i></th>
-                    <th data-sort="number">সারচার্জ <i class="bi bi-arrow-down-up"></i></th>
-                    <th>অ্যাকশন</th>
-                </tr>
-            </thead>
-            <tbody id="businessTableBody">
-                {% for business in businessTypes %}
-                <tr>
-                    <td>{{ business.id }}</td>
-                    <td>{{ business.business_name_bn }}</td>
-                    <td>{{ business.business_name_en }}</td>
-                    <td>{{ business.license_fee }}</td>
-                    <td>{{ business.vat_amount }}</td>
-                    <td>{{ business.occupation_tax }}</td>
-                    <td>{{ business.income_tax }}</td>
-                    <td>{{ business.signboard_tax }}</td>
-                    <td>{{ business.surcharge }}</td>
-                    <td>
-                        <a href="/settings/business-types/edit/{{ business.id }}" class="btn btn-warning btn-sm">
-                            <i class="bi bi-pencil"></i> সম্পাদনা
-                        </a>
-                        <form method="post" action="/settings/business-types/delete" class="d-inline">
-                            <input type="hidden" name="id" value="{{ business.id }}">
-                            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                            <button type="submit" class="btn btn-danger btn-sm">
-                                <i class="bi bi-trash"></i> মুছুন
-                            </button>
-                        </form>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+    <!-- Toolbar: Header + Add Button -->
+    <div class="d-flex flex-wrap align-items-center justify-content-between mb-3 gap-2">
+        <div>
+            <h4 class="mb-1 fw-bold" style="color: #1e293b;">
+                <i class="bi bi-building-gear me-2 text-primary"></i>ব্যবসার ধরণ তালিকা
+            </h4>
+            <p class="text-muted mb-0" style="font-size: 0.85rem;">
+                {% if not is_superadmin and user_union_id %}
+                    <span class="badge bg-info bg-opacity-10 text-info-emphasis px-3 py-1 rounded-pill">
+                        <i class="bi bi-pin-map me-1"></i> নিজ ইউনিয়ন
+                    </span>
+                {% endif %}
+            </p>
+        </div>
+        <button class="btn btn-primary rounded-pill px-4 shadow-sm" id="toggleAddForm" type="button">
+            <i class="bi bi-plus-circle me-1"></i> <span id="toggleAddText">নতুন ব্যবসার ধরণ</span>
+        </button>
+    </div>
+
+    <!-- Add Business Type Form (Collapsible Card) -->
+    <div class="section-card mb-4" id="addFormCard" style="display: none;">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+            <h5 class="section-title mb-0" style="border-bottom: none; padding-bottom: 0;">
+                <i class="bi bi-plus-square-dotted text-primary me-2"></i>
+                <span id="formTitle">নতুন ব্যবসার ধরণ</span>
+            </h5>
+            <button type="button" class="btn btn-sm btn-outline-secondary rounded-circle" id="closeAddForm" style="width: 32px; height: 32px;" title="বন্ধ করুন (Esc)">
+                <i class="bi bi-x-lg"></i>
+            </button>
+        </div>
+
+        <form id="businessTypeForm">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <input type="hidden" name="id" id="editId" value="">
+
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label for="business_name_bn" class="form-label fw-semibold small text-secondary">ব্যবসার নাম (বাংলা) <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control input-enhanced" id="business_name_bn" name="business_name_bn" placeholder="যেমন: মুদির দোকান" required autocomplete="off">
+                </div>
+                <div class="col-md-6">
+                    <label for="business_name_en" class="form-label fw-semibold small text-secondary">ব্যবসার নাম (ইংরেজি)</label>
+                    <input type="text" class="form-control input-enhanced" id="business_name_en" name="business_name_en" placeholder="e.g. Departmental Store" autocomplete="off">
+                </div>
+            </div>
+
+            <div class="row g-3 mt-1">
+                <div class="col-md-4">
+                    <label for="license_fee" class="form-label fw-semibold small text-secondary">লাইসেন্স ফি <span class="text-danger">*</span></label>
+                    <div class="input-group input-group-enhanced">
+                        <span class="input-group-text">৳</span>
+                        <input type="number" step="0.01" class="form-control input-enhanced border-start-0" id="license_fee" name="license_fee" placeholder="৫০০" required min="0">
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <label for="vat_amount" class="form-label fw-semibold small text-secondary">ভ্যাট পরিমাণ <span class="text-danger">*</span></label>
+                    <div class="input-group input-group-enhanced">
+                        <span class="input-group-text">৳</span>
+                        <input type="number" step="0.01" class="form-control input-enhanced border-start-0" id="vat_amount" name="vat_amount" placeholder="৭৫" required min="0">
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <label for="occupation_tax" class="form-label fw-semibold small text-secondary">পেশা কর <span class="text-danger">*</span></label>
+                    <div class="input-group input-group-enhanced">
+                        <span class="input-group-text">৳</span>
+                        <input type="number" step="0.01" class="form-control input-enhanced border-start-0" id="occupation_tax" name="occupation_tax" placeholder="২০০" required min="0">
+                    </div>
+                </div>
+            </div>
+
+            <div class="row g-3 mt-1">
+                <div class="col-md-3">
+                    <label for="income_tax" class="form-label fw-semibold small text-secondary">আয়কর/উৎসে কর</label>
+                    <div class="input-group input-group-enhanced">
+                        <span class="input-group-text">৳</span>
+                        <input type="number" step="0.01" class="form-control input-enhanced border-start-0" id="income_tax" name="income_tax" placeholder="০" min="0">
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <label for="signboard_tax" class="form-label fw-semibold small text-secondary">সাইনবোর্ড কর</label>
+                    <div class="input-group input-group-enhanced">
+                        <span class="input-group-text">৳</span>
+                        <input type="number" step="0.01" class="form-control input-enhanced border-start-0" id="signboard_tax" name="signboard_tax" placeholder="০" min="0">
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <label for="surcharge" class="form-label fw-semibold small text-secondary">সারচার্জ</label>
+                    <div class="input-group input-group-enhanced">
+                        <span class="input-group-text">৳</span>
+                        <input type="number" step="0.01" class="form-control input-enhanced border-start-0" id="surcharge" name="surcharge" placeholder="০" min="0">
+                    </div>
+                </div>
+                <div class="col-md-3 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100 rounded-pill shadow-sm" id="formSubmitBtn">
+                        <i class="bi bi-floppy me-1"></i> <span id="submitBtnText">সংরক্ষণ করুন</span>
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Toolbar: Search + Per Page -->
+    <div class="section-card mb-3 p-3">
+        <div class="row g-2 align-items-center">
+            <div class="col-md-5">
+                <div class="search-wrapper position-relative">
+                    <i class="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-3 text-muted" style="font-size: 0.9rem; z-index: 5;"></i>
+                    <input type="text" id="searchInput" class="form-control ps-5 pe-5 input-enhanced rounded-pill" placeholder="অনুসন্ধান করুন... (যে কোন কলাম)" autocomplete="off">
+                    <button type="button" id="searchClearBtn"
+                            class="btn position-absolute top-50 end-0 translate-middle-y me-1 border-0 text-muted"
+                            style="display: none; font-size: 0.8rem; z-index: 5;" title="সার্চ পরিষ্কার করুন">
+                        <i class="bi bi-x-circle-fill"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="col-md-4 ms-auto">
+                <div class="d-flex align-items-center gap-2 justify-content-md-end flex-wrap">
+                    <label for="itemsPerPage" class="text-nowrap small text-muted fw-semibold">প্রতি পৃষ্ঠা:</label>
+                    <select id="itemsPerPage" class="form-select form-select-sm w-auto rounded-pill input-enhanced">
+                        <option value="5">৫টি</option>
+                        <option value="10" selected>১০টি</option>
+                        <option value="20">২০টি</option>
+                        <option value="50">৫০টি</option>
+                    </select>
+                </div>
+            </div>
+            <div class="col-md-3 col-lg-2">
+                <span class="badge bg-light text-dark w-100 py-2 rounded-pill text-center" id="recordCountBadge">
+                    <i class="bi bi-database me-1"></i> <span id="visibleBadgeCount">0</span> / {{ totalRecords|default(0) }}
+                </span>
+            </div>
+        </div>
+    </div>
+
+<!-- Table -->
+    <div class="section-card p-0 overflow-hidden">
+        <div class="table-responsive" style="max-height: 65vh;">
+            <table class="table table-enhanced table-hover align-middle mb-0" id="businessTable">
+                <thead class="table-light" style="position: sticky; top: 0; z-index: 2;">
+                    <tr>
+                        <th data-sort="number" class="ps-4" style="width: 60px; min-width: 60px;">
+                            <div class="d-flex align-items-center gap-1">
+                                আইডি <i class="bi bi-arrow-down-up ms-1" style="font-size: 0.7rem; opacity: 0.5;"></i>
+                            </div>
+                        </th>
+                        <th data-sort="string">ইউনিয়ন <i class="bi bi-arrow-down-up ms-1" style="font-size: 0.7rem; opacity: 0.5;"></i></th>
+                        <th data-sort="string">ব্যবসার নাম (বাংলা) <i class="bi bi-arrow-down-up ms-1" style="font-size: 0.7rem; opacity: 0.5;"></i></th>
+                        <th data-sort="string">ব্যবসার নাম (ইংরেজি) <i class="bi bi-arrow-down-up ms-1" style="font-size: 0.7rem; opacity: 0.5;"></i></th>
+                        <th data-sort="number" class="text-end">লাইসেন্স ফি <i class="bi bi-arrow-down-up ms-1" style="font-size: 0.7rem; opacity: 0.5;"></i></th>
+                        <th data-sort="number" class="text-end">ভ্যাট <i class="bi bi-arrow-down-up ms-1" style="font-size: 0.7rem; opacity: 0.5;"></i></th>
+                        <th data-sort="number" class="text-end">পেশা কর <i class="bi bi-arrow-down-up ms-1" style="font-size: 0.7rem; opacity: 0.5;"></i></th>
+                        <th data-sort="number" class="text-end">আয়কর <i class="bi bi-arrow-down-up ms-1" style="font-size: 0.7rem; opacity: 0.5;"></i></th>
+                        <th data-sort="number" class="text-end">সাইনবোর্ড <i class="bi bi-arrow-down-up ms-1" style="font-size: 0.7rem; opacity: 0.5;"></i></th>
+                        <th data-sort="number" class="text-end">সারচার্জ <i class="bi bi-arrow-down-up ms-1" style="font-size: 0.7rem; opacity: 0.5;"></i></th>
+                        <th class="text-center pe-4" style="width: 150px; min-width: 150px;">অ্যাকশন</th>
+                    </tr>
+                </thead>
+                <tbody id="businessTableBody">
+                    {% for business in businessTypes %}
+                    <tr class="table-row-appear">
+                        <td class="ps-4 fw-semibold text-muted"><small>#{{ business.id }}</small></td>
+                        <td>
+                            {% if business.union_id > 0 and business.union_name_bn %}
+                                <span class="badge bg-primary bg-opacity-10 text-primary px-3 py-1 rounded-pill">
+                                    <i class="bi bi-pin-map me-1"></i>{{ business.union_name_bn }}
+                                </span>
+                            {% else %}
+                                <span class="text-muted" style="opacity: 0.5;">&mdash;</span>
+                            {% endif %}
+                        </td>
+                        <td class="fw-medium">{{ business.business_name_bn }}</td>
+                        <td class="text-secondary">{{ business.business_name_en ?: '&mdash;' }}</td>
+                        <td class="text-end fw-medium">{{ (business.license_fee ?: 0)|number_format(0) }}/-</td>
+                        <td class="text-end">{{ (business.vat_amount ?: 0)|number_format(0) }}/-</td>
+                        <td class="text-end">{{ (business.occupation_tax ?: 0)|number_format(0) }}/-</td>
+                        <td class="text-end text-muted">{{ business.income_tax is not null ? (business.income_tax)|number_format(0) ~ '/-' : '&mdash;' }}</td>
+                        <td class="text-end text-muted">{{ business.signboard_tax is not null ? (business.signboard_tax)|number_format(0) ~ '/-' : '&mdash;' }}</td>
+                        <td class="text-end text-muted">{{ business.surcharge is not null ? (business.surcharge)|number_format(0) ~ '/-' : '&mdash;' }}</td>
+                        <td class="text-center pe-4">
+                            <div class="d-flex gap-1 justify-content-center">
+                                <a href="/settings/business-types/edit/{{ business.id }}" class="btn btn-sm btn-outline-warning rounded-pill px-3 action-btn" title="সম্পাদনা">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-3 action-btn delete-btn"
+                                        title="মুছুন" data-id="{{ business.id }}"
+                                        data-name-bn="{{ business.business_name_bn }}">
+                                    <i class="bi bi-trash3"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr id="emptyRow">
+                        <td colspan="11" class="text-center py-5">
+                            <div class="empty-state">
+                                <div class="empty-icon">
+                                    <i class="bi bi-inbox"></i>
+                                </div>
+                                <h6 class="fw-bold mt-3 mb-1">কোনও ব্যবসার ধরণ পাওয়া যায়নি</h6>
+                                <p class="text-muted small mb-0">উপরে "নতুন ব্যবসার ধরণ" বাটনে ক্লিক করে প্রথম ধরণ যোগ করুন</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
     </div>
 
     <!-- Pagination -->
-    <div class="d-flex justify-content-between align-items-center mt-2">
-        <button id="prevPage" class="btn btn-primary btn-sm">পূর্ববর্তী</button>
-        <div id="paginationInfo"></div>
-        <button id="nextPage" class="btn btn-primary btn-sm">পরবর্তী</button>
+    <div class="d-flex flex-wrap align-items-center justify-content-between mt-3 px-1 gap-2">
+        <div class="d-flex align-items-center gap-2">
+            <button id="prevPage" class="btn btn-outline-primary btn-sm rounded-pill px-3" disabled>
+                <i class="bi bi-chevron-left me-1"></i> পূর্ববর্তী
+            </button>
+            <div id="pageNumbers" class="d-flex gap-1"></div>
+            <button id="nextPage" class="btn btn-outline-primary btn-sm rounded-pill px-3">
+                পরবর্তী <i class="bi bi-chevron-right ms-1"></i>
+            </button>
+        </div>
+        <div id="paginationInfo" class="text-muted small fw-medium px-3 py-1 rounded-pill bg-light"></div>
     </div>
+
 </div>
+
+<!-- Hidden metadata for JS -->
+<div id="pageMeta"
+     data-total-records="{{ totalRecords|default(0) }}"
+     data-user-union-id="{{ user_union_id|default(0) }}"
+     data-is-superadmin="{{ is_superadmin ? 'true' : 'false' }}"
+     style="display:none;"></div>
+
+<style>
+/* ─── Stats Banner ─── */
+.stats-banner .stat-card {
+    background: #fff;
+    border-radius: 16px;
+    padding: 1.25rem 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    border: 1px solid rgba(0,0,0,0.06);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+.stats-banner .stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 3px;
+    opacity: 0.3;
+    transition: opacity 0.3s ease;
+}
+.stats-banner .stat-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 32px rgba(0,0,0,0.08);
+}
+.stats-banner .stat-card:hover::before { opacity: 1; }
+.stat-card-primary::before { background: linear-gradient(90deg, #0D6EFD, #5B9CFF); }
+.stat-card-success::before { background: linear-gradient(90deg, #28A745, #5DD475); }
+.stat-card-info::before { background: linear-gradient(90deg, #0D6EFD, #5B9CFF); }
+
+.stat-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+    flex-shrink: 0;
+    transition: all 0.3s ease;
+}
+.stat-card-primary .stat-icon { background: rgba(13,110,253,0.1); color: #0D6EFD; }
+.stat-card-success .stat-icon { background: rgba(40,167,69,0.1); color: #28A745; }
+.stat-card-info .stat-icon { background: rgba(13,110,253,0.1); color: #0D6EFD; }
+.stat-card:hover .stat-icon { transform: scale(1.1) rotate(-5deg); }
+
+.stat-info { display: flex; flex-direction: column; }
+.stat-label { font-size: 0.78rem; color: #6c757d; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; }
+.stat-value { font-size: 1.05rem; font-weight: 700; color: #1e293b; }
+
+/* ─── Table ─── */
+.table-row-appear {
+    opacity: 0;
+    transform: translateY(12px);
+    animation: rowEntrance 0.35s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+@keyframes rowEntrance {
+    to { opacity: 1; transform: translateY(0); }
+}
+.table-enhanced thead th {
+    background: #f1f5f9;
+    border-bottom: 2px solid #e2e8f0;
+    text-transform: uppercase;
+    font-size: 0.72rem;
+    letter-spacing: 0.3px;
+    padding-top: 12px;
+    padding-bottom: 12px;
+    user-select: none;
+}
+.table-enhanced thead th:hover { background: #e9edf3; }
+.table-enhanced tbody tr { transition: background 0.15s ease; }
+.table-enhanced tbody tr:hover {
+    background: rgba(0, 139, 139, 0.04) !important;
+}
+th[data-sort] { cursor: pointer; }
+.table-enhanced tbody tr.row-deleting {
+    animation: rowDelete 0.35s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+@keyframes rowDelete {
+    to { opacity: 0; transform: translateX(30px) scale(0.95); height: 0; padding: 0; }
+}
+
+/* ─── Input Groups ─── */
+.input-group-enhanced .input-group-text {
+    background: #f8f9fa;
+    border: 1px solid #ced4da;
+    border-right: none;
+    color: #6c757d;
+    transition: all 0.25s ease;
+}
+.input-group-enhanced .input-enhanced {
+    border-left: none;
+}
+.input-group-enhanced:focus-within .input-group-text {
+    border-color: #008B8B;
+    color: #008B8B;
+}
+
+/* ─── Actions ─── */
+.action-btn {
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+.action-btn::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: currentColor;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+.action-btn:hover::after { opacity: 0.08; }
+.action-btn:active { transform: scale(0.92); }
+
+/* ─── Add Form ─── */
+#addFormCard {
+    animation: slideDown 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+@keyframes slideDown {
+    from { opacity: 0; transform: translateY(-12px) scale(0.98); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* ─── Empty State ─── */
+.empty-state .empty-icon {
+    font-size: 3rem;
+    opacity: 0.3;
+    color: #6c757d;
+    animation: emptyBounce 2s ease-in-out infinite;
+}
+@keyframes emptyBounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+}
+
+/* ─── Pagination ─── */
+.page-num-btn {
+    min-width: 34px; height: 34px;
+    padding: 0 10px;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    border: 1px solid #dee2e6;
+    background: white;
+    color: #495057;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+.page-num-btn:hover { background: #e9ecef; border-color: #ced4da; }
+.page-num-btn.active {
+    background: #008B8B;
+    color: white;
+    border-color: #008B8B;
+    box-shadow: 0 2px 8px rgba(0, 139, 139, 0.3);
+}
+.page-num-btn.active:hover { background: #007A7A; }
+.page-num-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* ─── Responsive ─── */
+@media (max-width: 768px) {
+    .table-responsive { max-height: none !important; }
+    .section-card { padding: 1rem !important; }
+}
+</style>
 
 <script>
 document.addEventListener("DOMContentLoaded", () => {
+    // ─── DOM refs ───
     const table = document.getElementById("businessTable");
     const tbody = document.getElementById("businessTableBody");
-    const rows = Array.from(tbody.querySelectorAll("tr"));
+    const allDataRows = Array.from(tbody.querySelectorAll("tr.table-row-appear"));
     const searchInput = document.getElementById("searchInput");
+    const searchClearBtn = document.getElementById("searchClearBtn");
     const itemsPerPageSelect = document.getElementById("itemsPerPage");
     const prevBtn = document.getElementById("prevPage");
     const nextBtn = document.getElementById("nextPage");
     const paginationInfo = document.getElementById("paginationInfo");
+    const pageNumbers = document.getElementById("pageNumbers");
+    const visibleCount = document.getElementById("visibleCount");
+    const visibleBadgeCount = document.getElementById("visibleBadgeCount");
+    const totalCountDisplay = document.getElementById("totalCountDisplay");
+    const totalCount = document.getElementById("totalCount");
+
+    const toggleAddForm = document.getElementById("toggleAddForm");
+    const toggleAddText = document.getElementById("toggleAddText");
+    const addFormCard = document.getElementById("addFormCard");
+    const closeAddForm = document.getElementById("closeAddForm");
+    const businessForm = document.getElementById("businessTypeForm");
+    const formTitle = document.getElementById("formTitle");
+    const submitBtnText = document.getElementById("submitBtnText");
+    const formSubmitBtn = document.getElementById("formSubmitBtn");
+    const editIdInput = document.getElementById("editId");
+    const nameBnInput = document.getElementById("business_name_bn");
 
     let currentPage = 1;
     let itemsPerPage = parseInt(itemsPerPageSelect.value);
+    let filteredRows = [...allDataRows];
+    let sortDir = {};
+    let sortIndex = -1;
 
-    let filteredRows = [...rows]; // search & pagination জন্য
+    // ─── Animate initial rows ───
+    allDataRows.forEach((row, i) => { row.style.animationDelay = `${i * 25}ms`; });
+    updateVisibleCount();
 
-    // ===== Sortable Table =====
-    table.querySelectorAll("th").forEach((th, index) => {
-        const type = th.dataset.sort;
-        if (!type) return;
+    // ─── Toggle Add Form ───
+    function openForm() {
+        addFormCard.style.display = "block";
+        formTitle.textContent = "নতুন ব্যবসার ধরণ";
+        submitBtnText.textContent = "সংরক্ষণ করুন";
+        editIdInput.value = "";
+        businessForm.reset();
+        formSubmitBtn.className = "btn btn-primary w-100 rounded-pill shadow-sm";
+        formSubmitBtn.querySelector("i").className = "bi bi-floppy me-1";
+        nameBnInput.focus();
+        toggleAddText.textContent = "বন্ধ করুন";
+        toggleAddForm.innerHTML = '<i class="bi bi-dash-circle me-1"></i> বন্ধ করুন';
+        toggleAddForm.className = "btn btn-primary rounded-pill px-4 shadow-sm";
+    }
 
-        th.style.cursor = "pointer";
-        let dir = "asc";
+    function closeForm() {
+        addFormCard.style.display = "none";
+        businessForm.reset();
+        editIdInput.value = "";
+        toggleAddText.textContent = "নতুন ব্যবসার ধরণ";
+        toggleAddForm.innerHTML = '<i class="bi bi-plus-circle me-1"></i> নতুন ব্যবসার ধরণ';
+        toggleAddForm.className = "btn btn-primary rounded-pill px-4 shadow-sm";
+    }
 
-        th.addEventListener("click", () => {
-            filteredRows.sort((a, b) => {
-                let aText = a.children[index].textContent.trim();
-                let bText = b.children[index].textContent.trim();
+    toggleAddForm.addEventListener("click", () => {
+        if (addFormCard.style.display === "none" || addFormCard.style.display === "") {
+            openForm();
+        } else {
+            closeForm();
+        }
+    });
+    closeAddForm.addEventListener("click", closeForm);
 
-                if (type === "number") {
-                    aText = parseFloat(aText) || 0;
-                    bText = parseFloat(bText) || 0;
-                    return dir === "asc" ? aText - bText : bText - aText;
-                } else {
-                    return dir === "asc"
-                        ? aText.localeCompare(bText)
-                        : bText.localeCompare(aText);
+    // Keyboard shortcut: Escape to close form
+    document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape" && addFormCard.style.display === "block") {
+            closeForm();
+        }
+    });
+
+    // ─── Event Delegation: Delete buttons on tbody ───
+    tbody.addEventListener("click", (e) => {
+        const delBtn = e.target.closest(".delete-btn");
+        if (!delBtn) return;
+
+        const id = delBtn.dataset.id;
+        const nameBn = delBtn.dataset.nameBn;
+
+        Swal.fire({
+            title: '\u09a8\u09bf\u09b6\u09cd\u099a\u09bf\u09a4 \u0995\u09b0\u09c1\u09a8',
+            html: `\u0986\u09aa\u09a8\u09bf \u0995\u09bf "<strong>${nameBn}</strong>" \u09ae\u09c1\u099b\u09c7 \u09ab\u09c7\u09b2\u09a4\u09c7 \u099a\u09be\u09a8?<br><small class="text-muted">\u098f\u0987 \u09a7\u09b0\u09a3\u099f\u09bf \u09aa\u09c1\u09a8\u09b0\u09c1\u09a6\u09cd\u09a7\u09be\u09b0 \u0995\u09b0\u09be \u09af\u09be\u09ac\u09c7 \u09a8\u09be\u0964</small>`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc3545',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: '<i class="bi bi-trash3 me-1"></i> \u09b9\u09cd\u09af\u09be\u0981, \u09ae\u09c1\u099b\u09c1\u09a8',
+            cancelButtonText: '<i class="bi bi-x-circle me-1"></i> \u09ac\u09be\u09a4\u09bf\u09b2',
+            reverseButtons: true,
+            customClass: {
+                confirmButton: 'btn btn-danger rounded-pill px-4',
+                cancelButton: 'btn btn-outline-secondary rounded-pill px-4'
+            },
+            buttonsStyling: false,
+            showLoaderOnConfirm: true,
+            preConfirm: () => {
+                const fd = new FormData();
+                const csrf = document.querySelector('input[name="csrf_token"]')?.value || '';
+                fd.append('csrf_token', csrf);
+                return fetch(`/settings/business-types/delete/${id}`, {
+                    method: 'POST',
+                    body: fd
+                }).then(r => r.json()).then(d => {
+                    if (d.status !== 'success') throw new Error(d.message || '\u09ae\u09c1\u099b\u09a4\u09c7 \u09ac\u09cd\u09af\u09b0\u09cd\u09a5');
+                    return d;
+                }).catch(e => { throw new Error(e.message || 'Network error'); });
+            }
+        }).then(result => {
+            if (result.isConfirmed) {
+                const row = document.querySelector(`tr[data-id="${id}"]`);
+                if (row) {
+                    row.classList.add("row-deleting");
+                    setTimeout(() => {
+                        row.remove();
+                        const idx = allDataRows.indexOf(row);
+                        if (idx > -1) allDataRows.splice(idx, 1);
+                        filteredRows = [...allDataRows];
+                        currentPage = 1;
+                        renderTable();
+                        updateStats();
+                        Swal.fire({
+                            icon: 'success',
+                            title: '\u09ae\u09c1\u099b\u09c7 \u09ab\u09c7\u09b2\u09be \u09b9\u09df\u09c7\u099b\u09c7',
+                            text: `"${nameBn}" \u09b8\u09ab\u09b2\u09ad\u09be\u09ac\u09c7 \u09ae\u09c1\u099b\u09c7 \u09ab\u09c7\u09b2\u09be \u09b9\u09df\u09c7\u099b\u09c7\u0964`,
+                            timer: 2000,
+                            showConfirmButton: false,
+                            toast: true,
+                            position: 'top-end'
+                        });
+                    }, 350);
                 }
-            });
-            dir = dir === "asc" ? "desc" : "asc";
-            renderTable();
+            }
         });
     });
 
-    // ===== Search Filter =====
+    // ─── AJAX Form Submit ───
+    businessForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const nameBn = nameBnInput.value.trim();
+        if (!nameBn) {
+            Swal.fire({ icon: 'warning', title: '\u09ac\u09cd\u09af\u09ac\u09b8\u09be\u09b0 \u09a8\u09be\u09ae (\u09ac\u09be\u0982\u09b2\u09be) \u09aa\u09cd\u09b0\u09af\u09bc\u09cb\u099c\u09a8', timer: 2000, showConfirmButton: false, toast: true, position: 'top-end' });
+            return;
+        }
+
+        formSubmitBtn.disabled = true;
+        formSubmitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> \u09b8\u0982\u09b0\u0995\u09cd\u09b7\u09a3 \u0995\u09b0\u09be \u09b9\u099a\u09cd\u099b\u09c7...';
+
+        try {
+            const fd = new FormData(businessForm);
+
+            const res = await fetch('/settings/business-types/save', {
+                method: 'POST',
+                body: fd
+            });
+            const data = await res.json();
+            if (data.status !== 'success') throw new Error(data.message || '\u09ac\u09cd\u09af\u09b0\u09cd\u09a5');
+
+            Swal.fire({
+                icon: 'success',
+                title: '\u09af\u09cb\u0997 \u0995\u09b0\u09be \u09b9\u09df\u09c7\u099b\u09c7',
+                text: data.message || '\u09b8\u09ab\u09b2\u09ad\u09be\u09ac\u09c7 \u09b8\u0982\u09b0\u0995\u09cd\u09b7\u09bf\u09a4',
+                timer: 2000,
+                showConfirmButton: false,
+                toast: true,
+                position: 'top-end'
+            });
+
+            setTimeout(() => window.location.reload(), 500);
+        } catch (err) {
+            Swal.fire({
+                icon: 'error',
+                title: '\u09a4\u09cd\u09b0\u09c1\u099f\u09bf',
+                text: err.message || '\u09b8\u0982\u09b0\u0995\u09cd\u09b7\u09a3 \u09ac\u09cd\u09af\u09b0\u09cd\u09a5 \u09b9\u09df\u09c7\u099b\u09c7',
+                confirmButtonText: '\u09a0\u09bf\u0995 \u0986\u099b\u09c7'
+            });
+        } finally {
+            formSubmitBtn.disabled = false;
+            formSubmitBtn.innerHTML = '<i class="bi bi-floppy me-1"></i> \u09b8\u0982\u09b0\u0995\u09cd\u09b7\u09a3 \u0995\u09b0\u09c1\u09a8';
+        }
+    });
+
+    // ─── Search ───
     searchInput.addEventListener("input", () => {
-        const filter = searchInput.value.toLowerCase();
-        filteredRows = rows.filter(row =>
+        const filter = searchInput.value.toLowerCase().trim();
+        searchClearBtn.style.display = filter ? "block" : "none";
+        filteredRows = allDataRows.filter(row =>
             row.textContent.toLowerCase().includes(filter)
         );
         currentPage = 1;
         renderTable();
+        animateVisibleRows();
     });
 
-    // ===== Items per page =====
+    searchClearBtn.addEventListener("click", () => {
+        searchInput.value = "";
+        searchInput.focus();
+        searchClearBtn.style.display = "none";
+        filteredRows = [...allDataRows];
+        currentPage = 1;
+        renderTable();
+        animateVisibleRows();
+    });
+
+    // ─── Sort ───
+    table.querySelectorAll("th[data-sort]").forEach((th, index) => {
+        const type = th.dataset.sort;
+        th.addEventListener("click", () => {
+            table.querySelectorAll("th[data-sort] i.bi").forEach(icon => {
+                icon.className = "bi bi-arrow-down-up ms-1";
+                icon.style.cssText = "font-size: 0.7rem; opacity: 0.5;";
+            });
+            const icon = th.querySelector("i.bi");
+            if (sortIndex === index) {
+                sortDir[index] = sortDir[index] === "asc" ? "desc" : "asc";
+            } else {
+                sortIndex = index;
+                sortDir[index] = "asc";
+            }
+            icon.className = sortDir[index] === "asc" ? "bi bi-sort-up ms-1" : "bi bi-sort-down ms-1";
+            icon.style.cssText = "font-size: 0.7rem; opacity: 1; color: #008B8B;";
+
+            filteredRows.sort((a, b) => {
+                let aText = a.children[index].textContent.trim();
+                let bText = b.children[index].textContent.trim();
+                if (type === "number") {
+                    aText = parseFloat(aText.replace(/[,/-]/g, '')) || 0;
+                    bText = parseFloat(bText.replace(/[,/-]/g, '')) || 0;
+                    return sortDir[index] === "asc" ? aText - bText : bText - aText;
+                } else {
+                    return sortDir[index] === "asc"
+                        ? aText.localeCompare(bText, 'bn')
+                        : bText.localeCompare(aText, 'bn');
+                }
+            });
+            currentPage = 1;
+            renderTable();
+        });
+    });
+
+    // ─── Pagination ───
     itemsPerPageSelect.addEventListener("change", () => {
         itemsPerPage = parseInt(itemsPerPageSelect.value);
         currentPage = 1;
         renderTable();
     });
-
-    // ===== Pagination buttons =====
-    prevBtn.addEventListener("click", () => {
-        if (currentPage > 1) {
-            currentPage--;
-            renderTable();
-        }
-    });
-
+    prevBtn.addEventListener("click", () => { if (currentPage > 1) { currentPage--; renderTable(); } });
     nextBtn.addEventListener("click", () => {
-        if (currentPage < Math.ceil(filteredRows.length / itemsPerPage)) {
-            currentPage++;
-            renderTable();
-        }
+        const totalPages = Math.ceil(filteredRows.length / itemsPerPage);
+        if (currentPage < totalPages) { currentPage++; renderTable(); }
     });
 
-    // ===== Render Table =====
     function renderTable() {
-        tbody.innerHTML = "";
+        const totalPages = Math.ceil(filteredRows.length / itemsPerPage) || 1;
         const start = (currentPage - 1) * itemsPerPage;
         const end = start + itemsPerPage;
         const pageRows = filteredRows.slice(start, end);
-
-        pageRows.forEach(row => tbody.appendChild(row));
-
-        paginationInfo.textContent = `পৃষ্ঠা ${currentPage} এর ${Math.ceil(
-            filteredRows.length / itemsPerPage
-        )}`;
-
-        // Disable buttons
-        prevBtn.disabled = currentPage === 1;
-        nextBtn.disabled = currentPage === Math.ceil(filteredRows.length / itemsPerPage);
+        tbody.innerHTML = "";
+        if (pageRows.length === 0) {
+            const emptyRow = document.createElement("tr");
+            const msg = searchInput.value.trim() ? '\u0985\u09a8\u09c1\u09b8\u09a8\u09cd\u09a7\u09be\u09a8\u09c7\u09b0 \u09b8\u09be\u09a5\u09c7 \u09ae\u09bf\u09b2\u09c7 \u09aa\u09be\u0993\u09af\u09bc\u09be \u09af\u09be\u09af\u09bc\u09a8\u09bf' : '\u0995\u09cb\u09a8\u0993 \u09ac\u09cd\u09af\u09ac\u09b8\u09be\u09b0 \u09a7\u09b0\u09a3 \u09aa\u09be\u0993\u09af\u09bc\u09be \u09af\u09be\u09af\u09bc\u09a8\u09bf';
+            const hint = searchInput.value.trim() ? '\u0985\u09a8\u09c1\u0997\u09cd\u09b0\u09b9 \u0995\u09b0\u09c7 \u09ad\u09bf\u09a8\u09cd\u09a8 \u09b6\u09ac\u09cd\u09a6 \u09a6\u09bf\u09af\u09bc\u09c7 \u0985\u09a8\u09c1\u09b8\u09a8\u09cd\u09a7\u09be\u09a8 \u0995\u09b0\u09c1\u09a8' : '\u0989\u09aa\u09b0\u09c7 "\u09a8\u09a4\u09c1\u09a8 \u09ac\u09cd\u09af\u09ac\u09b8\u09be\u09b0 \u09a7\u09b0\u09a3" \u09ac\u09be\u099f\u09a8\u09c7 \u0995\u09cd\u09b2\u09bf\u0995 \u0995\u09b0\u09c7 \u09aa\u09cd\u09b0\u09a5\u09ae \u09a7\u09b0\u09a3 \u09af\u09cb\u0997 \u0995\u09b0\u09c1\u09a8';
+            emptyRow.innerHTML = `
+                <td colspan="11" class="text-center py-5">
+                    <div class="empty-state">
+                        <div class="empty-icon"><i class="bi bi-${searchInput.value.trim() ? 'search' : 'inbox'}"></i></div>
+                        <h6 class="fw-bold mt-3 mb-1">${msg}</h6>
+                        <p class="text-muted small mb-0">${hint}</p>
+                    </div>
+                </td>
+            `;
+            tbody.appendChild(emptyRow);
+        } else {
+            pageRows.forEach((row, i) => {
+                const clone = row.cloneNode(true);
+                clone.style.animation = "none";
+                clone.offsetHeight;
+                clone.style.animation = `rowEntrance 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards`;
+                clone.style.animationDelay = `${i * 20}ms`;
+                tbody.appendChild(clone);
+            });
+        }
+        updateVisibleCount();
+        paginationInfo.textContent = `\u09aa\u09c3\u09b7\u09cd\u09a0\u09be ${currentPage} / ${totalPages} (\u09ae\u09cb\u099f ${filteredRows.length})`;
+        prevBtn.disabled = currentPage <= 1;
+        nextBtn.disabled = currentPage >= totalPages;
+        renderPageNumbers(totalPages);
     }
 
-    renderTable();
+    function renderPageNumbers(totalPages) {
+        pageNumbers.innerHTML = "";
+        if (totalPages <= 1) return;
+        const range = 2;
+        const startPage = Math.max(1, currentPage - range);
+        const endPage = Math.min(totalPages, currentPage + range);
+        if (startPage > 1) {
+            pageNumbers.appendChild(createPageBtn(1));
+            if (startPage > 2) {
+                const dots = document.createElement("span");
+                dots.textContent = "\u2026";
+                dots.className = "px-1 text-muted";
+                dots.style.cssText = "font-size: 0.8rem; align-self: center;";
+                pageNumbers.appendChild(dots);
+            }
+        }
+        for (let i = startPage; i <= endPage; i++) {
+            pageNumbers.appendChild(createPageBtn(i));
+        }
+        if (endPage < totalPages) {
+            if (endPage < totalPages - 1) {
+                const dots = document.createElement("span");
+                dots.textContent = "\u2026";
+                dots.className = "px-1 text-muted";
+                dots.style.cssText = "font-size: 0.8rem; align-self: center;";
+                pageNumbers.appendChild(dots);
+            }
+            pageNumbers.appendChild(createPageBtn(totalPages));
+        }
+    }
 
-    // ===== Modern UI =====
-    table.classList.add("table-hover", "table-striped");
-    table.style.transition = "all 0.3s ease";
+    function createPageBtn(page) {
+        const btn = document.createElement("button");
+        btn.textContent = page;
+        btn.className = "page-num-btn";
+        if (page === currentPage) { btn.classList.add("active"); btn.disabled = true; }
+        btn.addEventListener("click", () => {
+            currentPage = page;
+            renderTable();
+            document.querySelector(".table-responsive")?.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+        return btn;
+    }
+
+    function updateVisibleCount() {
+        const visibleRows = tbody.querySelectorAll("tr.table-row-appear");
+        const count = visibleRows.length;
+        visibleCount.textContent = count;
+        if (visibleBadgeCount) visibleBadgeCount.textContent = count;
+        if (totalCount) totalCount.textContent = allDataRows.length;
+        if (totalCountDisplay) totalCountDisplay.textContent = allDataRows.length;
+    }
+
+    function animateVisibleRows() {
+        const rows = tbody.querySelectorAll("tr.table-row-appear");
+        rows.forEach((row, i) => {
+            row.style.animation = "none";
+            row.offsetHeight;
+            row.style.animation = `rowEntrance 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards`;
+            row.style.animationDelay = `${i * 20}ms`;
+        });
+    }
+
+    function updateStats() {
+        const total = allDataRows.length;
+        if (totalCountDisplay) totalCountDisplay.textContent = total;
+        if (totalCount) totalCount.textContent = total;
+        const lastAdded = document.getElementById("lastAddedDisplay");
+        if (lastAdded) {
+            const first = allDataRows[0];
+            lastAdded.textContent = first ? (first.dataset.nameBn || first.children[2]?.textContent.trim() || "\u2014") : "\u2014";
+        }
+    }
+
+    // Initial render
+    if (allDataRows.length > 0) renderTable();
 });
-
 </script>
 {% endblock %}

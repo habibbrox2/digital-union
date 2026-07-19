@@ -94,6 +94,41 @@
 
 <script>
 $(document).ready(function () {
+    // AJAX form submission with spinner
+    $('form').on('submit', function (e) {
+        e.preventDefault();
+
+        const $form = $(this);
+        const btn = $form.find('button[type="submit"]')[0];
+        const restoreBtn = btn ? btnLoading(btn, 'সংরক্ষণ করা হচ্ছে...') : function(){};
+
+        $.ajax({
+            url: $form.attr('action') || window.location.href,
+            method: 'POST',
+            data: $form.serialize(),
+            dataType: 'json',
+            success: function (res) {
+                restoreBtn();
+                if (res.alert && res.success === false) {
+                    Swal.fire(res.alert.title, res.alert.message, res.alert.type);
+                }
+                if (res.success && res.redirect) {
+                    window.location.href = res.redirect;
+                }
+            },
+            error: function (xhr) {
+                restoreBtn();
+                let msg = 'সার্ভারের সাথে সংযোগ ব্যর্থ';
+                try {
+                    const res = JSON.parse(xhr.responseText);
+                    msg = res.alert?.message || msg;
+                } catch(e) {}
+                Swal.fire('ত্রুটি', msg, 'error');
+            }
+        });
+    });
+
+
     const selectedDivision = "";
     const selectedDistrict = "";
     const selectedUpazila  = "";

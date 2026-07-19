@@ -129,6 +129,7 @@ $(document).ready(function() {
         }
     });
 
+    // AddressisSame checkbox: copy present → permanent with cascading
     $('#AddressisSame').change(function() {
         if ($(this).is(':checked')) {
             // Copy the present address to the permanent address fields
@@ -140,7 +141,7 @@ $(document).ready(function() {
             $('#permanent_village_en').val($('#present_village_en').val());
             $('#permanent_road_area_en').val($('#present_road_area_en').val());
             $('#permanent_holding_house_number_en').val($('#present_holding_house_number_en').val());
-    
+
             $('#permanent_division_bn').val($('#present_division_bn').val());
             $('#permanent_district_bn').val($('#present_district_bn').val());
             $('#permanent_upazila_bn').val($('#present_upazila_bn').val());
@@ -149,31 +150,29 @@ $(document).ready(function() {
             $('#permanent_village_bn').val($('#present_village_bn').val());
             $('#permanent_road_area_bn').val($('#present_road_area_bn').val());
             $('#permanent_holding_house_number_bn').val($('#present_holding_house_number_bn').val());
-    
-            // Trigger the change events to update dependent dropdowns
-    
-            // For English fields
-            $('#permanent_division_en').change(function() {
-                // Ensure that District and Upazila are updated based on Division
-                $('#permanent_district_en').val($('#present_district_en').val()); // Copy district if any
-                $('#permanent_upazila_en').val($('#present_upazila_en').val());   // Copy upazila if any
-                $('#permanent_district_en').change();  // Trigger change for district to update dependent upazilas
-                $('#permanent_upazila_en').change();  // Trigger change for upazila if any further dependencies
+
+            // Remove any previously bound handlers first (prevents stacking),
+            // then register one-time handlers that auto-cleanup after execution.
+            // These ensure cascading dropdowns (district → upazila) trigger
+            // after the division value is set during the copy operation.
+            $('#permanent_division_en').off('.addressCopy').on('change.addressCopy', function() {
+                $('#permanent_district_en').val($('#present_district_en').val());
+                $('#permanent_upazila_en').val($('#present_upazila_en').val());
+                $('#permanent_district_en').trigger('change');
+                $('#permanent_upazila_en').trigger('change');
             });
-    
-            // For Bangla fields
-            $('#permanent_division_bn').change(function() {
-                // Ensure that District and Upazila are updated based on Division
-                $('#permanent_district_bn').val($('#present_district_bn').val()); // Copy district if any
-                $('#permanent_upazila_bn').val($('#present_upazila_bn').val());   // Copy upazila if any
-                $('#permanent_district_bn').change();  // Trigger change for district to update dependent upazilas
-                $('#permanent_upazila_bn').change();  // Trigger change for upazila if any further dependencies
+
+            $('#permanent_division_bn').off('.addressCopy').on('change.addressCopy', function() {
+                $('#permanent_district_bn').val($('#present_district_bn').val());
+                $('#permanent_upazila_bn').val($('#present_upazila_bn').val());
+                $('#permanent_district_bn').trigger('change');
+                $('#permanent_upazila_bn').trigger('change');
             });
-    
+
             // Trigger the initial changes to populate dependent fields
-            $('#permanent_division_en').change();
-            $('#permanent_division_bn').change();
-    
+            $('#permanent_division_en').trigger('change');
+            $('#permanent_division_bn').trigger('change');
+
         } else {
             // Clear the permanent address fields when unchecked
             $('#permanent_division_en').val('');
@@ -184,7 +183,7 @@ $(document).ready(function() {
             $('#permanent_village_en').val('');
             $('#permanent_road_area_en').val('');
             $('#permanent_holding_house_number_en').val('');
-    
+
             $('#permanent_division_bn').val('');
             $('#permanent_district_bn').val('');
             $('#permanent_upazila_bn').val('');
@@ -193,9 +192,10 @@ $(document).ready(function() {
             $('#permanent_village_bn').val('');
             $('#permanent_road_area_bn').val('');
             $('#permanent_holding_house_number_bn').val('');
+
+            // Cleanup the one-time copy handlers
+            $('#permanent_division_en, #permanent_division_bn').off('.addressCopy');
         }
     });
-    
-    
-       
+
 });

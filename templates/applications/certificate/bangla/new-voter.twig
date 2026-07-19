@@ -142,7 +142,11 @@
                     </div>
                 </td>
                 <td width="20%">
-                    <img src="{{ url }}/assets/img/band-cross.png" alt="X" class="logo">
+                    {% if union.stamp_logo_url is defined and union.stamp_logo_url %}
+                        <img src="{{ url ~ union.stamp_logo_url }}" alt="Stamp" class="logo">
+                    {% else %}
+                        <img src="{{ url }}/assets/img/band-cross.png" alt="X" class="logo">
+                    {% endif %}
                 </td>
             </tr>
         </table>
@@ -194,7 +198,7 @@
 
         <!-- Paragraph -->
         <div class="paragraph">
-            অত্র ইউনিয়নের একজন স্থায়ী বাসিন্দা। তিনি জন্মগত ভাবে বাংলাদেশের নাগরিক এবং আমার পরিচিত।
+            অত্র ইউনিয়নের একজন {% if (data.resident|default('permanent')) == 'temporary' %}অস্থায়ী বাসিন্দা{% else %}স্থায়ী বাসিন্দা{% endif %}। তিনি জন্মগত ভাবে বাংলাদেশের নাগরিক এবং আমার পরিচিত।
             ভোটার তালিকা প্রণয়ন ও হালনাগাদের সময় তিনি বাড়িতে না থাকায় তার নাম তালিকা ভুক্ত হয়নি।
             তাহাকে নতুন ভোটার হওয়ার জন্য সুপারিশ করা হল। আমি তাহার সর্বাঙ্গীণ মঙ্গল ও উন্নতি কামনা করি।
         </div>

@@ -116,7 +116,7 @@
         <table border="0" width="99%" align="center" style="margin:3pt auto;" cellspacing="0" cellpadding="0">
             <tr>
                 <td style="padding-left: 37.5pt; height: 18.75pt;">
-                    <font style="font-size:12pt; padding-left:22.5pt;">This person is a permanent resident of the union. The following members are part of the family:</font>
+                    <font style="font-size:12pt; padding-left:22.5pt;">This person is {% if (citizen.resident|default('permanent')) == 'temporary' %}a temporary resident{% else %}a permanent resident{% endif %} of the union. The following members are part of the family:</font>
                 </td>
             </tr>
         </table>

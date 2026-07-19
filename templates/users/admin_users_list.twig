@@ -1,53 +1,110 @@
-{# Users Management - Admin Panel - Production Ready v2.0 #}
 {% extends "layout.twig" %}
 
 {% block title %}{{ 'ব্যবহারকারী ব্যবস্থাপনা' }}{% endblock %}
 {% block header_title %}{{ header_title|default('ব্যবহারকারী ব্যবস্থাপনা') }}{% endblock %}
 
 {% block content %}
-<div class="container-fluid mt-4">
-    <!-- Header Section -->
-    <div class="row mb-4">
-        <div class="col-md-6">
-            <h2>
-                <i class="fas fa-users"></i> {{ 'ব্যবহারকারী ব্যবস্থাপনা'}}
-            </h2>
-            <p class="text-muted">{{ 'মোট ব্যবহারকারী: ' }}{{ total_users ?? '0' }}</p>
+{% include 'components/sweetAlert.twig' %}
+<div class="container-fluid px-0">
+
+    <!-- Stats Banner -->
+    <div class="row g-3 mb-4 stats-banner">
+        <div class="col-lg-3 col-md-6">
+            <div class="stat-card stat-card-primary">
+                <div class="stat-icon">
+                    <i class="bi bi-people"></i>
+                </div>
+                <div class="stat-info">
+                    <span class="stat-label">মোট ব্যবহারকারী</span>
+                    <span class="stat-value">{{ pagination.total_records ?? total_users ?? 0 }}</span>
+                </div>
+            </div>
         </div>
-        <div class="col-md-6 text-end">
-            <a href="/users/add" class="btn btn-primary">
-                <i class="fas fa-plus"></i> {{ 'নতুন ব্যবহারকারী' }}
+        <div class="col-lg-3 col-md-6">
+            <div class="stat-card stat-card-success">
+                <div class="stat-icon">
+                    <i class="bi bi-person-check"></i>
+                </div>
+                <div class="stat-info">
+                    <span class="stat-label">সক্রিয়</span>
+                    <span class="stat-value">{{ active_count ?? '—' }}</span>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6">
+            <div class="stat-card stat-card-danger">
+                <div class="stat-icon">
+                    <i class="bi bi-person-x"></i>
+                </div>
+                <div class="stat-info">
+                    <span class="stat-label">নিষ্ক্রিয়</span>
+                    <span class="stat-value">{{ inactive_count ?? '—' }}</span>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6">
+            <div class="stat-card stat-card-info">
+                <div class="stat-icon">
+                    <i class="bi bi-person-plus"></i>
+                </div>
+                <div class="stat-info">
+                    <span class="stat-label">সর্বশেষ যোগ</span>
+                    <span class="stat-value" id="lastAddedDisplay">
+                        {% if users|length > 0 %}
+                            {{ (users|first).username }}
+                        {% else %}
+                            —
+                        {% endif %}
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toolbar -->
+    <div class="d-flex flex-wrap align-items-center justify-content-between mb-3 gap-2">
+        <div>
+            <h4 class="mb-0 fw-bold" style="color: #1e293b;">
+                <i class="bi bi-people me-2 text-primary"></i>ব্যবহারকারী তালিকা
+            </h4>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="/users/add" class="btn btn-primary rounded-pill px-4 shadow-sm">
+                <i class="bi bi-plus-circle me-1"></i> নতুন ব্যবহারকারী
             </a>
-            <a href="/users/export" class="btn btn-success ms-2">
-                <i class="fas fa-download"></i> {{ 'এক্সপোর্ট' }}
+            <a href="/users/export" class="btn btn-success rounded-pill px-4 shadow-sm">
+                <i class="bi bi-download me-1"></i> এক্সপোর্ট
             </a>
         </div>
     </div>
 
-    <!-- Alert Messages -->
-    {% include 'components/sweetAlert.twig' %}
+    <!-- CSRF Token -->
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
 
     <!-- Search & Filter Form -->
-    <div class="card mb-4 shadow-sm">
-        <div class="card-body">
-            <form method="GET" class="row g-3" id="searchForm">
-                <div class="col-md-5">
-                    <label class="form-label">{{ 'অনুসন্ধান' }}</label>
-                    <input type="text" name="search" class="form-control" 
-                           placeholder="{{ 'ব্যবহারকারীনাম, ইমেইল বা নাম' }}"
-                           value="{{ filters.search ?? '' }}">
+    <div class="section-card mb-3 p-3">
+        <form method="GET" id="searchForm">
+            <div class="row g-2 align-items-end">
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold small text-secondary mb-1">{{ 'অনুসন্ধান' }}</label>
+                    <div class="search-wrapper position-relative">
+                        <i class="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-3 text-muted" style="font-size: 0.9rem; z-index: 5;"></i>
+                        <input type="text" name="search" class="form-control ps-5 input-enhanced rounded-pill"
+                               placeholder="ব্যবহারকারীনাম, ইমেইল বা নাম"
+                               value="{{ filters.search ?? '' }}" autocomplete="off">
+                    </div>
                 </div>
                 <div class="col-md-3">
-                    <label class="form-label">{{ 'অবস্থা' }}</label>
-                    <select name="status" class="form-select">
+                    <label class="form-label fw-semibold small text-secondary mb-1">{{ 'অবস্থা' }}</label>
+                    <select name="status" class="form-select input-enhanced rounded-pill">
                         <option value="">{{ 'সকল অবস্থা' }}</option>
                         <option value="active" {% if filters.status == 'active' %}selected{% endif %}>{{ 'সক্রিয়' }}</option>
                         <option value="inactive" {% if filters.status == 'inactive' %}selected{% endif %}>{{ 'নিষ্ক্রিয়' }}</option>
                     </select>
                 </div>
                 <div class="col-md-2">
-                    <label class="form-label">{{ 'ভূমিকা' }}</label>
-                    <select name="role" class="form-select">
+                    <label class="form-label fw-semibold small text-secondary mb-1">{{ 'ভূমিকা' }}</label>
+                    <select name="role" class="form-select input-enhanced rounded-pill">
                         <option value="">{{ 'সব ভূমিকা' }}</option>
                         {% for role in roles %}
                         <option value="{{ role.id }}" {% if filters.role == role.id %}selected{% endif %}>
@@ -56,127 +113,168 @@
                         {% endfor %}
                     </select>
                 </div>
-                <div class="col-md-2 d-flex align-items-end">
-                    <button type="submit" class="btn btn-primary w-100">
-                        <i class="fas fa-search"></i> {{ 'অনুসন্ধান' }}
-                    </button>
+                <div class="col-md-3">
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary rounded-pill px-4 flex-fill">
+                            <i class="bi bi-search me-1"></i> অনুসন্ধান
+                        </button>
+                        {% if filters.search or filters.status or filters.role %}
+                        <a href="/users" class="btn btn-outline-secondary rounded-pill px-3">
+                            <i class="bi bi-x-circle"></i>
+                        </a>
+                        {% endif %}
+                    </div>
                 </div>
-            </form>
-        </div>
+            </div>
+        </form>
     </div>
 
     <!-- Users Table -->
-    <div class="card shadow">
-        <div class="table-responsive">
-            <table class="table table-hover mb-0">
-                <thead class="table-light sticky-top">
+    <div class="section-card p-0 overflow-hidden">
+        <div class="table-responsive" style="max-height: 70vh;">
+            <table class="table table-enhanced table-hover align-middle mb-0" id="usersTable">
+                <thead class="table-light" style="position: sticky; top: 0; z-index: 2;">
                     <tr>
-                        <th style="width: 60px;">{{ 'আইডি' }}</th>
-                        <th>{{ 'ব্যবহারকারীনাম' }}</th>
-                        <th>{{ 'ইমেইল' }}</th>
-                        <th>{{ 'নাম' }}</th>
-                        <th style="width: 120px;">{{ 'ভূমিকা' }}</th>
-                        <th>{{ 'ইউনিয়ন' }}</th>
-                        <th style="width: 80px;">{{ 'অবস্থা' }}</th>
-                        <th>{{ 'যোগদান' }}</th>
-                        <th>{{ 'শেষ লগইন' }}</th>
-                        <th style="width: 120px;">{{ 'পদক্ষেপ' }}</th>
+                        <th data-sort="number" class="ps-4" style="width: 60px; min-width: 60px;">
+                            <div class="d-flex align-items-center gap-1">
+                                আইডি <i class="bi bi-arrow-down-up ms-1" style="font-size: 0.7rem; opacity: 0.5;"></i>
+                            </div>
+                        </th>
+                        <th data-sort="string">ব্যবহারকারী <i class="bi bi-arrow-down-up ms-1" style="font-size: 0.7rem; opacity: 0.5;"></i></th>
+                        <th data-sort="string">ইমেইল <i class="bi bi-arrow-down-up ms-1" style="font-size: 0.7rem; opacity: 0.5;"></i></th>
+                        <th data-sort="string">নাম <i class="bi bi-arrow-down-up ms-1" style="font-size: 0.7rem; opacity: 0.5;"></i></th>
+                        <th data-sort="string" style="width: 120px;">ভূমিকা <i class="bi bi-arrow-down-up ms-1" style="font-size: 0.7rem; opacity: 0.5;"></i></th>
+                        <th data-sort="string">ইউনিয়ন <i class="bi bi-arrow-down-up ms-1" style="font-size: 0.7rem; opacity: 0.5;"></i></th>
+                        <th data-sort="string" style="width: 80px;">অবস্থা <i class="bi bi-arrow-down-up ms-1" style="font-size: 0.7rem; opacity: 0.5;"></i></th>
+                        <th data-sort="string">যোগদান <i class="bi bi-arrow-down-up ms-1" style="font-size: 0.7rem; opacity: 0.5;"></i></th>
+                        <th data-sort="string">শেষ লগইন <i class="bi bi-arrow-down-up ms-1" style="font-size: 0.7rem; opacity: 0.5;"></i></th>
+                        <th class="text-center pe-4" style="width: 140px; min-width: 140px;">পদক্ষেপ</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody id="usersTableBody">
                     {% if users|length > 0 %}
                         {% for user in users %}
-                        <tr>
-                            <td>
-                                <code class="text-primary">{{ user.user_id }}</code>
+                        <tr class="table-row-appear" data-id="{{ user.user_id }}" data-username="{{ user.username }}">
+                            <td class="ps-4">
+                                <a href="/users/{{ user.user_id }}" class="text-decoration-none">
+                                    <span class="badge bg-light text-dark rounded-pill">#{{ user.user_id }}</span>
+                                </a>
                             </td>
                             <td>
-                                <strong>{{ user.username }}</strong>
-                                {% if user.email_verified_at %}
-                                <span class="badge bg-success" title="{{ 'ইমেইল যাচাইকৃত' }}">
-                                    <i class="fas fa-check"></i>
-                                </span>
-                                {% endif %}
+                                <a href="/users/{{ user.user_id }}" class="text-decoration-none text-reset">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="avatar-placeholder rounded-circle bg-primary bg-opacity-10 text-primary d-flex align-items-center justify-content-center flex-shrink-0"
+                                             style="width: 32px; height: 32px; font-size: 0.75rem; font-weight: 700;">
+                                            {{ user.username|first|upper }}
+                                        </div>
+                                        <div>
+                                            <strong>{{ user.username }}</strong>
+                                            {% if user.email_verified_at %}
+                                            <span class="badge bg-success ms-1" title="ইমেইল যাচাইকৃত" style="font-size: 0.6rem;">
+                                                <i class="bi bi-check"></i>
+                                            </span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </a>
                             </td>
                             <td>
-                                <small>{{ user.email }}</small>
+                                <small class="text-secondary">{{ user.email }}</small>
                             </td>
                             <td>
                                 {% if user.name_bn %}
-                                <div>{{ user.name_bn }}</div>
+                                <div class="fw-medium">{{ user.name_bn }}</div>
                                 <small class="text-muted">{{ user.name_en }}</small>
                                 {% else %}
-                                <em class="text-muted">-</em>
+                                <em class="text-muted" style="font-size: 0.85rem;">—</em>
                                 {% endif %}
                             </td>
                             <td>
-                                {% if user.role_id == 1 %}
-                                    <span class="badge bg-danger">অ্যাডমিনিস্ট্রেটর</span>
-                                {% elseif user.role_id == 2 %}
-                                    <span class="badge bg-primary">সচিব</span>
-                                {% elseif user.role_id == 3 %}
-                                    <span class="badge bg-secondary">চেয়ারম্যান</span>
-                                {% elseif user.role_id == 4 %}
-                                    <span class="badge bg-warning text-dark">মেম্বার</span>
-                                {% elseif user.role_id == 5 %}
-                                    <span class="badge bg-success">কম্পিউটার অপারেটর</span>
-                                {% elseif user.role_id == 6 %}
-                                    <span class="badge bg-info text-dark">গ্রাম পুলিশ</span>
-                                {% elseif user.role_id == 7 %}
-                                    <span class="badge bg-light text-dark">অফিস সহকারী</span>
-                                {% else %}
-                                    <span class="badge bg-light text-dark">{{ user.role_name ?? 'Unknown' }}</span>
-                                {% endif %}
+                                {% set role_color = {
+                                    1: 'danger',
+                                    2: 'primary',
+                                    3: 'secondary',
+                                    4: 'warning text-dark',
+                                    5: 'success',
+                                    6: 'info text-dark',
+                                    7: 'light text-dark'
+                                } %}
+                                <span class="badge bg-{{ role_color[user.role_id]|default('light text-dark') }} px-3 py-1 rounded-pill">
+                                    {{ user.role_name ?? 'Unknown' }}
+                                </span>
                             </td>
                             <td>
                                 {% if user.union_name_bn %}
-                                <small>{{ user.union_name_bn }}</small>
+                                <small class="text-secondary">{{ user.union_name_bn }}</small>
                                 {% else %}
-                                <em class="text-muted">-</em>
+                                <em class="text-muted" style="font-size: 0.85rem;">—</em>
                                 {% endif %}
                             </td>
                             <td>
                                 {% if user.status == 'active' %}
-                                <span class="badge bg-success">{{ 'সক্রিয়' }}</span>
+                                <span class="badge bg-success bg-opacity-10 text-success px-3 py-1 rounded-pill">
+                                    <span class="status-dot" style="display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: currentColor; margin-right: 4px;"></span>
+                                    সক্রিয়
+                                </span>
                                 {% else %}
-                                <span class="badge bg-danger">{{ 'নিষ্ক্রিয়' }}</span>
+                                <span class="badge bg-danger bg-opacity-10 text-danger px-3 py-1 rounded-pill">
+                                    <span class="status-dot" style="display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: currentColor; margin-right: 4px;"></span>
+                                    নিষ্ক্রিয়
+                                </span>
                                 {% endif %}
                             </td>
                             <td>
-                                <small>{{ user.created_at|date('d-m-Y') }}</small>
+                                <small class="text-secondary">{{ user.created_at|date('d-m-Y') }}</small>
                             </td>
                             <td>
                                 {% if user.last_login %}
-                                <small>{{ user.last_login|date('d-m-Y') }}</small>
+                                <small class="text-secondary">{{ user.last_login|date('d-m-Y') }}</small>
                                 {% else %}
-                                <em class="text-muted">কখনও নয়</em>
+                                <em class="text-muted" style="font-size: 0.8rem;">কখনও নয়</em>
                                 {% endif %}
                             </td>
-                            <td>
-                                <div class="btn-group btn-group-sm" role="group">
-                                    <a href="/users/{{ user.user_id }}" class="btn btn-outline-info" 
-                                       title="{{ 'প্রোফাইল দেখুন' }}" data-bs-toggle="tooltip">
-                                        <i class="fas fa-eye"></i>
+                            <td class="text-center pe-4">
+                                <div class="d-flex gap-1 justify-content-center">
+                                    <a href="/users/{{ user.user_id }}" class="btn btn-sm btn-outline-info rounded-pill px-3 action-btn" title="প্রোফাইল দেখুন">
+                                        <i class="bi bi-eye"></i>
                                     </a>
-                                    <a href="/users/{{ user.user_id }}/edit" class="btn btn-outline-warning" 
-                                       title="{{ 'সম্পাদনা করুন' }}" data-bs-toggle="tooltip">
-                                        <i class="fas fa-edit"></i>
+                                    <a href="/users/{{ user.user_id }}/edit" class="btn btn-sm btn-outline-warning rounded-pill px-3 action-btn" title="সম্পাদনা করুন">
+                                        <i class="bi bi-pencil"></i>
                                     </a>
-                                    <button type="button" class="btn btn-outline-danger delete-user-btn" 
-                                            data-id="{{ user.user_id }}" 
+                                    {% if user.status == 'inactive' %}
+                                    <button type="button" class="btn btn-sm btn-outline-success rounded-pill px-3 action-btn reactivate-user-btn"
+                                            data-id="{{ user.user_id }}"
                                             data-username="{{ user.username }}"
-                                            title="{{ 'মুছুন' }}" data-bs-toggle="tooltip">
-                                        <i class="fas fa-trash"></i>
+                                            title="পুনরায় সক্রিয় করুন">
+                                        <i class="bi bi-arrow-repeat"></i>
+                                    </button>
+                                    {% endif %}
+                                    <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-3 action-btn delete-user-btn"
+                                            data-id="{{ user.user_id }}"
+                                            data-username="{{ user.username }}"
+                                            title="মুছুন">
+                                        <i class="bi bi-trash3"></i>
                                     </button>
                                 </div>
                             </td>
                         </tr>
                         {% endfor %}
                     {% else %}
-                    <tr>
+                    <tr id="emptyRow">
                         <td colspan="10" class="text-center py-5">
-                            <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
-                            <div class="text-muted">{{ 'কোন ব্যবহারকারী পাওয়া যায়নি' }}</div>
+                            <div class="empty-state">
+                                <div class="empty-icon">
+                                    <i class="bi bi-people"></i>
+                                </div>
+                                <h6 class="fw-bold mt-3 mb-1">কোন ব্যবহারকারী পাওয়া যায়নি</h6>
+                                <p class="text-muted small mb-0">
+                                    {% if filters.search or filters.status or filters.role %}
+                                        অনুগ্রহ করে ভিন্ন ফিল্টার ব্যবহার করে অনুসন্ধান করুন
+                                    {% else %}
+                                        এখনও কোন ব্যবহারকারী যোগ করা হয়নি। উপরে "নতুন ব্যবহারকারী" বাটনে ক্লিক করুন।
+                                    {% endif %}
+                                </p>
+                            </div>
                         </td>
                     </tr>
                     {% endif %}
@@ -187,138 +285,392 @@
 
     <!-- Pagination -->
     {% if pagination and pagination.total > 1 %}
-    <nav aria-label="পৃষ্ঠা নেভিগেশন" class="mt-4">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-            <div class="text-muted">
-                {{ pagination.showing_from }} থেকে {{ pagination.showing_to }} পর্যন্ত দেখানো হচ্ছে, মোট {{ pagination.total_records }} টি
-            </div>
-        </div>
-        <ul class="pagination justify-content-center">
-            {% if pagination.current > 1 %}
-            <li class="page-item">
-                <a class="page-link" href="?page=1&search={{ filters.search ?? '' }}&status={{ filters.status ?? '' }}&role={{ filters.role ?? '' }}">
-                    <i class="fas fa-step-backward"></i> {{ 'প্রথম' }}
-                </a>
-            </li>
-            <li class="page-item">
-                <a class="page-link" href="?page={{ pagination.current - 1 }}&search={{ filters.search ?? '' }}&status={{ filters.status ?? '' }}&role={{ filters.role ?? '' }}">
-                    <i class="fas fa-chevron-left"></i> {{ 'পূর্ববর্তী' }}
-                </a>
-            </li>
-            {% endif %}
-
-            {% for i in range(max(1, pagination.current - 2), min(pagination.total, pagination.current + 2)) %}
-                {% if i == pagination.current %}
-                <li class="page-item active">
-                    <span class="page-link">{{ i }}</span>
-                </li>
-                {% else %}
-                <li class="page-item">
-                    <a class="page-link" href="?page={{ i }}&search={{ filters.search ?? '' }}&status={{ filters.status ?? '' }}&role={{ filters.role ?? '' }}">{{ i }}</a>
-                </li>
+    <div class="d-flex flex-wrap align-items-center justify-content-between mt-3 px-1 gap-2">
+        <div class="d-flex align-items-center gap-2">
+            <a href="?page={{ pagination.current > 1 ? pagination.current - 1 : 1 }}&search={{ filters.search ?? '' }}&status={{ filters.status ?? '' }}&role={{ filters.role ?? '' }}"
+               class="btn btn-outline-primary btn-sm rounded-pill px-3 {{ pagination.current <= 1 ? 'disabled' : '' }}">
+                <i class="bi bi-chevron-left me-1"></i> পূর্ববর্তী
+            </a>
+            <div class="d-flex gap-1">
+                {% set range = 2 %}
+                {% set startPage = max(1, pagination.current - range) %}
+                {% set endPage = min(pagination.total, pagination.current + range) %}
+                {% if startPage > 1 %}
+                <a href="?page=1&search={{ filters.search ?? '' }}&status={{ filters.status ?? '' }}&role={{ filters.role ?? '' }}"
+                   class="page-num-btn">1</a>
+                {% if startPage > 2 %}<span class="px-1 text-muted" style="font-size: 0.8rem; align-self: center;">&hellip;</span>{% endif %}
                 {% endif %}
-            {% endfor %}
-
-            {% if pagination.current < pagination.total %}
-            <li class="page-item">
-                <a class="page-link" href="?page={{ pagination.current + 1 }}&search={{ filters.search ?? '' }}&status={{ filters.status ?? '' }}&role={{ filters.role ?? '' }}">
-                    {{ 'পরবর্তী' }} <i class="fas fa-chevron-right"></i>
-                </a>
-            </li>
-            <li class="page-item">
-                <a class="page-link" href="?page={{ pagination.total }}&search={{ filters.search ?? '' }}&status={{ filters.status ?? '' }}&role={{ filters.role ?? '' }}">
-                    {{ 'শেষ' }} <i class="fas fa-step-forward"></i>
-                </a>
-            </li>
-            {% endif %}
-        </ul>
-    </nav>
+                {% for i in startPage..endPage %}
+                    {% if i == pagination.current %}
+                    <span class="page-num-btn active">{{ i }}</span>
+                    {% else %}
+                    <a href="?page={{ i }}&search={{ filters.search ?? '' }}&status={{ filters.status ?? '' }}&role={{ filters.role ?? '' }}"
+                       class="page-num-btn">{{ i }}</a>
+                    {% endif %}
+                {% endfor %}
+                {% if endPage < pagination.total %}
+                {% if endPage < pagination.total - 1 %}<span class="px-1 text-muted" style="font-size: 0.8rem; align-self: center;">&hellip;</span>{% endif %}
+                <a href="?page={{ pagination.total }}&search={{ filters.search ?? '' }}&status={{ filters.status ?? '' }}&role={{ filters.role ?? '' }}"
+                   class="page-num-btn">{{ pagination.total }}</a>
+                {% endif %}
+            </div>
+            <a href="?page={{ pagination.current < pagination.total ? pagination.current + 1 : pagination.total }}&search={{ filters.search ?? '' }}&status={{ filters.status ?? '' }}&role={{ filters.role ?? '' }}"
+               class="btn btn-outline-primary btn-sm rounded-pill px-3 {{ pagination.current >= pagination.total ? 'disabled' : '' }}">
+                পরবর্তী <i class="bi bi-chevron-right ms-1"></i>
+            </a>
+        </div>
+        <div class="text-muted small fw-medium px-3 py-1 rounded-pill bg-light">
+            {% set sf = pagination.showing_from ?? 0 %}{% set st = pagination.showing_to ?? 0 %}
+            {{ sf|number_format }} থেকে {{ st|number_format }} পর্যন্ত, মোট {{ (pagination.total_records ?? 0)|number_format }}
+        </div>
+    </div>
     {% endif %}
 </div>
 
-<script>
-// Initialize tooltips
-document.addEventListener('DOMContentLoaded', function() {
-    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-    tooltipTriggerList.map(function (tooltipTriggerEl) {
-        return new bootstrap.Tooltip(tooltipTriggerEl);
-    });
-});
+<style>
+/* ─── Stats Banner ─── */
+.stats-banner .stat-card {
+    background: #fff;
+    border-radius: 16px;
+    padding: 1.25rem 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    border: 1px solid rgba(0,0,0,0.06);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+.stats-banner .stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 3px;
+    opacity: 0.3;
+    transition: opacity 0.3s ease;
+}
+.stats-banner .stat-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 32px rgba(0,0,0,0.08);
+}
+.stats-banner .stat-card:hover::before { opacity: 1; }
+.stat-card-primary::before { background: linear-gradient(90deg, #0D6EFD, #5B9CFF); }
+.stat-card-success::before { background: linear-gradient(90deg, #28A745, #5DD475); }
+.stat-card-danger::before { background: linear-gradient(90deg, #DC3545, #F06B7A); }
+.stat-card-info::before { background: linear-gradient(90deg, #0D6EFD, #5B9CFF); }
 
-// Delete user handler
-document.querySelectorAll('.delete-user-btn').forEach(btn => {
-    btn.addEventListener('click', function() {
-        const userId = this.getAttribute('data-id');
-        const username = this.getAttribute('data-username');
+.stat-icon {
+    width: 48px; height: 48px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+    flex-shrink: 0;
+    transition: all 0.3s ease;
+}
+.stat-card-primary .stat-icon { background: rgba(13,110,253,0.1); color: #0D6EFD; }
+.stat-card-success .stat-icon { background: rgba(40,167,69,0.1); color: #28A745; }
+.stat-card-danger .stat-icon { background: rgba(220,53,69,0.1); color: #DC3545; }
+.stat-card-info .stat-icon { background: rgba(13,110,253,0.1); color: #0D6EFD; }
+.stat-card:hover .stat-icon { transform: scale(1.1) rotate(-5deg); }
+
+.stat-info { display: flex; flex-direction: column; }
+.stat-label { font-size: 0.78rem; color: #6c757d; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; }
+.stat-value { font-size: 1.05rem; font-weight: 700; color: #1e293b; }
+
+/* ─── Table ─── */
+.table-row-appear {
+    opacity: 0;
+    transform: translateY(12px);
+    animation: rowEntrance 0.35s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+@keyframes rowEntrance {
+    to { opacity: 1; transform: translateY(0); }
+}
+.table-enhanced thead th {
+    background: #f1f5f9;
+    border-bottom: 2px solid #e2e8f0;
+    text-transform: uppercase;
+    font-size: 0.72rem;
+    letter-spacing: 0.3px;
+    padding-top: 12px;
+    padding-bottom: 12px;
+    user-select: none;
+}
+.table-enhanced thead th:hover { background: #e9edf3; }
+.table-enhanced tbody tr { transition: background 0.15s ease; }
+.table-enhanced tbody tr:hover {
+    background: rgba(0, 139, 139, 0.04) !important;
+}
+th[data-sort] { cursor: pointer; }
+
+/* ─── Actions ─── */
+.action-btn {
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+.action-btn::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: currentColor;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+.action-btn:hover::after { opacity: 0.08; }
+.action-btn:active { transform: scale(0.92); }
+
+/* ─── Search Wrapper ─── */
+.search-wrapper .form-control:focus ~ .bi-search {
+    color: var(--primary-color) !important;
+}
+
+/* ─── Empty State ─── */
+.empty-state .empty-icon {
+    font-size: 3rem;
+    opacity: 0.3;
+    color: #6c757d;
+    animation: emptyBounce 2s ease-in-out infinite;
+}
+@keyframes emptyBounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+}
+
+/* ─── Pagination ─── */
+.page-num-btn {
+    min-width: 34px; height: 34px;
+    padding: 0 10px;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    border: 1px solid #dee2e6;
+    background: white;
+    color: #495057;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+}
+.page-num-btn:hover { background: #e9ecef; border-color: #ced4da; }
+.page-num-btn.active {
+    background: #008B8B;
+    color: white;
+    border-color: #008B8B;
+    box-shadow: 0 2px 8px rgba(0, 139, 139, 0.3);
+}
+.page-num-btn.active:hover { background: #007A7A; }
+a.page-num-btn.disabled { opacity: 0.4; cursor: not-allowed; pointer-events: none; }
+
+/* ─── Avatar placeholder ─── */
+.avatar-placeholder {
+    line-height: 1;
+}
+
+/* ─── Input enhanced ─── */
+.input-enhanced {
+    border: 1px solid #ced4da;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.input-enhanced:focus {
+    border-color: #008B8B;
+    box-shadow: 0 0 0 0.2rem rgba(0, 139, 139, 0.15), 0 0 12px rgba(0, 139, 139, 0.08);
+}
+
+/* ─── Responsive ─── */
+@media (max-width: 768px) {
+    .table-responsive { max-height: none !important; }
+    .section-card { padding: 1rem !important; }
+}
+</style>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    const table = document.getElementById("usersTable");
+    const tbody = document.getElementById("usersTableBody");
+    const allRows = Array.from(tbody.querySelectorAll("tr.table-row-appear"));
+
+    // Staggered row entrance
+    allRows.forEach((row, i) => {
+        row.style.animationDelay = `${i * 25}ms`;
+    });
+
+    // Sortable Table (client-side)
+    let sortDir = {};
+    let sortIndex = -1;
+
+    table.querySelectorAll("th[data-sort]").forEach((th, index) => {
+        const type = th.dataset.sort;
+        th.addEventListener("click", () => {
+            table.querySelectorAll("th[data-sort] i.bi").forEach(icon => {
+                icon.className = "bi bi-arrow-down-up ms-1";
+                icon.style.cssText = "font-size: 0.7rem; opacity: 0.5;";
+            });
+            const icon = th.querySelector("i.bi");
+            if (sortIndex === index) {
+                sortDir[index] = sortDir[index] === "asc" ? "desc" : "asc";
+            } else {
+                sortIndex = index;
+                sortDir[index] = "asc";
+            }
+            icon.className = sortDir[index] === "asc" ? "bi bi-sort-up ms-1" : "bi bi-sort-down ms-1";
+            icon.style.cssText = "font-size: 0.7rem; opacity: 1; color: #008B8B;";
+
+            const sorted = [...allRows].sort((a, b) => {
+                let aText = a.children[index].textContent.trim();
+                let bText = b.children[index].textContent.trim();
+                if (type === "number") {
+                    aText = parseFloat(aText.replace(/[,/#$]/g, '')) || 0;
+                    bText = parseFloat(bText.replace(/[,/#$]/g, '')) || 0;
+                    return sortDir[index] === "asc" ? aText - bText : bText - aText;
+                } else {
+                    return sortDir[index] === "asc"
+                        ? aText.localeCompare(bText, 'bn')
+                        : bText.localeCompare(aText, 'bn');
+                }
+            });
+            tbody.innerHTML = "";
+            sorted.forEach((row, i) => {
+                const clone = row.cloneNode(true);
+                clone.style.animation = "none";
+                clone.offsetHeight;
+                clone.style.animation = `rowEntrance 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards`;
+                clone.style.animationDelay = `${i * 20}ms`;
+                tbody.appendChild(clone);
+            });
+        });
+    });
+
+    // Reactivate user handler via tbody event delegation
+    tbody.addEventListener("click", async (e) => {
+        const reactBtn = e.target.closest(".reactivate-user-btn");
+        if (reactBtn) {
+            const userId = reactBtn.dataset.id;
+            const username = reactBtn.dataset.username;
+            const confirm = await Swal.fire({
+                title: 'পুনরায় সক্রিয় করবেন?',
+                html: `ব্যবহারকারী <strong>"${username}"</strong> আবার লগইন করতে পারবে।`,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#28a745',
+                confirmButtonText: '<i class="bi bi-arrow-repeat me-1"></i> হ্যাঁ, সক্রিয় করুন!',
+                cancelButtonText: '<i class="bi bi-x-circle me-1"></i> বাতিল',
+                reverseButtons: true,
+                customClass: { confirmButton: 'btn btn-success rounded-pill px-4', cancelButton: 'btn btn-outline-secondary rounded-pill px-4' },
+                buttonsStyling: false
+            });
+            if (!confirm.isConfirmed) return;
+            Swal.fire({ title: 'সক্রিয় করা হচ্ছে...', text: 'অনুগ্রহ করে অপেক্ষা করুন', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+            const csrf = document.querySelector('input[name="csrf_token"]')?.value || '{{ csrf_token }}';
+            const fd = new FormData();
+            fd.append('csrf_token', csrf);
+            try {
+                const res = await fetch(`/users/${userId}/toggle-status`, { method: 'POST', body: fd, headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+                const data = await res.json();
+                if (res.ok && data.success) {
+                    Swal.fire({ icon: 'success', title: 'সক্রিয়!', text: `"${username}" পুনরায় সক্রিয় করা হয়েছে।`, timer: 1500, showConfirmButton: false, toast: true, position: 'top-end' }).then(() => { window.location.reload(); });
+                } else {
+                    Swal.fire({ icon: 'error', title: data.alert?.title || 'ত্রুটি', text: data.alert?.message || 'সক্রিয় করতে ব্যর্থ', confirmButtonText: 'ঠিক আছে' });
+                }
+            } catch (err) {
+                console.error(err);
+                Swal.fire({ icon: 'error', title: 'ত্রুটি', text: 'সার্ভারে সমস্যা হয়েছে', confirmButtonText: 'ঠিক আছে' });
+            }
+            return;
+        }
+    });
+
+    // Delete user handler via tbody event delegation
+    tbody.addEventListener("click", (e) => {
+        const btn = e.target.closest(".delete-user-btn");
+        if (!btn) return;
+
+        const userId = btn.dataset.id;
+        const username = btn.dataset.username;
 
         Swal.fire({
             title: 'নিশ্চিত করুন',
-            html: `আপনি কি নিশ্চিতভাবে ব্যবহারকারী <strong>"${username}"</strong> কে মুছে ফেলতে চান?`,
+            html: `আপনি কি নিশ্চিতভাবে ব্যবহারকারী <strong>"${username}"</strong> কে মুছে ফেলতে চান?<br><small class="text-muted">এই ব্যবহারকারী পুনরুদ্ধার করা যাবে না।</small>`,
             icon: 'warning',
             showCancelButton: true,
-            confirmButtonColor: '#d33',
-            cancelButtonColor: '#3085d6',
-            confirmButtonText: 'হ্যাঁ, মুছে ফেলুন',
-            cancelButtonText: 'বাতিল'
+            confirmButtonColor: '#dc3545',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: '<i class="bi bi-trash3 me-1"></i> হ্যাঁ, মুছে ফেলুন',
+            cancelButtonText: '<i class="bi bi-x-circle me-1"></i> বাতিল',
+            reverseButtons: true,
+            customClass: {
+                confirmButton: 'btn btn-danger rounded-pill px-4',
+                cancelButton: 'btn btn-outline-secondary rounded-pill px-4'
+            },
+            buttonsStyling: false
         }).then((result) => {
             if (result.isConfirmed) {
-                deleteUser(userId);
+                deleteUser(userId, username);
             }
         });
     });
-});
 
-/**
- * Delete user via AJAX
- */
-function deleteUser(userId) {
-    Swal.fire({
-        title: 'প্রক্রিয়া করা হচ্ছে...',
-        text: 'অনুগ্রহ করে অপেক্ষা করুন',
-        allowOutsideClick: false,
-        didOpen: () => {
-            Swal.showLoading();
-        }
-    });
-
-    const formData = new FormData();
-    formData.append('csrf_token', '{{ csrf_token }}');
-
-    fetch(`/users/${userId}/delete`, {
-        method: 'POST',
-        body: formData,
-        headers: {
-            'X-Requested-With': 'XMLHttpRequest'
-        }
-    })
-    .then(res => res.json())
-    .then(data => {
-        if (data.success) {
-            Swal.fire({
-                title: data.alert.title || 'সফল',
-                text: data.alert.message || 'ব্যবহারকারী মুছে ফেলা হয়েছে',
-                icon: 'success',
-                timer: 2000
-            }).then(() => {
-                window.location.reload();
-            });
-        } else {
-            Swal.fire({
-                title: data.alert.title || 'ত্রুটি',
-                text: data.alert.message || 'মুছে ফেলা সম্ভব হয়নি',
-                icon: 'error'
-            });
-        }
-    })
-    .catch(err => {
-        console.error('Error:', err);
+    function deleteUser(userId, username) {
         Swal.fire({
-            title: 'ত্রুটি',
-            text: 'সার্ভারে সমস্যা হয়েছে',
-            icon: 'error'
+            title: 'প্রক্রিয়া করা হচ্ছে...',
+            text: 'অনুগ্রহ করে অপেক্ষা করুন',
+            allowOutsideClick: false,
+            didOpen: () => { Swal.showLoading(); }
         });
-    });
-}
-</script>
 
+        const formData = new FormData();
+        const csrf = document.querySelector('input[name="csrf_token"]')?.value || '{{ csrf_token }}';
+        formData.append('csrf_token', csrf);
+
+        fetch(`/users/${userId}/delete`, {
+            method: 'POST',
+            body: formData,
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(res => {
+            if (!res.ok) throw new Error('Network response was not ok');
+            return res.json();
+        })
+        .then(data => {
+            if (data.success) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'মুছে ফেলা হয়েছে',
+                    text: `"${username}" সফলভাবে মুছে ফেলা হয়েছে।`,
+                    timer: 2000,
+                    showConfirmButton: false,
+                    toast: true,
+                    position: 'top-end'
+                }).then(() => {
+                    window.location.reload();
+                });
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: data.alert?.title || 'ত্রুটি',
+                    text: data.alert?.message || 'মুছে ফেলা সম্ভব হয়নি',
+                    confirmButtonText: 'ঠিক আছে'
+                });
+            }
+        })
+        .catch(err => {
+            console.error('Error:', err);
+            Swal.fire({
+                icon: 'error',
+                title: 'ত্রুটি',
+                text: 'সার্ভারে সমস্যা হয়েছে',
+                confirmButtonText: 'ঠিক আছে'
+            });
+        });
+    }
+});
+</script>
 {% endblock %}

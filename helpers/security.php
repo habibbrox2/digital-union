@@ -14,27 +14,12 @@
 
 // ==================== PASSWORD SECURITY ====================
 
-if (!function_exists('hashPassword')) {
-    function hashPassword($password) {
-        if (empty($password)) {
-            return false;
-        }
-        return password_hash($password, PASSWORD_BCRYPT, ['cost' => 12]);
-    }
-}
-
 if (!function_exists('verifyPassword')) {
     function verifyPassword($password, $hash) {
         if (empty($password) || empty($hash)) {
             return false;
         }
         return password_verify($password, $hash);
-    }
-}
-
-if (!function_exists('hash_password')) {
-    function hash_password($password) {
-        return hashPassword($password);
     }
 }
 
@@ -46,78 +31,12 @@ if (!function_exists('verify_password')) {
 
 // ==================== SANITIZATION ====================
 
-if (!function_exists('sanitizeInput')) {
-    function sanitizeInput($input) {
-        if (is_array($input)) {
-            return array_map('sanitizeInput', $input);
-        }
-        
-        if (!is_string($input)) {
-            return $input;
-        }
-        
-        // Remove HTML/script tags
-        $input = strip_tags($input);
-        
-        // Trim whitespace
-        $input = trim($input);
-        
-        // Convert special characters to HTML entities
-        $input = htmlspecialchars($input, ENT_QUOTES, 'UTF-8');
-        
-        return $input;
-    }
-}
-
-if (!function_exists('sanitize_input')) {
-    function sanitize_input($data = null) {
-        if ($data === null) {
-            $data = $_POST;
-        }
-        
-        $sanitized = [];
-        foreach ($data as $key => $value) {
-            $sanitized[$key] = sanitizeInput($value);
-        }
-        
-        return $sanitized;
-    }
-}
-
-if (!function_exists('si')) {
-    function si($str) {
-        return sanitizeInput($str);
-    }
-}
+// @codebuff-sanitize: sanitize_input, sanitizeInput, and si have been moved to
+// modules/Services/SanitizationService.php (invoked via config/functions.php thin wrapper).
+// The functions below were never loaded in production (helpers/security.php is not required anywhere).
+// See SanitizationService for the consolidated single source of truth.
 
 // ==================== VALIDATION ====================
-
-if (!function_exists('validateEmail')) {
-    function validateEmail($email) {
-        if (empty($email)) {
-            return false;
-        }
-        return filter_var($email, FILTER_VALIDATE_EMAIL) !== false;
-    }
-}
-
-if (!function_exists('validatePhoneNumber')) {
-    function validatePhoneNumber($phone) {
-        if (empty($phone)) {
-            return false;
-        }
-        
-        // Remove spaces and dashes
-        $phone = preg_replace('/[\s\-\(\)]/', '', $phone);
-        
-        // Bangladesh phone number pattern
-        if (preg_match('/^(01|88?01)[0-9]{8}$/', $phone)) {
-            return true;
-        }
-        
-        return false;
-    }
-}
 
 if (!function_exists('validateURL')) {
     function validateURL($url) {
@@ -151,29 +70,6 @@ if (!function_exists('validatePassword')) {
         }
         
         return ['valid' => true];
-    }
-}
-
-// ==================== CLIENT IP ====================
-
-if (!function_exists('getClientIP')) {
-    function getClientIP() {
-        $ip = '';
-        
-        if (!empty($_SERVER['HTTP_CLIENT_IP'])) {
-            $ip = $_SERVER['HTTP_CLIENT_IP'];
-        } elseif (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
-            $ips = explode(',', $_SERVER['HTTP_X_FORWARDED_FOR']);
-            $ip = trim($ips[0]);
-        } elseif (!empty($_SERVER['REMOTE_ADDR'])) {
-            $ip = $_SERVER['REMOTE_ADDR'];
-        }
-        
-        if (!filter_var($ip, FILTER_VALIDATE_IP)) {
-            $ip = '0.0.0.0';
-        }
-        
-        return $ip;
     }
 }
 
@@ -221,15 +117,6 @@ if (!function_exists('setSecurityHeaders')) {
 }
 
 // ==================== LEGACY COMPATIBILITY ====================
-
-if (!function_exists('processForm')) {
-    function processForm(array $postData) {
-        $csrfToken = $postData['csrf_token'] ?? null;
-        if (!verifyCSRFToken($csrfToken)) {
-            return false;
-        }
-        
-        unset($postData['csrf_token']);
-        return array_map('sanitizeInput', $postData);
-    }
-}
+// @codebuff-processForm: processForm() was removed. It was never loaded in production
+// (helpers/security.php is not required anywhere). The /csrf route in config/routes.php
+// now uses sanitizeRequest() from config/csrf.php directly.

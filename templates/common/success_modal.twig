@@ -2,7 +2,7 @@
 <div id="successModal" class="custom-modal" style="display: none;">
     <div class="custom-modal-content">
         <div class="custom-modal-header">
-            <i class="fa fa-check-circle"></i> আবেদন সফল!
+            <i class="fa fa-check-circle"></i> {{ certificate_type_bn ? (certificate_type_bn ~ ' - ') : '' }}আবেদন সফল!
         </div>
         <div class="custom-modal-body">
             <p>আপনার আবেদনটি সফলভাবে সাবমিট হয়েছে।</p>
@@ -19,7 +19,7 @@
 <div id="updateModal" class="custom-modal" style="display: none;">
     <div class="custom-modal-content">
         <div class="custom-modal-header">
-            <i class="fa fa-check-circle"></i> আবেদন আপডেট সফল!
+            <i class="fa fa-check-circle"></i> {{ certificate_type_bn ? (certificate_type_bn ~ ' - ') : '' }}আবেদন আপডেট সফল!
         </div>
         <div class="custom-modal-body">
             <p>আপনার আবেদনটি সফলভাবে আপডেট হয়েছে।</p>
@@ -38,6 +38,7 @@
         $(document).ready(function () {
             const form = $("#applicationForm");
             const submitButton = form.find("button[type='submit']");
+            const isLoggedIn = {{ is_logged_in ? 'true' : 'false' }};
 
 
             form.submit(function (event) {
@@ -47,6 +48,7 @@
                 var url = `/applications/${certificateType}/${isUpdate ? 'update' : 'insert'}`;
 
 
+                let restoreBtn;
                 $.ajax({
                     type: "POST",
                     url: url,
@@ -55,7 +57,7 @@
                     processData: false,
                     dataType: "json",
                     beforeSend: function () {
-                        submitButton.text("জমা দেওয়া হচ্ছে...").prop("disabled", true);
+                        restoreBtn = btnLoading(submitButton[0], 'জমা দেওয়া হচ্ছে...');
                     },
                     success: function (response) {
                         if (response.status === "success") {
@@ -69,9 +71,13 @@
                                 } else {
                                     $("#updateChangeList").hide();
                                 }
-                                // Show certificate download or approve link based on sonod_number and status
+                                // Show certificate download for logged-in users if sonod_number exists
                                 var certType = certificateType || 'application';
-                                if (response.sonod_number && (!response.status || response.status.toLowerCase() !== 'pending')) {
+                                var existingSonod = response.sonod_number || $("#sonod_number").val();
+                                if (isLoggedIn && existingSonod) {
+                                    var certUrl = '/application/' + certType + '/bangla/' + existingSonod;
+                                    $("#downloadCertificate").attr("href", certUrl).text('সার্টিফিকেট ডাউনলোড করুন').show();
+                                } else if (response.sonod_number && (!response.status || response.status.toLowerCase() !== 'pending')) {
                                     var certUrl = '/application/' + certType + '/bangla/' + response.sonod_number;
                                     $("#downloadCertificate").attr("href", certUrl).text('সার্টিফিকেট ডাউনলোড করুন').show();
                                 } else if (response.application_id) {
@@ -88,7 +94,7 @@
                                 $("#successModal").show();
                             }
                         } else {
-                            alert("⚠️ কিছু সমস্যা হয়েছে: " + response.message);
+                            Swal.fire('Error', response.message, 'error');
                         }
                     },
                     error: function (xhr) {
@@ -103,10 +109,10 @@
                                 message = "⚠️ সার্ভার থেকে উত্তর: " + xhr.responseText;
                             }
                         }
-                        alert(message);
+                        Swal.fire('Error', message, 'error');
                     },
                     complete: function () {
-                        submitButton.text("জমা দিন").prop("disabled", false);
+                        if (restoreBtn) restoreBtn();
                     }
                 });
             });
@@ -119,7 +125,27 @@
             });
 
             $(document).on('click', '.btn-close-modal', function () {
-                $(this).closest('.custom-modal').hide();
+                var modal = $(this).closest('.custom-modal');
+                if (modal.length === 0) {
+                    modal = $('#successModal, #updateModal').filter(function() {
+                        return $(this).css('display') !== 'none' || $(this).is(':visible');
+                    });
+                }
+                modal.hide();
+            });
+
+            // Close on backdrop click
+            $(document).on('click', '.custom-modal:visible', function (e) {
+                if ($(e.target).is('.custom-modal')) {
+                    $(this).hide();
+                }
+            });
+
+            // Close on Escape key
+            $(document).on('keydown', function (e) {
+                if (e.key === 'Escape') {
+                    $('.custom-modal:visible').hide();
+                }
             });
 
             $("#downloadCopy").click(function () {

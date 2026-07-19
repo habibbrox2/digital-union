@@ -6,25 +6,37 @@
 {% block header_title %} {{ header_title }}{% endblock %}
 
 {% block content %}
-<div class="container mt-5 mb-5">
-    <h2 class="text-center mb-5 fw-bold" style="font-size: 1.8rem;">
-        <i class="bi bi-file-check-fill text-primary me-2"></i>
-        {{ data.certificate_type_bn }} অনুমোদন
-    </h2>
+{% include 'components/sweetAlert.twig' %}
+<link rel="stylesheet" href="/assets/css/forms.css?t={{ "now"|date("Hiss") }}">
 
-    <div class="card shadow-lg rounded-5 mb-5 border-0">
-        <div class="card-header bg-primary text-white rounded-top-5 d-flex align-items-center">
-            <i class="bi bi-journal-check me-3 fs-4"></i>
-            <h5 class="mb-0 fw-semibold">অনুমোদন তথ্য</h5>
+<div class="container form-page px-3 approve-page">
+    <div class="form-shell">
+        <div class="form-hero">
+            <h1 id="formTitle">{{ data.certificate_type_bn ?? '' }} অনুমোদন</h1>
         </div>
-        <div class="card-body px-5 py-5">
 
-            <!-- ব্যক্তির তথ্য -->
-            <section class="mb-5 border rounded-4 p-4 shadow-sm bg-light">
-                <h6 class="text-success fw-bold mb-4 fs-5 d-flex align-items-center">
-                    <i class="bi bi-person-badge me-3 fs-4"></i>
-                    ব্যক্তির তথ্য
-                </h6>
+    <!-- Application Status Badge -->
+    <div class="text-center mb-4">
+        <span class="badge bg-{{ data.status == 'approved' ? 'success' : (data.status == 'rejected' ? 'danger' : 'warning') }} rounded-pill px-4 py-2 fs-6 shadow-sm status-badge-pulse">
+            <i class="bi bi-{{ data.status == 'approved' ? 'check-circle' : (data.status == 'rejected' ? 'x-circle' : 'hourglass-split') }} me-2"></i>
+            {{ data.status_bn|default(data.status) }}
+        </span>
+        
+        {% if data.status == 'approved' and license_number is not empty %}
+            <div class="mt-3 d-flex align-items-center justify-content-center gap-2">
+                <span class="badge bg-light text-dark border px-3 py-2 fs-6 rounded-pill shadow-sm">
+                    <i class="bi bi-passport text-success me-2"></i>
+                    <span class="text-muted small">লাইসেন্স/সনদ নং:</span>
+                    <strong class="ms-1 text-success">{{ license_number }}</strong>
+                </span>
+            </div>
+        {% endif %}
+    </div>
+
+
+
+            <fieldset class="form-section">
+                <legend>ব্যক্তির তথ্য</legend>
             {# ================= Mappings & Variables ================= #}
 
             {# ================= Occupation Mapping ================= #}
@@ -114,144 +126,346 @@
             ] %}
 
             {# ================= Display ================= #}
-            <div class="row g-4">
+            <div class="row g-4 info-grid">
                 {% for item in infoList %}
                     <div class="col-lg-4 col-md-6 col-sm-12">
-                        <p class="mb-1 fw-semibold text-secondary">{{ item.label }}:</p>
-                        <p class="mb-3 fs-6 text-dark">{{ item.value ?: '—' }}</p>
+                        <div class="info-item">
+                            <span class="info-label">{{ item.label }}</span>
+                            <span class="info-value">{{ item.value ?: '—' }}</span>
+                        </div>
                     </div>
                 {% endfor %}
                 
                 {% if data.spouse_name_bn %}
                     <div class="col-lg-6 col-md-12">
-                        <p class="mb-1 fw-semibold text-secondary">স্বামী/স্ত্রীর নাম:</p>
-                        <p class="mb-3 fs-6 text-dark">{{ data.spouse_name_bn }} ({{ data.spouse_name_en }})</p>
+                        <div class="info-item">
+                            <span class="info-label">স্বামী/স্ত্রীর নাম</span>
+                            <span class="info-value">{{ data.spouse_name_bn }} ({{ data.spouse_name_en }})</span>
+                        </div>
                     </div>
                 {% endif %}
             </div>
 
-
-
             <!-- আবেদনকারীর ছবি -->
-            <div class="text-center mt-4">
-                <img src="{{ url }}/{{ data.applicant_photo ?: 'assets/images/default-user.png' }}" 
-                    alt="আবেদনকারীর ছবি" 
-                    class="rounded-circle border border-4 border-primary shadow" 
-                    style="max-width: 160px; height: auto; object-fit: cover;">
+            <div class="photo-wrapper text-center mt-4">
+                <div class="photo-ring" data-bs-toggle="modal" data-bs-target="#photoLightbox" title="পূর্ণ আকারে দেখুন (ক্লিক করুন)">
+                    <img src="{{ url }}/{{ data.applicant_photo ?: 'assets/images/default-user.png' }}" 
+                        alt="আবেদনকারীর ছবি" 
+                        class="applicant-photo"
+                        loading="lazy">
+                    <div class="photo-ring-overlay">
+                        <i class="bi bi-zoom-in"></i>
+                        <span class="d-block" style="font-size:0.6rem;margin-top:2px;">পূর্ণ আকার</span>
+                    </div>
+                </div>
             </div>
 
-            </section>
+            </fieldset>
 
+            <fieldset class="form-section">
+                <legend>বর্তমান ঠিকানা</legend>
+                <div class="address-display">
+                    <div class="address-line">
+                        <span class="address-tag">বাড়ি</span>
+                        <span class="address-sep">:</span>
+                        <span class="address-val">{{ data.present_holding_no ?: '—' }}</span>
+                        <span class="address-divider">|</span>
+                        <span class="address-tag">গ্রাম</span>
+                        <span class="address-sep">:</span>
+                        <span class="address-val">{{ data.present_village_bn ?: '—' }}</span>
+                        <span class="address-divider">|</span>
+                        <span class="address-tag">ওয়ার্ড</span>
+                        <span class="address-sep">:</span>
+                        <span class="address-val">{{ data.present_ward_no ? (data.present_ward_no|bn) : '—' }}</span>
+                    </div>
+                    <div class="address-line mt-2">
+                        <span class="address-tag">পোস্ট অফিস</span>
+                        <span class="address-sep">:</span>
+                        <span class="address-val">{{ data.present_postoffice_bn ?: '—' }}</span>
+                        <span class="address-divider">|</span>
+                        <span class="address-tag">ইউনিয়ন</span>
+                        <span class="address-sep">:</span>
+                        <span class="address-val">{{ data.present_union_bn ?: '—' }}</span>
+                        <span class="address-divider">|</span>
+                        <span class="address-tag">উপজেলা</span>
+                        <span class="address-sep">:</span>
+                        <span class="address-val">{{ data.present_upazila_bn ?: '—' }}</span>
+                        <span class="address-divider">|</span>
+                        <span class="address-tag">জেলা</span>
+                        <span class="address-sep">:</span>
+                        <span class="address-val">{{ data.present_district_bn ?: '—' }}</span>
+                    </div>
+                </div>
+            </fieldset>
 
+            <fieldset class="form-section">
+                <legend>স্থায়ী ঠিকানা</legend>
+                <div class="address-display">
+                    <div class="address-line">
+                        <span class="address-tag">বাড়ি</span>
+                        <span class="address-sep">:</span>
+                        <span class="address-val">{{ data.permanent_holding_no ?: '—' }}</span>
+                        <span class="address-divider">|</span>
+                        <span class="address-tag">গ্রাম</span>
+                        <span class="address-sep">:</span>
+                        <span class="address-val">{{ data.permanent_village_bn ?: '—' }}</span>
+                        <span class="address-divider">|</span>
+                        <span class="address-tag">ওয়ার্ড</span>
+                        <span class="address-sep">:</span>
+                        <span class="address-val">{{ data.permanent_ward_no ? (data.permanent_ward_no|bn) : '—' }}</span>
+                    </div>
+                    <div class="address-line mt-2">
+                        <span class="address-tag">পোস্ট অফিস</span>
+                        <span class="address-sep">:</span>
+                        <span class="address-val">{{ data.permanent_postoffice_bn ?: '—' }}</span>
+                        <span class="address-divider">|</span>
+                        <span class="address-tag">ইউনিয়ন</span>
+                        <span class="address-sep">:</span>
+                        <span class="address-val">{{ data.permanent_union_bn ?: '—' }}</span>
+                        <span class="address-divider">|</span>
+                        <span class="address-tag">উপজেলা</span>
+                        <span class="address-sep">:</span>
+                        <span class="address-val">{{ data.permanent_upazila_bn ?: '—' }}</span>
+                        <span class="address-divider">|</span>
+                        <span class="address-tag">জেলা</span>
+                        <span class="address-sep">:</span>
+                        <span class="address-val">{{ data.permanent_district_bn ?: '—' }}</span>
+                    </div>
+                </div>
+            </fieldset>
 
-            <!-- ঠিকানা -->
-            <section class="mb-5 border rounded-4 p-4 shadow-sm bg-light">
-                <h6 class="text-info fw-bold mb-3 fs-5 d-flex align-items-center">
-                    <i class="bi bi-geo-alt-fill me-3 fs-4"></i>
-                    বর্তমান ঠিকানা
-                </h6>
-                <p class="mb-2 fs-6 text-secondary">
-                    বাড়ি: <span class="text-dark">{{ data.present_holding_no ?: '—' }}</span> | 
-                    গ্রাম: <span class="text-dark">{{ data.present_village_bn ?: '—' }}</span> | 
-                    ওয়ার্ড: <span class="text-dark">    {{ data.present_ward_no ? (data.present_ward_no|bn) : '—' }} </span>
-                </p>
-                <p class="fs-6 text-secondary">
-                    পোস্ট অফিস: <span class="text-dark">{{ data.present_postoffice_bn ?: '—' }}</span> | 
-                    ইউনিয়ন: <span class="text-dark">{{ data.present_union_bn ?: '—' }}</span> | 
-                    উপজেলা: <span class="text-dark">{{ data.present_upazila_bn ?: '—' }}</span> | 
-                    জেলা: <span class="text-dark">{{ data.present_district_bn ?: '—' }}</span>
-                </p>
-            </section>
-
-            <section class="mb-5 border rounded-4 p-4 shadow-sm bg-light">
-                <h6 class="text-info fw-bold mb-3 fs-5 d-flex align-items-center">
-                    <i class="bi bi-house-fill me-3 fs-4"></i>
-                    স্থায়ী ঠিকানা
-                </h6>
-                <p class="mb-2 fs-6 text-secondary">
-                    বাড়ি: <span class="text-dark">{{ data.permanent_holding_no ?: '—' }}</span> | 
-                    গ্রাম: <span class="text-dark">{{ data.permanent_village_bn ?: '—' }}</span> | 
-                    ওয়ার্ড: <span class="text-dark">    {{ data.permanent_ward_no? (data.permanent_ward_no|bn) : '—' }} </span>
-                </p>
-                <p class="fs-6 text-secondary">
-                    পোস্ট অফিস: <span class="text-dark">{{ data.permanent_postoffice_bn ?: '—' }}</span> | 
-                    ইউনিয়ন: <span class="text-dark">{{ data.permanent_union_bn ?: '—' }}</span> | 
-                    উপজেলা: <span class="text-dark">{{ data.permanent_upazila_bn ?: '—' }}</span> | 
-                    জেলা: <span class="text-dark">{{ data.permanent_district_bn ?: '—' }}</span>
-                </p>
-            </section>
-
-            <!-- আবেদনকারীর তথ্য -->
-            <section class="mb-5 border rounded-4 p-4 shadow-sm bg-white">
-                <h6 class="text-primary fw-bold mb-4 fs-5 d-flex align-items-center">
-                    <i class="bi bi-person-lines-fill me-3 fs-4"></i>
-                    আবেদনকারীর তথ্য
-                </h6>
-                <p class="mb-2 fs-6"><strong>আবেদন আইডি:</strong> {{ data.application_id }}</p>
-                <p class="mb-2 fs-6"><strong>আবেদনকারীর নাম:</strong> {{ data.applicant_name ?: '—' }}</p>
-                <p class="fs-6"><strong>মোবাইল নম্বর:</strong> {{ data.applicant_phone ?: '—' }}</p>
-            </section>
+            <fieldset class="form-section">
+                <legend>আবেদনকারীর তথ্য</legend>
+                <div class="row mb-3 align-items-center">
+                    <div class="col-lg-2 col-md-3 col-12">
+                        <span class="fw-bold">আবেদন আইডি</span>
+                    </div>
+                    <div class="col-lg-4 col-md-3 col-12">
+                        <span class="text-muted">{{ data.application_id }}</span>
+                    </div>
+                    <div class="col-lg-2 col-md-3 col-12">
+                        <span class="fw-bold">আবেদনকারীর নাম</span>
+                    </div>
+                    <div class="col-lg-4 col-md-3 col-12">
+                        <span class="text-muted">{{ data.applicant_name ?: '—' }}</span>
+                    </div>
+                </div>
+                <div class="row align-items-center">
+                    <div class="col-lg-2 col-md-3 col-12">
+                        <span class="fw-bold">মোবাইল নম্বর</span>
+                    </div>
+                    <div class="col-lg-4 col-md-3 col-12">
+                        <span class="text-muted">{{ data.applicant_phone ?: '—' }}</span>
+                    </div>
+                </div>
+            </fieldset>
 
             {% include 'partials/certificate_fields.twig' %}
             <!-- ডকুমেন্টস -->
-            <section class="mb-5 border rounded-4 p-4 shadow-sm bg-white">
-                <h6 class="fw-semibold fs-5 mb-4 d-flex align-items-center">
-                    <i class="bi bi-paperclip me-3 fs-4 text-primary"></i>
-                    সংযুক্ত ডকুমেন্টস
-                </h6>
+            <fieldset class="form-section">
+                <legend>সংযুক্ত ডকুমেন্টস
+                    {% if data.documents is not empty %}
+                        <span class="badge bg-primary rounded-pill ms-2">{{ documents|length }}</span>
+                    {% endif %}
+                </legend>
                 {% if data.documents is empty %}
-                    <p class="text-muted fst-italic">কোনো ডকুমেন্ট আপলোড করা হয়নি।</p>
+                    <div class="text-center py-4">
+                        <i class="bi bi-file-earmark-x fs-1 text-muted"></i>
+                        <p class="text-muted fst-italic mt-2">কোনো ডকুমেন্ট আপলোড করা হয়নি।</p>
+                    </div>
                 {% else %}
-                    <ul class="list-group list-group-flush">
+                    <div class="documents-grid" id="documentsGrid">
                         {% for doc_path in documents %}
-                            <li class="list-group-item d-flex justify-content-between align-items-center hover-shadow rounded-3 mb-2 px-3 py-2">
-                                <div class="d-flex align-items-center gap-3">
-                                    <i class="bi bi-file-earmark-text fs-5 text-primary"></i>
-                                    <span class="fw-medium text-truncate" style="max-width: 80vw;">{{ doc_path | split('/') | last }}</span>
+                            {% set ext = doc_path|split('.')|last|lower %}
+                            {% set isImage = ext in ['jpg','jpeg','png','gif','webp'] %}
+                            <div class="document-card">
+                                <div class="document-preview{% if isImage %} doc-gallery-trigger{% endif %}"
+                                     {% if isImage %}
+                                     data-doc-url="{{ url }}/{{ doc_path }}"
+                                     data-doc-name="{{ doc_path|split('/')|last }}"
+                                     role="button"
+                                     tabindex="0"
+                                     aria-label="{{ doc_path|split('/')|last }} — পূর্ণ আকারে দেখুন"
+                                     {% endif %}>
+                                    {% if isImage %}
+                                        <img src="{{ url }}/{{ doc_path }}" alt="Document: {{ doc_path|split('/')|last }}" loading="lazy">
+                                        <!-- Zoom overlay on hover -->
+                                        <div class="doc-gallery-overlay">
+                                            <i class="bi bi-arrows-fullscreen"></i>
+                                            <span>পূর্ণ আকার</span>
+                                        </div>
+                                    {% else %}
+                                        <div class="document-icon-big">
+                                            <i class="bi bi-file-earmark-text"></i>
+                                        </div>
+                                    {% endif %}
                                 </div>
-                                <a href="{{ url }}/{{ doc_path }}" target="_blank" class="btn btn-sm btn-outline-primary px-3 py-1">
-                                    দেখুন
-                                </a>
-                            </li>
+                                <div class="document-info">
+                                    <span class="document-name" title="{{ doc_path | split('/') | last }}">{{ doc_path | split('/') | last }}</span>
+                                    <div class="document-actions">
+                                        <a href="{{ url }}/{{ doc_path }}" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-outline-primary document-view-btn">
+                                            <i class="bi bi-eye me-1"></i> দেখুন
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
                         {% endfor %}
-                    </ul>
+                    </div>
                 {% endif %}
-            </section>
-
+            </fieldset>
 
             <!-- অনুমোদন ফর্ম -->
             <form id="approvalForm" method="POST" class="mb-4" autocomplete="on">
                 <input type="hidden" id="certificate_type" name="certificate_type" value="{{ data.certificate_type }}">
                 <input type="hidden" id="application_id" name="application_id" value="{{ data.application_id }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
 
                 <hr class="my-5">
 
                 <!-- তথ্য যাচাইকারীর তথ্য -->
-                <section class="mb-5 border rounded-4 p-4 shadow-sm bg-light">
-                    <h6 class="text-success fw-bold mb-4 fs-5 d-flex align-items-center">
-                        <i class="bi bi-shield-check me-3 fs-4"></i>
-                        তথ্য যাচাইকারীর তথ্য
-                    </h6>
+                <fieldset class="form-section">
+                    <legend>তথ্য যাচাইকারীর তথ্য</legend>
 
                     {% if union_members is not empty %}
                     <!-- Quick Select Dropdown -->
                     <div class="row g-3 mb-4">
                         <div class="col-12">
-                            <div class="alert alert-info mb-3">
-                                <strong><i class="bi bi-info-circle"></i> সহায়তা:</strong>
-                                নীচের ড্রপডাউন থেকে যাচাইকারী নির্বাচন করুন। তথ্য স্বয়ংক্রিয়ভাবে পূরণ হবে।
+                            <div class="alert alert-info mb-3 d-flex align-items-center gap-2">
+                                <i class="bi bi-info-circle fs-5"></i>
+                                <span>নীচের ড্রপডাউন থেকে যাচাইকারী নির্বাচন করুন। তথ্য স্বয়ংক্রিয়ভাবে পূরণ হবে।</span>
                             </div>
 
                             <label for="verifier_select" class="form-label fw-semibold small mb-2">
                                 <i class="bi bi-person-check"></i> যাচাইকারী নির্বাচন করুন:
                             </label>
 
-                            <div class="row g-2">
-                                <div class="col-lg-10">
-                                    <select id="verifier_select"
-                                            class="form-select form-select-sm shadow-sm"
-                                            onchange="selectVerifierFromDropdown()">
-                                        <option value="">-- যাচাইকারী নির্বাচন করুন --</option>
+                            <div class="input-group input-group-sm">
+                                <select id="verifier_select"
+                                        class="form-select form-select-sm shadow-sm"
+                                        onchange="selectVerifierFromDropdown()">
+                                    <option value="">-- যাচাইকারী নির্বাচন করুন --</option>
+
+                                    {% for role_id, group in union_members %}
+                                        <optgroup label="{{ group.role_name }}">
+                                            {% for member in group.members %}
+                                                <option value="{{ member.user_id }}"
+                                                        data-name-bn="{{ member.name_bn }}"
+                                                        data-name-en="{{ member.name_en }}"
+                                                        data-role-id="{{ member.role_id|default('') }}"
+                                                        data-phone="{{ member.phone }}"
+                                                        data-email="{{ member.email }}"
+                                                        data-ward-no="{{ member.ward_no|default('') }}"
+                                                        {% if member.user_id == approval.verifier_id %}selected{% endif %}>
+                                                    {{ member.name_bn }}{% if member.name_en %} ({{ member.name_en }}){% endif %} - 📱 {{ member.phone }}{% if member.ward_no %} | ওয়ার্ড: {{ member.ward_no }}{% endif %}
+                                                </option>
+                                            {% endfor %}
+                                        </optgroup>
+                                    {% endfor %}
+                                </select>
+                                <button type="button"
+                                        class="btn btn-outline-danger"
+                                        onclick="clearVerifierSelection()"
+                                        title="যাচাইকারী পরিষ্কার করুন">
+                                    <i class="bi bi-x-circle"></i> পরিষ্কার
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Hidden Fields for Verifier -->
+                    <input type="hidden" id="verifier_id" name="verifier_id" value="{{ approval.verifier_id|default('') }}">
+                    <input type="hidden" id="verifier_ward_no" name="verifier_ward_no" value="{{ approval.verifier_ward_no|default('') }}">
+
+                    <!-- Verifier Manual Name Input -->
+                    <div class="form-section-inner">
+                        <div class="row g-3">
+                            <div class="col-lg-6 col-md-6 col-sm-12">
+                                <label for="verifier_name_bn" class="form-label fw-semibold small mb-1">
+                                    যাচাইকারীর নাম (বাংলা):
+                                </label>
+                                <input type="text" 
+                                       id="verifier_name_bn" 
+                                       name="verifier_name_bn"
+                                       class="form-control form-control-sm shadow-sm input-enhanced"
+                                       placeholder="বাংলায় যাচাইকারীর নাম লিখুন"
+                                       value="{{ approval.verifier_name_bn|default('') }}">
+                            </div>
+
+                            <div class="col-lg-6 col-md-6 col-sm-12">
+                                <label for="verifier_name_en" class="form-label fw-semibold small mb-1">
+                                    যাচাইকারীর নাম (ইংরেজি):
+                                </label>
+                                <input type="text" 
+                                       id="verifier_name_en" 
+                                       name="verifier_name_en"
+                                       class="form-control form-control-sm shadow-sm input-enhanced"
+                                       placeholder="English name of verifier"
+                                       value="{{ approval.verifier_name_en|default('') }}">
+                            </div>
+
+                            <div class="col-lg-6 col-md-6 col-sm-12" id="verifier_ward_section" style="display:none;">
+                                <label for="verifier_ward_no_display" class="form-label fw-semibold small mb-1">
+                                    ওয়ার্ড নম্বর:
+                                </label>
+                                <input type="text" 
+                                       id="verifier_ward_no_display" 
+                                       class="form-control form-control-sm shadow-sm bg-light"
+                                       readonly>
+                            </div>
+                        </div>
+
+                        <!-- Verification Date and Note -->
+                        <div class="row g-3 mt-3">
+                            <div class="col-lg-6 col-md-6 col-sm-12">
+                                <label for="verification_date" class="form-label fw-semibold small mb-1">
+                                    যাচাই তারিখ: <span class="text-danger">*</span>
+                                </label>
+                                <input type="text" 
+                                       id="verification_date" 
+                                       name="verification_date"
+                                       class="form-control form-control-sm datepicker shadow-sm input-enhanced"
+                                       placeholder="DD-MM-YYYY"
+                                       value="{{ approval.verification_date|default('now'|date('d-m-Y')) }}" 
+                                       required>
+                            </div>
+
+                            <div class="col-lg-6 col-md-6 col-sm-12">
+                                <label for="verification_note" class="form-label fw-semibold small mb-1">
+                                    যাচাই মন্তব্য:
+                                </label>
+                                <textarea id="verification_note" 
+                                          name="verification_note" 
+                                          rows="2"
+                                          class="form-control form-control-sm shadow-sm input-enhanced"
+                                          placeholder="যাচাই সংক্রান্ত মন্তব্য লিখুন">{{ approval.verification_note|default('সফলভাবে যাচাই করা হয়েছে।') }}</textarea>
+                            </div>
+                        </div>
+                    </div>
+                </fieldset>
+
+                <!-- অনুমোদন তথ্য -->
+                <fieldset class="form-section">
+                    <legend>অনুমোদন তথ্য</legend>
+
+                    {% if union_members is not empty %}
+                    <!-- Quick Select Dropdown for Approver -->
+                    <div class="row g-3 mb-4">
+                        <div class="col-12">
+                            <div class="alert alert-warning mb-3 d-flex align-items-center gap-2">
+                                <i class="bi bi-info-circle fs-5"></i>
+                                <span>নীচের ড্রপডাউন থেকে অনুমোদনকারী নির্বাচন করুন। তথ্য স্বয়ংক্রিয়ভাবে পূরণ হবে।</span>
+                            </div>
+
+                            <label for="approver_select" class="form-label fw-semibold small mb-2">
+                                <i class="bi bi-person-check-fill"></i> অনুমোদনকারী নির্বাচন করুন:
+                            </label>
+
+                            <div class="input-group input-group-sm">
+                                <select id="approver_select"
+                                        class="form-select form-select-sm shadow-sm"
+                                        onchange="selectApproverFromDropdown()">
+                                    <option value="">-- অনুমোদনকারী নির্বাচন করুন --</option>
 
                                         {% for role_id, group in union_members %}
                                             <optgroup label="{{ group.role_name }}">
@@ -263,154 +477,20 @@
                                                             data-phone="{{ member.phone }}"
                                                             data-email="{{ member.email }}"
                                                             data-ward-no="{{ member.ward_no|default('') }}"
-                                                            {% if member.user_id == approval.verifier_id %}selected{% endif %}>
+                                                            {% if member.user_id == approval.approver_id %}selected{% endif %}>
                                                         {{ member.name_bn }}{% if member.name_en %} ({{ member.name_en }}){% endif %} - 📱 {{ member.phone }}{% if member.ward_no %} | ওয়ার্ড: {{ member.ward_no }}{% endif %}
                                                     </option>
                                                 {% endfor %}
                                             </optgroup>
                                         {% endfor %}
-                                    </select>
-                                </div>
 
-                                <div class="col-lg-2">
-                                    <button type="button"
-                                            class="btn btn-sm btn-outline-danger w-100"
-                                            onclick="clearVerifierSelection()"
-                                            title="যাচাইকারী পরিষ্কার করুন">
-                                        <i class="bi bi-x-circle"></i> পরিষ্কার
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    {% endif %}
-
-                    <!-- Hidden Fields for Verifier -->
-                    <input type="hidden" id="verifier_id" name="verifier_id" value="{{ approval.verifier_id|default('') }}">
-                    <input type="hidden" id="verifier_ward_no" name="verifier_ward_no" value="{{ approval.verifier_ward_no|default('') }}">
-
-                    <!-- Verifier Manual Name Input -->
-                    <div class="row g-4 mt-3 mb-4 border rounded-3 p-3 bg-white">
-                        <div class="col-lg-6 col-md-6 col-sm-12">
-                            <label for="verifier_name_bn" class="form-label fw-semibold small mb-1">
-                                যাচাইকারীর নাম (বাংলা):
-                            </label>
-                            <input type="text" 
-                                   id="verifier_name_bn" 
-                                   name="verifier_name_bn"
-                                   class="form-control form-control-sm shadow-sm"
-                                   placeholder="বাংলায় যাচাইকারীর নাম লিখুন"
-                                   value="{{ approval.verifier_name_bn|default('') }}">
-                        </div>
-
-                        <div class="col-lg-6 col-md-6 col-sm-12">
-                            <label for="verifier_name_en" class="form-label fw-semibold small mb-1">
-                                যাচাইকারীর নাম (ইংরেজি):
-                            </label>
-                            <input type="text" 
-                                   id="verifier_name_en" 
-                                   name="verifier_name_en"
-                                   class="form-control form-control-sm shadow-sm"
-                                   placeholder="English name of verifier"
-                                   value="{{ approval.verifier_name_en|default('') }}">
-                        </div>
-
-                        <div class="col-lg-6 col-md-6 col-sm-12" id="verifier_ward_section" style="display:none;">
-                            <label for="verifier_ward_no_display" class="form-label fw-semibold small mb-1">
-                                ওয়ার্ড নম্বর:
-                            </label>
-                            <input type="text" 
-                                   id="verifier_ward_no_display" 
-                                   class="form-control form-control-sm shadow-sm bg-light"
-                                   readonly>
-                        </div>
-                    </div>
-
-                    <!-- Verification Date and Note -->
-                    <div class="row g-4 mt-3">
-                        <div class="col-lg-6 col-md-6 col-sm-12">
-                            <label for="verification_date" class="form-label fw-semibold small mb-1">
-                                যাচাই তারিখ: <span class="text-danger">*</span>
-                            </label>
-                            <input type="text" 
-                                   id="verification_date" 
-                                   name="verification_date"
-                                   class="form-control form-control-sm datepicker shadow-sm"
-                                   placeholder="DD-MM-YYYY"
-                                   value="{{ approval.verification_date|default('now'|date('d-m-Y')) }}" 
-                                   required>
-                        </div>
-
-                        <div class="col-lg-6 col-md-6 col-sm-12">
-                            <label for="verification_note" class="form-label fw-semibold small mb-1">
-                                যাচাই মন্তব্য:
-                            </label>
-                            <textarea id="verification_note" 
-                                      name="verification_note" 
-                                      rows="2"
-                                      class="form-control form-control-sm shadow-sm"
-                                      placeholder="যাচাই সংক্রান্ত মন্তব্য লিখুন">{{ approval.verification_note|default('সফলভাবে যাচাই করা হয়েছে।') }}</textarea>
-                        </div>
-                    </div>
-                </section>
-
-                <hr class="my-5">
-
-                <!-- অনুমোদন তথ্য -->
-                <section class="mb-5 border rounded-4 p-4 shadow-sm bg-light">
-                    <h6 class="text-danger fw-bold mb-4 fs-5 d-flex align-items-center">
-                        <i class="bi bi-pencil-square me-3 fs-4"></i>
-                        অনুমোদন তথ্য
-                    </h6>
-
-                    {% if union_members is not empty %}
-                    <!-- Quick Select Dropdown for Approver -->
-                    <div class="row g-3 mb-4">
-                        <div class="col-12">
-                            <div class="alert alert-warning mb-3">
-                                <strong><i class="bi bi-info-circle"></i> সহায়তা:</strong>
-                                নীচের ড্রপডাউন থেকে অনুমোদনকারী নির্বাচন করুন। তথ্য স্বয়ংক্রিয়ভাবে পূরণ হবে।
-                            </div>
-
-                            <label for="approver_select" class="form-label fw-semibold small mb-2">
-                                <i class="bi bi-person-check-fill"></i> অনুমোদনকারী নির্বাচন করুন:
-                            </label>
-
-                            <div class="row g-2">
-                                <div class="col-lg-10">
-                                    <select id="approver_select"
-                                            class="form-select form-select-sm shadow-sm"
-                                            onchange="selectApproverFromDropdown()">
-                                        <option value="">-- অনুমোদনকারী নির্বাচন করুন --</option>
-
-                                            {% for role_id, group in union_members %}
-                                                <optgroup label="{{ group.role_name }}">
-                                                    {% for member in group.members %}
-                                                        <option value="{{ member.user_id }}"
-                                                                data-name-bn="{{ member.name_bn }}"
-                                                                data-name-en="{{ member.name_en }}"
-                                                                data-role-id="{{ member.role_id|default('') }}"
-                                                                data-phone="{{ member.phone }}"
-                                                                data-email="{{ member.email }}"
-                                                                data-ward-no="{{ member.ward_no|default('') }}"
-                                                                {% if member.user_id == approval.approver_id %}selected{% endif %}>
-                                                            {{ member.name_bn }}{% if member.name_en %} ({{ member.name_en }}){% endif %} - 📱 {{ member.phone }}{% if member.ward_no %} | ওয়ার্ড: {{ member.ward_no }}{% endif %}
-                                                        </option>
-                                                    {% endfor %}
-                                                </optgroup>
-                                            {% endfor %}
-
-                                    </select>
-                                </div>
-
-                                <div class="col-lg-2">
-                                    <button type="button"
-                                            class="btn btn-sm btn-outline-danger w-100"
-                                            onclick="clearApproverSelection()"
-                                            title="অনুমোদনকারী পরিষ্কার করুন">
-                                        <i class="bi bi-x-circle"></i> পরিষ্কার
-                                    </button>
-                                </div>
+                                </select>
+                                <button type="button"
+                                        class="btn btn-outline-danger"
+                                        onclick="clearApproverSelection()"
+                                        title="অনুমোদনকারী পরিষ্কার করুন">
+                                    <i class="bi bi-x-circle"></i> পরিষ্কার
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -421,113 +501,110 @@
                     <input type="hidden" id="approver_ward_no" name="approver_ward_no" value="{{ approval.approver_ward_no|default('') }}">
 
                     <!-- Approver Manual Name Input -->
-                    <div class="row g-4 mt-3 mb-4 border rounded-3 p-3 bg-white">
-                        <div class="col-lg-6 col-md-6 col-sm-12">
-                            <label for="approver_name_bn" class="form-label fw-semibold small mb-1">
-                                অনুমোদনকারীর নাম (বাংলা):
-                            </label>
-                            <input type="text" 
-                                   id="approver_name_bn" 
-                                   name="approver_name_bn"
-                                   class="form-control form-control-sm shadow-sm"
-                                   placeholder="বাংলায় অনুমোদনকারীর নাম লিখুন"
-                                   value="{{ approval.approver_name_bn|default('') }}">
-                        </div>
-
-                        <div class="col-lg-6 col-md-6 col-sm-12">
-                            <label for="approver_name_en" class="form-label fw-semibold small mb-1">
-                                অনুমোদনকারীর নাম (ইংরেজি):
-                            </label>
-                            <input type="text" 
-                                   id="approver_name_en" 
-                                   name="approver_name_en"
-                                   class="form-control form-control-sm shadow-sm"
-                                   placeholder="English name of approver"
-                                   value="{{ approval.approver_name_en|default('') }}">
-                        </div>
-
-                        <div class="col-lg-6 col-md-6 col-sm-12" id="approver_ward_section" style="display:none;">
-                            <label for="approver_ward_no_display" class="form-label fw-semibold small mb-1">
-                                ওয়ার্ড নম্বর:
-                            </label>
-                            <input type="text" 
-                                   id="approver_ward_no_display" 
-                                   class="form-control form-control-sm shadow-sm bg-light"
-                                   readonly>
-                        </div>
-                    </div>
-
-                    <!-- Approval Date and Note -->
-                    <div class="row g-4 mt-3">
-                        <div class="col-lg-6 col-md-6 col-sm-12">
-                            <label for="approval_date" class="form-label fw-semibold small mb-1">
-                                অনুমোদনের তারিখ: <span class="text-danger">*</span>
-                            </label>
-                            <input type="text" 
-                                   id="approval_date" 
-                                   name="approval_date"
-                                   class="form-control form-control-sm datepicker shadow-sm"
-                                   placeholder="DD-MM-YYYY"
-                                   value="{{ approval.approval_date|default('now'|date('d-m-Y')) }}" 
-                                   required>
-                        </div>
-
-                        <div class="col-lg-6 col-md-6 col-sm-12">
-                            <div class="d-flex align-items-center justify-content-between gap-2 mb-1">
-                                <label for="issue_time" class="form-label fw-semibold small mb-0">
-                                    লাইসেন্স ইস্যু সময়:
+                    <div class="form-section-inner">
+                        <div class="row g-3">
+                            <div class="col-lg-6 col-md-6 col-sm-12">
+                                <label for="approver_name_bn" class="form-label fw-semibold small mb-1">
+                                    অনুমোদনকারীর নাম (বাংলা):
                                 </label>
-                                <span id="issue_time_live" class="badge bg-light text-dark border" title="Current time (live)">
-                                    --:--:--
-                                </span>
+                                <input type="text" 
+                                       id="approver_name_bn" 
+                                       name="approver_name_bn"
+                                       class="form-control form-control-sm shadow-sm input-enhanced"
+                                       placeholder="বাংলায় অনুমোদনকারীর নাম লিখুন"
+                                       value="{{ approval.approver_name_bn|default('') }}">
                             </div>
-                            <input type="time" 
-                                   id="issue_time" 
-                                   name="issue_time"
-                                   step="1"
-                                   data-prefilled="{{ approval.issue_time is defined and approval.issue_time is not empty ? '1' : '0' }}"
-                                   class="form-control form-control-sm shadow-sm"
-                                   value="{{ approval.issue_time is defined ? approval.issue_time : '' }}"
-                                   required>
-                        </div>
-                    </div>
 
-                    <!-- Approval Note -->
-                    <div class="row g-4 mt-3">
-                        <div class="col-lg-12">
-                            <label for="approval_note" class="form-label fw-semibold small mb-1">
-                                মন্তব্য:
-                            </label>
-                            <textarea id="approval_note" 
-                                      name="approval_note" 
-                                      rows="2"
-                                      class="form-control form-control-sm shadow-sm"
-                                      placeholder="অনুমোদন সংক্রান্ত মন্তব্য লিখুন">{{ approval.approval_note|default('আবেদনটি অনুমোদিত হলো।') }}</textarea>
+                            <div class="col-lg-6 col-md-6 col-sm-12">
+                                <label for="approver_name_en" class="form-label fw-semibold small mb-1">
+                                    অনুমোদনকারীর নাম (ইংরেজি):
+                                </label>
+                                <input type="text" 
+                                       id="approver_name_en" 
+                                       name="approver_name_en"
+                                       class="form-control form-control-sm shadow-sm input-enhanced"
+                                       placeholder="English name of approver"
+                                       value="{{ approval.approver_name_en|default('') }}">
+                            </div>
+
+                            <div class="col-lg-6 col-md-6 col-sm-12" id="approver_ward_section" style="display:none;">
+                                <label for="approver_ward_no_display" class="form-label fw-semibold small mb-1">
+                                    ওয়ার্ড নম্বর:
+                                </label>
+                                <input type="text" 
+                                       id="approver_ward_no_display" 
+                                       class="form-control form-control-sm shadow-sm bg-light"
+                                       readonly>
+                            </div>
+                        </div>
+
+                        <!-- Approval Date and Note -->
+                        <div class="row g-3 mt-3">
+                            <div class="col-lg-6 col-md-6 col-sm-12">
+                                <label for="approval_date" class="form-label fw-semibold small mb-1">
+                                    অনুমোদনের তারিখ: <span class="text-danger">*</span>
+                                </label>
+                                <input type="text" 
+                                       id="approval_date" 
+                                       name="approval_date"
+                                       class="form-control form-control-sm datepicker shadow-sm input-enhanced"
+                                       placeholder="DD-MM-YYYY"
+                                       value="{{ approval.approval_date|default('now'|date('d-m-Y')) }}" 
+                                       required>
+                            </div>
+
+                            <div class="col-lg-6 col-md-6 col-sm-12">
+                                <div class="d-flex align-items-center justify-content-between gap-2 mb-1">
+                                    <label for="issue_time" class="form-label fw-semibold small mb-0">
+                                        লাইসেন্স ইস্যু সময়:
+                                    </label>
+                                    <span id="issue_time_live" class="badge bg-light text-dark border" title="Current time (live)">
+                                        --:--:--
+                                    </span>
+                                </div>
+                                <input type="time" 
+                                       id="issue_time" 
+                                       name="issue_time"
+                                       step="1"
+                                       data-prefilled="{{ approval.issue_time is defined and approval.issue_time is not empty ? '1' : '0' }}"
+                                       class="form-control form-control-sm shadow-sm input-enhanced"
+                                       value="{{ approval.issue_time is defined ? approval.issue_time : '' }}"
+                                       required>
+                            </div>
+                        </div>
+
+                        <!-- Approval Note -->
+                        <div class="row g-3 mt-3">
+                            <div class="col-lg-12">
+                                <label for="approval_note" class="form-label fw-semibold small mb-1">
+                                    মন্তব্য:
+                                </label>
+                                <textarea id="approval_note" 
+                                          name="approval_note" 
+                                          rows="2"
+                                          class="form-control form-control-sm shadow-sm input-enhanced"
+                                          placeholder="অনুমোদন সংক্রান্ত মন্তব্য লিখুন">{{ approval.approval_note|default('আবেদনটি অনুমোদিত হলো।') }}</textarea>
+                            </div>
                         </div>
                     </div>
-                </section>
+                </fieldset>
 
                 {% if data.certificate_type == 'trade' %}
                     {% include 'common/trade_extra.twig' %}
                 {% endif %}
 
-                <hr class="my-5">
-
                 <!-- সনদের ফি তথ্য -->
-                <section class="mb-5 border rounded-4 p-4 shadow-sm bg-light">
-                    <h6 class="text-warning fw-bold mb-4 fs-5 d-flex align-items-center">
-                        <i class="bi bi-cash-stack me-3 fs-4"></i>
-                        সনদ ফি তথ্য
-                    </h6>
-                    <div class="row g-4">
-                        <div class="col-lg-6 col-md-6 col-sm-12">
+                <fieldset class="form-section">
+                    <legend>সনদ ফি তথ্য</legend>
+                    <div class="row g-3">
+                        <div class="col-lg-4 col-md-6 col-sm-12">
                             <label for="certificate_fee" class="form-label fw-semibold small mb-1">
                                 সনদের ফি (টাকা): <span class="text-danger">*</span>
                             </label>
                             <input type="number" 
                                    id="certificate_fee" 
                                    name="certificate_fee"
-                                   class="form-control form-control-sm shadow-sm"
+                                   class="form-control form-control-sm shadow-sm input-enhanced"
                                    placeholder="সনদের ফি লিখুন"
                                    value="{{ approval.certificate_fee|default('') }}"
                                    min="0" 
@@ -535,101 +612,120 @@
                                    required>
                         </div>
 
-                        <div class="col-lg-6 col-md-6 col-sm-12">
+                        <div class="col-lg-4 col-md-6 col-sm-12">
                             <label for="payment_method" class="form-label fw-semibold small mb-1">
                                 পরিশোধের মাধ্যম: <span class="text-danger">*</span>
                             </label>
                             <select id="payment_method" 
                                     name="payment_method"
-                                    class="form-select form-select-sm shadow-sm" 
+                                    class="form-select form-select-sm shadow-sm input-enhanced" 
                                     required>
-                                <option value="Cash" {% if approval.payment_method=='Cash' %}selected{% endif %}>ক্যাশ</option>
-                                <option value="Bkash" {% if approval.payment_method=='Bkash' %}selected{% endif %}>বিকাশ</option>
-                                <option value="Nagad" {% if approval.payment_method=='Nagad' %}selected{% endif %}>নগদ</option>
-                                <option value="Rocket" {% if approval.payment_method=='Rocket' %}selected{% endif %}>রকেট</option>
+                                <option value="Cash" {% if approval.payment_method=='Cash' %}selected{% endif %}>💵 ক্যাশ</option>
+                                <option value="Bkash" {% if approval.payment_method=='Bkash' %}selected{% endif %}>📱 বিকাশ</option>
+                                <option value="Nagad" {% if approval.payment_method=='Nagad' %}selected{% endif %}>📱 নগদ</option>
+                                <option value="Rocket" {% if approval.payment_method=='Rocket' %}selected{% endif %}>📱 রকেট</option>
                             </select>
                         </div>
 
-                        <div class="col-lg-6 col-md-6 col-sm-12">
+                        <div class="col-lg-4 col-md-6 col-sm-12">
                             <label for="payment_status" class="form-label fw-semibold small mb-1">
                                 পরিশোধের অবস্থা: <span class="text-danger">*</span>
                             </label>
                             <select id="payment_status" 
                                     name="payment_status"
-                                    class="form-select form-select-sm shadow-sm" 
+                                    class="form-select form-select-sm shadow-sm input-enhanced" 
                                     required>
-                                <option value="Paid" {% if approval.payment_status=='Paid' %}selected{% endif %}>পরিশোধিত</option>
-                                <option value="Unpaid" {% if approval.payment_status=='Unpaid' %}selected{% endif %}>অপরিশোধিত</option>
+                                <option value="Paid" {% if approval.payment_status=='Paid' %}selected{% endif %}>✅ পরিশোধিত</option>
+                                <option value="Unpaid" {% if approval.payment_status=='Unpaid' %}selected{% endif %}>⏳ অপরিশোধিত</option>
                             </select>
                         </div>
                     </div>
-                </section>
+                </fieldset>
 
                 <hr class="my-5">
 
                 <!-- Action Buttons -->
-                <div class="d-flex flex-wrap gap-3 justify-content-center align-items-center">
-                    <button type="submit" 
-                            id="approve" 
-                            class="btn btn-success btn-sm px-4 shadow-sm flex-grow-1 flex-md-grow-0">
-                        <i class="bi bi-check-circle me-2"></i> অনুমোদন করুন
-                    </button>
-
-                    <button type="reset" 
-                            class="btn btn-warning btn-sm px-4 shadow-sm flex-grow-1 flex-md-grow-0">
-                        <i class="bi bi-arrow-clockwise me-2"></i> রিসেট করুন
-                    </button>
-
-                    <button type="button" 
-                            id="reject" 
-                            class="btn btn-danger btn-sm px-4 shadow-sm flex-grow-1 flex-md-grow-0">
-                        <i class="bi bi-x-circle me-2"></i> আবেদন বাতিল করুন
-                    </button>
-
-                    <a href="/{{ data.certificate_type }}_verify/application/{{ data.application_id }}/{{ union.union_code }}/0" 
-                       class="btn btn-primary btn-sm px-4 shadow-sm flex-grow-1 flex-md-grow-0">
-                        <i class="bi bi-files me-2"></i> আবেদন কপি
-                    </a>
-
-                    <button type="button" 
-                            id="on_hold" 
-                            class="btn btn-secondary btn-sm px-4 shadow-sm flex-grow-1 flex-md-grow-0">
-                        <i class="bi bi-pause-circle me-2"></i> অন-হোল্ড করুন
-                    </button>
-
-                    <button type="button" 
-                            id="reactivate" 
-                            class="btn btn-info btn-sm px-4 shadow-sm flex-grow-1 flex-md-grow-0">
-                        <i class="bi bi-arrow-repeat me-2"></i> পুনরায় চালু করুন
-                    </button>
-
-                    <!-- Fix Sonod Status -->
-                    <div class="position-relative d-inline-block">
-                        <button type="button" 
-                                id="fix_sonod" 
-                                class="btn btn-dark btn-sm px-4 shadow-sm flex-grow-1 flex-md-grow-0" 
-                                data-bs-toggle="tooltip" 
-                                data-bs-placement="top" 
-                                title="Click to fix Sonod number & status if inconsistent">
-                            <i class="bi bi-tools me-2"></i> Fix Sonod
+                <div class="action-buttons-container section-appear">
+                    <!-- Primary Actions -->
+                    <div class="action-group action-group-primary">
+                        <button type="submit" 
+                                id="approve" 
+                                class="btn btn-success action-btn action-btn-approve">
+                            <i class="bi bi-check-circle me-2"></i> {{ data.status == 'approved' ? 'অনুমোদন হালনাগাদ' : 'অনুমোদন করুন' }}
                         </button>
-                        <small id="fix_sonod_msg" 
-                               class="text-success position-absolute mt-1" 
-                               style="font-size:0.8rem; display:none;"></small>
+
+                        <button type="button" 
+                                id="reject" 
+                                class="btn btn-danger action-btn action-btn-reject">
+                            <i class="bi bi-x-circle me-2"></i> বাতিল করুন
+                        </button>
+
+                        <button type="button" 
+                                id="on_hold" 
+                                class="btn btn-secondary action-btn action-btn-hold">
+                            <i class="bi bi-pause-circle me-2"></i> অন-হোল্ড
+                        </button>
+
+                        <button type="button" 
+                                id="reactivate" 
+                                class="btn btn-info action-btn action-btn-reactivate">
+                            <i class="bi bi-arrow-repeat me-2"></i> পুনরায় চালু
+                        </button>
                     </div>
 
-                    {% if data.certificate_type == 'trade' %}
-                        <button type="button" 
-                                id="renew" 
-                                class="btn btn-info btn-sm px-4 shadow-sm flex-grow-1 flex-md-grow-0">
-                            <i class="bi bi-arrow-repeat me-2"></i> লাইসেন্স নবায়ন করুন
+                    <!-- Secondary Actions -->
+                    <div class="action-group action-group-secondary">
+                        <a href="/{{ data.certificate_type }}_verify/application/{{ data.application_id }}/{{ union.union_code }}/0" 
+                           class="btn btn-primary action-btn action-btn-view">
+                            <i class="bi bi-files me-2"></i> আবেদন কপি
+                        </a>
+
+                        {% if data.status == 'approved' %}
+                            <div class="btn-group" role="group">
+                                <a href="/application/{{ data.certificate_type }}/bangla/{{ data.sonod_number }}" 
+                                   class="btn btn-outline-success action-btn" 
+                                   target="_blank"
+                                   title="সার্টিফিকেট ডাউনলোড (বাংলা)">
+                                    <i class="bi bi-file-earmark-pdf me-1"></i> সার্টিফিকেট (বাংলা)
+                                </a>
+                                <a href="/application/{{ data.certificate_type }}/english/{{ data.sonod_number }}" 
+                                   class="btn btn-outline-success action-btn" 
+                                   target="_blank"
+                                   title="Certificate Download (English)">
+                                    <i class="bi bi-file-earmark-pdf me-1"></i> Certificate (English)
+                                </a>
+                            </div>
+                        {% endif %}
+
+                        <button type="reset" 
+                                class="btn btn-warning action-btn action-btn-reset">
+                            <i class="bi bi-arrow-clockwise me-2"></i> রিসেট
                         </button>
-                        <button type="button" 
-                                id="viewHistory" 
-                                class="btn btn-secondary btn-sm px-4 shadow-sm flex-grow-1 flex-md-grow-0">
-                            <i class="bi bi-clock-history me-2"></i> নবায়ন ইতিহাস
-                        </button>
-                    {% endif %}
+
+                        {# Fix Sonod #}
+                        <div class="position-relative d-inline-block">
+                            <button type="button" 
+                                    id="fix_sonod" 
+                                    class="btn btn-dark action-btn action-btn-fix"
+                                    title="Click to fix Sonod number & status if inconsistent">
+                                <i class="bi bi-tools me-2"></i> Fix Sonod
+                            </button>
+                            <small id="fix_sonod_msg" class="action-fix-msg"></small>
+                        </div>
+
+                        {% if data.certificate_type == 'trade' %}
+                            <button type="button" 
+                                    id="renew" 
+                                    class="btn btn-info action-btn action-btn-renew">
+                                <i class="bi bi-arrow-repeat me-2"></i> নবায়ন
+                            </button>
+                            <button type="button" 
+                                    id="viewHistory" 
+                                    class="btn btn-outline-secondary action-btn action-btn-history">
+                                <i class="bi bi-clock-history me-2"></i> নবায়ন ইতিহাস
+                            </button>
+                        {% endif %}
+                    </div>
                 </div>
 
             </form>
@@ -637,6 +733,214 @@
 
 
 
+    </div>
+</div>
+
+<!-- Approved Modal - Enhanced -->
+<div class="modal fade" id="approvedModal" tabindex="-1" aria-labelledby="approvedModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content modal-approved-content">
+            <div class="modal-header bg-success text-white border-0">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="modal-success-icon">
+                        <i class="bi bi-check-circle-fill fs-2"></i>
+                    </div>
+                    <div>
+                        <h5 class="modal-title fw-bold" id="approvedModalLabel">আবেদন অনুমোদিত</h5>
+                        <p class="mb-0 small text-white-50" id="approvedModalSubtitle">আবেদনটি সফলভাবে অনুমোদিত হয়েছে</p>
+                    </div>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Success Animation -->
+                <div class="text-center mb-4">
+                    <div class="success-checkmark">
+                        <div class="check-icon">
+                            <span class="icon-line line-tip"></span>
+                            <span class="icon-line line-long"></span>
+                            <div class="icon-circle"></div>
+                            <div class="icon-fix"></div>
+                        </div>
+                    </div>
+                    <h5 class="fw-bold text-success mt-3" id="approvedModalCongrats">অভিনন্দন!</h5>
+                    <p class="text-muted mb-3" id="approvedModalBodyText">আপনার আবেদন সফলভাবে অনুমোদিত হয়েছে। নিচের তথ্য ও অপশনগুলো দেখুন।</p>
+                </div>
+
+                <div class="modal-info-grid">
+                    <div class="modal-info-item">
+                        <div class="modal-info-icon bg-primary-subtle">
+                            <i class="bi bi-upc-scan text-primary"></i>
+                        </div>
+                        <div>
+                            <span class="modal-info-label">ট্র্যাকিং নম্বর</span>
+                            <span class="modal-info-value" id="approved_application_id">—</span>
+                        </div>
+                    </div>
+                    <div class="modal-info-item">
+                        <div class="modal-info-icon bg-info-subtle">
+                            <i class="bi bi-qr-code text-info"></i>
+                        </div>
+                        <div>
+                            <span class="modal-info-label">ইউনিয়ন কোড</span>
+                            <span class="modal-info-value" id="approved_union_code">—</span>
+                        </div>
+                    </div>
+                    <div class="modal-info-item">
+                        <div class="modal-info-icon bg-secondary-subtle">
+                            <i class="bi bi-code-square text-secondary"></i>
+                        </div>
+                        <div>
+                            <span class="modal-info-label">RMO কোড</span>
+                            <span class="modal-info-value" id="approved_rmo_code">—</span>
+                        </div>
+                    </div>
+                    <div class="modal-info-item">
+                        <div class="modal-info-icon bg-warning-subtle">
+                            <i class="bi bi-file-earmark-text text-warning"></i>
+                        </div>
+                        <div>
+                            <span class="modal-info-label">আবেদনের ধরন</span>
+                            <span class="modal-info-value" id="approved_certificate_type">—</span>
+                        </div>
+                    </div>
+                    <div class="modal-info-item modal-info-item-full">
+                        <div class="modal-info-icon bg-success-subtle">
+                            <i class="bi bi-passport text-success"></i>
+                        </div>
+                        <div>
+                            <span class="modal-info-label">লাইসেন্স/সনদ নং</span>
+                            <span class="modal-info-value fw-bold fs-5 text-success" id="approved_license_number">—</span>
+                        </div>
+                    </div>
+                </div>
+
+                <hr class="my-3">
+
+                <div class="modal-actions-grid">
+                    <a id="approved_download_link" class="modal-action-btn btn-download" target="_blank" href="#">
+                        <i class="bi bi-download"></i>
+                        <span>আবেদন কপি</span>
+                    </a>
+                    <a id="approved_certificate_link" class="modal-action-btn btn-certificate" target="_blank" href="#">
+                        <i class="bi bi-file-earmark-pdf"></i>
+                        <span>সার্টিফিকেট (বাংলা)</span>
+                    </a>
+                    <a id="approved_certificate_en_link" class="modal-action-btn btn-certificate-en" target="_blank" href="#">
+                        <i class="bi bi-file-earmark-pdf"></i>
+                        <span>Certificate (English)</span>
+                    </a>
+                    <a id="approved_view_link" class="modal-action-btn btn-view" target="_blank" href="#">
+                        <i class="bi bi-eye"></i>
+                        <span>আবেদন দেখুন</span>
+                    </a>
+                    <button type="button" id="approved_new_btn" class="modal-action-btn btn-new">
+                        <i class="bi bi-plus-circle"></i>
+                        <span>নতুন আবেদন</span>
+                    </button>
+                    <button type="button" class="modal-action-btn btn-close-action" data-bs-dismiss="modal">
+                        <i class="bi bi-x-lg"></i>
+                        <span>বন্ধ করুন</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Photo Lightbox Modal -->
+<div class="modal fade photo-lightbox-modal" id="photoLightbox" tabindex="-1" aria-hidden="true" data-bs-backdrop="false" role="dialog" aria-modal="true" aria-label="আবেদনকারীর ছবি — পূর্ণ আকার">
+    <div class="modal-dialog modal-fullscreen modal-dialog-centered">
+        <div class="modal-content bg-transparent border-0">
+            <div class="modal-body p-0 d-flex align-items-center justify-content-center position-relative">
+                <button type="button"
+                        class="photo-lightbox-close"
+                        data-bs-dismiss="modal"
+                        aria-label="বন্ধ করুন"
+                        title="বন্ধ করুন (Esc)">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+                <!-- Download button -->
+                <a href="{{ url }}/{{ data.applicant_photo ?: 'assets/images/default-user.png' }}"
+                   class="photo-lightbox-download"
+                   download="{{ data.name_bn|default('applicant')|replace({' ':'_', '/':'_'}) }}_photo.jpg"
+                   aria-label="ছবি ডাউনলোড করুন"
+                   title="ছবি ডাউনলোড করুন">
+                    <i class="bi bi-download"></i>
+                </a>
+                <!-- Rotation hint -->
+                <div class="photo-lightbox-hint" id="photoLightboxHint" aria-live="polite" aria-atomic="true">
+                    <span class="rotation-badge" id="photoRotationBadge">0°</span>
+                    <span class="rotation-help"><i class="bi bi-arrow-left"></i> <i class="bi bi-arrow-right"></i> ঘোরান | <i class="bi bi-download"></i> ডাউনলোড</span>
+                </div>
+                <img src="{{ url }}/{{ data.applicant_photo ?: 'assets/images/default-user.png' }}"
+                     alt="আবেদনকারীর ছবি — পূর্ণ আকার"
+                     class="photo-lightbox-image"
+                     id="photoLightboxImage"
+                     data-rotation="0">
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Document Gallery Modal -->
+<div class="modal fade photo-lightbox-modal" id="documentGallery" tabindex="-1" aria-hidden="true" data-bs-backdrop="false" role="dialog" aria-modal="true" aria-label="ডকুমেন্ট গ্যালারি">
+    <div class="modal-dialog modal-fullscreen modal-dialog-centered">
+        <div class="modal-content bg-transparent border-0">
+            <div class="modal-body p-0 d-flex align-items-center justify-content-center position-relative">
+                <!-- Close button -->
+                <button type="button"
+                        class="photo-lightbox-close"
+                        data-bs-dismiss="modal"
+                        aria-label="বন্ধ করুন"
+                        title="বন্ধ করুন (Esc)">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+                <!-- Download button -->
+                <a href="#"
+                   class="photo-lightbox-download"
+                   id="docGalleryDownload"
+                   download="document.jpg"
+                   aria-label="ডকুমেন্ট ডাউনলোড করুন"
+                   title="ডকুমেন্ট ডাউনলোড করুন">
+                    <i class="bi bi-download"></i>
+                </a>
+
+                <!-- Previous / Next navigation arrows -->
+                <button type="button"
+                        class="doc-gallery-nav doc-gallery-prev"
+                        id="docGalleryPrev"
+                        aria-label="পূর্ববর্তী ডকুমেন্ট"
+                        title="পূর্ববর্তী (←)">
+                    <i class="bi bi-chevron-left"></i>
+                </button>
+                <button type="button"
+                        class="doc-gallery-nav doc-gallery-next"
+                        id="docGalleryNext"
+                        aria-label="পরবর্তী ডকুমেন্ট"
+                        title="পরবর্তী (→)">
+                    <i class="bi bi-chevron-right"></i>
+                </button>
+
+                <!-- Top info bar: counter + document name -->
+                <div class="doc-gallery-topbar" id="docGalleryTopbar">
+                    <span class="doc-gallery-counter" id="docGalleryCounter">1 / 1</span>
+                    <span class="doc-gallery-filename" id="docGalleryFilename">document.jpg</span>
+                </div>
+
+                <!-- Rotation hint at bottom -->
+                <div class="photo-lightbox-hint" id="docGalleryHint" aria-live="polite" aria-atomic="true">
+                    <span class="rotation-badge" id="docGalleryRotationBadge">0°</span>
+                    <span class="rotation-help"><i class="bi bi-arrow-left"></i> <i class="bi bi-arrow-right"></i> ব্রাউজ করুন</span>
+                </div>
+
+                <!-- Gallery image -->
+                <img src=""
+                     alt="ডকুমেন্ট প্রিভিউ"
+                     class="photo-lightbox-image"
+                     id="docGalleryImage"
+                     data-rotation="0">
+            </div>
         </div>
     </div>
 </div>
@@ -644,26 +948,1018 @@
 {% endblock %}
 {% block styles %}
 <style>
-    .list-group-item.hover-shadow:hover {
-        background-color: #e9f0ff;
-        box-shadow: 0 0 12px rgb(13 110 253 / 0.25);
-        transition: all 0.3s ease;
+    /* ================================================================
+       APPROVE PAGE - COMPREHENSIVE UI POLISH
+       ================================================================ */
+
+    /* Override forms.css center alignment — approve page is display-only */
+    .approve-page.form-page .form-section {
+        text-align: left;
+    }
+
+    /* ===== Status Badge Pulse ===== */
+    .status-badge-pulse {
+        animation: statusPulse 2s ease-in-out infinite;
+    }
+
+    @keyframes statusPulse {
+        0%, 100% { box-shadow: 0 0 0 0 rgba(0,139,139,0.4); }
+        50% { box-shadow: 0 0 0 8px rgba(0,139,139,0); }
+    }
+
+    /* ===== Section Header ===== */
+    /* ===== Form Inner Section ===== */
+    .form-section-inner {
+        background: #f8f9fa;
+        border-radius: 12px;
+        padding: 1.25rem;
+        border: 1px solid rgba(0,0,0,0.04);
+    }
+
+    /* ===== Info Grid ===== */
+    .info-grid .info-item {
+        padding: 0.6rem 0.8rem;
+        border-radius: 10px;
+        transition: all 0.25s ease;
+        border: 1px solid transparent;
+    }
+
+    .info-grid .info-item:hover {
+        background: rgba(0,139,139,0.04);
+        border-color: rgba(0,139,139,0.1);
+    }
+
+    .info-item .info-label {
+        display: block;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+        color: #6c757d;
+        margin-bottom: 0.2rem;
+    }
+
+    .info-item .info-value {
+        display: block;
+        font-size: 0.95rem;
+        color: #212529;
+        font-weight: 500;
+    }
+
+    /* ===== Photo Ring ===== */
+    .photo-wrapper {
+        display: flex;
+        justify-content: center;
+    }
+
+    .photo-ring {
+        position: relative;
+        display: inline-block;
         cursor: pointer;
     }
 
-    /* Input focus enhancement */
-    input.form-control:focus, select.form-select:focus, textarea.form-control:focus {
-        box-shadow: 0 0 8px rgba(13, 110, 253, 0.6);
-        border-color: #0d6efd;
-        outline: none;
-        transition: box-shadow 0.3s ease;
+    .applicant-photo {
+        width: 140px;
+        height: 140px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 4px solid #fff;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.12), 0 0 0 2px rgba(0,139,139,0.2);
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
-    /* Text truncation for long file names */
-    .text-truncate {
+    .photo-ring:hover .applicant-photo {
+        transform: scale(1.05);
+        box-shadow: 0 8px 28px rgba(0,0,0,0.18), 0 0 0 3px rgba(0,139,139,0.35);
+    }
+
+    .photo-ring-overlay {
+        position: absolute;
+        inset: 0;
+        border-radius: 50%;
+        background: rgba(0,0,0,0.3);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        font-size: 1.5rem;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+
+    .photo-ring:hover .photo-ring-overlay {
+        opacity: 1;
+    }
+
+    /* ===== Address Display ===== */
+    .address-display {
+        background: #f8f9fa;
+        border-radius: 12px;
+        padding: 1rem 1.25rem;
+        border: 1px solid rgba(0,0,0,0.04);
+    }
+
+    .address-line {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: baseline;
+        gap: 0.25rem;
+    }
+
+    .address-tag {
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: #6c757d;
+        text-transform: uppercase;
+        letter-spacing: 0.2px;
+    }
+
+    .address-sep {
+        color: #adb5bd;
+        margin-right: 0.15rem;
+    }
+
+    .address-val {
+        font-size: 0.92rem;
+        color: #212529;
+        font-weight: 500;
+        margin-right: 0.35rem;
+    }
+
+    .address-divider {
+        color: #dee2e6;
+        margin: 0 0.35rem;
+        font-weight: 300;
+    }
+
+    /* ===== Applicant Info Cards ===== */
+    .applicant-info-card {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.85rem 1rem;
+        background: #f8f9fa;
+        border-radius: 12px;
+        border: 1px solid rgba(0,0,0,0.04);
+        transition: all 0.25s ease;
+    }
+
+    .applicant-info-card:hover {
+        background: rgba(0,139,139,0.04);
+        border-color: rgba(0,139,139,0.15);
+        transform: translateY(-1px);
+    }
+
+    .applicant-info-icon {
+        width: 38px;
+        height: 38px;
+        border-radius: 10px;
+        background: rgba(0,139,139,0.1);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #008B8B;
+        font-size: 1rem;
+        flex-shrink: 0;
+    }
+
+    .applicant-info-content {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .applicant-info-label {
+        font-size: 0.7rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+        color: #6c757d;
+    }
+
+    .applicant-info-value {
+        font-size: 1rem;
+        font-weight: 600;
+        color: #212529;
+    }
+
+    /* ===== Document Cards ===== */
+    .documents-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 1rem;
+    }
+
+    @media (max-width: 576px) {
+        .documents-grid {
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 0.75rem;
+        }
+    }
+
+    .document-card {
+        background: #fff;
+        border: 1px solid rgba(0,0,0,0.06);
+        border-radius: 12px;
+        overflow: hidden;
+        transition: all 0.3s ease;
+    }
+
+    .document-card:hover {
+        box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+        transform: translateY(-3px);
+        border-color: rgba(0,139,139,0.2);
+    }
+
+    .document-preview {
+        width: 100%;
+        height: 130px;
+        background: #f8f9fa;
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .document-preview img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: transform 0.4s ease;
+    }
+
+    .document-card:hover .document-preview img {
+        transform: scale(1.08);
+    }
+
+    .document-icon-big {
+        font-size: 2.5rem;
+        color: #adb5bd;
+    }
+
+    .document-info {
+        padding: 0.65rem 0.75rem;
+    }
+
+    .document-name {
+        display: block;
+        font-size: 0.78rem;
+        font-weight: 500;
+        color: #495057;
+        white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
+        margin-bottom: 0.5rem;
+    }
+
+    .document-actions {
+        display: flex;
+        gap: 0.35rem;
+    }
+
+    .document-view-btn {
+        font-size: 0.75rem;
+        padding: 0.25rem 0.65rem;
+        border-radius: 8px;
+    }
+
+    /* ===== Enhanced Inputs ===== */
+    .input-enhanced {
+        transition: all 0.25s ease;
+        border: 1px solid #ced4da;
+    }
+
+    .input-enhanced:focus {
+        border-color: #008B8B;
+        box-shadow: 0 0 0 0.2rem rgba(0,139,139,0.15), 0 0 12px rgba(0,139,139,0.08);
+    }
+
+    /* ===== Action Buttons Container ===== */
+    .action-buttons-container {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .action-group {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.6rem;
+        justify-content: center;
+    }
+
+    .action-group-primary {
+        gap: 0.7rem;
+    }
+
+    .action-btn {
+        border-radius: 10px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        padding: 0.55rem 1.1rem;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+        overflow: hidden;
+        border: none;
+    }
+
+    .action-btn::after {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 0;
+        height: 0;
+        border-radius: 50%;
+        background: rgba(255,255,255,0.2);
+        transform: translate(-50%, -50%);
+        transition: width 0.6s ease, height 0.6s ease;
+    }
+
+    .action-btn:active::after {
+        width: 300px;
+        height: 300px;
+    }
+
+    .action-btn:hover {
+        transform: translateY(-2px);
+    }
+
+    .action-btn-approve:hover { box-shadow: 0 6px 20px rgba(40,167,69,0.35); }
+    .action-btn-reject:hover { box-shadow: 0 6px 20px rgba(220,53,69,0.35); }
+    .action-btn-hold:hover { box-shadow: 0 6px 20px rgba(108,117,125,0.3); }
+    .action-btn-reactivate:hover { box-shadow: 0 6px 20px rgba(23,162,184,0.3); }
+    .action-btn-view:hover { box-shadow: 0 6px 20px rgba(0,123,255,0.3); }
+    .action-btn-reset:hover { box-shadow: 0 6px 20px rgba(255,193,7,0.35); }
+    .action-btn-fix:hover { box-shadow: 0 6px 20px rgba(52,58,64,0.3); }
+    .action-btn-renew:hover { box-shadow: 0 6px 20px rgba(23,162,184,0.3); }
+    .action-btn-history:hover { box-shadow: 0 6px 20px rgba(108,117,125,0.2); }
+
+    .action-fix-msg {
+        display: none;
+        position: absolute;
+        bottom: -1.3rem;
+        left: 50%;
+        transform: translateX(-50%);
+        color: #28a745;
+        font-size: 0.72rem;
         white-space: nowrap;
+        font-weight: 500;
+    }
+
+    /* ===== Approved Modal ===== */
+    .modal-approved-content {
+        border: none;
+        border-radius: 20px;
+        overflow: hidden;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+    }
+
+    .modal-success-icon {
+        animation: successBounce 0.6s ease;
+    }
+
+    @keyframes successBounce {
+        0% { transform: scale(0); }
+        50% { transform: scale(1.2); }
+        100% { transform: scale(1); }
+    }
+
+    /* Success Checkmark Animation */
+    .success-checkmark {
+        width: 80px;
+        height: 80px;
+        margin: 0 auto;
+    }
+
+    .check-icon {
+        width: 80px;
+        height: 80px;
+        position: relative;
+        border-radius: 50%;
+        box-sizing: content-box;
+        border: 4px solid #28a745;
+    }
+
+    .check-icon::before {
+        top: 3px;
+        left: -2px;
+        width: 30px;
+        transform-origin: 100% 50%;
+        border-radius: 100px 0 0 100px;
+    }
+
+    .check-icon::after {
+        top: 0;
+        left: 30px;
+        width: 60px;
+        transform-origin: 0 50%;
+        border-radius: 0 100px 100px 0;
+        animation: rotateCircle 4.25s ease-in;
+    }
+
+    .check-icon::before,
+    .check-icon::after {
+        content: '';
+        height: 100px;
+        position: absolute;
+        background: #fff;
+        transform: rotate(-45deg);
+    }
+
+    .icon-line {
+        height: 5px;
+        background: #28a745;
+        border-radius: 2px;
+        position: absolute;
+        z-index: 10;
+    }
+
+    .icon-line.line-tip {
+        top: 46px;
+        left: 14px;
+        width: 25px;
+        transform: rotate(45deg);
+        animation: iconLineTip 0.75s;
+    }
+
+    .icon-line.line-long {
+        top: 38px;
+        right: 8px;
+        width: 47px;
+        transform: rotate(-45deg);
+        animation: iconLineLong 0.75s;
+    }
+
+    .icon-circle {
+        top: -4px;
+        left: -4px;
+        z-index: 10;
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        position: absolute;
+        box-sizing: content-box;
+        border: 4px solid rgba(40,167,69,0.2);
+    }
+
+    .icon-fix {
+        top: 8px;
+        width: 5px;
+        left: 26px;
+        z-index: 1;
+        height: 85px;
+        position: absolute;
+        background: #fff;
+        transform: rotate(-45deg);
+    }
+
+    @keyframes rotateCircle {
+        0% { transform: rotate(-45deg); }
+        5% { transform: rotate(-45deg); }
+        12% { transform: rotate(-405deg); }
+        100% { transform: rotate(-405deg); }
+    }
+
+    @keyframes iconLineTip {
+        0% { width: 0; left: 1px; top: 19px; }
+        54% { width: 0; left: 1px; top: 19px; }
+        70% { width: 50px; left: -8px; top: 37px; }
+        84% { width: 17px; left: 21px; top: 48px; }
+        100% { width: 25px; left: 14px; top: 46px; }
+    }
+
+    @keyframes iconLineLong {
+        0% { width: 0; right: 46px; top: 54px; }
+        65% { width: 0; right: 46px; top: 54px; }
+        84% { width: 55px; right: 0px; top: 35px; }
+        100% { width: 47px; right: 8px; top: 38px; }
+    }
+
+    /* Modal Info Grid */
+    .modal-info-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.75rem;
+    }
+
+    @media (max-width: 576px) {
+        .modal-info-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    .modal-info-item {
+        display: flex;
+        align-items: center;
+        gap: 0.65rem;
+        padding: 0.65rem 0.85rem;
+        background: #f8f9fa;
+        border-radius: 10px;
+        border: 1px solid rgba(0,0,0,0.04);
+        transition: all 0.2s ease;
+    }
+
+    .modal-info-item:hover {
+        background: #fff;
+        border-color: rgba(0,139,139,0.12);
+    }
+
+    .modal-info-item-full {
+        grid-column: 1 / -1;
+    }
+
+    .modal-info-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.1rem;
+        flex-shrink: 0;
+    }
+
+    .modal-info-label {
+        display: block;
+        font-size: 0.68rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+        color: #6c757d;
+    }
+
+    .modal-info-value {
+        display: block;
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: #212529;
+        word-break: break-all;
+    }
+
+    /* Modal Actions Grid */
+    .modal-actions-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 0.6rem;
+    }
+
+    @media (max-width: 576px) {
+        .modal-actions-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+
+    .modal-action-btn {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.35rem;
+        padding: 0.75rem 0.5rem;
+        border-radius: 12px;
+        border: 1px solid rgba(0,0,0,0.06);
+        background: #fff;
+        color: #495057;
+        text-decoration: none;
+        font-size: 0.72rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-align: center;
+        line-height: 1.2;
+    }
+
+    .modal-action-btn:hover {
+        transform: translateY(-2px);
+        text-decoration: none;
+        color: #212529;
+    }
+
+    .modal-action-btn i {
+        font-size: 1.3rem;
+    }
+
+    .btn-download:hover { background: #e8f5e9; border-color: #28a745; color: #28a745; }
+    .btn-certificate:hover { background: #fff8e1; border-color: #ffc107; color: #f39c12; }
+    .btn-certificate-en:hover { background: #fff3e0; border-color: #ff9800; color: #e65100; }
+    .btn-view:hover { background: #e3f2fd; border-color: #2196f3; color: #1976d2; }
+    .btn-new:hover { background: #f3e5f5; border-color: #9c27b0; color: #7b1fa2; }
+    .btn-close-action:hover { background: #fbe9e7; border-color: #f44336; color: #c62828; }
+
+    /* ===== Section Appear Animation (via IntersectionObserver) ===== */
+    .section-appear {
+        opacity: 0;
+        transform: translateY(30px);
+        transition: opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1), transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .section-appear.appeared {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+
+
+    /* ===== Print Styles ===== */
+    @media print {
+        .sidebar, header, footer, .top-button, .breadcrumb-nav, .page-loader,
+        .action-buttons-container,
+        .photo-ring-overlay, #approvalForm, .action-group, .photo-lightbox-modal {
+            display: none !important;
+        }
+
+        .section-appear {
+            opacity: 1 !important;
+            transform: none !important;
+        }
+
+
+
+        .main-content {
+            margin-left: 0 !important;
+            width: 100% !important;
+        }
+
+        .content-body {
+            box-shadow: none !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            width: 100% !important;
+        }
+
+        .card {
+            box-shadow: none !important;
+            border: 1px solid #ccc !important;
+            border-radius: 0 !important;
+        }
+
+        .card-body {
+            padding: 1rem !important;
+        }
+
+        .applicant-photo {
+            box-shadow: none !important;
+            border: 2px solid #999 !important;
+        }
+    }
+
+    /* ===== Photo Lightbox Modal ===== */
+    .photo-lightbox-modal .modal-content {
+        background: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+    }
+
+    .photo-lightbox-modal .modal-dialog {
+        margin: 0;
+        max-width: 100vw;
+        max-height: 100vh;
+    }
+
+    .photo-lightbox-modal.show {
+        background: rgba(0, 0, 0, 0.92);
+        backdrop-filter: blur(4px);
+    }
+
+    .photo-lightbox-image {
+        max-width: 92vw;
+        max-height: 90vh;
+        width: auto;
+        height: auto;
+        object-fit: contain;
+        border-radius: 12px;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+        animation: lightboxEntrance 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    @keyframes lightboxEntrance {
+        from {
+            opacity: 0;
+            transform: scale(0.85) translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+        }
+    }
+
+    .photo-lightbox-close,
+    .photo-lightbox-download {
+        position: absolute;
+        z-index: 1060;
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        background: rgba(255,255,255,0.15);
+        border: none;
+        color: #fff;
+        font-size: 1.2rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.25s ease;
+        backdrop-filter: blur(4px);
+        text-decoration: none;
+    }
+
+    .photo-lightbox-close { top: 20px; right: 24px; }
+    .photo-lightbox-download { top: 20px; left: 24px; }
+
+    .photo-lightbox-close:hover,
+    .photo-lightbox-download:hover {
+        background: rgba(255,255,255,0.3);
+        transform: scale(1.1) rotate(0deg);
+    }
+
+    .photo-lightbox-close:hover { transform: scale(1.1) rotate(90deg); }
+    .photo-lightbox-download:hover { transform: scale(1.1) translateY(-2px); }
+
+    .photo-lightbox-close:focus-visible,
+    .photo-lightbox-download:focus-visible {
+        outline: 3px solid #fff;
+        outline-offset: 3px;
+    }
+
+    /* ===== Photo Lightbox Rotation ===== */
+    .photo-lightbox-image {
+        transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* Rotation degree classes — set via JS */
+    .photo-lightbox-image.rotate-90  { transform: rotate(90deg); }
+    .photo-lightbox-image.rotate-180 { transform: rotate(180deg); }
+    .photo-lightbox-image.rotate-270 { transform: rotate(270deg); }
+
+    /* ===== Photo Lightbox Keyboard Hint ===== */
+    .photo-lightbox-hint {
+        position: absolute;
+        bottom: 28px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 1060;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        background: rgba(0,0,0,0.5);
+        backdrop-filter: blur(6px);
+        padding: 8px 16px;
+        border-radius: 24px;
+        color: rgba(255,255,255,0.7);
+        font-size: 0.78rem;
+        transition: opacity 0.4s ease, transform 0.4s ease;
+        opacity: 0;
+        transform: translateX(-50%) translateY(10px);
+        pointer-events: none;
+    }
+
+    .photo-lightbox-modal.show .photo-lightbox-hint {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+        transition-delay: 0.6s;
+    }
+
+    .photo-lightbox-hint .rotation-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 32px;
+        height: 22px;
+        background: rgba(255,255,255,0.15);
+        border-radius: 11px;
+        padding: 0 6px;
+        font-size: 0.7rem;
+        font-weight: 600;
+        color: #fff;
+        letter-spacing: 0.3px;
+        transition: all 0.3s ease;
+    }
+
+    .photo-lightbox-hint .rotation-help {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        opacity: 0.6;
+    }
+
+    .photo-lightbox-hint .rotation-help i {
+        font-size: 0.7rem;
+    }
+
+    @media (max-width: 576px) {
+        .photo-lightbox-image {
+            max-width: 98vw;
+            max-height: 85vh;
+            border-radius: 8px;
+        }
+
+        .photo-lightbox-close {
+            top: 12px;
+            right: 12px;
+            width: 36px;
+            height: 36px;
+            font-size: 1rem;
+        }
+
+        .photo-lightbox-hint {
+            bottom: 16px;
+            padding: 5px 12px;
+            font-size: 0.7rem;
+            gap: 6px;
+        }
+
+        .photo-lightbox-hint .rotation-badge {
+            min-width: 26px;
+            height: 18px;
+            font-size: 0.65rem;
+        }
+    }
+
+    /* ===== Document Gallery Trigger Overlay ===== */
+    .doc-gallery-trigger {
+        position: relative;
+        cursor: pointer;
+        overflow: hidden;
+    }
+
+    .doc-gallery-trigger img {
+        transition: transform 0.4s ease, filter 0.4s ease;
+    }
+
+    .doc-gallery-trigger:hover img {
+        transform: scale(1.08);
+        filter: brightness(0.7);
+    }
+
+    .doc-gallery-overlay {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        color: #fff;
+        font-size: 1.2rem;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+        pointer-events: none;
+    }
+
+    .doc-gallery-overlay span {
+        font-size: 0.65rem;
+        font-weight: 500;
+        letter-spacing: 0.3px;
+        text-transform: uppercase;
+    }
+
+    .doc-gallery-trigger:hover .doc-gallery-overlay {
+        opacity: 1;
+    }
+
+    /* ===== Document Gallery Navigation Arrows ===== */
+    .doc-gallery-nav {
+        position: absolute;
+        z-index: 1061;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 52px;
+        height: 52px;
+        border-radius: 50%;
+        background: rgba(255,255,255,0.12);
+        border: none;
+        color: #fff;
+        font-size: 1.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        backdrop-filter: blur(4px);
+        opacity: 0;
+    }
+
+    .photo-lightbox-modal.show .doc-gallery-nav {
+        opacity: 1;
+        transition-delay: 0.2s;
+    }
+
+    .doc-gallery-prev { left: 18px; }
+    .doc-gallery-next { right: 18px; }
+
+    .doc-gallery-nav:hover {
+        background: rgba(255,255,255,0.25);
+        transform: translateY(-50%) scale(1.1);
+    }
+
+    .doc-gallery-nav:active {
+        transform: translateY(-50%) scale(0.95);
+    }
+
+    .doc-gallery-nav:focus-visible {
+        outline: 3px solid #fff;
+        outline-offset: 3px;
+    }
+
+    /* ===== Document Gallery Top Bar ===== */
+    .doc-gallery-topbar {
+        position: absolute;
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 1060;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        background: rgba(0,0,0,0.5);
+        backdrop-filter: blur(6px);
+        padding: 7px 18px;
+        border-radius: 24px;
+        color: rgba(255,255,255,0.8);
+        font-size: 0.8rem;
+        transition: opacity 0.4s ease, transform 0.4s ease;
+        opacity: 0;
+        transform: translateX(-50%) translateY(-10px);
+        pointer-events: none;
+        max-width: calc(100vw - 140px);
+    }
+
+    .photo-lightbox-modal.show .doc-gallery-topbar {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+        transition-delay: 0.4s;
+    }
+
+    .doc-gallery-counter {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 42px;
+        height: 22px;
+        background: rgba(255,255,255,0.15);
+        border-radius: 11px;
+        padding: 0 8px;
+        font-size: 0.72rem;
+        font-weight: 700;
+        color: #fff;
+        letter-spacing: 0.5px;
+        white-space: nowrap;
+    }
+
+    .doc-gallery-filename {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 300px;
+        font-size: 0.78rem;
+        opacity: 0.75;
+    }
+
+    @media (max-width: 768px) {
+        .doc-gallery-nav {
+            width: 40px;
+            height: 40px;
+            font-size: 1.1rem;
+        }
+        .doc-gallery-prev { left: 10px; }
+        .doc-gallery-next { right: 10px; }
+        .doc-gallery-topbar {
+            top: 12px;
+            padding: 5px 12px;
+            gap: 8px;
+            font-size: 0.7rem;
+            max-width: calc(100vw - 100px);
+        }
+        .doc-gallery-filename {
+            max-width: 120px;
+        }
+        .doc-gallery-counter {
+            min-width: 32px;
+            height: 18px;
+            font-size: 0.65rem;
+        }
+    }
+
+    @media (max-width: 576px) {
+        .doc-gallery-nav {
+            width: 34px;
+            height: 34px;
+            font-size: 0.95rem;
+        }
+        .doc-gallery-prev { left: 6px; }
+        .doc-gallery-next { right: 6px; }
+    }
+
+    /* ===== Responsive Adjustments ===== */
+    @media (max-width: 768px) {
+
+        .action-group { gap: 0.4rem; }
+        .action-btn { padding: 0.45rem 0.85rem; font-size: 0.8rem; }
+    }
+
+    @media (max-width: 576px) {
+
+        .modal-approved-content { border-radius: 12px; margin: 0.5rem; }
+        .applicant-photo { width: 110px; height: 110px; }
     }
 </style>
 {% endblock %}
@@ -788,13 +2084,54 @@ document.addEventListener('DOMContentLoaded', () => {
         if (el) el.addEventListener(event, handler);
     };
 
-    const csrfToken = () => document.querySelector('input[name="csrf_token"]')?.value || '';
+    const csrfToken = () => document.querySelector('meta[name="csrf_token"]')?.getAttribute('content') || '';
     const certType  = () => $id('certificate_type')?.value || '';
     const appId     = () => $id('application_id')?.value || '';
 
     function getTodayDate() {
         const t = new Date();
         return `${String(t.getDate()).padStart(2,'0')}-${String(t.getMonth()+1).padStart(2,'0')}-${t.getFullYear()}`;
+    }
+
+    /* ===============================
+       Scroll Animation via IntersectionObserver
+    =============================== */
+    const observeSections = () => {
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach((entry, index) => {
+                if (entry.isIntersecting) {
+                    // Stagger the animations slightly
+                    const delay = Array.from(entry.target.parentElement?.children || []).indexOf(entry.target) * 80;
+                    setTimeout(() => {
+                        entry.target.classList.add('appeared');
+                    }, Math.min(delay, 500));
+                    observer.unobserve(entry.target);
+                }
+            });
+        }, {
+            threshold: 0.1,
+            rootMargin: '0px 0px -40px 0px'
+        });
+
+        document.querySelectorAll('.section-appear').forEach(el => observer.observe(el));
+    };
+
+    observeSections();
+
+    /* ===============================
+       Button Loading State
+    =============================== */
+    function btnLoading(btn) {
+        if (!btn) return function(){};
+        const originalHtml = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status"></span> প্রসেসিং...';
+        btn.classList.add('btn-loading');
+        return function() {
+            btn.disabled = false;
+            btn.innerHTML = originalHtml;
+            btn.classList.remove('btn-loading');
+        };
     }
 
     function displayMessage(status, message, licenseNumber = null) {
@@ -812,7 +2149,8 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    function postData(url, body, onSuccess) {
+    function postData(url, body, onSuccess, button) {
+        const restore = button ? btnLoading(button) : function(){};
         fetch(url, {
             method: 'POST',
             headers: {'Content-Type':'application/x-www-form-urlencoded'},
@@ -820,10 +2158,14 @@ document.addEventListener('DOMContentLoaded', () => {
         })
         .then(r => r.json())
         .then(res => {
+            restore();
             if (res.status === 'success') onSuccess(res);
             else displayMessage('error', res.message || 'Unknown error');
         })
-        .catch(() => displayMessage('error', '❌ কিছু ভুল হয়েছে, আবার চেষ্টা করুন।'));
+        .catch(() => {
+            restore();
+            displayMessage('error', '❌ কিছু ভুল হয়েছে, আবার চেষ্টা করুন।');
+        });
     }
 
     function validateTradeApprovalFields() {
@@ -852,6 +2194,249 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     /* ===============================
+       Photo Lightbox Keyboard Navigation & Accessibility
+    =============================== */
+    const photoLightbox = document.getElementById('photoLightbox');
+    const photoLightboxImg = document.getElementById('photoLightboxImage');
+    const photoRotationBadge = document.getElementById('photoRotationBadge');
+    let photoKeyHandler = null;
+
+    if (photoLightbox && photoLightboxImg) {
+        // When modal opens: focus the close button, trap focus
+        photoLightbox.addEventListener('shown.bs.modal', function () {
+            const closeBtn = photoLightbox.querySelector('.photo-lightbox-close');
+            if (closeBtn) closeBtn.focus();
+
+            // Attach keyboard listener
+            if (photoKeyHandler) {
+                document.removeEventListener('keydown', photoKeyHandler);
+            }
+            photoKeyHandler = function (e) {
+                // Esc — close modal (Bootstrap handles this, but reinforce)
+                if (e.key === 'Escape') {
+                    const modal = bootstrap.Modal.getInstance(photoLightbox);
+                    if (modal) modal.hide();
+                    return;
+                }
+
+                // Left arrow — rotate counterclockwise
+                if (e.key === 'ArrowLeft') {
+                    e.preventDefault();
+                    let rot = parseInt(photoLightboxImg.dataset.rotation || '0', 10);
+                    rot = ((rot - 90) % 360 + 360) % 360;
+                    applyPhotoRotation(rot);
+                    return;
+                }
+
+                // Right arrow — rotate clockwise
+                if (e.key === 'ArrowRight') {
+                    e.preventDefault();
+                    let rot = parseInt(photoLightboxImg.dataset.rotation || '0', 10);
+                    rot = ((rot + 90) % 360 + 360) % 360;
+                    applyPhotoRotation(rot);
+                    return;
+                }
+            };
+            document.addEventListener('keydown', photoKeyHandler);
+        });
+
+        // Clean up listener when modal hides
+        photoLightbox.addEventListener('hidden.bs.modal', function () {
+            if (photoKeyHandler) {
+                document.removeEventListener('keydown', photoKeyHandler);
+                photoKeyHandler = null;
+            }
+            // Reset rotation on close
+            applyPhotoRotation(0);
+        });
+
+        function applyPhotoRotation(degrees) {
+            photoLightboxImg.dataset.rotation = degrees;
+            // Remove all rotation classes
+            photoLightboxImg.classList.remove('rotate-90', 'rotate-180', 'rotate-270');
+            if (degrees !== 0) {
+                photoLightboxImg.classList.add('rotate-' + degrees);
+            }
+            // Update badge with a quick bounce animation
+            if (photoRotationBadge) {
+                photoRotationBadge.textContent = degrees + '°';
+                photoRotationBadge.style.transform = 'scale(1.3)';
+                setTimeout(function () {
+                    photoRotationBadge.style.transform = 'scale(1)';
+                }, 150);
+            }
+        }
+    }
+
+    /* ===============================
+       Document Gallery State & Navigation
+    =============================== */
+    const docGallery = document.getElementById('documentGallery');
+    const docGalleryImg = document.getElementById('docGalleryImage');
+    const docGalleryPrev = document.getElementById('docGalleryPrev');
+    const docGalleryNext = document.getElementById('docGalleryNext');
+    const docGalleryCounter = document.getElementById('docGalleryCounter');
+    const docGalleryFilename = document.getElementById('docGalleryFilename');
+    const docGalleryDownload = document.getElementById('docGalleryDownload');
+    const docGalleryRotationBadge = document.getElementById('docGalleryRotationBadge');
+    let docGalleryItems = [];
+    let docGalleryIndex = 0;
+    let docGalleryKeyHandler = null;
+
+    function buildDocGalleryItems() {
+        const triggers = document.querySelectorAll('.doc-gallery-trigger');
+        const items = [];
+        triggers.forEach(function (t) {
+            const url = t.getAttribute('data-doc-url');
+            const name = t.getAttribute('data-doc-name');
+            if (url) {
+                items.push({ url: url, name: name || 'document' });
+            }
+        });
+        return items;
+    }
+
+    function updateDocGallery() {
+        if (!docGalleryItems.length || !docGalleryImg) return;
+
+        var item = docGalleryItems[docGalleryIndex];
+        docGalleryImg.src = item.url;
+        docGalleryImg.alt = 'Document: ' + (item.name || '');
+        docGalleryImg.dataset.rotation = '0';
+        docGalleryImg.classList.remove('rotate-90', 'rotate-180', 'rotate-270');
+
+        if (docGalleryCounter) {
+            docGalleryCounter.textContent = (docGalleryIndex + 1) + ' / ' + docGalleryItems.length;
+            docGalleryCounter.style.transform = 'scale(1.2)';
+            setTimeout(function () { docGalleryCounter.style.transform = 'scale(1)'; }, 150);
+        }
+
+        if (docGalleryFilename) {
+            docGalleryFilename.textContent = item.name || '';
+        }
+
+        if (docGalleryDownload) {
+            docGalleryDownload.href = item.url;
+            docGalleryDownload.download = item.name || 'document.jpg';
+        }
+
+        if (docGalleryRotationBadge) {
+            docGalleryRotationBadge.textContent = '0°';
+        }
+
+        // Toggle nav button visibility (disable at bounds)
+        if (docGalleryPrev) {
+            docGalleryPrev.disabled = docGalleryIndex <= 0;
+            docGalleryPrev.style.opacity = docGalleryIndex <= 0 ? '0.3' : '';
+        }
+        if (docGalleryNext) {
+            docGalleryNext.disabled = docGalleryIndex >= docGalleryItems.length - 1;
+            docGalleryNext.style.opacity = docGalleryIndex >= docGalleryItems.length - 1 ? '0.3' : '';
+        }
+    }
+
+    function openDocGallery(index) {
+        docGalleryItems = buildDocGalleryItems();
+        if (!docGalleryItems.length) return;
+        docGalleryIndex = Math.max(0, Math.min(index, docGalleryItems.length - 1));
+        updateDocGallery();
+        var modal = new bootstrap.Modal(document.getElementById('documentGallery'));
+        modal.show();
+    }
+
+    // Click / Enter / Space on trigger elements
+    document.querySelectorAll('.doc-gallery-trigger').forEach(function (el) {
+        el.addEventListener('click', function (e) {
+            var triggers = document.querySelectorAll('.doc-gallery-trigger');
+            var idx = Array.from(triggers).indexOf(this);
+            openDocGallery(idx);
+        });
+        el.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                var triggers = document.querySelectorAll('.doc-gallery-trigger');
+                var idx = Array.from(triggers).indexOf(this);
+                openDocGallery(idx);
+            }
+        });
+    });
+
+    // Nav button clicks
+    if (docGalleryPrev) {
+        docGalleryPrev.addEventListener('click', function () {
+            if (docGalleryIndex > 0) {
+                docGalleryIndex--;
+                updateDocGallery();
+            }
+        });
+    }
+    if (docGalleryNext) {
+        docGalleryNext.addEventListener('click', function () {
+            if (docGalleryIndex < docGalleryItems.length - 1) {
+                docGalleryIndex++;
+                updateDocGallery();
+            }
+        });
+    }
+
+    // Keyboard navigation for document gallery
+    if (docGallery) {
+        docGallery.addEventListener('shown.bs.modal', function () {
+            // Focus the close button
+            var closeBtn = docGallery.querySelector('.photo-lightbox-close');
+            if (closeBtn) closeBtn.focus();
+
+            // Attach key handler
+            if (docGalleryKeyHandler) {
+                document.removeEventListener('keydown', docGalleryKeyHandler);
+            }
+            docGalleryKeyHandler = function (e) {
+                // Esc — close
+                if (e.key === 'Escape') {
+                    var modal = bootstrap.Modal.getInstance(docGallery);
+                    if (modal) modal.hide();
+                    return;
+                }
+
+                // Left arrow — previous document
+                if (e.key === 'ArrowLeft') {
+                    e.preventDefault();
+                    if (docGalleryIndex > 0) {
+                        docGalleryIndex--;
+                        updateDocGallery();
+                        // Quick pulse animation on the image
+                        docGalleryImg.style.transform = 'scale(0.96)';
+                        setTimeout(function () { docGalleryImg.style.transform = ''; }, 200);
+                    }
+                    return;
+                }
+
+                // Right arrow — next document
+                if (e.key === 'ArrowRight') {
+                    e.preventDefault();
+                    if (docGalleryIndex < docGalleryItems.length - 1) {
+                        docGalleryIndex++;
+                        updateDocGallery();
+                        docGalleryImg.style.transform = 'scale(0.96)';
+                        setTimeout(function () { docGalleryImg.style.transform = ''; }, 200);
+                    }
+                    return;
+                }
+            };
+            document.addEventListener('keydown', docGalleryKeyHandler);
+        });
+
+        docGallery.addEventListener('hidden.bs.modal', function () {
+            if (docGalleryKeyHandler) {
+                document.removeEventListener('keydown', docGalleryKeyHandler);
+                docGalleryKeyHandler = null;
+            }
+            // Reset rotation badge
+            if (docGalleryRotationBadge) docGalleryRotationBadge.textContent = '0°';
+        });
+    }
+
+    /* ===============================
        Init approval date
     =============================== */
 
@@ -871,18 +2456,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (!$id('approval_date')?.value.trim()) {
             displayMessage('error', 'অনুগ্রহ করে অনুমোদনের তারিখ নির্বাচন করুন।');
-            return;
-        }
-
-        const verifierName = $('#verifier_name').val()?.trim();
-        const verifierDesignation = $('#verifier_designation').val();
-
-        if (verifierName && !verifierDesignation) {
-            Swal.fire('❌ ভুল হয়েছে!', 'যাচাইকারীর নাম দিলে পদবি নির্বাচন আবশ্যক।', 'error');
-            return;
-        }
-        if (!verifierName && verifierDesignation) {
-            Swal.fire('❌ ভুল হয়েছে!', 'পদবি নির্বাচন করলে যাচাইকারীর নাম আবশ্যক।', 'error');
             return;
         }
 
@@ -917,8 +2490,97 @@ document.addEventListener('DOMContentLoaded', () => {
         postData(
             `/applications/${certType()}/approve/${appId()}`,
             new URLSearchParams(fd).toString(),
-            res => displayMessage('success', res.message, licenseNumber)
+            res => showApprovedModal(res, licenseNumber),
+            $id('approve')
         );
+    }
+
+    /**
+     * Show approved modal with links and details returned from server
+     */
+    function showApprovedModal(res, licenseNumber) {
+        try {
+            const aId = res.application_id || appId();
+            const unionCode = res.union_code || '';
+            const rmoCode = res.rmo_code || '';
+            const cert = res.certificate_type || certType() || '';
+            const license = licenseNumber || res.license_number || res.sonod_number || '';
+
+            document.getElementById('approved_application_id').textContent = aId || '—';
+            document.getElementById('approved_union_code').textContent = unionCode || '—';
+            document.getElementById('approved_rmo_code').textContent = rmoCode || '—';
+            document.getElementById('approved_certificate_type').textContent = res.certificate_type_bn || cert || '—';                document.getElementById('approved_license_number').textContent = license || '—';
+
+            // Show all action buttons first, then hide certificate links if no license
+            document.querySelectorAll('.modal-action-btn.btn-certificate, .modal-action-btn.btn-certificate-en').forEach(el => {
+                el.classList.toggle('d-none', !(license && license !== '—'));
+            });
+
+            const downloadUrl = `/${cert}_verify/application/${aId}/${unionCode || 0}/${rmoCode || 0}`;
+            const viewUrl = `/${cert}_verify/application/${aId}/${unionCode || 0}/0`;
+            const certificateUrl = `/application/${cert}/bangla/${license}`;
+            const certificateEnUrl = "/application/${cert}/english/${license}";
+
+            // Determine if this is an update (already approved)
+            const isUpdate = res.is_update === true;
+
+            // Update modal title with certificate type name
+            const modalTitle = document.getElementById('approvedModalLabel');
+            if (modalTitle) {
+                const certBn = res.certificate_type_bn || cert || '';
+                modalTitle.innerHTML = `<i class="bi bi-check-circle-fill me-2"></i> ${certBn} ${isUpdate ? 'হালনাগাদ' : 'অনুমোদিত'}`;
+            }
+
+            // Update modal subtitle
+            const modalSubtitle = document.getElementById('approvedModalSubtitle');
+            if (modalSubtitle) {
+                modalSubtitle.textContent = isUpdate ? 'অনুমোদনের তথ্য সফলভাবে হালনাগাদ করা হয়েছে' : 'আবেদনটি সফলভাবে অনুমোদিত হয়েছে';
+            }
+
+            // Update modal body texts
+            const modalCongrats = document.getElementById('approvedModalCongrats');
+            if (modalCongrats) {
+                modalCongrats.textContent = isUpdate ? '✅ হালনাগাদ সম্পন্ন!' : 'অভিনন্দন!';
+            }
+
+            const modalBodyText = document.getElementById('approvedModalBodyText');
+            if (modalBodyText) {
+                modalBodyText.textContent = isUpdate
+                    ? 'অনুমোদনের তথ্য সফলভাবে হালনাগাদ করা হয়েছে। নিচের তথ্য ও অপশনগুলো দেখুন।'
+                    : 'আপনার আবেদন সফলভাবে অনুমোদিত হয়েছে। নিচের তথ্য ও অপশনগুলো দেখুন।';
+            }
+
+            const dl = document.getElementById('approved_download_link');
+            const vl = document.getElementById('approved_view_link');
+            const cl = document.getElementById('approved_certificate_link');
+            const clEn = document.getElementById('approved_certificate_en_link');
+            if (dl) dl.href = downloadUrl;
+            if (vl) vl.href = viewUrl;
+            [cl, clEn].forEach(link => {
+                if (link) {
+                    const isEn = link.id === 'approved_certificate_en_link';
+                    link.href = isEn ? certificateEnUrl : certificateUrl;
+                }
+            });
+
+            const newBtn = document.getElementById('approved_new_btn');
+            if (newBtn) newBtn.addEventListener('click', function(){
+                // go to applications list for this certificate type
+                window.location.href = `/applications/${cert}`;
+            });
+
+            // show bootstrap modal
+            const modalEl = document.getElementById('approvedModal');
+            if (modalEl && typeof bootstrap !== 'undefined') {
+                const modal = new bootstrap.Modal(modalEl);
+                modal.show();
+            } else if (modalEl) {
+                modalEl.style.display = 'block';
+            }
+        } catch (e) {
+            console.error('Error showing approved modal', e);
+            displayMessage('success', res.message || 'আবেদন অনুমোদিত হয়েছে', licenseNumber);
+        }
     }
 
     /* ===============================
@@ -946,7 +2608,8 @@ document.addEventListener('DOMContentLoaded', () => {
             postData(
                 `/applications/${certType()}/reject/${appId()}`,
                 body,
-                () => Swal.fire('❌ আবেদন বাতিল হয়েছে!', '', 'success').then(()=>history.back())
+                () => Swal.fire('❌ আবেদন বাতিল হয়েছে!', '', 'success').then(()=>history.back()),
+                $id('reject')
             );
         });
     });
@@ -955,13 +2618,7 @@ document.addEventListener('DOMContentLoaded', () => {
        Reset
     =============================== */
 
-    const resetBtn = document.querySelector('button[type="reset"]');
-    if (resetBtn) {
-        resetBtn.addEventListener('click', () => {
-            const vd = $id('verifier_designation');
-            if (vd) vd.disabled = true;
-        });
-    }
+
 
     /* ===============================
        On Hold
@@ -987,7 +2644,8 @@ document.addEventListener('DOMContentLoaded', () => {
             postData(
                 `/applications/${certType()}/on_hold`,
                 body,
-                res => Swal.fire('✅ Success', res.message, 'success').then(()=>location.reload())
+                res => Swal.fire('✅ Success', res.message, 'success').then(()=>location.reload()),
+                $id('on_hold')
             );
         });
     });
@@ -1007,7 +2665,8 @@ document.addEventListener('DOMContentLoaded', () => {
         postData(
             `/applications/${certType()}/reactivate`,
             body,
-            res => Swal.fire('✅ Success', res.message, 'success').then(()=>location.reload())
+            res => Swal.fire('✅ Success', res.message, 'success').then(()=>location.reload()),
+            $id('reactivate')
         );
     });
 
@@ -1033,25 +2692,43 @@ document.addEventListener('DOMContentLoaded', () => {
                     msg.style.display = 'block';
                     setTimeout(()=>msg.style.display='none',5000);
                 }
-            }
+            },
+            $id('fix_sonod')
         );
     });
 
     /* ===============================
-       Renew (trade only)
+       Renew (trade only) — Only send renewal-relevant fields
     =============================== */
 
     on('renew', 'click', e => {
         e.preventDefault();
-        if (!approvalForm) return;
 
-        const fd = new FormData(approvalForm);
+        const renewFields = [
+            'fiscal_year',
+            'license_fee',
+            'vat_amount',
+            'occupation_tax',
+            'income_tax',
+            'signboard_tax',
+            'surcharge',
+            'total_fee',
+            'ownership_type_id',
+            'business_type_id'
+        ];
+
+        const fd = new URLSearchParams();
         fd.set('csrf_token', csrfToken());
+        renewFields.forEach(name => {
+            const el = $id(name);
+            if (el && el.value) fd.set(name, el.value);
+        });
 
         postData(
             `/applications/${certType()}/renew/${appId()}`,
-            new URLSearchParams(fd).toString(),
-            () => Swal.fire('✅ লাইসেন্স নবায়ন সফল!', '', 'success').then(()=>location.reload())
+            fd.toString(),
+            () => Swal.fire('✅ লাইসেন্স নবায়ন সফল!', '', 'success').then(()=>location.reload()),
+            $id('renew')
         );
     });
     /* ===============================
@@ -1062,7 +2739,114 @@ document.addEventListener('DOMContentLoaded', () => {
         e.preventDefault();
         // Open renewal history view
         window.open(`/applications/trade/renewal-history/${appId()}`, '_blank', 'width=1200,height=700');
-    });    /* ===============================
+    });
+
+    /* ===============================
+       Live License Number Availability Check (trade only)
+    =============================== */
+
+    const licenseInput = $id('license_number');
+    const licenseStatusIcon = $id('license_status_icon');
+    const licenseStatusText = $id('license_status_text');
+    const licenseMsg = $id('license_availability_msg');
+    let licenseCheckTimer = null;
+
+    function setLicenseStatus(available, existingAppId) {
+        if (!licenseInput || !licenseStatusIcon || !licenseStatusText || !licenseMsg) return;
+
+        if (available === null) {
+            // Checking…
+            licenseStatusIcon.innerHTML = '<span class="spinner-border spinner-border-sm text-secondary" role="status"></span>';
+            licenseStatusText.textContent = 'যাচাই...';
+            licenseStatusText.className = 'input-group-text bg-light text-secondary';
+            licenseInput.classList.remove('is-valid', 'is-invalid');
+            licenseMsg.textContent = '';
+            licenseMsg.className = 'form-text';
+            return;
+        }
+
+        if (available) {
+            licenseStatusIcon.innerHTML = '<i class="bi bi-check-circle-fill text-success"></i>';
+            licenseStatusText.textContent = 'উপলব্ধ';
+            licenseStatusText.className = 'input-group-text bg-light text-success fw-semibold';
+            licenseInput.classList.remove('is-invalid');
+            licenseInput.classList.add('is-valid');
+            licenseMsg.textContent = '✅ এই লাইসেন্স নম্বরটি ব্যবহার করা যাবে।';
+            licenseMsg.className = 'form-text text-success';
+        } else {
+            licenseStatusIcon.innerHTML = '<i class="bi bi-x-circle-fill text-danger"></i>';
+            licenseStatusText.textContent = 'ইতিমধ্যে ব্যবহৃত';
+            licenseStatusText.className = 'input-group-text bg-light text-danger fw-semibold';
+            licenseInput.classList.remove('is-valid');
+            licenseInput.classList.add('is-invalid');
+            const existingInfo = existingAppId ? ` (আবেদন: ${existingAppId})` : '';
+            licenseMsg.textContent = `❌ এই লাইসেন্স নম্বরটি ইতিমধ্যে ব্যবহৃত হচ্ছে।${existingInfo}`;
+            licenseMsg.className = 'form-text text-danger fw-semibold';
+        }
+    }
+
+    function clearLicenseStatus() {
+        if (licenseStatusIcon) licenseStatusIcon.innerHTML = '';
+        if (licenseStatusText) licenseStatusText.textContent = '';
+        if (licenseStatusText) licenseStatusText.className = 'input-group-text bg-light';
+        if (licenseInput) licenseInput.classList.remove('is-valid', 'is-invalid');
+        if (licenseMsg) { licenseMsg.textContent = ''; licenseMsg.className = 'form-text'; }
+    }
+
+    function checkLicenseAvailability(sonodNumber) {
+        if (!sonodNumber || sonodNumber.trim() === '') {
+            clearLicenseStatus();
+            return;
+        }
+
+        setLicenseStatus(null); // Show spinner
+
+        const currentAppId = encodeURIComponent(appId());
+        fetch(`/api/check-license-availability?sonod_number=${encodeURIComponent(sonodNumber.trim())}&certificate_type=${encodeURIComponent(certType())}&exclude_application_id=${currentAppId}`)
+            .then(r => r.json())
+            .then(res => {
+                setLicenseStatus(res.available, res.existing_application_id);
+            })
+            .catch(() => {
+                // On network error, show indeterminate state
+                if (licenseStatusIcon) licenseStatusIcon.innerHTML = '<i class="bi bi-question-circle text-warning"></i>';
+                if (licenseStatusText) licenseStatusText.textContent = 'যাচাই ব্যর্থ';
+                if (licenseMsg) { licenseMsg.textContent = '⚠️ সার্ভারে সংযোগ করা যায়নি।'; licenseMsg.className = 'form-text text-warning'; }
+            });
+    }
+
+    if (licenseInput) {
+        licenseInput.addEventListener('input', function () {
+            clearTimeout(licenseCheckTimer);
+            const val = this.value.trim();
+
+            // Only check if at least 3 characters
+            if (val.length < 3) {
+                clearLicenseStatus();
+                return;
+            }
+
+            // Debounce: wait 400ms after user stops typing
+            licenseCheckTimer = setTimeout(() => checkLicenseAvailability(val), 400);
+        });
+
+        // Also check on blur (when user clicks away) to catch any final value
+        licenseInput.addEventListener('blur', function () {
+            const val = this.value.trim();
+            if (val.length >= 3) {
+                clearTimeout(licenseCheckTimer);
+                checkLicenseAvailability(val);
+            }
+        });
+
+        // Run an initial check if there's a pre-filled value
+        const initialVal = licenseInput.value.trim();
+        if (initialVal.length >= 3) {
+            checkLicenseAvailability(initialVal);
+        }
+    }
+
+    /* ===============================
        Dropdown Functions
     =============================== */
 

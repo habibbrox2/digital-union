@@ -128,6 +128,18 @@ if (!defined('FAILED_LOGIN_THRESHOLD')) {
     define('FAILED_LOGIN_THRESHOLD', (int)($_ENV['FAILED_LOGIN_THRESHOLD'] ?? 3));
 }
 
+// ============================
+// CRITICAL ERROR ALERT CONFIGURATION
+// ============================
+
+if (!defined('SEND_CRITICAL_ERROR_ALERT')) {
+    define('SEND_CRITICAL_ERROR_ALERT', filter_var($_ENV['SEND_CRITICAL_ERROR_ALERT'] ?? 'false', FILTER_VALIDATE_BOOLEAN));
+}
+
+if (!defined('CRITICAL_ERROR_ALERT_EMAIL')) {
+    define('CRITICAL_ERROR_ALERT_EMAIL', $_ENV['CRITICAL_ERROR_ALERT_EMAIL'] ?? '');
+}
+
 if (!defined('PASSWORD_RESET_EXPIRY')) {
     define('PASSWORD_RESET_EXPIRY', (int)($_ENV['PASSWORD_RESET_EXPIRY'] ?? 3600));
 }

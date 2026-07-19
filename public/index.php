@@ -5,7 +5,13 @@
 // ----------------------------
 // 0. Error Handling Configuration
 // ----------------------------
-$showErrors = true; // production = false, development = true
+// 🔒 PRODUCTION: Always false (hides error details from users, display_errors=0)
+//    DEVELOPMENT: Set to true  (shows error details, display_errors=1)
+//
+// Note: $_ENV['APP_ENV'] from .env is NOT available here yet
+//       because config.php (which loads dotenv) runs later via glob().
+//       Change this to true for local development only.
+$showErrors = false;
 $logDir = __DIR__ . '/../storage/logs';
 $logFile = $logDir . '/error.log';
 $fallbackLogFile = $logDir . '/bdris_log.txt';
@@ -43,85 +49,15 @@ if ($showErrors) {
 }
 
 // Load ErrorHandler class early
-require_once __DIR__ . '/../classes/ErrorHandler.php';
+require_once __DIR__ . '/../models/ErrorHandler.php';
 ErrorHandler::init($logFile, $showErrors);
 
 // ----------------------------
-// 0a. Custom Error & Exception Handlers
+// 0a. Global Error/Exception/Shutdown Handlers
+//     (Centralized in config/error.php — loaded via glob below)
 // ----------------------------
-set_error_handler(function ($severity, $message, $file, $line) use ($logFile) {
-    if (!(error_reporting() & $severity)) {
-        return;
-    }
-
-    error_log(
-        "[" . date('Y-m-d H:i:s') . "] $message in $file on line $line\n",
-        3,
-        $logFile
-    );
-    return true;
-});
-
-set_exception_handler(function ($exception) use ($logFile, $showErrors) {
-    error_log(
-        "[" . date('Y-m-d H:i:s') . "] Uncaught Exception: "
-        . $exception->getMessage() . " in "
-        . $exception->getFile() . " on line "
-        . $exception->getLine() . "\n",
-        3,
-        $logFile
-    );
-
-    http_response_code(500);
-    if (function_exists('renderError')) {
-        renderError(500, "সার্ভার ত্রুটি: একটি অপ্রত্যাশিত ব্যতিক্রম ঘটেছে।");
-    } else {
-        echo "<h1>500 Internal Server Error</h1>";
-        if ($showErrors) {
-            echo "<pre>{$exception->getMessage()}</pre>";
-        }
-    }
-    exit;
-});
-
-// ----------------------------
-// 0b. Fatal Shutdown Handler
-// ----------------------------
-register_shutdown_function(function () use ($logFile, $showErrors) {
-    $error = error_get_last();
-
-    if ($error && in_array($error['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR])) {
-        
-        // Use ErrorHandler if available
-        if (class_exists('ErrorHandler')) {
-            ErrorHandler::handleFatalError($error);
-        } else {
-            error_log(
-                "[" . date('Y-m-d H:i:s') . "] FATAL ERROR: "
-                . $error['message'] . " in "
-                . $error['file'] . " on line "
-                . $error['line'] . "\n",
-                3,
-                $logFile
-            );
-
-            if (!headers_sent()) {
-                http_response_code(500);
-            }
-
-            if (ob_get_length() === 0) {
-                if (function_exists('renderError')) {
-                    renderError(500, "সার্ভার ত্রুটি: একটি মারাত্মক সমস্যা হয়েছে।");
-                } else {
-                    echo "<h1>500 Internal Server Error</h1>";
-                    if ($showErrors) {
-                        echo "<pre>{$error['message']}</pre>";
-                    }
-                }
-            }
-        }
-    }
-});
+// set_error_handler(), set_exception_handler(), register_shutdown_function()
+// are all registered in config/error.php using ErrorHandler class methods.
 
 // ----------------------------
 // 1. Load Config Files
@@ -142,20 +78,30 @@ if (function_exists('setupMigrationPermissions')) {
 // 2. Autoloader (PSR-4 style)
 // ----------------------------
 spl_autoload_register(function ($className) {
-    $classFile = __DIR__ . '/../classes/' . str_replace('\\', '/', $className) . '.php';
+    // Search in classes/ directory first
+    $classFile = __DIR__ . '/../models/' . str_replace('\\', '/', $className) . '.php';
 
-    if (!file_exists($classFile)) {
-        error_log("Class not found: {$className}");
-        if (function_exists('renderError')) {
-            renderError(500, "সার্ভার ত্রুটি: '{$className}' ক্লাস পাওয়া যায়নি।");
-        } else {
-            http_response_code(500);
-            echo "<h3>ক্লাস '{$className}' পাওয়া যায়নি</h3>";
-        }
-        exit;
+    if (file_exists($classFile)) {
+        require_once $classFile;
+        return;
     }
 
-    require_once $classFile;
+    // Then search in modules/Services/ directory
+    $serviceFile = __DIR__ . '/../modules/Services/' . str_replace('\\', '/', $className) . '.php';
+    
+    if (file_exists($serviceFile)) {
+        require_once $serviceFile;
+        return;
+    }
+
+    error_log("Class not found: {$className}");
+    if (function_exists('renderError')) {
+        renderError(500, "সার্ভার ত্রুটি: '{$className}' ক্লাস পাওয়া যায়নি।");
+    } else {
+        http_response_code(500);
+        echo "<h3>ক্লাস '{$className}' পাওয়া যায়নি</h3>";
+    }
+    exit;
 });
 
 // ----------------------------

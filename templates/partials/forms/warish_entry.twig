@@ -4,19 +4,19 @@
         <div id="warish_container">
             {% if data.members is not empty %}
                 {% for w in data.members %}
-                <div class="row g-2 warish_entry border rounded p-3 mb-2">
+                <div class="row g-2 warish_entry border rounded-0 p-2 mb-2">
     <div class="col-md-1">
-        <input type="number" name="serial_no[]" class="form-control" value="{{ w.serial_no|e }}" placeholder="ক্রমিক">
+        <input type="number" name="serial_no[]" id="warish_serial_{{ loop.index0 }}" class="form-control" value="{{ w.serial_no|e }}" placeholder="ক্রমিক" aria-label="ক্রমিক">
     </div>
     <div class="col-md-2">
-        <input type="text" name="warish_name_bn[]" class="form-control" value="{{ w.name_bn|e }}" placeholder="নাম (বাংলায়)" required>
+        <input type="text" name="warish_name_bn[]" id="warish_name_bn_{{ loop.index0 }}" class="form-control" value="{{ w.name_bn|e }}" placeholder="নাম (বাংলায়)" required aria-label="নাম (বাংলায়)">
     </div>
     <div class="col-md-2">
-        <input type="text" name="warish_name_en[]" class="form-control" value="{{ w.name_en|e }}" placeholder="নাম (ইংরেজিতে)" pattern="^[a-zA-Z. ]+$">
+        <input type="text" name="warish_name_en[]" id="warish_name_en_{{ loop.index0 }}" class="form-control" value="{{ w.name_en|e }}" placeholder="নাম (ইংরেজিতে)" pattern="^[a-zA-Z. ]+$" aria-label="নাম (ইংরেজিতে)">
     </div>
     <div class="col-md-3">
         {% set rel = w.relation_bn ~ '|' ~ w.relation_en %}
-        <select name="relation[]" class="form-control" required>
+        <select name="relation[]" id="warish_relation_{{ loop.index0 }}" class="form-control" required aria-label="সম্পর্ক">
             <option value="">সম্পর্ক নির্বাচন করুন</option>
             <option value="পিতা|Father" {{ rel=='পিতা|Father'?'selected' }}>পিতা (Father)</option>
             <option value="মাতা|Mother" {{ rel=='মাতা|Mother'?'selected' }}>মাতা (Mother)</option>
@@ -40,20 +40,20 @@
     </div>
 
     <div class="col-md-1">
-        <input type="text" name="member_birth_date[]" class="form-control" value="{{ w.birth_date|e }}" placeholder="জন্ম তারিখ">
+        <input type="text" name="member_birth_date[]" id="warish_birth_date_{{ loop.index0 }}" class="form-control" value="{{ w.birth_date|e }}" placeholder="জন্ম তারিখ" aria-label="জন্ম তারিখ">
     </div>
     <div class="col-md-2">
-        <input type="text" name="relation_nid[]" class="form-control" value="{{ w.nid|e }}" placeholder="জাতীয় পরিচয়পত্র" pattern="^[0-9]+$">
+        <input type="text" name="relation_nid[]" id="warish_nid_{{ loop.index0 }}" class="form-control" value="{{ w.nid|e }}" placeholder="জাতীয় পরিচয়পত্র" pattern="^[0-9]+$" aria-label="জাতীয় পরিচয়পত্র">
     </div>
     <div class="col-md-2">
-        <select name="marrage_state[]" class="form-control" required>
+        <select name="marrage_state[]" id="warish_marital_{{ loop.index0 }}" class="form-control" required aria-label="বৈবাহিক অবস্থা">
             <option value="">বৈবাহিক অবস্থা</option>
             <option value="অবিবাহিত" {{ w.marital_status=='অবিবাহিত'?'selected' }}>অবিবাহিত</option>
             <option value="বিবাহিত" {{ w.marital_status=='বিবাহিত'?'selected' }}>বিবাহিত</option>
         </select>
     </div>
     <div class="col-md-2">
-        <select name="is_dead[]" class="form-control" required>
+        <select name="is_dead[]" id="warish_is_dead_{{ loop.index0 }}" class="form-control" required aria-label="জীবিত/মৃত">
             <option value="">জীবিত/মৃত</option>
             <option value="0" {{ w.is_dead=='0'?'selected' }}>জীবিত</option>
             <option value="1" {{ w.is_dead=='1'?'selected' }}>মৃত</option>
@@ -67,18 +67,18 @@
                 {% endfor %}
             {% else %}
                 {# যদি ডাটা না থাকে, ডিফল্ট খালি ইনপুট দেখাবে #}
-                <div class="row g-2 warish_entry border rounded p-3 mb-2">
+                <div class="row g-2 warish_entry border rounded-0 p-2 mb-2">
                     <div class="col-md-1">
-                        <input type="number" name="serial_no[]" class="form-control" value="1" placeholder="ক্রমিক">
+                        <input type="number" name="serial_no[]" id="warish_serial_0" class="form-control" value="1" placeholder="ক্রমিক" aria-label="ক্রমিক">
                     </div>
                     <div class="col-md-2">
-                        <input type="text" name="warish_name_bn[]" class="form-control" placeholder="নাম (বাংলায়)">
+                        <input type="text" name="warish_name_bn[]" id="warish_name_bn_0" class="form-control" placeholder="নাম (বাংলায়)" aria-label="নাম (বাংলায়)">
                     </div>
                     <div class="col-md-2">
-                        <input type="text" name="warish_name_en[]" class="form-control" placeholder="নাম (ইংরেজিতে)" pattern="^[a-zA-Z. ]+$">
+                        <input type="text" name="warish_name_en[]" id="warish_name_en_0" class="form-control" placeholder="নাম (ইংরেজিতে)" pattern="^[a-zA-Z. ]+$" aria-label="নাম (ইংরেজিতে)">
                     </div>
                     <div class="col-md-3">
-                    <select name="relation[]" class="form-control" required>
+                    <select name="relation[]" id="warish_relation_0" class="form-control" required aria-label="সম্পর্ক">
                         <option value="">সম্পর্ক নির্বাচন করুন</option>
                         <option value="পিতা|Father">পিতা (Father)</option>
                         <option value="মাতা|Mother">মাতা (Mother)</option>
@@ -102,20 +102,20 @@
 
                     </div>
                     <div class="col-md-1">
-                        <input type="text" name="member_birth_date[]" class="form-control" placeholder="জন্ম তারিখ">
+                        <input type="text" name="member_birth_date[]" id="warish_birth_date_0" class="form-control" placeholder="জন্ম তারিখ" aria-label="জন্ম তারিখ">
                     </div>
                     <div class="col-md-2">
-                        <input type="text" name="relation_nid[]" class="form-control" placeholder="জাতীয় পরিচয়পত্র">
+                        <input type="text" name="relation_nid[]" id="warish_nid_0" class="form-control" placeholder="জাতীয় পরিচয়পত্র" aria-label="জাতীয় পরিচয়পত্র">
                     </div>
                     <div class="col-md-2">
-                        <select name="marrage_state[]" class="form-control">
+                        <select name="marrage_state[]" id="warish_marital_0" class="form-control" aria-label="বৈবাহিক অবস্থা">
                             <option value="">বৈবাহিক অবস্থা</option>
                             <option value="অবিবাহিত">অবিবাহিত</option>
                             <option value="বিবাহিত">বিবাহিত</option>
                         </select>
                     </div>
                     <div class="col-md-2">
-                        <select name="is_dead[]" class="form-control">
+                        <select name="is_dead[]" id="warish_is_dead_0" class="form-control" aria-label="জীবিত/মৃত">
                             <option value="">জীবিত/মৃত</option>
                             <option value="0">জীবিত</option>
                             <option value="1">মৃত</option>
@@ -222,18 +222,29 @@ $(function () {
     function reorderSerials() {
         $(".warish_entry").each(function (index) {
             $(this).find("input[name='serial_no[]']").val(index + 1);
+            // Reassign unique IDs when rows are removed/reordered
+            $(this).find("input, select").each(function () {
+                var $input = $(this);
+                var oldId = $input.attr("id");
+                if (oldId) {
+                    $input.attr("id", oldId.replace(/\d+$/, index));
+                }
+            });
         });
     }
 
     function createNewEntry() {
-        const $clone = $(".warish_entry:first").clone();
+        var newIndex = $(".warish_entry").length;
+        var $clone = $(".warish_entry:first").clone();
 
         $clone.find("input, select").each(function () {
-            const $input = $(this);
-            if ($input.attr("name") === "serial_no[]") {
-                $input.val($(".warish_entry").length + 1);
-            } else {
-                $input.val("");
+            var $input = $(this);
+            var name = $input.attr("name");
+            $input.val(name === "serial_no[]" ? (newIndex + 1) : "");
+            // Assign a unique ID for the new row
+            var oldId = $input.attr("id");
+            if (oldId) {
+                $input.attr("id", oldId.replace(/\d+$/, newIndex));
             }
         });
 
@@ -256,4 +267,3 @@ $(function () {
     reorderSerials();
 });
 </script>
-

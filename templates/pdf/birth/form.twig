@@ -68,9 +68,6 @@
 </div>
 
 
-
-
-
 <!-- ===================== Custom Styles ===================== -->
 <style>
     #captchaBlock img {
@@ -97,15 +94,6 @@
     }
 </style>
 {% endif %}
-
-
-	
-
-
-
-
-
-
 
 
 <!-- ================= Main Birth Form ================= -->
@@ -161,7 +149,7 @@
 		        <div class="row g-3">
 		            <div class="col-md-6">
 		                <label for="name_bn" class="form-label">নাম (Bengali) <span class="text-danger">*</span></label>
-		                <input type="text" id="name_bn" name="name_bn" class="form-control" placeholder="বাংলায় নাম লিখুন" required
+		                <input type="text" id="name_bn" name="name_bn" class="form-control" placeholder="বাংলায় নাম লিখুন" required
 		                    value="{{ birth.name_bn ?? '' }}">
 		                <div class="invalid-feedback">নাম লিখুন।</div>
 		            </div>
@@ -202,7 +190,7 @@
                         <div class="row g-3">
                             <div class="col-md-4">
                                 <label for="father_name_bn" class="form-label">পিতার নাম (Bengali) <span class="text-danger">*</span></label>
-                                <input type="text" id="father_name_bn" name="father_name_bn" class="form-control" placeholder="বাংলায় নাম লিখুন" required
+                                <input type="text" id="father_name_bn" name="father_name_bn" class="form-control" placeholder="বাংলায় নাম লিখুন" required
                                     value="{{ birth.father_name_bn ?? '' }}">
                                 <div class="invalid-feedback">পিতার নাম দিন।</div>
                             </div>
@@ -221,7 +209,7 @@
 
                             <div class="col-md-4">
                                 <label for="mother_name_bn" class="form-label">মাতার নাম (Bengali) <span class="text-danger">*</span></label>
-                                <input type="text" id="mother_name_bn" name="mother_name_bn" class="form-control" placeholder="বাংলায় নাম লিখুন" required
+                                <input type="text" id="mother_name_bn" name="mother_name_bn" class="form-control" placeholder="বাংলায় নাম লিখুন" required
                                     value="{{ birth.mother_name_bn ?? '' }}">
                                 <div class="invalid-feedback">মাতার নাম দিন।</div>
                             </div>
@@ -316,7 +304,7 @@
             <!-- Office Name (BN) -->
             <div class="col-md-6">
                 <label for="office_name_bn" class="form-label">Union / Office Name (BN)</label>
-                <input type="text" id="office_name_bn" name="office_name_bn" class="form-control" placeholder="উপজেলার অফিসের নাম বাংলায়"
+                <input type="text" id="office_name_bn" name="office_name_bn" class="form-control" placeholder="উপজেলার অফিসের নাম বাংলায়"
                     value="{{ birth.office_name_bn|default('')|trim }}">
                 <div class="invalid-feedback">Enter union/office name in Bangla.</div>
             </div>
@@ -368,9 +356,7 @@
 </div>
 
 
-
-
-{# ================= Permanent Address ================= #}
+{# ================= Permanent Address (with Autocomplete) ================= #}
 <div class="card shadow-sm mb-4 rounded-4 border-0">
     <div class="card-header bg-warning text-dark">
         <i class="bi bi-house-fill me-2"></i> Permanent Address
@@ -381,23 +367,90 @@
         <!-- Address in Bangla -->
         <div class="col-md-6">
             <label for="permanent_address_bn" class="form-label">Address (BN) <span class="text-danger">*</span></label>
-            <textarea id="permanent_address_bn" name="permanent_address_bn" class="form-control" rows="6" 
-                placeholder="উদাহরণ: ১২৩/এ, রোড-৫, ধানমন্ডি, ঢাকা-১২০৯" required>{{ birth.permanent_address_bn ?? '' }}</textarea>
+            <div class="autocomplete-wrapper">
+                <textarea id="permanent_address_bn" name="permanent_address_bn" class="form-control address-autocomplete" rows="6" 
+                    placeholder="উদাহরণ: ১২৩/এ, রোড-৫, ধানমন্ডি, ঢাকা-১২০৯" required>{{ birth.permanent_address_bn ?? '' }}</textarea>
+                <ul class="autocomplete-dropdown address-dropdown" id="permanent_address_bn_list"></ul>
+            </div>
             <div class="invalid-feedback">Enter permanent address in Bangla.</div>
         </div>
         
         <!-- Address in English -->
         <div class="col-md-6">
             <label for="permanent_address_en" class="form-label">Address (EN) <span class="text-danger">*</span></label>
-            <textarea id="permanent_address_en" name="permanent_address_en" class="form-control" rows="6" 
-                placeholder="Example: 123/A, Road-5, Dhanmondi, Dhaka-1209" required>{{ birth.permanent_address_en ?? '' }}</textarea>
+            <div class="autocomplete-wrapper">
+                <textarea id="permanent_address_en" name="permanent_address_en" class="form-control address-autocomplete" rows="6" 
+                    placeholder="Example: 123/A, Road-5, Dhanmondi, Dhaka-1209" required>{{ birth.permanent_address_en ?? '' }}</textarea>
+                <ul class="autocomplete-dropdown address-dropdown" id="permanent_address_en_list"></ul>
+            </div>
             <div class="invalid-feedback">Enter permanent address in English.</div>
         </div>
-
 
         </div>
     </div>
 </div>
+
+<style>
+/* ===== Permanent Address Autocomplete Styles ===== */
+.autocomplete-wrapper {
+    position: relative;
+}
+
+.autocomplete-dropdown.address-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 1050;
+    max-height: 200px;
+    overflow-y: auto;
+    background: #fff;
+    border: 1px solid #ced4da;
+    border-top: none;
+    border-radius: 0 0 4px 4px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.12);
+    display: none;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.autocomplete-dropdown.address-dropdown.show {
+    display: block;
+}
+
+.autocomplete-dropdown.address-dropdown li {
+    padding: 8px 12px;
+    cursor: pointer;
+    font-size: 13px;
+    color: #333;
+    border-bottom: 1px solid #f0f0f0;
+    white-space: pre-wrap;
+    word-break: break-all;
+}
+
+.autocomplete-dropdown.address-dropdown li:last-child {
+    border-bottom: none;
+}
+
+.autocomplete-dropdown.address-dropdown li:hover,
+.autocomplete-dropdown.address-dropdown li.active {
+    background: #e8f4f8;
+    color: #008B8B;
+}
+
+.autocomplete-dropdown.address-dropdown li .address-match {
+    font-weight: 600;
+    color: #008B8B;
+}
+
+.autocomplete-dropdown.address-dropdown li .address-hint {
+    display: block;
+    font-size: 11px;
+    color: #999;
+    margin-top: 2px;
+}
+</style>
 
 
                 {# ================= QR Verification Section ================= #}
@@ -428,9 +481,6 @@
                 <div id="formLoader" class="spinner-border text-success ms-3 d-none" role="status"></div>
             </div>
         </form>
-
-
-
 
 
 </div>
@@ -477,7 +527,7 @@
     try {
       const res = await fetch(BASE_URL + '/birth/bdris/init', { credentials: 'same-origin' });
       const j = await res.json();
-      if (!j.ok) return showAlert('⚠️ Captcha লোড করা যায়নি।');
+      if (!j.ok) return showAlert('⚠️ Captcha লোড করা যায়নি।');
 
       serverTokenField.value = j.token || '';
       captchaDeField.value = j.captcha_de_text || '';
@@ -488,7 +538,7 @@
       clearAlert();
     } catch(err) {
       console.error('Network error:', err);
-      showAlert('⚠️ নেটওয়ার্ক ত্রুটি ঘটেছে।');
+      showAlert('⚠️ নেটওয়ার্ক ত্রুটি ঘটেছে।');
     }
   }
 
@@ -538,70 +588,55 @@
     }
   }
 
-  // ===================== FORM SUBMIT =====================
-  frm.addEventListener('submit', async e => {
-    e.preventDefault();
-    clearAlert();
+  // ===================== UBRN VERIFY FORM SUBMIT =====================
+  if (frm) {
+    frm.addEventListener('submit', async e => {
+      e.preventDefault();
+      clearAlert();
 
-    verifyBtn.disabled = true;
-    verifyBtn.innerHTML = '<i class="bi bi-hourglass-split me-1"></i> যাচাই করা হচ্ছে...';
+      verifyBtn.disabled = true;
+      verifyBtn.innerHTML = '<i class="bi bi-hourglass-split me-1"></i> যাচাই করা হচ্ছে...';
 
-    try {
-      const payload = new FormData();
-      payload.append('ubrn', ub.value.trim());
-      payload.append('birthdate', bd.value.trim());
-      payload.append('captcha', capIn.value.trim());
-      payload.append('server_token', serverTokenField.value);
-      payload.append('captcha_de_text', captchaDeField.value);
-      payload.append('local_csrf', getLocalCsrf());
+      try {
+        const payload = new FormData();
+        payload.append('ubrn', ub.value.trim());
+        payload.append('birthdate', bd.value.trim());
+        payload.append('captcha', capIn.value.trim());
+        payload.append('server_token', serverTokenField.value);
+        payload.append('captcha_de_text', captchaDeField.value);
+        payload.append('local_csrf', getLocalCsrf());
 
-      const r = await fetch(BASE_URL + '/birth/bdris/submit', { method: 'POST', body: payload, credentials: 'same-origin' });
-      const j = await r.json();
+        const r = await fetch(BASE_URL + '/birth/bdris/submit', { method: 'POST', body: payload, credentials: 'same-origin' });
+        const j = await r.json();
 
-      if (j.ok) {
-        prefillForm(j.data);
-      } else {
-        showAlert(j.message || '⚠️ BDRIS থেকে তথ্য পাওয়া যায়নি।');
+        if (j.ok) {
+          prefillForm(j.data);
+        } else {
+          showAlert(j.message || '⚠️ BDRIS থেকে তথ্য পাওয়া যায়নি।');
+        }
+
+      } catch(err) {
+        console.error('Network error:', err);
+        showAlert('⚠️ নেটওয়ার্ক ত্রুটি ঘটেছে।');
+      } finally {
+        verifyBtn.disabled = false;
+        verifyBtn.innerHTML = '<i class="bi bi-check-circle me-1"></i> যাচাই';
       }
+    });
+  }
 
-    } catch(err) {
-      console.error('Network error:', err);
-      showAlert('⚠️ নেটওয়ার্ক ত্রুটি ঘটেছে।');
-    } finally {
-      verifyBtn.disabled = false;
-      verifyBtn.innerHTML = '<i class="bi bi-check-circle me-1"></i> যাচাই';
-    }
-  });
-
-  refreshBtn.addEventListener('click', initCaptcha);
+  if (refreshBtn) refreshBtn.addEventListener('click', initCaptcha);
   initCaptcha();
 
 })();
 </script>
 
 
-<!-- ===================== SECONDARY LOGIC (QR, Nationality, AJAX Save) ===================== -->
+<!-- ===================== SECONDARY LOGIC (QR, Nationality, AJAX Save, Address Autocomplete) ===================== -->
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-    const uppercaseFields = [
-        '#name_en',
-        '#father_name_en',
-        '#mother_name_en',
-        '#office_name_en'
-    ];
 
-    document.querySelectorAll(uppercaseFields.join(',')).forEach(field => {
-        field.addEventListener('input', () => {
-            field.value = field.value.toUpperCase();
-        });
-    });
-    // Utility Alert
-    function showAlert(type, message) {
-        const alertBox = document.getElementById('formAlert');
-        if (alertBox) alertBox.innerHTML = `<div class="alert alert-${type}">${message}</div>`;
-    }
-
-    // ===================== QR Verification Auto Fill =====================
+    // ===================== QR List =====================
     const qrList = [
         {id:1,label:"DZIH",url:"https://bdris.gov.bd/certificate/verify?key=Y2p7chu0b0iI8aWymonnhfkpKoOKE3J5kRsiGb0ZVOe0SqgyoCnMtFT+wx+Ikn/O"},
         {id:2,label:"DMIQ",url:"https://bdris.gov.bd/certificate/verify?key=5gsdKUqk6MwdcGXYQrJJ3oFDeWtXYcK8sjPw9HTPyimw/CAb4Mia41mwDYBdwU/z"},
@@ -624,18 +659,27 @@ document.addEventListener('DOMContentLoaded', () => {
         {id:19,label:"ZIDIR",url:"https://bdris.gov.bd/certificate/verify?key=IXJ4ukq9GENXhP1RC83veooWrWFx6870razHrtcxxM1MwA9yP9wOazyzOMF5m4xO"}
     ];
 
-    const birthForm = document.getElementById("birthForm");
-    if (birthForm) {
-        birthForm.addEventListener("submit", () => {
-            const keyInput = document.getElementById("verify_key");
-            const linkInput = document.getElementById("verify_link");
-            if (keyInput && linkInput && keyInput.value.trim() === "" && linkInput.value.trim() === "") {
-                const r = qrList[Math.floor(Math.random() * qrList.length)];
-                keyInput.value = r.label;
-                linkInput.value = r.url;
-            }
+    // ===================== Uppercase Fields =====================
+    const uppercaseFields = [
+        '#name_en',
+        '#father_name_en',
+        '#mother_name_en',
+        '#office_name_en'
+    ];
+
+    document.querySelectorAll(uppercaseFields.join(',')).forEach(field => {
+        field.addEventListener('input', () => {
+            field.value = field.value.toUpperCase();
         });
+    });
+
+    // ===================== Utility Alert =====================
+    function showAlert(type, message) {
+        const alertBox = document.getElementById('formAlert');
+        if (alertBox) alertBox.innerHTML = `<div class="alert alert-${type}">${message}</div>`;
     }
+
+    // ===================== Country Sync =====================
     const countryMap = {
         'Bangladesh':'বাংলাদেশ',
         'India':'ভারত',
@@ -646,16 +690,20 @@ document.addEventListener('DOMContentLoaded', () => {
     const countrySelect = document.getElementById('country_en');
     const countryBn = document.getElementById('country_bn');
 
-    countrySelect.addEventListener('change', ()=>{
-        countryBn.value = countryMap[countrySelect.value] || countrySelect.value;
-    });
-    // Nationality sync
+    if (countrySelect) {
+        countrySelect.addEventListener('change', () => {
+            countryBn.value = countryMap[countrySelect.value] || countrySelect.value;
+        });
+    }
+
+    // ===================== Nationality Sync =====================
     const nationalityMap = {
         'bangladeshi':'বাংলাদেশী',
-        'indian':'ভারতীয়',
+        'indian':'ভারতীয়',
         'pakistani':'পাকিস্তানি',
         'nepalese':'নেপালি'
     };
+
     function syncNationality(enId, bnId) {
         const en = document.getElementById(enId), bn = document.getElementById(bnId);
         if (!en) return;
@@ -668,45 +716,191 @@ document.addEventListener('DOMContentLoaded', () => {
     syncNationality('father_nationality_en', 'father_nationality_bn');
     syncNationality('mother_nationality_en', 'mother_nationality_bn');
 
-    // AJAX save (only works if form already validated)
-    const loader = document.getElementById('formLoader');
+    // ===================== AJAX Save (Single Submit Listener) =====================
+    const birthForm = document.getElementById('birthForm');
+    const loader    = document.getElementById('formLoader');
+    const saveBtn   = document.getElementById('saveBtn');
+
     if (birthForm) {
-        birthForm.setAttribute('autocomplete','on');
+        birthForm.setAttribute('autocomplete', 'on');
+
         birthForm.addEventListener('submit', async (e) => {
-            if (!birthForm.classList.contains('needs-validation')) return; // wait until prefill
-            e.preventDefault(); e.stopPropagation();
+            e.preventDefault();
+            e.stopPropagation();
+
+            // ── QR Auto-fill (merged here — no separate listener needed) ──
+            const keyInput  = document.getElementById('verify_key');
+            const linkInput = document.getElementById('verify_link');
+            if (keyInput && linkInput && keyInput.value.trim() === '' && linkInput.value.trim() === '') {
+                const r = qrList[Math.floor(Math.random() * qrList.length)];
+                keyInput.value  = r.label;
+                linkInput.value = r.url;
+            }
+
+            // ── Bootstrap Validation ──
             birthForm.classList.add('was-validated');
-        
+
             if (!birthForm.checkValidity()) {
-                // scroll to first invalid field
                 const firstInvalid = birthForm.querySelector(':invalid');
                 if (firstInvalid) {
                     firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
                     firstInvalid.focus({ preventScroll: true });
                 }
+                // Validation failed — spinner was never shown, nothing to hide
                 return;
             }
-        
-            if(loader) loader.classList.remove('d-none');
-            showAlert('info','⏳ Processing...');
-        
-            const formData = new FormData(birthForm);
+
+            // ── Show spinner & disable button ──
+            if (loader)  loader.classList.remove('d-none');
+            if (saveBtn) saveBtn.disabled = true;
+            showAlert('info', '⏳ Processing...');
+
             try {
-                const res = await fetch(birthForm.action, { 
-                    method:'POST', 
-                    headers:{'X-Requested-With':'XMLHttpRequest'}, 
-                    body: formData 
+                const formData = new FormData(birthForm);
+                const res = await fetch(birthForm.action, {
+                    method: 'POST',
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                    body: formData
                 });
+
+                if (!res.ok) throw new Error(`Server error: ${res.status}`);
+
                 const json = await res.json();
                 if (json.alert) showAlert(json.alert.type, json.alert.message);
                 if (json.pdf_url) window.open(json.pdf_url, '_blank');
-            } catch(err) {
+
+            } catch (err) {
                 showAlert('danger', `⚠️ Network error: ${err.message}`);
             } finally {
-                if(loader) loader.classList.add('d-none');
+                // ── Always hide spinner & re-enable button ──
+                if (loader)  loader.classList.add('d-none');
+                if (saveBtn) saveBtn.disabled = false;
             }
         });
     }
+
+    // ===================== Permanent Address Autocomplete =====================
+    let autocompleteTimer = null;
+
+    function setupAddressAutocomplete(textareaId, listId) {
+        const textarea = document.getElementById(textareaId);
+        const list = document.getElementById(listId);
+        if (!textarea || !list) return;
+
+        // Fetch suggestions from API
+        async function fetchSuggestions(query) {
+            if (query.length < 2) {
+                list.innerHTML = '';
+                list.classList.remove('show');
+                return;
+            }
+            try {
+                const res = await fetch(`/api/birth/addresses?q=${encodeURIComponent(query)}`);
+                const data = await res.json();
+                renderSuggestions(data, query);
+            } catch (err) {
+                console.error('Address autocomplete error:', err);
+            }
+        }
+
+        // Render suggestion dropdown
+        function renderSuggestions(items, query) {
+            list.innerHTML = '';
+            if (!items || items.length === 0) {
+                list.classList.remove('show');
+                return;
+            }
+
+            const field = textareaId === 'permanent_address_bn' ? 'permanent_address_bn' : 'permanent_address_en';
+
+            items.forEach(item => {
+                const address = item[field] || '';
+                if (!address) return;
+
+                const li = document.createElement('li');
+                li.textContent = address;
+                li.dataset.value = address;
+
+                li.addEventListener('mousedown', (e) => {
+                    e.preventDefault();
+                    textarea.value = li.dataset.value;
+                    list.classList.remove('show');
+                    textarea.focus();
+                    // Trigger input event for validation
+                    textarea.dispatchEvent(new Event('input', { bubbles: true }));
+                });
+
+                list.appendChild(li);
+            });
+
+            list.classList.add('show');
+        }
+
+        // Input handler with debounce
+        textarea.addEventListener('input', () => {
+            clearTimeout(autocompleteTimer);
+            const val = textarea.value.trim();
+            if (val.length < 2) {
+                list.classList.remove('show');
+                return;
+            }
+            autocompleteTimer = setTimeout(() => fetchSuggestions(val), 300);
+        });
+
+        // Focus handler
+        textarea.addEventListener('focus', () => {
+            const val = textarea.value.trim();
+            if (val.length >= 2 && list.children.length > 0) {
+                list.classList.add('show');
+            }
+        });
+
+        // Blur handler (with delay for mousedown capture)
+        textarea.addEventListener('blur', () => {
+            setTimeout(() => list.classList.remove('show'), 200);
+        });
+
+        // Keyboard navigation
+        textarea.addEventListener('keydown', (e) => {
+            if (!list.classList.contains('show')) return;
+
+            const items = list.querySelectorAll('li');
+            if (items.length === 0) return;
+
+            let active = list.querySelector('li.active');
+            let idx = active ? Array.from(items).indexOf(active) : -1;
+
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                idx = Math.min(idx + 1, items.length - 1);
+                items.forEach(el => el.classList.remove('active'));
+                items[idx].classList.add('active');
+                items[idx].scrollIntoView({ block: 'nearest' });
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                items.forEach(el => el.classList.remove('active'));
+                if (idx > 0) {
+                    idx--;
+                    items[idx].classList.add('active');
+                    items[idx].scrollIntoView({ block: 'nearest' });
+                }
+            } else if (e.key === 'Enter' || e.key === 'Tab') {
+                if (idx >= 0 && idx < items.length) {
+                    e.preventDefault();
+                    textarea.value = items[idx].dataset.value;
+                    list.classList.remove('show');
+                    textarea.dispatchEvent(new Event('input', { bubbles: true }));
+                }
+            } else if (e.key === 'Escape') {
+                list.classList.remove('show');
+            }
+        });
+    }
+
+    // Initialize autocomplete on both address fields
+    setupAddressAutocomplete('permanent_address_bn', 'permanent_address_bn_list');
+    setupAddressAutocomplete('permanent_address_en', 'permanent_address_en_list');
+
 });
 </script>
 
@@ -942,10 +1136,4 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 </script>
 
-
-
-
-
-
 {% endblock %}
-

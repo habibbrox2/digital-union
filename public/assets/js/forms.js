@@ -1,6 +1,116 @@
 // File: forms.js
 
+// ======== Position-based Tab navigation (EN fields skipped) ========
+// _bn + non-EN fields → grouped by position slot in their row.
+// _en fields → SKIPPED entirely during Tab navigation.
+// Shift+Tab goes backward. Warish _bn uses its own group; warish extras use default Tab.
+function initColumnTabNavigation(formEl) {
+    if (!formEl) return;
+
+    function isBn(el) {
+        if (el.id && el.id.endsWith('_bn')) return true;
+        if (el.name && /_bn(\[\]|$)/.test(el.name)) return true;
+        return false;
+    }
+    function isEn(el) {
+        // Skip only name_en, father_name_en, and mother_name_en during Tab
+        if (el.id && (el.id === 'name_en' || el.id === 'father_name_en' || el.id === 'mother_name_en')) return true;
+        return false;
+    }
+
+    function getPositionSlot(el) {
+        var row = el.closest('.row');
+        if (!row) return -1;
+        // Warish rows: only _bn gets a slot; all other warish fields default Tab
+        if (row.classList.contains('warish_entry') || row.closest('.warish_entry')) {
+            if (isBn(el)) return 'bn';
+            return -1;
+        }
+        var inputs = Array.from(row.querySelectorAll(':scope > div input:not([type="hidden"]):not([disabled]), :scope > div select:not([disabled]), :scope > div textarea:not([disabled])'))
+            .filter(function(inp) { return inp.offsetParent !== null; });
+        if (inputs.length === 0) {
+            inputs = Array.from(row.querySelectorAll('input:not([type="hidden"]):not([disabled]), select:not([disabled]), textarea:not([disabled])'))
+                .filter(function(inp) { return inp.offsetParent !== null; });
+        }
+        return inputs.indexOf(el);
+    }
+
+    // Build groups: warish _bn → 'bn'; ALL other non-EN fields → position slot
+    function getColumnGroups() {
+        var all = Array.from(formEl.querySelectorAll('input:not([type="hidden"]):not([disabled]), select:not([disabled]), textarea:not([disabled])'))
+            .filter(function(el) { return el.offsetParent !== null; });
+        var groups = {};
+        all.forEach(function(el) {
+            if (isEn(el)) return; // Skip _en fields entirely
+            var slot = getPositionSlot(el);
+            if (slot === 'bn') {
+                if (!groups.bn) groups.bn = [];
+                groups.bn.push(el);
+            } else if (slot >= 0 && slot !== undefined) {
+                if (!groups[slot]) groups[slot] = [];
+                groups[slot].push(el);
+            }
+        });
+        return groups;
+    }
+
+    // All visible fields in DOM order (for EN skip)
+    function allVisibleFields() {
+        return Array.from(formEl.querySelectorAll('input:not([type="hidden"]):not([disabled]), select:not([disabled]), textarea:not([disabled])'))
+            .filter(function(el) { return el.offsetParent !== null; });
+    }
+
+    formEl.addEventListener('keydown', function(e) {
+        if (e.key !== 'Tab') return;
+        var target = e.target;
+        if (!target || (!target.id && !target.name)) return;
+
+        // If target is an EN field → skip to the next/prev non-EN field in DOM order
+        if (isEn(target)) {
+            var all = allVisibleFields();
+            var cur = all.indexOf(target);
+            if (e.shiftKey) {
+                for (var i = cur - 1; i >= 0; i--) {
+                    if (!isEn(all[i])) { e.preventDefault(); setTimeout(function() { all[i].focus(); }, 0); return; }
+                }
+            } else {
+                for (var i = cur + 1; i < all.length; i++) {
+                    if (!isEn(all[i])) { e.preventDefault(); setTimeout(function() { all[i].focus(); }, 0); return; }
+                }
+            }
+            // No non-EN field found → allow default Tab behavior (move out of form)
+            return;
+        }
+
+        // Determine group for non-EN field
+        var slot = getPositionSlot(target);
+        var group = null;
+        if (slot === 'bn') group = 'bn';
+        else if (slot >= 0 && slot !== undefined && slot !== null) group = slot;
+        if (group === null || group === undefined) return;
+
+        var groups = getColumnGroups();
+        var fields = groups[group];
+        if (!fields) return;
+        var idx = fields.indexOf(target);
+        if (idx === -1) return;
+
+        if (e.shiftKey) {
+            if (idx > 0) { e.preventDefault(); setTimeout(function() { fields[idx - 1].focus(); }, 0); }
+        } else {
+            if (idx < fields.length - 1) { e.preventDefault(); setTimeout(function() { fields[idx + 1].focus(); }, 0); }
+        }
+    });
+}
+
 $(document).ready(function () {
+    // Auto-init column-based Tab navigation for any application form
+    var appForm = document.getElementById('applicationForm');
+    if (appForm) {
+        initColumnTabNavigation(appForm);
+    }
+
+
     // ======== আবেদনের নাম নির্বাচন (শুধু ইউজার ইন্টারঅ্যাকশনের জন্য) ========
     $('input[name="applicant_name_option"]').on('change', function () {
         const selectedOption = $(this).val();

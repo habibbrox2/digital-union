@@ -28,11 +28,18 @@
     <script>
         document.getElementById('emailTemplatesForm').addEventListener('submit', async function(e){
         e.preventDefault();
-        const form = e.target;
-        const data = new FormData(form);
-        const resp = await fetch(form.action, {method:'POST', body: data});
-        const json = await resp.json();
-        if (json.status === 'success') alert('Saved'); else alert('Error: '+(json.alert?.message||'Failed'));
+        const restore = btnLoading(e.submitter, 'সংরক্ষণ করা হচ্ছে...');
+        try {
+            const form = e.target;
+            const data = new FormData(form);
+            const resp = await fetch(form.action, {method:'POST', body: data});
+            const json = await resp.json();
+            if (json.status === 'success') Swal.fire('Success', 'Saved', 'success'); else Swal.fire('Error', 'Error: '+(json.alert?.message||'Failed'), 'error');
+        } catch(err) {
+            Swal.fire('Error', 'সংযোগ ব্যর্থ', 'error');
+        } finally {
+            restore();
+        }
     });
 
         // Preview handler
@@ -53,7 +60,7 @@
                                 const bsModal = new bootstrap.Modal(modal);
                                 bsModal.show();
                         } else {
-                                alert('Preview error: ' + (json.message || 'Failed'));
+                                Swal.fire('Error', 'Preview error: ' + (json.message || 'Failed'), 'error');
                         }
                 });
         });

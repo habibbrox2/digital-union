@@ -4,11 +4,27 @@
 // 1) Start session
 if (session_status() !== PHP_SESSION_ACTIVE) session_start();
 
-// 2) Generate CSRF token
+// 2) Generate CSRF token (session + cookie)
 if (!function_exists('generateCsrfToken')) {
     function generateCsrfToken(): string {
         if (empty($_SESSION['csrf_token'])) {
             $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+        }
+        // Also sync to cookie for session-loss resilience (double-submit cookie pattern)
+        if (!isset($_COOKIE['csrf_cookie']) || $_COOKIE['csrf_cookie'] !== $_SESSION['csrf_token']) {
+            $cookieParams = session_get_cookie_params();
+            setcookie(
+                'csrf_cookie',
+                $_SESSION['csrf_token'],
+                [
+                    'expires' => time() + 86400 * 7,  // 7 days
+                    'path' => $cookieParams['path'] ?? '/',
+                    'domain' => $cookieParams['domain'] ?? '',
+                    'secure' => $cookieParams['secure'] ?? false,
+                    'httponly' => false,  // accessible by JS for double-submit pattern; XSS protection via CSP
+                    'samesite' => 'Strict',
+                ]
+            );
         }
         return $_SESSION['csrf_token'];
     }
@@ -79,7 +95,48 @@ if (!function_exists('autoVerifyCsrf')) {
 
         $token = $_POST['csrf_token'] ?? $_GET['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
 
-        if (!verifyCsrfToken($token)) sendCsrfError();
+        // Primary check: session-based
+        $valid = verifyCsrfToken($token);
+
+        // Fallback: if session check failed, try cookie-based double-submit pattern
+        // This handles the case where the session was lost/regenerated (e.g., login in another tab)
+        // but the browser still has the CSRF cookie from the original page render.
+        if (!$valid && !empty($token) && isset($_COOKIE['csrf_cookie'])) {
+            $valid = hash_equals($_COOKIE['csrf_cookie'], $token);
+            if ($valid) {
+                // Token matches cookie but not session — session was lost.
+                // Restore the session token so subsequent requests in this session work.
+                error_log(
+                    sprintf(
+                        '[CSRF RECOVER] session recovered via cookie fallback: method=%s, uri=%s',
+                        $method,
+                        $_SERVER['REQUEST_URI'] ?? 'unknown'
+                    )
+                );
+                $_SESSION['csrf_token'] = $token;
+            }
+        }
+
+        if (!$valid) {
+            // Log diagnostic info before rejecting
+            $sessionId = session_id();
+            $expectedToken = isset($_SESSION['csrf_token']) ? substr($_SESSION['csrf_token'], 0, 8) . '...' : 'NOT SET';
+            $receivedPreview = !empty($token) ? substr($token, 0, 8) . '...' : 'EMPTY';
+            $cookieToken = isset($_COOKIE['csrf_cookie']) ? substr($_COOKIE['csrf_cookie'], 0, 8) . '...' : 'NO COOKIE';
+            error_log(
+                sprintf(
+                    '[CSRF FAIL] method=%s, uri=%s, session_id=%s, expected=%s, received=%s, cookie=%s, source=%s',
+                    $method,
+                    $_SERVER['REQUEST_URI'] ?? 'unknown',
+                    $sessionId,
+                    $expectedToken,
+                    $receivedPreview,
+                    $cookieToken,
+                    isset($_POST['csrf_token']) ? 'POST' : (isset($_GET['csrf_token']) ? 'GET' : 'HEADER')
+                )
+            );
+            sendCsrfError();
+        }
         unset($_POST['csrf_token'], $_GET['csrf_token']);
     }
 }

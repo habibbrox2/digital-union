@@ -1,42 +1,180 @@
 {# partials/forms/union_selection.twig #}
 
-    <div class="row md-3">
-        <div class="col-md-4">
-            <label for="select_district_id" class="form-label">জেলা</label>
-            <select id="select_district_id" name="district" class="form-control" required>
-            </select>
-        </div>
-        <div class="col-md-4">
-            <label for="select_upazila_id" class="form-label">উপজেলা</label>
-            <select id="select_upazila_id" name="upazila" class="form-control" required>
-                <option value="">উপজেলা নির্বাচন করুন</option>
-            </select>
-        </div>
-        <div class="col-md-4">
-            <label for="union_id" class="form-label">ইউনিয়ন</label>
-            <select id="union_id" name="union_code" class="form-control" required>
-                <option value="">ইউনিয়ন নির্বাচন করুন</option>
-            </select>
-        </div>
-    </div>
 
-<div class="row mb-3">
-    <div class="col-12">
-        <label for="search-data" class="form-label">তথ্য অনুসন্ধান</label>
-        <div class="input-group">
-            <input type="search" 
-                id="search-data"
-                name="search-data" 
-                class="form-control" 
-                placeholder="ন্যাশনাল আইডি নং অথবা জন্ম নিবন্ধন নং অথবা পাসপোর্ট নং অথবা পিন নং দিন ইংরেজিতে">
-            <button type="button" id="search-btn" class="btn btn-primary">
-                অনুসন্ধান
-            </button>
-        </div>
-    </div>
-    <div id="search-message" style="margin-top:5px; font-size: 0.9em;"></div>
+<!-- ===================== Form Header ===================== -->
+<div class="form-intro text-center">
+    <h3 class="text-danger fw-bold">নিয়মাবলি:</h3>
+    <hr>
 </div>
 
+<div class="row">
+    <!-- Left Side -->
+    <div class="col-lg-9">
+
+        <div class="form-note mb-3">
+            {% include 'partials/forms/rules.twig' %}
+        </div>
+
+        <div class="row g-3">
+
+            <div class="col-md-4">
+                <label for="select_district_id" class="form-label fw-semibold">
+                    জেলা <span class="text-danger">*</span>
+                </label>
+
+                <select id="select_district_id"
+                        name="district"
+                        class="form-select"
+                        required>
+                    <option>ঢাকা</option>
+                </select>
+            </div>
+
+            <div class="col-md-4">
+                <label for="select_upazila_id" class="form-label fw-semibold">
+                    উপজেলা <span class="text-danger">*</span>
+                </label>
+
+                <select id="select_upazila_id"
+                        name="upazila"
+                        class="form-select"
+                        required>
+                    <option>সিলেক্ট করুন</option>
+                </select>
+            </div>
+
+            <div class="col-md-4">
+                <label for="union_id" class="form-label fw-semibold">
+                    ইউনিয়ন <span class="text-danger">*</span>
+                </label>
+
+                <select id="union_id"
+                        name="union_code"
+                        class="form-select"
+                        required>
+                    <option>নির্বাচন করুন</option>
+                </select>
+            </div>
+
+        </div>
+
+        <!-- Search -->
+        <div class="mt-4">
+
+            <div class="input-group">
+
+    <input
+        type="search"
+        id="search-data"
+        name="search_query"
+        class="form-control form-control-lg"
+        placeholder="ন্যাশনাল আইডি নং অথবা জন্ম নিবন্ধন নং অথবা পাসপোর্ট নং অথবা পিন নং দিন ইংরেজিতে"
+        aria-label="অ্যাপ্লিকেশন সার্চ করুন">
+
+                <button class="btn btn-primary px-4" id="search-btn">
+
+                    <i class="fa fa-search"></i>
+
+                    SEARCH
+
+                </button>
+
+            </div>
+
+            <div id="search-message"></div>
+
+        </div>
+
+    </div>
+
+    <!-- Right Side -->
+    <div class="col-lg-3">
+
+        <div class="card shadow-sm border upload-card" id="uploadCard">
+
+            <div class="card-body p-0">
+
+                <div class="upload-preview-area" id="uploadDropZone" style="width:100%;height:225px;background: linear-gradient(rgba(255,255,255,0.7), rgba(255,255,255,0.7)), url('/assets/images/default.jpg') center/cover no-repeat;">
+
+                    <div class="text-center py-5">
+
+
+
+
+
+
+                    </div>
+
+                    <div
+                        id="uploadPreviewContainer"
+                        style="display:none">
+
+                        <img
+                            id="uploadPreviewImg"
+                            class="img-fluid w-100">
+
+                    </div>
+
+                </div>
+
+                <button
+                    type="button"
+                    class="btn btn-primary rounded-0 w-100 py-2"
+                    id="uploadCardBtn">
+
+                    <i class="fa fa-upload me-1"></i>
+
+                    UPLOAD
+
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<input
+    type="file"
+    id="applicant_photo"
+    name="applicant_photo"
+    accept="image/*"
+    class="d-none"
+    data-crop="true"
+    data-crop-mode="photo"
+    data-crop-trigger="#uploadCardBtn, #uploadDropZone"
+    data-crop-dropzone="#uploadDropZone"
+    data-preview="uploadPreviewImg"
+    data-preview-container="uploadPreviewContainer"
+    data-drop-zone="uploadDropZone">
+
+<script>
+/**
+ * Pre-filled data preview (server data) — Crop handled by ImageCropper.autoInit()
+ * Only runs when the server provides pre-existing photo data.
+ */
+(function() {
+  document.addEventListener('DOMContentLoaded', function() {
+    {% if data.applicant_photo is defined and data.applicant_photo %}
+    var img = document.getElementById('uploadPreviewImg');
+    var ct = document.getElementById('uploadPreviewContainer');
+    var dz = document.getElementById('uploadDropZone');
+    if (img) { img.src = '{{ data.applicant_photo }}'; img.style.display = 'block'; }
+    if (ct) ct.style.display = 'block';
+    if (dz) { dz.style.backgroundImage = 'none'; dz.style.background = '#F2F2F2'; }
+    {% elseif data.photo_url is defined and data.photo_url %}
+    var img = document.getElementById('uploadPreviewImg');
+    var ct = document.getElementById('uploadPreviewContainer');
+    var dz = document.getElementById('uploadDropZone');
+    if (img) { img.src = '{{ data.photo_url }}'; img.style.display = 'block'; }
+    if (ct) ct.style.display = 'block';
+    if (dz) { dz.style.backgroundImage = 'none'; dz.style.background = '#F2F2F2'; }
+    {% endif %}
+  });
+})();
+</script>
 
 
 <script>
@@ -216,15 +354,29 @@ document.addEventListener('DOMContentLoaded', () => {
     const searchMsg = document.getElementById('search-message');
     const addressPrefixes = ['business','present','permanent'];
 
+    const banglaToEnglishDigits = {
+        '০': '0', '১': '1', '২': '2', '৩': '3', '৪': '4',
+        '৫': '5', '৬': '6', '৭': '7', '৮': '8', '৯': '9'
+    };
+
+    function normalizeSearchInput(value) {
+        return value.replace(/[০-৯]/g, d => banglaToEnglishDigits[d] || d).trim();
+    }
+
     // ================= Search Button Click =================
     searchBtn?.addEventListener('click', async () => {
-        const query = searchInput.value.trim();
+        const query = normalizeSearchInput(searchInput.value);
         searchMsg.textContent = '';
+        searchMsg.style.background = '';
+        searchMsg.style.padding = '';
+        searchMsg.style.borderRadius = '';
         if (!query) return;
 
         try {
             const formData = new URLSearchParams();
             formData.append('query', query);
+            formData.append('union_code', $('#union_id').val() || '');
+            // certificate_type is NOT sent — the backend looks it up from the application data itself
 
             const res = await fetch('/api/applications/search', {
                 method: 'POST',
@@ -236,6 +388,33 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (response.status === 'success') {
                 fillForm(response.data);
+
+                // Show confirmation message with applicant name + union + type + source
+                const d = response.data;
+                const foundName = d.name_bn || d.name_en || '';
+                const foundUnion = d.union_name_bn || '';
+                const foundType = d.certificate_type_bn || '';
+                const foundSource = d.source || '';
+                let sourceBadge = '';
+                if (foundSource === 'local') {
+                    sourceBadge = '<span title="স্থানীয়: স্থানীয় ডাটাবেস থেকে তথ্য আনা হয়েছে" style="display:inline-flex;align-items:center;gap:3px;background:#28a745;color:#fff;font-size:0.75em;padding:2px 8px;border-radius:10px;margin-left:6px;font-weight:bold;box-shadow:0 1px 3px rgba(40,167,69,0.3);cursor:help;"><i class="fas fa-database" style="font-size:0.8em"></i> স্থানীয়</span>';
+                } else if (foundSource === 'remote') {
+                    sourceBadge = '<span title="অনলাইন: দূরবর্তী API থেকে তথ্য আনা হয়েছে" style="display:inline-flex;align-items:center;gap:3px;background:linear-gradient(135deg,#17a2b8,#138496);color:#fff;font-size:0.75em;padding:2px 8px;border-radius:10px;margin-left:6px;font-weight:bold;border:1px dashed rgba(255,255,255,0.4);box-shadow:0 1px 3px rgba(23,162,184,0.3);cursor:help;"><i class="fas fa-cloud" style="font-size:0.8em"></i> অনলাইন</span>';
+                }
+                let confirmHtml = `<span style="color: #155724; font-weight: bold;">✅ পাওয়া গেছে: ${foundName}${sourceBadge}</span>`;
+                if (foundUnion || foundType) {
+                    confirmHtml += `<br><span style="color: #155724; font-size: 0.85em;">`;
+                    if (foundUnion) confirmHtml += `ইউনিয়ন: ${foundUnion}`;
+                    if (foundUnion && foundType) confirmHtml += ` &nbsp;|&nbsp; `;
+                    if (foundType) confirmHtml += `সনদ: ${foundType}`;
+                    confirmHtml += `</span>`;
+                }
+                searchMsg.innerHTML = confirmHtml;
+                searchMsg.style.color = '';
+                searchMsg.style.background = '#d4edda';
+                searchMsg.style.padding = '8px 12px';
+                searchMsg.style.borderRadius = '4px';
+
                 searchInput.style.backgroundColor = 'green';
                 searchInput.style.border = '2px solid green';
                 searchInput.style.color = 'white';
@@ -285,6 +464,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         for (const key in data) {
             if (!data.hasOwnProperty(key)) continue;
+            // Never overwrite certificate_type — it must stay as set by the current form page
+            if (key === 'certificate_type') continue;
             const el = form.querySelector(`[name="${key}"]`);
             if (!el) continue;
 
@@ -293,14 +474,27 @@ document.addEventListener('DOMContentLoaded', () => {
             else if (el.type === 'radio') {
                 const radio = form.querySelector(`[name="${key}"][value="${data[key]}"]`);
                 if (radio) radio.checked = true;
-            } else if (el.type === 'file' && key === 'photo') {
-                document.getElementById('photo_preview').src = data[key] ?? '';
-            } else el.value = data[key] ?? '';
+            } else if (el.type === 'file' && key === 'applicant_photo') {
+                const previewEl = document.getElementById('uploadPreviewImg') || document.getElementById('photo_preview');
+                const previewContainer = document.getElementById('uploadPreviewContainer');
+                const dropZone = document.getElementById('uploadDropZone');
+                if (previewEl) {
+                    previewEl.src = data[key] ?? '';
+                    previewEl.style.display = 'block';
+                    if (previewContainer) previewContainer.style.display = 'block';
+                    if (dropZone) {
+                        dropZone.style.backgroundImage = 'none';
+                        dropZone.style.background = '#F2F2F2';
+                    }
+                }
+            } else if (el.value !== undefined) {
+                el.value = data[key] ?? '';
+            }
 
-            // ====== readonly logic for non-checkbox/radio =====
+            // ====== visual highlight for prefilled fields (editable) =====
             if (el.type !== 'checkbox' && el.type !== 'radio') {
-                el.readOnly = el.value ? true : false;
-                el.style.backgroundColor = el.value ? '#e0e0e0' : '';
+                el.style.backgroundColor = el.value ? '#d4edda' : '';
+                el.style.border = el.value ? '2px solid #c3e6cb' : '';
                 el.style.color = el.value ? '#000' : '';
             }
         }
@@ -311,8 +505,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if (parts.length === 3) {
                 const bd = document.getElementById('birth_date');
                 bd.value = `${parts[2].padStart(2,'0')}-${parts[1].padStart(2,'0')}-${parts[0]}`;
-                bd.readOnly = true;
-                bd.style.backgroundColor = '#e0e0e0';
+                bd.style.backgroundColor = '#d4edda';
+                bd.style.border = '2px solid #c3e6cb';
             }
         }
 
@@ -321,44 +515,51 @@ document.addEventListener('DOMContentLoaded', () => {
         const spouseSection = document.getElementById('spouse_section');
         if (spouseSection) spouseSection.style.display = (marital && marital.toLowerCase() === 'married') ? 'block' : 'none';
 
-        // Address prefill + sync
+        // Address cascading dropdowns & Bengali text fallback
         addressPrefixes.forEach(prefix => {
-            prefillAddress(prefix, data);
-            bindAddressSync(prefix);
+            cascadeAddressDropdowns(prefix, data);
         });
     }
 
-    // ================= Prefill Address =================
-    function prefillAddress(prefix, data) {
-        const fields = ['village_en','village_bn','rbs_en','rbs_bn','holding_no','ward_no',
-                        'postoffice_en','postoffice_bn','district_en','district_bn','upazila_en','upazila_bn','union_en','union_bn'];
-
-        fields.forEach(f => {
-            const el = document.getElementById(`${prefix}_${f}`);
-            if (!el) return;
-            el.value = data[`${prefix}_${f}`] ?? '';
-            el.readOnly = el.value ? true : false;
-            el.style.backgroundColor = el.value ? '#e0e0e0' : '';
-        });
-
-        const districtId = document.getElementById(`${prefix}_district_id`);
-        const upazilaId = document.getElementById(`${prefix}_upazila_id`);
-        const unionId = document.getElementById(`${prefix}_union_id`);
-
-        if (districtId && data[`${prefix}_district_en`]) {
-            districtId.value = data[`${prefix}_district_en`];
-            districtId.dispatchEvent(new Event('change'));
-        }
-        if (upazilaId && data[`${prefix}_upazila_en`]) {
-            setTimeout(() => { upazilaId.value = data[`${prefix}_upazila_en`]; upazilaId.dispatchEvent(new Event('change')); }, 500);
-        }
-        if (unionId && data[`${prefix}_union_en`]) {
-            setTimeout(() => { unionId.value = data[`${prefix}_union_en`]; unionId.dispatchEvent(new Event('change')); }, 1000);
+    // ================= Cascade Address Dropdowns =================
+    // The main fillForm loop already sets ALL field values via [name="key"].
+    // This function only handles what the loop can't: triggering 'change' events
+    // on cascading geo dropdowns (district -> upazila -> union) so their
+    // AJAX-loaded options get populated, and setting Bengali text fields via
+    // ID as a fallback (their IDs like "present_district" differ from data keys).
+    function cascadeAddressDropdowns(prefix, data) {
+        // Bengali text fallback — IDs differ from name/data keys
+        const bnMap = {
+            'district_bn': `${prefix}_district`,
+            'upazila_bn': `${prefix}_upazila`,
+            'union_bn': `${prefix}_union`,
+            'postoffice_bn': `${prefix}_postoffice_bn`,
+        };
+        for (const [dataKey, elId] of Object.entries(bnMap)) {
+            const el = document.getElementById(elId);
+            if (el && data[`${prefix}_${dataKey}`]) {
+                el.value = data[`${prefix}_${dataKey}`];
+                el.style.backgroundColor = '#d4edda';
+                el.style.border = '2px solid #c3e6cb';
+            }
         }
 
-        if (data[`${prefix}_ward_no`] !== undefined) {
-            const wardEl = document.getElementById(`${prefix}_ward_no`);
-            if (wardEl) wardEl.value = data[`${prefix}_ward_no`];
+        // Cascading: district -> upazila -> union (value set by main loop, then
+        // re-set after AJAX loads to handle delayed option population)
+        const de = document.getElementById(`${prefix}_district_id`);
+        const ue = document.getElementById(`${prefix}_upazila_id`);
+        const ue2 = document.getElementById(`${prefix}_union_id`);
+
+        if (de && data[`${prefix}_district_en`]) {
+            de.value = data[`${prefix}_district_en`];
+            de.dispatchEvent(new Event('change'));
+        }
+
+        if (ue && data[`${prefix}_upazila_en`]) {
+            setTimeout(() => { ue.value = data[`${prefix}_upazila_en`]; ue.dispatchEvent(new Event('change')); }, 600);
+        }
+        if (ue2 && data[`${prefix}_union_en`]) {
+            setTimeout(() => { ue2.value = data[`${prefix}_union_en`]; ue2.dispatchEvent(new Event('change')); }, 1200);
         }
     }
 
