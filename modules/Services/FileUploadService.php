@@ -4,6 +4,7 @@
  * 
  * Service layer for applicant photo and document file uploads.
  * Replaces handleApplicantFileUpload() from config/functions.php.
+ * Photos: public/uploads/application/, Documents: public/uploads/documents/.
  */
 
 class FileUploadService
@@ -12,7 +13,7 @@ class FileUploadService
 
     public function __construct()
     {
-        $this->projectRoot = dirname(__DIR__); // modules/ dir level
+        $this->projectRoot = dirname(dirname(__DIR__)); // project root level
     }
 
     /**

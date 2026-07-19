@@ -32,8 +32,8 @@ $router->get('/login', function () use ($twig, $auth) {
     $timeout = isset($_GET['timeout']) && $_GET['timeout'] == '1';
 
     echo $twig->render('login/login.twig', [
-        'title'         => 'Login',
-        'header_title'  => 'Login to Your Account',
+        'title'         => 'লগইন',
+        'header_title'  => 'আপনার অ্যাকাউন্টে লগইন করুন',
         'redirect'      => $redirect,
         'timeout'       => $timeout,
         'csrf_token'    => generateCsrfToken(),
@@ -57,7 +57,7 @@ $router->get('/admin', function () {
 */
 $router->get('/password-reset', function () use ($twig) {
     echo $twig->render('login/password_reset.twig', [
-        'title'        => 'Password Reset',
+        'title'        => 'পাসওয়ার্ড রিসেট',
         'header_title' => 'Reset Your Password',
         'csrf_token'   => generateCsrfToken(),
     ]);
@@ -78,7 +78,7 @@ $router->get('/reset-password', function () use ($twig) {
     }
 
     echo $twig->render('login/reset_password.twig', [
-        'title'        => 'Set New Password',
+        'title'        => 'নতুন পাসওয়ার্ড সেট করুন',
         'header_title' => 'Set Your New Password',
         'token'        => $token,
         'csrf_token'   => generateCsrfToken(),
@@ -195,7 +195,7 @@ $router->get('/register', function () use ($twig, $auth) {
     }
 
     echo $twig->render('login/register.twig', [
-        'title'         => 'Register',
+        'title'         => 'নিবন্ধন',
         'header_title'  => 'নতুন অ্যাকাউন্ট তৈরি করুন',
         'csrf_token'    => generateCsrfToken(),
     ]);

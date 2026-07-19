@@ -28,7 +28,7 @@ $router->get('/applications', function() use ($twig, $appManager, $auth, $authSe
 
     echo $twig->render('applications/types_list.twig', [
         'types' => $types,
-        'title' => 'Applications list',
+        'title' => 'আবেদনের তালিকা',
         'header_title' => 'আবেদন তালিকা',
     ]);
 });

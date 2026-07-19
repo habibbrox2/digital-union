@@ -1,33 +1,51 @@
-{% extends "layout.twig" %}
-
-
-{% block content %}
-<div class="header">
-    <h1>আপনার ইমেইল যাচাই করুন ✓</h1>
-    <p>আপনার অ্যাকাউন্ট সক্রিয় করতে একটি সহজ পদক্ষেপ</p>
-</div>
-
-<div class="content">
-    <p>প্রিয় {{ username | default('ব্যবহারকারী') }},</p>
-
-    <p>আপনার অ্যাকাউন্ট সফলভাবে তৈরি করা হয়েছে। এখন আপনার ইমেইল যাচাই করুন এবং লগইন করুন।</p>
-
-    <div class="button-container">
-        <a href="{{ verification_link }}" class="button">ইমেইল যাচাই করুন</a>
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>আপনার ইমেইল যাচাই করুন</title>
+    <style>
+        body { font-family: 'Kalpurush', 'SolaimanLipi', 'Noto Sans Bengali', Arial, sans-serif; background: #f4f6f8; margin: 0; padding: 20px; }
+        .container { max-width: 560px; margin: 0 auto; background: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+        .header { background: #008B8B; color: #ffffff; padding: 24px; text-align: center; }
+        .header h1 { margin: 0; font-size: 22px; }
+        .header p { margin: 8px 0 0; opacity: 0.9; }
+        .content { padding: 24px; color: #333; line-height: 1.6; }
+        .button-container { text-align: center; margin: 24px 0; }
+        .button { display: inline-block; background: #008B8B; color: #ffffff; text-decoration: none; padding: 12px 28px; border-radius: 4px; font-weight: 600; }
+        .alert { background: #e7f3f8; border: 1px solid #b8dce4; color: #0c5460; padding: 12px 16px; border-radius: 4px; font-size: 14px; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>আপনার ইমেইল যাচাই করুন ✓</h1>
+        <p>আপনার অ্যাকাউন্ট সক্রিয় করতে একটি সহজ পদক্ষেপ</p>
     </div>
 
-    <p style="text-align: center; color: #666; font-size: 13px;">
-        উপরের বোতামটি কাজ না করলে, এই লিঙ্কটি আপনার ব্রাউজারে পেস্ট করুন:<br>
-        <code style="word-break: break-all;">{{ verification_link }}</code>
-    </p>
+    <div class="content">
+        <p>প্রিয় {{ username | default('ব্যবহারকারী') }},</p>
 
-    <div class="alert alert-info">
-        <strong>নোট:</strong> এই লিংকটি {{ expiry_hours | default(24) }} ঘন্টার জন্য বৈধ।
+        <p>আপনার অ্যাকাউন্ট সফলভাবে তৈরি করা হয়েছে। এখন আপনার ইমেইল যাচাই করুন এবং লগইন করুন।</p>
+
+        <div class="button-container">
+            <a href="{{ verification_link }}" class="button">ইমেইল যাচাই করুন</a>
+        </div>
+
+        <p style="text-align: center; color: #666; font-size: 13px;">
+            উপরের বোতামটি কাজ না করলে, এই লিঙ্কটি আপনার ব্রাউজারে পেস্ট করুন:<br>
+            <code style="word-break: break-all;">{{ verification_link }}</code>
+        </p>
+
+        <div class="alert">
+            <strong>নোট:</strong> এই লিংকটি {{ expiry_hours | default(24) }} ঘন্টার জন্য বৈধ।
+        </div>
+
+        <p>আপনি এই অনুরোধ করেননি? তাহলে এই ইমেইল উপেক্ষা করুন।</p>
+
+        <p>ধন্যবাদ,<br>
+        {{ mail_from_name | default('লগ ধাকা') }} টিম</p>
     </div>
-
-    <p>আপনি এই অনুরোধ করেননি? তাহলে এই ইমেইল উপেক্ষা করুন।</p>
-
-    <p>ধন্যবাদ,<br>
-    {{ mail_from_name | default('লগ ধাকা') }} টিম</p>
 </div>
-{% endblock %}
+</body>
+</html>

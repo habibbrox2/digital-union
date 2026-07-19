@@ -122,7 +122,7 @@ $router->get('/admin/logs', function () use ($twig, $mysqli, $authService) {
     }
 
     echo $twig->render('errors/error_logs.twig', [
-        'title'        => 'Error Logs',
+        'title'        => 'ত্রুটির লগ',
         'header_title' => '🧠 Error Log Viewer',
         'cleared'      => isset($_GET['cleared']),
     ]);

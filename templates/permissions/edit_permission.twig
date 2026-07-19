@@ -1,80 +1,130 @@
 {% extends 'layout.twig' %}
 
-{% block title %}Edit Permission{% endblock %}
-{% block header_title %}{{ header_title|default('Edit Permission') }}{% endblock %}
+{% block title %}পারমিশন সম্পাদনা{% endblock %}
+{% block header_title %}{{ header_title|default('পারমিশন সম্পাদনা') }}{% endblock %}
 
 {% block content %}
 {% include 'components/sweetAlert.twig' %}
-<div class="container mt-4">
-  <div class="row">
-    <div class="col-md-8 offset-md-2">
-      <div class="card shadow-sm border-0">
-        <div class="card-header bg-warning text-dark">
-          <h4 class="mb-0"><i class="fas fa-key"></i> Edit Permission</h4>
+{% include 'components/rbac_ui.twig' %}
+<div class="container-fluid py-4">
+    <div class="rbac-header">
+        <div>
+            <h4><i class="bi bi-pencil-square text-warning me-2"></i>পারমিশন সম্পাদনা</h4>
+            <div class="subtitle">{{ permission.name }}</div>
         </div>
-        <div class="card-body">
-          <div class="alert alert-info mb-3">
-            <i class="fas fa-info-circle"></i>
-            <strong>ID:</strong> {{ permission.id }}
-          </div>
-
-          <form method="post" action="/permissions/{{ permission.id }}/edit">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token }}" />
-
-            <div class="mb-3">
-              <label for="module" class="form-label fw-bold">Module <span class="text-danger">*</span></label>
-              <select class="form-control form-control-lg" id="module" name="module" required>
-                {% for m in modules %}
-                  <option value="{{ m|e }}" {% if m == permission.module %}selected{% endif %}>
-                    {{ m|upper }}
-                  </option>
-                {% endfor %}
-              </select>
-              <small class="form-text text-muted d-block mt-2">
-                <i class="fas fa-info-circle"></i>
-                Select the module for this permission
-              </small>
-            </div>
-
-            <div class="mb-3">
-              <label for="name" class="form-label fw-bold">Permission Name <span class="text-danger">*</span></label>
-              <input class="form-control form-control-lg" 
-                     id="name" 
-                     name="name" 
-                     value="{{ permission.name|e }}" 
-                     required
-                     maxlength="191" />
-              <small class="form-text text-muted d-block mt-2">
-                <i class="fas fa-info-circle"></i>
-                Update the permission name if needed
-              </small>
-            </div>
-
-            <div class="mb-3">
-              <label for="description" class="form-label fw-bold">Description</label>
-              <textarea class="form-control" 
-                        id="description" 
-                        name="description" 
-                        rows="4"
-                        maxlength="1000">{{ permission.description|e }}</textarea>
-              <small class="form-text text-muted d-block mt-2">
-                <i class="fas fa-info-circle"></i>
-                Update the description
-              </small>
-            </div>
-
-            <div class="d-flex gap-2 mt-4">
-              <button class="btn btn-warning btn-lg" type="submit">
-                <i class="fas fa-save"></i> Update Permission
-              </button>
-              <a href="/permissions" class="btn btn-secondary btn-lg">
-                <i class="fas fa-times"></i> Cancel
-              </a>
-            </div>
-          </form>
-        </div>
-      </div>
+        <a href="/permissions" class="btn btn-outline-secondary rbac-btn">
+            <i class="bi bi-arrow-left me-1"></i> তালিকায় ফিরুন
+        </a>
     </div>
-  </div>
+
+    <div class="row g-4">
+        <div class="col-lg-8">
+            <div class="rbac-card p-4">
+                <form method="post" action="/permissions/{{ permission.id }}/edit" id="permissionForm" novalidate>
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}" />
+
+                    <div class="mb-3">
+                        <label for="module" class="form-label fw-semibold small text-secondary">মডিউল <span class="text-danger">*</span></label>
+                        <input class="form-control form-control-lg rbac-input"
+                               list="module-options"
+                               id="module"
+                               name="module"
+                               placeholder="যেমন: roles, users, reports"
+                               value="{{ permission.module|e }}"
+                               autocomplete="off"
+                               required />
+                        <datalist id="module-options">
+                            {% for m in modules %}<option value="{{ m|e }}">{{ m|upper }}</option>{% endfor %}
+                        </datalist>
+                        <div class="invalid-feedback">মডিউলের নাম দিন।</div>
+                        <small class="text-muted">এই অনুমতির মডিউল নির্বাচন করুন</small>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="name" class="form-label fw-semibold small text-secondary">অনুমতির নাম <span class="text-danger">*</span></label>
+                        <input class="form-control form-control-lg rbac-input"
+                               id="name"
+                               name="name"
+                               value="{{ permission.name|e }}"
+                               required
+                               minlength="2"
+                               maxlength="191" />
+                        <div class="invalid-feedback">অনুমতির নাম দিন (কমপক্ষে ২ অক্ষর)।</div>
+                        <div class="d-flex justify-content-between mt-1">
+                            <small class="text-muted">প্রয়োজনে অনুমতির নাম পরিবর্তন করুন</small>
+                            <small class="text-muted char-counter" data-target="name">0/191</small>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="description" class="form-label fw-semibold small text-secondary">বিবরণ</label>
+                        <textarea class="form-control rbac-input"
+                                  id="description"
+                                  name="description"
+                                  rows="4"
+                                  maxlength="1000">{{ permission.description|e }}</textarea>
+                        <div class="d-flex justify-content-between mt-1">
+                            <small class="text-muted">বিবরণ আপডেট করুন</small>
+                            <small class="text-muted char-counter" data-target="description">0/1000</small>
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-2 mt-4 pt-3 border-top">
+                        <button class="btn btn-warning rbac-btn shadow-sm" type="submit">
+                            <i class="bi bi-check2-circle me-1"></i> আপডেট করুন
+                        </button>
+                        <a href="/permissions" class="btn btn-outline-secondary rbac-btn">
+                            <i class="bi bi-x-circle me-1"></i> বাতিল
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="rbac-card p-4">
+                <h6 class="fw-bold mb-3 d-flex align-items-center gap-2">
+                    <i class="bi bi-info-circle text-info"></i> পারমিশন সারসংক্ষেপ
+                </h6>
+                <ul class="list-unstyled mb-0 small rbac-summary">
+                    <li><span class="label">আইডি</span><span class="fw-medium">#{{ permission.id }}</span></li>
+                    <li><span class="label">মডিউল</span><span class="fw-medium">{{ permission.module|e }}</span></li>
+                    <li><span class="label">নাম</span><span class="fw-medium">{{ permission.name|e }}</span></li>
+                </ul>
+            </div>
+        </div>
+    </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const form = document.getElementById('permissionForm');
+    if (!form) return;
+    document.querySelectorAll('.char-counter').forEach(function (counter) {
+        const el = document.getElementById(counter.dataset.target);
+        if (!el) return;
+        const update = () => counter.textContent = `${el.value.length}/${el.maxLength}`;
+        el.addEventListener('input', update);
+        update();
+    });
+    const nameInput = document.getElementById('name');
+    if (nameInput) {
+        nameInput.addEventListener('input', function () {
+            const pos = this.selectionStart;
+            const cleaned = this.value.replace(/\s+/g, '_');
+            if (cleaned !== this.value) {
+                this.value = cleaned;
+                this.setSelectionRange(pos, pos);
+            }
+        });
+    }
+    form.addEventListener('submit', function (e) {
+        if (!form.checkValidity()) {
+            e.preventDefault();
+            e.stopPropagation();
+            form.classList.add('was-validated');
+        }
+    });
+});
+</script>
 {% endblock %}

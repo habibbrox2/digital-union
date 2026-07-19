@@ -23,8 +23,8 @@ $router->get('/term_translations', function () use ($twig, $mysqli, $authService
     $certificateTypes = $termTranslation->getCertificateTypes();
 
     echo $twig->render('term_translations/index.twig', [
-        'title' => 'Term Translations',
-        'header_title' => 'Manage Term Translations',
+        'title' => 'শব্দ অনুবাদ',
+        'header_title' => 'শব্দ অনুবাদ পরিচালনা',
         'items' => $items,
         'certificate_types' => $certificateTypes
     ]);
@@ -48,6 +48,38 @@ $router->post('/ajax/term_translations', function () use ($mysqli, $authService)
     header('Content-Type: application/json; charset=utf-8');
 
     switch ($action) {
+        case 'filter':
+            $page = max(1, (int)($_POST['page'] ?? 1));
+            $sortColumn = $_POST['sortColumn'] ?? 'slug';
+            $sortDirection = $_POST['sortDirection'] ?? 'asc';
+            $search = trim($_POST['search'] ?? '');
+            $limit = 10;
+            $offset = ($page - 1) * $limit;
+
+            $items = $termTranslation->fetchFiltered($search, $sortColumn, $sortDirection, $limit, $offset);
+            $total = $termTranslation->countFiltered($search);
+
+            echo json_encode([
+                'status' => 'success',
+                'data'   => $items,
+                'total'  => $total
+            ]);
+            break;
+
+        case 'get':
+            $id = (int)($_POST['id'] ?? 0);
+            if (!$id) {
+                echo json_encode(['status' => 'error', 'message' => 'আইডি প্রয়োজন']);
+                break;
+            }
+            $term = $termTranslation->getById($id);
+            if (!$term) {
+                echo json_encode(['status' => 'error', 'message' => 'এন্ট্রি পাওয়া যায়নি']);
+                break;
+            }
+            echo json_encode(['status' => 'success', 'data' => $term]);
+            break;
+
         case 'create':
             if ($termTranslation->existsBySlugAndNameBl($slug, $name_bl)) {
                 echo json_encode(['status' => 'error', 'message' => 'এই এন্ট্রি ইতিমধ্যে উপস্থিত আছে!']);

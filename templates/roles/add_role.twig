@@ -1,104 +1,145 @@
 {% extends 'layout.twig' %}
 
-{% block title %}Create New Role{% endblock %}
-{% block header_title %}{{ header_title|default('Create New Role') }}{% endblock %}
+{% block title %}নতুন ভূমিকা তৈরি করুন{% endblock %}
+{% block header_title %}{{ header_title|default('নতুন ভূমিকা') }}{% endblock %}
 
 {% block content %}
 {% include 'components/sweetAlert.twig' %}
-<div class="container mt-4">
-  <div class="row">
-    <div class="col-md-8 offset-md-2">
-      <div class="card shadow-sm border-0">
-        <div class="card-header bg-success text-white">
-          <h4 class="mb-0"><i class="fas fa-user-shield"></i> Create New Role</h4>
+{% include 'components/rbac_ui.twig' %}
+<div class="container-fluid py-4">
+    <div class="rbac-header">
+        <div>
+            <h4><i class="bi bi-person-plus text-success me-2"></i>নতুন ভূমিকা</h4>
+            <div class="subtitle">সিস্টেমে একটি নতুন ভূমিকা তৈরি করুন</div>
         </div>
-        <div class="card-body">
-          <form method="post" action="/roles/add">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token }}" />
-
-            {% if templates|length > 0 %}
-            <div class="mb-3">
-              <label for="template_id" class="form-label fw-bold">Use Template (Optional)</label>
-              <select class="form-select form-select-lg" 
-                      id="template_id" 
-                      name="template_id"
-                      onchange="updateTemplateInfo()">
-                <option value="">-- Create Manually --</option>
-                {% for template in templates %}
-                <option value="{{ template.id }}" data-permissions="{{ template.permission_count }}">
-                  {{ template.name }} ({{ template.permission_count }} permissions)
-                </option>
-                {% endfor %}
-              </select>
-              <small class="form-text text-muted d-block mt-2">
-                <i class="fas fa-info-circle"></i>
-                Select a template to automatically assign its permissions to this role
-              </small>
-              <div id="template-info" class="alert alert-info mt-2" style="display: none;">
-                <strong>Template Info:</strong> <span id="template-desc"></span>
-              </div>
-            </div>
-            {% endif %}
-
-            <div class="mb-3">
-              <label for="name" class="form-label fw-bold">Role Name <span class="text-danger">*</span></label>
-              <input class="form-control form-control-lg" 
-                     id="name" 
-                     name="name" 
-                     placeholder="e.g., Editor, Moderator" 
-                     maxlength="191"
-                     value="{{ form_data.name|default('') }}"
-                     required />
-              <small class="form-text text-muted d-block mt-2">
-                <i class="fas fa-info-circle"></i>
-                Unique identifier for this role (2-191 characters)
-              </small>
-            </div>
-
-            <div class="mb-3">
-              <label for="description" class="form-label fw-bold">Description</label>
-              <textarea class="form-control" 
-                        id="description" 
-                        name="description" 
-                        rows="4" 
-                        placeholder="What is the purpose of this role?"
-                        maxlength="1000">{{ form_data.description|default('') }}</textarea>
-              <small class="form-text text-muted d-block mt-2">
-                <i class="fas fa-info-circle"></i>
-                Explain what permissions this role will have
-              </small>
-            </div>
-
-            <div class="d-flex gap-2 mt-4">
-              <button class="btn btn-success btn-lg" type="submit">
-                <i class="fas fa-plus"></i> Create Role
-              </button>
-              <a href="/roles" class="btn btn-secondary btn-lg">
-                <i class="fas fa-times"></i> Cancel
-              </a>
-            </div>
-          </form>
-        </div>
-      </div>
+        <a href="/roles" class="btn btn-outline-secondary rbac-btn">
+            <i class="bi bi-arrow-left me-1"></i> তালিকায় ফিরুন
+        </a>
     </div>
-  </div>
+
+    <div class="row g-4">
+        <!-- Form -->
+        <div class="col-lg-8">
+            <div class="rbac-card p-4">
+                <form method="post" action="/roles/add" id="roleForm" novalidate>
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}" />
+
+                    {% if templates is defined and templates|length > 0 %}
+                    <div class="mb-3">
+                        <label for="template_id" class="form-label fw-semibold small text-secondary">টেমপ্লেট (ঐচ্ছিক)</label>
+                        <select class="form-select rbac-input"
+                                id="template_id"
+                                name="template_id"
+                                onchange="updateTemplateInfo()">
+                            <option value="">-- নিজে তৈরি করুন --</option>
+                            {% for template in templates %}
+                            <option value="{{ template.id }}" data-permissions="{{ template.permission_count }}">
+                                {{ template.name }} ({{ template.permission_count }}টি অনুমতি)
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <small class="text-muted">টেমপ্লেট নির্বাচন করলে এর অনুমতিগুলো স্বয়ংক্রিয়ভাবে যুক্ত হবে</small>
+                        <div id="template-info" class="alert alert-info d-flex align-items-center mt-2" style="display: none;">
+                            <i class="bi bi-stack me-2"></i>
+                            <span><strong>টেমপ্লেট:</strong> <span id="template-desc"></span></span>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <div class="mb-3">
+                        <label for="name" class="form-label fw-semibold small text-secondary">ভূমিকার নাম <span class="text-danger">*</span></label>
+                        <input class="form-control form-control-lg rbac-input"
+                               id="name"
+                               name="name"
+                               placeholder="যেমন: এডিটর, মডারেটর"
+                               maxlength="191"
+                               value="{{ form_data.name|default('') }}"
+                               required
+                               minlength="2" />
+                        <div class="invalid-feedback">ভূমিকার নাম দিন (কমপক্ষে ২ অক্ষর)।</div>
+                        <div class="d-flex justify-content-between mt-1">
+                            <small class="text-muted">অনন্য নাম (২-১৯১ অক্ষর)</small>
+                            <small class="text-muted char-counter" data-target="name">0/191</small>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="description" class="form-label fw-semibold small text-secondary">বিবরণ</label>
+                        <textarea class="form-control rbac-input"
+                                  id="description"
+                                  name="description"
+                                  rows="4"
+                                  placeholder="এই ভূমিকার উদ্দেশ্য কী?"
+                                  maxlength="1000">{{ form_data.description|default('') }}</textarea>
+                        <div class="d-flex justify-content-between mt-1">
+                            <small class="text-muted">ভূমিকাটি কী করবে তা লিখুন</small>
+                            <small class="text-muted char-counter" data-target="description">0/1000</small>
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-2 mt-4 pt-3 border-top">
+                        <button class="btn btn-success rbac-btn shadow-sm" type="submit">
+                            <i class="bi bi-check2-circle me-1"></i> ভূমিকা তৈরি করুন
+                        </button>
+                        <a href="/roles" class="btn btn-outline-secondary rbac-btn">
+                            <i class="bi bi-x-circle me-1"></i> বাতিল
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Side summary -->
+        <div class="col-lg-4">
+            <div class="rbac-card p-4">
+                <h6 class="fw-bold mb-3 d-flex align-items-center gap-2">
+                    <i class="bi bi-info-circle text-info"></i> সহায়িকা
+                </h6>
+                <ul class="list-unstyled mb-0 small rbac-summary">
+                    <li><span class="label">ভূমিকা</span><span>ব্যবহারকারীদের অধিকারের গ্রুপ</span></li>
+                    <li><span class="label">অনুমতি</span><span>ভূমিকার মাধ্যমে প্রয়োগ হয়</span></li>
+                    <li><span class="label">নাম</span><span>অনন্য ও ২-১৯১ অক্ষর</span></li>
+                </ul>
+                <div class="alert alert-light border mt-3 mb-0 small">
+                    <i class="bi bi-lightbulb text-warning me-1"></i>
+                    ভূমিকা তৈরির পর <strong>অনুমতি নির্ধারণ</strong> পৃষ্ঠা থেকে এতে অনুমতি যুক্ত করুন।
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <script>
 function updateTemplateInfo() {
-  const select = document.getElementById('template_id');
-  const infoDiv = document.getElementById('template-info');
-  const infoSpan = document.getElementById('template-desc');
-  
-  if (select.value) {
-    const option = select.options[select.selectedIndex];
-    const permissions = option.dataset.permissions;
-    infoSpan.textContent = `This template includes ${permissions} permissions.`;
-    infoDiv.style.display = 'block';
-  } else {
-    infoDiv.style.display = 'none';
-  }
+    const select = document.getElementById('template_id');
+    const infoDiv = document.getElementById('template-info');
+    const infoSpan = document.getElementById('template-desc');
+    if (select && select.value) {
+        const option = select.options[select.selectedIndex];
+        infoSpan.textContent = `এই টেমপ্লেটে ${option.dataset.permissions}টি অনুমতি রয়েছে।`;
+        infoDiv.style.display = 'flex';
+    } else {
+        infoDiv.style.display = 'none';
+    }
 }
+
+document.addEventListener('DOMContentLoaded', function () {
+    const form = document.getElementById('roleForm');
+    if (!form) return;
+    document.querySelectorAll('.char-counter').forEach(function (counter) {
+        const el = document.getElementById(counter.dataset.target);
+        if (!el) return;
+        const update = () => counter.textContent = `${el.value.length}/${el.maxLength}`;
+        el.addEventListener('input', update);
+        update();
+    });
+    form.addEventListener('submit', function (e) {
+        if (!form.checkValidity()) {
+            e.preventDefault();
+            e.stopPropagation();
+            form.classList.add('was-validated');
+        }
+    });
+});
 </script>
 {% endblock %}
-

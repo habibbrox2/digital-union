@@ -85,8 +85,8 @@ LOG;
     )) {
         try {
             $GLOBALS['twig']->display('errors/error.twig', [
-                'title'         => 'Error ' . $code,
-                'header_title'  => 'Error',
+                'title'         => 'ত্রুটি ' . $code,
+                'header_title'  => 'ত্রুটি',
                 'error_code'    => $code,
                 'error_message' => $message
             ]);

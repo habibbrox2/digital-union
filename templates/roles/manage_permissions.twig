@@ -1,203 +1,182 @@
 {# templates/roles/manage_permissions.twig #}
 {% extends 'layout.twig' %}
 
-{% block title %}Manage Permissions for {{ role.role_name }}{% endblock %}
+{% block title %}{{ role.role_name }} এর অনুমতি পরিচালনা{% endblock %}
 
 {% block content %}
 {% include 'components/sweetAlert.twig' %}
-<div class="container-fluid">
-  <!-- Page Header -->
-  <div class="page-header mb-4 mt-4">
-    <div class="row align-items-center">
-      <div class="col-md-6">
-        <h1 class="page-title mb-0">
-          <i class="fas fa-lock"></i> Assign Permissions
-        </h1>
-        <p class="text-muted small mt-2">Role: <strong>{{ role.role_name }}</strong></p>
-      </div>
-      <div class="col-md-6 text-end">
-        <a href="/roles" class="btn btn-secondary btn-lg">
-          <i class="fas fa-arrow-left"></i> Back to Roles
+{% include 'components/rbac_ui.twig' %}
+<div class="container-fluid py-4">
+    <div class="rbac-header">
+        <div>
+            <h4><i class="bi bi-key text-primary me-2"></i>অনুমতি নির্ধারণ</h4>
+            <div class="subtitle">ভূমিকা: <strong>{{ role.role_name }}</strong></div>
+        </div>
+        <a href="/roles" class="btn btn-outline-secondary rbac-btn">
+            <i class="bi bi-arrow-left me-1"></i> ভূমিকায় ফিরুন
         </a>
-      </div>
     </div>
-  </div>
 
-  <div class="row">
-    <div class="col-lg-12">
-      <div class="card shadow-sm border-0">
-        <div class="card-header bg-light border-bottom">
-          <div class="d-flex align-items-center justify-content-between">
-            <h5 class="mb-0">
-              <i class="fas fa-key"></i> Select Permissions for <strong>{{ role.role_name }}</strong>
+    <div class="rbac-card">
+        <div class="d-flex align-items-center justify-content-between p-3 border-bottom flex-wrap gap-2">
+            <h5 class="mb-0 fw-bold">
+                <i class="bi bi-list-check text-primary me-2"></i>{{ role.role_name }} এর জন্য অনুমতি নির্বাচন
             </h5>
-            <div>
-              <small class="badge bg-primary">Loading permissions...</small>
-            </div>
-          </div>
+            <span class="badge rounded-pill rbac-badge-primary" id="selected-count">০ নির্বাচিত</span>
         </div>
-        <div class="card-body">
-          <!-- Permissions Loader -->
-          <div id="permissions-loader" class="text-center py-5">
-            <div class="spinner-border text-primary" role="status">
-              <span class="visually-hidden">Loading...</span>
-            </div>
-            <p class="mt-3 text-muted">Loading available permissions...</p>
-          </div>
 
-          <!-- Permissions Table (hidden until loaded) -->
-          <div id="permissions-container" style="display: none;">
-            <div class="mb-3">
-              <input type="text" id="permission-search" class="form-control" placeholder="Search permissions by name...">
+        <div class="p-4">
+            <!-- Loader -->
+            <div id="permissions-loader" class="text-center py-5">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">লোড হচ্ছে...</span>
+                </div>
+                <p class="mt-3 text-muted">অনুমতিসমূহ লোড হচ্ছে...</p>
             </div>
 
-            <form id="permissions-form" method="POST" action="/roles/{{ role.role_id }}/permissions">
-              <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-              <input type="hidden" name="permissions_json" id="permissions_json">
+            <!-- Container -->
+            <div id="permissions-container" style="display: none;">
+                <div class="input-group mb-3 shadow-sm">
+                    <span class="input-group-text bg-white">
+                        <i class="bi bi-search text-muted"></i>
+                    </span>
+                    <input type="text" id="permission-search" class="form-control rbac-input border-start-0" placeholder="নাম বা মডিউল দিয়ে খুঁজুন...">
+                    <button class="btn btn-outline-secondary" type="button" id="permission-clear" title="মুছুন">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                </div>
 
-              <div class="table-responsive">
-                <table class="table table-hover" id="permissions-table">
-                  <thead class="table-light">
-                    <tr>
-                      <th style="width: 5%">
-                        <input type="checkbox" id="select-all" class="form-check-input">
-                      </th>
-                      <th style="width: 20%">Permission Name</th>
-                      <th style="width: 15%">Module</th>
-                      <th style="width: 60%">Description</th>
-                    </tr>
-                  </thead>
-                  <tbody id="permissions-body">
-                  </tbody>
-                </table>
-              </div>
+                <form id="permissions-form" method="POST" action="/roles/{{ role.role_id }}/permissions">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                    <input type="hidden" name="permissions_json" id="permissions_json">
 
-              <div class="d-flex gap-2 mt-4">
-                <button type="submit" class="btn btn-success btn-lg">
-                  <i class="fas fa-save"></i> Save Permissions
-                </button>
-                <a href="/roles" class="btn btn-secondary btn-lg">
-                  <i class="fas fa-times"></i> Cancel
-                </a>
-              </div>
-            </form>
-          </div>
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle" id="permissions-table">
+                            <thead class="table-light">
+                                <tr>
+                                    <th style="width: 5%">
+                                        <input type="checkbox" id="select-all" class="form-check-input rbac-perm-check" aria-label="সব নির্বাচন">
+                                    </th>
+                                    <th style="width: 22%">অনুমতির নাম</th>
+                                    <th style="width: 15%">মডিউল</th>
+                                    <th style="width: 58%">বিবরণ</th>
+                                </tr>
+                            </thead>
+                            <tbody id="permissions-body"></tbody>
+                        </table>
+                    </div>
+
+                    <div class="d-flex flex-wrap gap-2 mt-4">
+                        <button type="submit" class="btn btn-success rbac-btn shadow-sm">
+                            <i class="bi bi-check2-circle me-1"></i> অনুমতি সংরক্ষণ
+                        </button>
+                        <a href="/roles" class="btn btn-outline-secondary rbac-btn">
+                            <i class="bi bi-x-circle me-1"></i> বাতিল
+                        </a>
+                    </div>
+                </form>
+            </div>
         </div>
-      </div>
     </div>
-  </div>
 </div>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-  const roleId = {{ role.role_id }};
-  const loader = document.getElementById('permissions-loader');
-  const container = document.getElementById('permissions-container');
-  const table = document.getElementById('permissions-table');
-  const tbody = document.getElementById('permissions-body');
-  const form = document.getElementById('permissions-form');
-  const searchInput = document.getElementById('permission-search');
-  const selectAllCheckbox = document.getElementById('select-all');
-  const permissionsJsonInput = document.getElementById('permissions_json');
+    const roleId = {{ role.role_id }};
+    const loader = document.getElementById('permissions-loader');
+    const container = document.getElementById('permissions-container');
+    const tbody = document.getElementById('permissions-body');
+    const form = document.getElementById('permissions-form');
+    const searchInput = document.getElementById('permission-search');
+    const clearBtn = document.getElementById('permission-clear');
+    const selectAllCheckbox = document.getElementById('select-all');
+    const permissionsJsonInput = document.getElementById('permissions_json');
+    const selectedCountBadge = document.getElementById('selected-count');
 
-  let allPermissions = [];
+    fetch(`/api/roles/${roleId}/permissions`)
+        .then(response => response.json())
+        .then(data => {
+            renderPermissions(data);
+            loader.style.display = 'none';
+            container.style.display = 'block';
+        })
+        .catch(error => {
+            loader.innerHTML = '<div class="alert alert-danger">অনুমতি লোড করা যায়নি</div>';
+            console.error('Error loading permissions:', error);
+        });
 
-  // Load permissions
-  fetch(`/api/roles/${roleId}/permissions`)
-    .then(response => response.json())
-    .then(data => {
-      allPermissions = data;
-      renderPermissions(data);
-      loader.style.display = 'none';
-      container.style.display = 'block';
-    })
-    .catch(error => {
-      loader.innerHTML = '<div class="alert alert-danger">Failed to load permissions</div>';
-      console.error('Error loading permissions:', error);
-    });
-
-  function renderPermissions(permissions) {
-    tbody.innerHTML = '';
-    
-    permissions.forEach((perm, index) => {
-      const tr = document.createElement('tr');
-      tr.className = 'permission-row';
-      tr.innerHTML = `
-        <td>
-          <input type="checkbox" class="form-check-input permission-checkbox" 
-                 value="${perm.id}" data-perm-id="${perm.id}"
-                 ${perm.assigned ? 'checked' : ''}>
-        </td>
-        <td class="fw-bold text-primary">${perm.name}</td>
-        <td><span class="badge bg-secondary">${perm.module}</span></td>
-        <td><small class="text-muted">${perm.description || '(no description)'}</small></td>
-      `;
-      tbody.appendChild(tr);
-    });
-
-    updateSelectAllState();
-  }
-
-  function updateSelectAllState() {
-    const checkboxes = document.querySelectorAll('.permission-checkbox');
-    const checkedCount = document.querySelectorAll('.permission-checkbox:checked').length;
-    selectAllCheckbox.checked = checkedCount === checkboxes.length && checkboxes.length > 0;
-    selectAllCheckbox.indeterminate = checkedCount > 0 && checkedCount < checkboxes.length;
-  }
-
-  // Select All
-  selectAllCheckbox.addEventListener('change', function() {
-    const checkboxes = document.querySelectorAll('.permission-checkbox');
-    checkboxes.forEach(cb => cb.checked = this.checked);
-  });
-
-  // Individual checkboxes
-  tbody.addEventListener('change', function(e) {
-    if (e.target.classList.contains('permission-checkbox')) {
-      updateSelectAllState();
+    function renderPermissions(permissions) {
+        tbody.innerHTML = '';
+        if (!permissions.length) {
+            tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-4">কোনো অনুমতি পাওয়া যায়নি।</td></tr>';
+            updateSelectedCount();
+            return;
+        }
+        permissions.forEach((perm) => {
+            const tr = document.createElement('tr');
+            tr.className = 'permission-row';
+            tr.innerHTML = `
+                <td>
+                    <input type="checkbox" class="form-check-input permission-checkbox rbac-perm-check"
+                           value="${perm.id}" data-perm-id="${perm.id}"
+                           ${perm.assigned ? 'checked' : ''}>
+                </td>
+                <td class="fw-bold text-primary">${perm.name}</td>
+                <td><span class="badge rounded-pill rbac-badge-light">${perm.module}</span></td>
+                <td><small class="text-muted">${perm.description || '(বিবরণ নেই)'}</small></td>
+            `;
+            tbody.appendChild(tr);
+        });
+        updateSelectAllState();
+        updateSelectedCount();
     }
-  });
 
-  // Search
-  searchInput.addEventListener('input', function(e) {
-    const query = e.target.value.toLowerCase();
-    const rows = document.querySelectorAll('.permission-row');
-    
-    rows.forEach(row => {
-      const text = row.textContent.toLowerCase();
-      row.style.display = text.includes(query) ? '' : 'none';
+    function updateSelectedCount() {
+        const checked = document.querySelectorAll('.permission-checkbox:checked').length;
+        selectedCountBadge.textContent = `${checked} নির্বাচিত`;
+    }
+
+    function updateSelectAllState() {
+        const checkboxes = document.querySelectorAll('.permission-checkbox');
+        const checkedCount = document.querySelectorAll('.permission-checkbox:checked').length;
+        selectAllCheckbox.checked = checkedCount === checkboxes.length && checkboxes.length > 0;
+        selectAllCheckbox.indeterminate = checkedCount > 0 && checkedCount < checkboxes.length;
+    }
+
+    selectAllCheckbox.addEventListener('change', function() {
+        document.querySelectorAll('.permission-checkbox').forEach(cb => cb.checked = this.checked);
+        updateSelectAllState();
+        updateSelectedCount();
     });
-  });
 
-  // Form submission
-  form.addEventListener('submit', function(e) {
-    e.preventDefault();
-    
-    const checkedBoxes = document.querySelectorAll('.permission-checkbox:checked');
-    const selectedIds = Array.from(checkedBoxes).map(cb => parseInt(cb.value));
-    
-    permissionsJsonInput.value = JSON.stringify(selectedIds);
-    form.submit();
-  });
+    tbody.addEventListener('change', function(e) {
+        if (e.target.classList.contains('permission-checkbox')) {
+            updateSelectAllState();
+            updateSelectedCount();
+        }
+    });
+
+    function applySearch() {
+        const query = searchInput.value.toLowerCase();
+        document.querySelectorAll('.permission-row').forEach(row => {
+            const text = row.textContent.toLowerCase();
+            row.style.display = text.includes(query) ? '' : 'none';
+        });
+    }
+    searchInput.addEventListener('input', applySearch);
+    clearBtn.addEventListener('click', function() {
+        searchInput.value = '';
+        applySearch();
+        searchInput.focus();
+    });
+
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const checkedBoxes = document.querySelectorAll('.permission-checkbox:checked');
+        const selectedIds = Array.from(checkedBoxes).map(cb => parseInt(cb.value));
+        permissionsJsonInput.value = JSON.stringify(selectedIds);
+        form.submit();
+    });
 });
 </script>
-
-<style>
-.page-header {
-  border-bottom: 2px solid #f0f0f0;
-  padding-bottom: 1.5rem;
-}
-
-.page-title {
-  font-size: 2rem;
-  font-weight: 600;
-  color: #333;
-}
-
-.spinner-border {
-  width: 3rem;
-  height: 3rem;
-}
-</style>
 {% endblock %}
-       

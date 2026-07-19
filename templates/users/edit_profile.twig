@@ -1,129 +1,131 @@
-{# Profile Edit Form #}
-
 {% extends "layout.twig" %}
 
-{% block title %}{{ 'প্রোফাইল আপডেট' }}{% endblock %}
-{% block header_title %}{{ header_title|default('প্রোফাইল আপডেট') }}{% endblock %}
+{% block title %}প্রোফাইল আপডেট{% endblock %}
+{% block header_title %}প্রোফাইল আপডেট{% endblock %}
 
 {% block content %}
-<div class="container-fluid mt-4">
-    <div class="row">
-        <div class="col-md-8 mx-auto">
+<div class="container py-4">
+    <div class="page-header-bar mb-4">
+        <div>
+            <h2 class="page-header-title mb-1">{{ 'প্রোফাইল আপডেট করুন' }}</h2>
+            <p class="page-header-subtitle mb-0">আপনার ব্যক্তিগত তথ্য, ছবি ও নিরাপত্তা সেটিংস হালনাগাদ করুন।</p>
+        </div>
+        <a href="/profile" class="badge-page"><i class="fas fa-arrow-left me-1"></i> প্রোফাইলে ফিরুন</a>
+    </div>
+
+    <div class="row g-4 justify-content-center">
+        <div class="col-12 col-xl-8">
 
             <!-- Profile Form -->
-            <div class="card shadow-lg">
-                <div class="card-header bg-primary text-white py-3">
-                    <h4 class="mb-0"><i class="fas fa-user-edit"></i> {{ 'প্রোফাইল আপডেট করুন' }}</h4>
-                </div>
-                <div class="card-body p-4">
-                    {% include 'components/sweetAlert.twig' %}
+            <div class="section-card mb-4">
+                <h3 class="section-title"><i class="fas fa-user-edit text-primary"></i> প্রোফাইল তথ্য</h3>
 
-                    <form method="POST" enctype="multipart/form-data" id="profileForm" novalidate>
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                {% include 'components/sweetAlert.twig' %}
 
-                        <!-- Profile Picture -->
-                        <div class="mb-3">
-                            <label class="form-label">{{ 'প্রোফাইল ছবি' }}</label>
-                            {% if profileData.profile_picture_url %}
-                            <div class="mb-2">
-                                <img src="{{ profileData.profile_picture_url }}" class="img-thumbnail" style="max-width: 150px;">
-                            </div>
-                            {% endif %}
-                            <input type="file" class="form-control" name="profile_picture" accept="image/*">
-                            <small class="text-muted">{{ 'সর্বোচ্চ আকার: 5MB (JPG, PNG)' }}</small>
+                <form method="POST" enctype="multipart/form-data" id="profileForm" novalidate>
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+                    <!-- Profile Picture -->
+                    <div class="mb-4 text-center">
+                        <label class="form-label d-block text-start">{{ 'প্রোফাইল ছবি' }}</label>
+                        {% if profileData.profile_picture_url %}
+                        <div class="mb-2">
+                            <img src="{{ profileData.profile_picture_url }}" class="img-thumbnail rounded-circle" style="width:120px;height:120px;object-fit:cover;">
                         </div>
+                        {% endif %}
+                        <input type="file" class="form-control input-enhanced" name="profile_picture" accept="image/*">
+                        <small class="text-muted d-block mt-1">{{ 'সর্বোচ্চ আকার: 5MB (JPG, PNG)' }}</small>
+                    </div>
 
-                        <!-- Name Fields -->
-                        <div class="mb-3">
-                            <label for="name_bn" class="form-label">{{ 'নাম (বাংলা)' }}</label>
-                            <input type="text" class="form-control" id="name_bn" name="name_bn" value="{{ profileData.name_bn }}" maxlength="50">
+                    <div class="row g-3">
+                        <div class="col-12 col-md-6">
+                            <label for="name_bn" class="form-label">নাম (বাংলা)</label>
+                            <input type="text" class="form-control input-enhanced" id="name_bn" name="name_bn" value="{{ profileData.name_bn }}" maxlength="50">
                         </div>
-
-                        <div class="mb-3">
-                            <label for="name_en" class="form-label">{{ 'Name (English)' }}</label>
-                            <input type="text" class="form-control" id="name_en" name="name_en" value="{{ profileData.name_en }}" maxlength="50">
+                        <div class="col-12 col-md-6">
+                            <label for="name_en" class="form-label">নাম (ইংরেজি)</label>
+                            <input type="text" class="form-control input-enhanced" id="name_en" name="name_en" value="{{ profileData.name_en }}" maxlength="50">
                         </div>
+                    </div>
 
-                        <!-- Phone Number -->
-                        <div class="mb-3">
-                            <label for="phone_number" class="form-label">{{ 'ফোন নম্বর' }}</label>
-                            <input type="tel" class="form-control" id="phone_number" name="phone_number" value="{{ profileData.phone_number }}" pattern="[+]?[0-9]{10,15}">
+                    <div class="row g-3 mt-1">
+                        <div class="col-12 col-md-6">
+                            <label for="phone_number" class="form-label">ফোন নম্বর</label>
+                            <input type="tel" class="form-control input-enhanced" id="phone_number" name="phone_number" value="{{ profileData.phone_number }}" pattern="[+]?[0-9]{10,15}">
                         </div>
-
-                        <!-- Address & Bio -->
-                        <div class="mb-3">
-                            <label for="address" class="form-label">{{ 'ঠিকানা' }}</label>
-                            <textarea class="form-control" id="address" name="address" rows="3">{{ profileData.address }}</textarea>
-                        </div>
-
-                        <div class="mb-3">
-                            <label for="bio" class="form-label">{{ 'জীবনী' }}</label>
-                            <textarea class="form-control" id="bio" name="bio" rows="3">{{ profileData.bio }}</textarea>
-                        </div>
-
-                        <!-- Language & Timezone -->
-                        <div class="mb-3">
-                            <label for="language_preference" class="form-label">{{ 'ভাষা পছন্দ' }}</label>
-                            <select class="form-select" id="language_preference" name="language_preference">
-                                <option value="bn" {% if profileData.language_preference == 'bn' %}selected{% endif %}>{{ 'বাংলা' }}</option>
+                        <div class="col-12 col-md-6">
+                            <label for="language_preference" class="form-label">ভাষা পছন্দ</label>
+                            <select class="form-select input-enhanced" id="language_preference" name="language_preference">
+                                <option value="bn" {% if profileData.language_preference == 'bn' %}selected{% endif %}>বাংলা</option>
                                 <option value="en" {% if profileData.language_preference == 'en' %}selected{% endif %}>English</option>
                             </select>
                         </div>
+                    </div>
 
-                        <div class="mb-3">
-                            <label for="timezone" class="form-label">{{ 'সময় অঞ্চল' }}</label>
-                            <select class="form-select" id="timezone" name="timezone">
-                                <option value="Asia/Dhaka" {% if profileData.timezone == 'Asia/Dhaka' %}selected{% endif %}>Asia/Dhaka (UTC+6)</option>
-                                <option value="Asia/Kolkata" {% if profileData.timezone == 'Asia/Kolkata' %}selected{% endif %}>Asia/Kolkata (UTC+5:30)</option>
-                                <option value="UTC" {% if profileData.timezone == 'UTC' %}selected{% endif %}>UTC</option>
-                            </select>
-                        </div>
+                    <div class="mb-3 mt-3">
+                        <label for="address" class="form-label">ঠিকানা</label>
+                        <textarea class="form-control input-enhanced" id="address" name="address" rows="3">{{ profileData.address }}</textarea>
+                    </div>
 
-                        <!-- Notifications -->
-                        <div class="mb-3">
-                            <label class="form-label">{{ 'বিজ্ঞপ্তি সেটিংস' }}</label>
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="email_notifications" name="is_email_notifications_enabled" value="1" {% if profileData.is_email_notifications_enabled %}checked{% endif %}>
-                                <label class="form-check-label" for="email_notifications">{{ 'ইমেইল বিজ্ঞপ্তি সক্ষম করুন' }}</label>
-                            </div>
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="sms_notifications" name="is_sms_notifications_enabled" value="1" {% if profileData.is_sms_notifications_enabled %}checked{% endif %}>
-                                <label class="form-check-label" for="sms_notifications">{{ 'এসএমএস বিজ্ঞপ্তি সক্ষম করুন' }}</label>
-                            </div>
-                        </div>
+                    <div class="mb-1">
+                        <label for="bio" class="form-label">জীবনী</label>
+                        <textarea class="form-control input-enhanced" id="bio" name="bio" rows="3">{{ profileData.bio }}</textarea>
+                    </div>
 
-                        <!-- Submit -->
-                        <div class="mb-3">
-                            <button type="submit" class="btn btn-primary">{{ 'সংরক্ষণ করুন' }}</button>
-                            <a href="/profile" class="btn btn-secondary">{{ 'বাতিল করুন' }}</a>
+                    <div class="mb-3">
+                        <label for="timezone" class="form-label">সময় অঞ্চল</label>
+                        <select class="form-select input-enhanced" id="timezone" name="timezone">
+                            <option value="Asia/Dhaka" {% if profileData.timezone == 'Asia/Dhaka' %}selected{% endif %}>Asia/Dhaka (UTC+6)</option>
+                            <option value="Asia/Kolkata" {% if profileData.timezone == 'Asia/Kolkata' %}selected{% endif %}>Asia/Kolkata (UTC+5:30)</option>
+                            <option value="UTC" {% if profileData.timezone == 'UTC' %}selected{% endif %}>UTC</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">বিজ্ঞপ্তি সেটিংস</label>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="email_notifications" name="is_email_notifications_enabled" value="1" {% if profileData.is_email_notifications_enabled %}checked{% endif %}>
+                            <label class="form-check-label" for="email_notifications">ইমেইল বিজ্ঞপ্তি সক্ষম করুন</label>
                         </div>
-                    </form>
-                </div>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="sms_notifications" name="is_sms_notifications_enabled" value="1" {% if profileData.is_sms_notifications_enabled %}checked{% endif %}>
+                            <label class="form-check-label" for="sms_notifications">এসএমএস বিজ্ঞপ্তি সক্ষম করুন</label>
+                        </div>
+                    </div>
+
+                    <div class="d-flex flex-wrap gap-2">
+                        <button type="submit" class="btn btn-primary px-4">
+                            <i class="fas fa-save me-1"></i> সংরক্ষণ করুন
+                        </button>
+                        <a href="/profile" class="btn btn-outline-secondary px-4">{{ 'বাতিল করুন' }}</a>
+                    </div>
+                </form>
             </div>
 
             <!-- Password Change -->
-            <div class="card shadow mt-4">
-                <div class="card-header bg-warning text-dark">
-                    <h4 class="mb-0">{{ 'নিরাপত্তা' }}</h4>
-                </div>
-                <div class="card-body">
-                    <form method="POST" id="passwordForm">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                        <div class="mb-3">
-                            <label for="current_password">{{ 'বর্তমান পাসওয়ার্ড' }}</label>
-                            <input type="password" class="form-control" id="current_password" name="current_password" required>
+            <div class="section-card">
+                <h3 class="section-title"><i class="fas fa-lock text-primary"></i> নিরাপত্তা</h3>
+
+                <form method="POST" id="passwordForm">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                    <div class="row g-3">
+                        <div class="col-12 col-md-4">
+                            <label for="current_password">বর্তমান পাসওয়ার্ড</label>
+                            <input type="password" class="form-control input-enhanced" id="current_password" name="current_password" required>
                         </div>
-                        <div class="mb-3">
-                            <label for="new_password">{{ 'নতুন পাসওয়ার্ড' }}</label>
-                            <input type="password" class="form-control" id="new_password" name="new_password" required minlength="8">
+                        <div class="col-12 col-md-4">
+                            <label for="new_password">নতুন পাসওয়ার্ড</label>
+                            <input type="password" class="form-control input-enhanced" id="new_password" name="new_password" required minlength="8">
                         </div>
-                        <div class="mb-3">
-                            <label for="confirm_password">{{ 'পাসওয়ার্ড নিশ্চিত করুন' }}</label>
-                            <input type="password" class="form-control" id="confirm_password" name="confirm_password" required minlength="8">
+                        <div class="col-12 col-md-4">
+                            <label for="confirm_password">পাসওয়ার্ড নিশ্চিত করুন</label>
+                            <input type="password" class="form-control input-enhanced" id="confirm_password" name="confirm_password" required minlength="8">
                         </div>
-                        <button type="submit" class="btn btn-danger">{{ 'পাসওয়ার্ড পরিবর্তন করুন' }}</button>
-                    </form>
-                </div>
+                    </div>
+                    <button type="submit" class="btn btn-danger mt-3">
+                        <i class="fas fa-key me-1"></i> পাসওয়ার্ড পরিবর্তন করুন
+                    </button>
+                </form>
             </div>
         </div>
     </div>

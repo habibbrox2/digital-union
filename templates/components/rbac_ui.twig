@@ -1,0 +1,162 @@
+{# ============================================================
+   RBAC UI Design Kit
+   Shared styles for Roles & Permissions pages so they match the
+   modern "users" / "settings" look (Bengali-first, rounded-pill
+   buttons, soft section cards, teal #008B8B focus rings).
+   Include with: {% include 'components/rbac_ui.twig' %}
+   ============================================================ #}
+<style>
+  /* ---- Section card (matches users/admin_user_edit) ---- */
+  .rbac-card {
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    border: 1px solid rgba(0, 0, 0, 0.06);
+  }
+
+  /* ---- Header row ---- */
+  .rbac-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+  }
+  .rbac-header h4 {
+    color: #1e293b;
+    margin: 0;
+    font-weight: 700;
+  }
+  .rbac-header .subtitle {
+    color: #6c757d;
+    font-size: 0.875rem;
+  }
+
+  /* ---- Inputs (teal focus ring) ---- */
+  .rbac-input,
+  .rbac-input:focus {
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+  .rbac-input:focus {
+    border-color: #008B8B;
+    box-shadow: 0 0 0 0.2rem rgba(0, 139, 139, 0.15), 0 0 12px rgba(0, 139, 139, 0.08);
+  }
+
+  /* ---- Buttons ---- */
+  .rbac-btn {
+    border-radius: 50rem;
+    padding-left: 1.25rem;
+    padding-right: 1.25rem;
+  }
+
+  /* ---- Summary / info side card ---- */
+  .rbac-summary li {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.6rem 0;
+    border-bottom: 1px solid #eee;
+    font-size: 0.9rem;
+  }
+  .rbac-summary li:last-child { border-bottom: 0; }
+  .rbac-summary .label { color: #6c757d; }
+
+  /* ---- Role / status badge colours ---- */
+  .rbac-badge-admin   { background: #dc3545; color: #fff; }
+  .rbac-badge-primary { background: #008B8B; color: #fff; }
+  .rbac-badge-success { background: #198754; color: #fff; }
+  .rbac-badge-info    { background: #0dcaf0; color: #063a44; }
+  .rbac-badge-warning { background: #ffc107; color: #4a3a00; }
+  .rbac-badge-secondary { background: #6c757d; color: #fff; }
+  .rbac-badge-light   { background: #e9ecef; color: #495057; }
+
+  /* ---- Permission pill (view page) ---- */
+  .rbac-pill {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    padding: 0.6rem 0.75rem;
+    border: 1px solid #e6eef0;
+    border-radius: 12px;
+    background: #f6fbfb;
+    height: 100%;
+    transition: background-color 0.2s ease, transform 0.2s ease;
+  }
+  .rbac-pill:hover {
+    background: #eaf6f6;
+    transform: translateY(-1px);
+  }
+  .rbac-pill .pill-icon {
+    color: #008B8B;
+    margin-top: 0.15rem;
+    flex-shrink: 0;
+  }
+
+  /* ---- Stat cards ---- */
+  .rbac-stat {
+    border-radius: 16px;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  .rbac-stat:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.10) !important;
+  }
+  .rbac-stat-icon {
+    width: 52px;
+    height: 52px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 1.35rem;
+    flex-shrink: 0;
+  }
+
+  /* ---- Role cards (assign page) ---- */
+  .rbac-role-card .card-header {
+    border-radius: 16px 16px 0 0 !important;
+  }
+  .rbac-role-meta {
+    font-size: 0.85rem;
+  }
+  .rbac-role-meta .role-icon {
+    width: 38px; height: 38px;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(0, 0, 0, 0.06);
+    font-size: 1.1rem;
+  }
+  .rbac-perm-row {
+    padding: 0.5rem 0.75rem;
+    border-radius: 10px;
+    transition: background-color 0.15s ease;
+  }
+  .rbac-perm-row:hover { background: #f6fbfb; }
+  .rbac-perm-check {
+    width: 1.15rem !important;
+    height: 1.15rem !important;
+    cursor: pointer;
+    flex-shrink: 0;
+    margin-top: 0.2rem;
+  }
+
+  /* ---- Sticky table header ---- */
+  .rbac-table thead th.sticky-top {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background-color: #e9ecef;
+  }
+
+  /* ---- Danger confirm card ---- */
+  .rbac-danger-card {
+    border: 1px solid #f1b0b7;
+    border-radius: 16px;
+    background: #fff;
+  }
+
+  /* ---- Spinner helper ---- */
+  .spin { animation: rbac-spin 1s linear infinite; }
+  @keyframes rbac-spin { from { transform: rotate(0); } to { transform: rotate(360deg); } }
+</style>

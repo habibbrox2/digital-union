@@ -7,72 +7,96 @@
 {% include 'components/sweetAlert.twig' %}
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-<div class="container py-5">
-    <div class="card shadow-lg border-0">
-        <div class="card-body">
-            <h2 class="mb-4 text-center text-primary">{{ header_title }}</h2>
+<div class="container py-4">
+    <!-- Page Header -->
+    <div class="page-header-bar mb-4">
+        <div>
+            <h2 class="page-header-title mb-1">{{ header_title }}</h2>
+            <p class="page-header-subtitle mb-0">সিস্টেমের শব্দ ও তাদের বাংলা, ইংরেজি ও বাংলিশ অনুবাদ পরিচালনা করুন।</p>
+        </div>
+        <span class="badge-page"><i class="fas fa-language me-1"></i> শব্দ অনুবাদ</span>
+    </div>
 
-            <!-- Search Input -->
-            <div class="row mb-4 justify-content-center">
-                <div class="col-md-6">
-                    <input type="text" id="searchTerm" class="form-control form-control-lg" placeholder="🔍 Search term...">
-                </div>
+    <div class="row g-4">
+        <!-- Form Card -->
+        <div class="col-12 col-xl-5">
+            <div class="section-card h-100">
+                <h3 class="section-title"><i class="fas fa-edit text-primary"></i> নতুন শব্দ যোগ / সম্পাদনা</h3>
+
+                <form id="termForm">
+                    <input type="hidden" name="id" id="id">
+                    <div id="responseMessage"></div>
+
+                    <div class="mb-3">
+                        <label for="slug" class="form-label">Slug</label>
+                        <input type="text" name="slug" id="slug" class="form-control input-enhanced" placeholder="যেমন: application_status" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="bn" class="form-label">বাংলা <span>*</span></label>
+                        <input type="text" name="name_bn" id="bn" class="form-control input-enhanced" placeholder="বাংলা অনুবাদ" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="en" class="form-label">English</label>
+                        <input type="text" name="name_en" id="en" class="form-control input-enhanced" placeholder="English translation">
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="bl" class="form-label">Banglish</label>
+                        <input type="text" name="name_bl" id="bl" class="form-control input-enhanced" placeholder="Banglish version" required>
+                    </div>
+
+                    <div class="form-check form-switch mb-4">
+                        <input type="checkbox" name="is_certificate_type" id="is_certificate_type" value="1" class="form-check-input" role="switch">
+                        <label for="is_certificate_type" class="form-check-label">সার্টিফিকেটের ধরণ হিসেবে ব্যবহার করুন</label>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary btn-lg flex-grow-1">
+                            <i class="fas fa-save me-1"></i> <span id="submitBtnText">সংরক্ষণ করুন</span>
+                        </button>
+                        <button type="button" id="resetFormBtn" class="btn btn-outline-secondary btn-lg" title="ফর্ম পরিষ্কার করুন">
+                            <i class="fas fa-rotate-left"></i>
+                        </button>
+                    </div>
+                </form>
             </div>
+        </div>
 
-            <!-- Term Form -->
-            <form id="termForm" class="row g-4 mb-5">
-                <div id="responseMessage" class="my-3"></div>
-                <input type="hidden" name="id" id="id">
-
-                <div class="col-md-6">
-                    <label for="slug" class="form-label fw-semibold">Slug</label>
-                    <input type="text" name="slug" id="slug" class="form-control" placeholder="Slug name" required>
+        <!-- List Card -->
+        <div class="col-12 col-xl-7">
+            <div class="section-card h-100">
+                <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+                    <h3 class="section-title mb-0"><i class="fas fa-list text-primary"></i> শব্দের তালিকা</h3>
+                    <div class="search-box">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="searchTerm" class="form-control form-control-sm" placeholder="অনুসন্ধান করুন...">
+                    </div>
                 </div>
 
-                <div class="col-md-6">
-                    <label for="bn" class="form-label fw-semibold">বাংলা</label>
-                    <input type="text" name="name_bn" id="bn" class="form-control" placeholder="বাংলা অনুবাদ" required>
+                <div class="table-responsive">
+                    <table class="table table-hover table-enhanced align-middle mb-0" id="termTable">
+                        <thead>
+                            <tr>
+                                <th data-column="slug" class="sortable">Slug <i class="fas fa-sort sort-icon"></i></th>
+                                <th data-column="name_bn" class="sortable">বাংলা <i class="fas fa-sort sort-icon"></i></th>
+                                <th data-column="name_en" class="sortable">English <i class="fas fa-sort sort-icon"></i></th>
+                                <th data-column="name_bl" class="sortable">Banglish <i class="fas fa-sort sort-icon"></i></th>
+                                <th class="text-center">সার্টিফিকেট</th>
+                                <th class="text-center">অ্যাকশন</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                    <div id="tableEmpty" class="table-empty d-none">
+                        <i class="fas fa-inbox"></i>
+                        <p class="mb-0">কোনো শব্দ পাওয়া যায়নি।</p>
+                    </div>
                 </div>
 
-                <div class="col-md-6">
-                    <label for="en" class="form-label fw-semibold">English</label>
-                    <input type="text" name="name_en" id="en" class="form-control" placeholder="English translation">
-                </div>
-
-                <div class="col-md-6">
-                    <label for="bl" class="form-label fw-semibold">Banglish</label>
-                    <input type="text" name="name_bl" id="bl" class="form-control" placeholder="Banglish version">
-                </div>
-
-                <div class="col-md-6 d-flex align-items-center">
-                    <input type="checkbox" name="is_certificate_type" id="is_certificate_type" value="1" class="form-check-input me-2">
-                    <label for="is_certificate_type" class="form-label mb-0">Use as Certificate Type</label>
-                </div>
-
-                <div class="col-12 text-end">
-                    <button type="submit" class="btn btn-success btn-lg px-4">💾 Save</button>
-                </div>
-            </form>
-
-            <!-- Table -->
-            <div class="table-responsive mb-4">
-                <table class="table table-hover table-bordered align-middle" id="termTable">
-                    <thead class="table-primary">
-                        <tr>
-                            <th data-column="slug" style="cursor:pointer;">Slug ⬍</th>
-                            <th data-column="name_bn" style="cursor:pointer;">বাংলা ⬍</th>
-                            <th data-column="name_en" style="cursor:pointer;">English ⬍</th>
-                            <th data-column="name_bl" style="cursor:pointer;">Banglish ⬍</th>
-                            <th class="text-center">Is Certificate</th>
-                            <th class="text-center">Action</th>
-                        </tr>
-                    </thead>
-                    <tbody></tbody>
-                </table>
+                <div id="pagination" class="d-flex justify-content-center mt-3"></div>
             </div>
-
-            <!-- Pagination -->
-            <div id="pagination" class="d-flex justify-content-center mt-4"></div>
         </div>
     </div>
 </div>
@@ -83,6 +107,10 @@
     let currentPage = 1;
     let currentSort = { column: 'slug', direction: 'asc' };
     let searchQuery = '';
+
+    function escapeHtml(str) {
+        return $('<div>').text(str ?? '').html();
+    }
 
     function loadTerms(page = 1) {
         currentPage = page;
@@ -98,31 +126,47 @@
                 const response = typeof data === "string" ? JSON.parse(data) : data;
 
                 if (response.status !== 'success') {
-                    throw new Error(response.message || 'Failed to load data');
+                    throw new Error(response.message || 'ডেটা লোড করা যায়নি');
                 }
 
-                const terms = response.data;
+                const terms = response.data || [];
                 let html = '';
 
                 terms.forEach(term => {
+                    const certBadge = term.is_certificate_type == 1
+                        ? '<span class="badge bg-success-subtle text-success"><i class="fas fa-check me-1"></i> হ্যাঁ</span>'
+                        : '<span class="text-muted">—</span>';
                     html += `<tr>
-                        <td>${term.slug}</td>
-                        <td>${term.name_bn}</td>
-                        <td>${term.name_en}</td>
-                        <td>${term.name_bl}</td>
-                        <td class="text-center">${term.is_certificate_type == 1 ? '✔️' : ''}</td>
-                        <td>
-                            <button class="btn btn-sm btn-warning me-1" onclick="editTerm(${term.id})">Edit</button>
-                            <button class="btn btn-sm btn-danger" onclick="deleteTerm(${term.id})">Delete</button>
+                        <td><code class="term-slug">${escapeHtml(term.slug)}</code></td>
+                        <td class="fw-medium">${escapeHtml(term.name_bn)}</td>
+                        <td>${escapeHtml(term.name_en)}</td>
+                        <td>${escapeHtml(term.name_bl)}</td>
+                        <td class="text-center">${certBadge}</td>
+                        <td class="text-center text-nowrap">
+                            <button class="btn btn-sm btn-outline-primary me-1" onclick="editTerm(${term.id})"><i class="fas fa-pen"></i></button>
+                            <button class="btn btn-sm btn-outline-danger" onclick="deleteTerm(${term.id})"><i class="fas fa-trash"></i></button>
                         </td>
                     </tr>`;
                 });
 
                 $('#termTable tbody').html(html);
+                $('#tableEmpty').toggleClass('d-none', terms.length > 0);
+                updateSortIcons();
                 renderPagination(response.total, page);
             } catch (err) {
                 console.error('Invalid JSON or server error:', err);
-                Swal.fire('Error', 'Failed to load data. Please try again later.', 'error');
+                Swal.fire('ত্রুটি', 'ডেটা লোড করা যায়নি। অনুগ্রহ করে পরে আবার চেষ্টা করুন।', 'error');
+            }
+        });
+    }
+
+    function updateSortIcons() {
+        $('#termTable thead th.sortable').each(function() {
+            const icon = $(this).find('.sort-icon');
+            if ($(this).data('column') === currentSort.column) {
+                icon.removeClass('fa-sort').addClass(currentSort.direction === 'asc' ? 'fa-sort-up' : 'fa-sort-down');
+            } else {
+                icon.removeClass('fa-sort-up fa-sort-down').addClass('fa-sort');
             }
         });
     }
@@ -136,7 +180,7 @@
             return;
         }
 
-        let html = '<nav><ul class="pagination justify-content-center">';
+        let html = '<nav><ul class="pagination justify-content-center mb-0">';
         for (let i = 1; i <= totalPages; i++) {
             html += `<li class="page-item ${i === currentPage ? 'active' : ''}">
                 <a class="page-link" href="#" data-page="${i}">${i}</a>
@@ -159,7 +203,7 @@
         loadTerms(1);
     });
 
-    $('#termTable thead th[data-column]').on('click', function() {
+    $('#termTable thead th.sortable').on('click', function() {
         const clickedColumn = $(this).data('column');
         if (currentSort.column === clickedColumn) {
             currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
@@ -170,17 +214,35 @@
         loadTerms(1);
     });
 
+    function setEditMode(isEdit) {
+        $('#submitBtnText').text(isEdit ? 'আপডেট করুন' : 'সংরক্ষণ করুন');
+    }
+
     function editTerm(id) {
         $.post('/ajax/term_translations', { action: 'get', id: id }, function(data) {
-            const term = typeof data === "string" ? JSON.parse(data) : data;
+            const response = typeof data === "string" ? JSON.parse(data) : data;
+            const term = response.data ?? response;
             $('#id').val(term.id);
-            $('#slug').val(term.slug).data('old-slug', term.slug); // Save old slug
+            $('#slug').val(term.slug).data('old-slug', term.slug);
             $('#bn').val(term.name_bn);
             $('#en').val(term.name_en);
             $('#bl').val(term.name_bl);
             $('#is_certificate_type').prop('checked', term.is_certificate_type == 1);
-            $('html, body').animate({ scrollTop: $('#termForm').offset().top - 20 }, 500);
+            setEditMode(true);
+            $('html, body').animate({ scrollTop: $('#termForm').offset().top - 20 }, 400);
         });
+    }
+
+    $('#resetFormBtn').on('click', function() {
+        resetForm();
+    });
+
+    function resetForm() {
+        $('#termForm')[0].reset();
+        $('#id').val('');
+        $('#slug').data('old-slug', '');
+        $('#responseMessage').html('');
+        setEditMode(false);
     }
 
     $('#termForm').on('submit', function(e) {
@@ -193,15 +255,14 @@
         const isCertificateType = $('#is_certificate_type').is(':checked') ? '1' : '0';
         const formData = $(this).serialize() + '&is_certificate_type=' + isCertificateType + '&action=' + action;
 
-        // Check for slug change on update
         if (action === 'update' && oldSlug && newSlug !== oldSlug) {
             Swal.fire({
-                title: 'Are you sure?',
-                html: `You are changing the <strong>slug</strong>.<br><br>Old: <code>${oldSlug}</code><br>New: <code>${newSlug}</code>`,
+                title: 'স্লাগ পরিবর্তন করবেন?',
+                html: `আপনি <strong>slug</strong> পরিবর্তন করছেন।<br><br>পুরাতন: <code>${escapeHtml(oldSlug)}</code><br>নতুন: <code>${escapeHtml(newSlug)}</code>`,
                 icon: 'warning',
                 showCancelButton: true,
-                confirmButtonText: 'Yes, change it!',
-                cancelButtonText: 'No, cancel'
+                confirmButtonText: 'হ্যাঁ, পরিবর্তন করুন',
+                cancelButtonText: 'বাতিল করুন'
             }).then((result) => {
                 if (result.isConfirmed) {
                     submitForm(formData);
@@ -218,18 +279,16 @@
             if (res.status === 'success') {
                 $('#responseMessage').html(
                     `<div class="alert alert-success alert-dismissible fade show" role="alert">
-                        ${res.message}
+                        ${escapeHtml(res.message)}
                         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                     </div>`
                 );
-                $('#termForm')[0].reset();
-                $('#id').val('');
-                $('#slug').data('old-slug', '');
+                resetForm();
                 loadTerms(currentPage);
             } else {
                 $('#responseMessage').html(
                     `<div class="alert alert-danger alert-dismissible fade show" role="alert">
-                        ${res.message || 'Something went wrong!'}
+                        ${escapeHtml(res.message || 'কিছু ভুল হয়েছে!')}
                         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                     </div>`
                 );
@@ -237,7 +296,7 @@
         }).fail(function() {
             $('#responseMessage').html(
                 `<div class="alert alert-danger alert-dismissible fade show" role="alert">
-                    Server error. Please try again.
+                    সার্ভার ত্রুটি। অনুগ্রহ করে আবার চেষ্টা করুন।
                     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                 </div>`
             );
@@ -246,12 +305,12 @@
 
     function deleteTerm(id) {
         Swal.fire({
-            title: 'Are you sure?',
-            text: 'This will permanently delete the item.',
+            title: 'মুছে ফেলবেন?',
+            text: 'এটি স্থায়ীভাবে মুছে ফেলা হবে।',
             icon: 'warning',
             showCancelButton: true,
-            confirmButtonText: 'Yes, delete it!',
-            cancelButtonText: 'Cancel'
+            confirmButtonText: 'হ্যাঁ, মুছে ফেলুন',
+            cancelButtonText: 'বাতিল'
         }).then((result) => {
             if (result.isConfirmed) {
                 $.post('/ajax/term_translations', { action: 'delete', id: id }, function() {

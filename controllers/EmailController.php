@@ -21,7 +21,7 @@ $router->get('/settings/email-test', function() use ($twig, $authService, $email
     $config = $emailTestService->getSmtpConfig();
 
     echo $twig->render('emails/email_test.twig', [
-        'title'        => 'Email Test',
+        'title'        => 'ইমেইল টেস্ট',
         'header_title' => 'ইমেইল টেস্ট সিস্টেম',
         'configExists' => $config['configExists'],
         'logsExist'    => !empty($config['logsDir']) && is_dir($config['logsDir']),

@@ -25,8 +25,8 @@ $router->get('/', function() use ($twig) {
 
         header('Content-Type: text/html; charset=UTF-8');
         echo $twig->render('public.twig', [
-            'title' => 'Home',
-            'header_title' => 'Home'
+            'title' => 'হোম',
+            'header_title' => 'হোম'
         ]);
     } catch (\Throwable $e) {
         error_log('HomeController Error: ' . $e->getMessage());

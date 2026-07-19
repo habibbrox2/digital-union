@@ -1,22 +1,24 @@
 {% extends "layout.twig" %}
 
-{% block title %}Manage Permissions{% endblock %}
+{% block title %}পারমিশন পরিচালনা{% endblock %}
 
-{% block header_title %}Manage Permissions for {{ currentUser.role_name|default('') }}{% endblock %}
+{% block header_title %}পারমিশন পরিচালনা - {{ currentUser.role_name|default('') }}{% endblock %}
 
 {% block content %}
 {% include 'components/sweetAlert.twig' %}
+{% include 'components/rbac_ui.twig' %}
 <div class="container-fluid py-4">
     <div class="row justify-content-center">
         <div class="col-12 col-lg-11">
-
-            <div class="card shadow-sm mb-4 border-0">
-                <div class="card-header bg-primary text-white d-flex flex-column flex-md-row justify-content-between align-items-center">
-                    <h3 class="card-title mb-2 mb-md-0">{{ header_title }}</h3>
+            <div class="rbac-card">
+                <div class="card-header d-flex flex-column flex-md-row justify-content-between align-items-center p-3"
+                     style="border-radius:16px 16px 0 0; background:#008B8B;">
+                    <h3 class="text-white mb-2 mb-md-0"><i class="bi bi-sliders me-2"></i>{{ header_title }}</h3>
                     {% if isSuperadmin %}
                         <form method="get" id="unionSelectForm" class="form-inline">
-                            <label for="union_id" class="mr-2 font-weight-bold text-white">Select Union:</label>
-                            <select name="union_id" id="union_id" class="form-control form-control-sm" onchange="document.getElementById('unionSelectForm').submit();">
+                            <label for="union_id" class="mr-2 font-weight-bold text-white">ইউনিয়ন নির্বাচন:</label>
+                            <select name="union_id" id="union_id" class="form-control form-control-sm" onchange="document.getElementById('unionSelectForm').submit();"
+                                    style="border-radius:50rem;">
                                 {% for union in allUnions %}
                                     <option value="{{ union.union_id }}" {% if union.union_id == unionId %}selected{% endif %}>
                                         {{ union.union_name_en }} ({{ union.union_name_bn }})
@@ -25,42 +27,38 @@
                             </select>
                         </form>
                     {% elseif currentUser.union_name %}
-                        <span class="font-italic text-white">Permissions for: {{ currentUser.union_name }}</span>
+                        <span class="font-italic text-white">পারমিশন: {{ currentUser.union_name }}</span>
                     {% endif %}
                 </div>
 
-                <div class="card-body">
-
+                <div class="p-4">
                     {% if message %}
                         <div class="alert alert-{{ status == 'success' ? 'success' : 'danger' }} alert-dismissible fade show" role="alert">
-                            <strong><i class="fas fa-{{ status == 'success' ? 'check-circle' : 'exclamation-triangle' }} mr-2"></i>{{ status|capitalize }}!</strong> {{ message }}
-                            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                                <span aria-hidden="true">&times;</span>
-                            </button>
+                            <strong><i class="bi bi-{{ status == 'success' ? 'check-circle' : 'exclamation-triangle' }} me-2"></i>{{ status|capitalize }}!</strong> {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                         </div>
                     {% endif %}
 
                     <form action="/manage-permissions" method="post" novalidate>
                         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
 
-                        {# ===== Role-based Permissions ===== #}
-                        <h4 class="mb-3 text-primary font-weight-bold border-bottom pb-2">Role Based Permissions</h4>
+                        <h4 class="mb-3 text-primary fw-bold border-bottom pb-2">ভূমিকাভিত্তিক অনুমতি</h4>
                         {% if not isSuperadmin %}
-                            <div class="alert alert-info rounded-pill">
-                                <i class="fas fa-info-circle mr-2"></i>
-                                You have readonly access to Role Based Permissions. Only Superadmins can make changes.
+                            <div class="alert alert-info rounded-pill mb-3">
+                                <i class="bi bi-info-circle me-2"></i>
+                                আপনার শুধু পঠনের অ্যাক্সেস আছে। শুধুমাত্র সুপারঅ্যাডমিন পরিবর্তন করতে পারবেন।
                             </div>
                         {% endif %}
 
-                        <div class="table-responsive mb-5 shadow-sm rounded">
-                            <table class="table table-striped table-hover table-bordered mb-0 text-center align-middle">
+                        <div class="table-responsive mb-4 rounded shadow-sm">
+                            <table class="table table-striped table-hover table-bordered mb-0 text-center align-middle rbac-table">
                                 {% set adminRoles = [
                                     'admin', 'superadmin', 'administrator', 'root', 'system admin',
                                     'master admin', 'god mode', 'chief admin', 'global admin', 'platform admin'
                                 ] %}
                                 <thead class="thead-light">
                                     <tr>
-                                        <th class="text-left">Permission</th>
+                                        <th class="text-left">অনুমতি</th>
                                         {% for role in roles %}
                                             {% if role.role_name|lower not in adminRoles %}
                                                 <th>{{ role.role_name|replace({'_': ' '})|title }}</th>
@@ -71,7 +69,7 @@
                                 <tbody>
                                     {% for permission in permissions %}
                                         <tr>
-                                            <td class="text-left font-weight-medium">{{ permission.name|replace({'_': ' '})|title }}</td>
+                                            <td class="text-left fw-medium">{{ permission.name|replace({'_': ' '})|title }}</td>
                                             {% for role in roles %}
                                                 {% if role.role_name|lower not in adminRoles %}
                                                     <td>
@@ -80,14 +78,12 @@
                                                             name="role_permissions[{{ role.role_id }}][]"
                                                             value="{{ permission.id }}"
                                                             id="role_perm_{{ role.role_id }}_{{ permission.id }}"
-                                                            class="form-check-input position-relative"
-                                                            {% if assigned_role_permissions[role.role_id] is defined 
+                                                            class="form-check-input rbac-perm-check"
+                                                            {% if assigned_role_permissions[role.role_id] is defined
                                                                 and assigned_role_permissions[role.role_id][permission.id] is defined %}
                                                                 checked
                                                             {% endif %}
-                                                            {% if not isSuperadmin %}
-                                                                disabled
-                                                            {% endif %}
+                                                            {% if not isSuperadmin %} disabled {% endif %}
                                                         >
                                                     </td>
                                                 {% endif %}
@@ -98,28 +94,21 @@
                             </table>
                         </div>
 
-                        {# ===== Note about Role-Based System ===== #}
-                        <div class="alert alert-info rounded mt-5 border-left border-primary" style="border-left-width: 4px !important;">
-                            <i class="fas fa-lightbulb mr-2 text-primary"></i>
-                            <strong>Role-Based System Only:</strong> User permissions are managed through roles. To change a user's permissions, 
-                            assign them to the appropriate role in the <a href="/roles" class="alert-link font-weight-bold">Roles Management</a> section.
+                        <div class="alert alert-info rounded border-start border-primary border-4">
+                            <i class="bi bi-lightbulb me-2 text-primary"></i>
+                            <strong>শুধু ভূমিকাভিত্তিক:</strong> ব্যবহারকারীর অনুমতি ভূমিকার মাধ্যমে নিয়ন্ত্রিত হয়। পরিবর্তন করতে
+                            <a href="/roles" class="alert-link fw-bold">ভূমিকা ব্যবস্থাপনা</a> থেকে ভূমিকা নির্ধারণ করুন।
                         </div>
 
-                        {# Save button #}
-                        <div class="card-footer d-flex justify-content-end mt-4 border-0 bg-transparent p-0">
-                            <button type="submit" class="btn btn-primary btn-lg"
-                                {% if not isSuperadmin %}
-                                    disabled
-                                {% endif %}
-                            >
-                                <i class="fas fa-save mr-2"></i> Save Changes
+                        <div class="d-flex justify-content-end mt-4">
+                            <button type="submit" class="btn btn-primary rbac-btn shadow-sm"
+                                {% if not isSuperadmin %} disabled {% endif %}>
+                                <i class="bi bi-check2-circle me-2"></i> পরিবর্তন সংরক্ষণ
                             </button>
                         </div>
-
                     </form>
                 </div>
             </div>
-
         </div>
     </div>
 </div>

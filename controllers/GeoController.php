@@ -19,7 +19,7 @@ $router->get('/settings/geo', function() use ($twig, $authService) {
     $authService->ensureCan('manage_geo');
     echo $twig->render('geo/index.twig', [
         'title' => 'জিইও',
-        'header_title' => 'জিইও',
+        'header_title' => 'ভৌগোলিক অবস্থান',
         'status' => '',
         'message' => '',
     ]);
@@ -29,7 +29,7 @@ $router->get('/geo', function() use ($twig, $authService) {
     $authService->ensureCan('manage_geo');
     echo $twig->render('geo/index.twig', [
         'title' => 'জিইও',
-        'header_title' => 'জিইও',
+        'header_title' => 'ভৌগোলিক অবস্থান',
         'status' => '',
         'message' => '',
     ]);

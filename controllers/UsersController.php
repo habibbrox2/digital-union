@@ -47,8 +47,8 @@ $router->get('/profile', function () use ($twig, $auth, $mysqli) {
     echo $twig->render('users/profile.twig', [
         'profileData'  => $profileData,
         'unionInfo'    => $unionInfo,
-        'title'        => 'User Profile',
-        'header_title' => 'User Profile',
+        'title'        => 'ব্যবহারকারী প্রোফাইল',
+        'header_title' => 'ব্যবহারকারী প্রোফাইল',
         'csrf_token'   => generateCsrfToken(),
     ]);
 });
@@ -70,8 +70,8 @@ $router->get('/profile/update', function () use ($twig, $auth, $mysqli) {
 
     echo $twig->render('users/edit_profile.twig', [
         'profileData'  => $profileData,
-        'title'        => 'Edit Profile',
-        'header_title' => 'Edit Profile',
+        'title'        => 'প্রোফাইল সম্পাদনা',
+        'header_title' => 'প্রোফাইল সম্পাদনা',
         'csrf_token'   => generateCsrfToken(),
     ]);
 });
@@ -339,7 +339,7 @@ $router->get('/users', function () use ($twig, $auth, $authService, $mysqli) {
             array_diff_key($filters, array_flip(['limit', 'offset'])),
             ['status' => 'inactive']
         )),
-        'title'        => 'Users Management',
+        'title'        => 'ব্যবহারকারী ব্যবস্থাপনা',
         'header_title' => 'Manage All Users',
         'csrf_token'   => generateCsrfToken(),
     ]);

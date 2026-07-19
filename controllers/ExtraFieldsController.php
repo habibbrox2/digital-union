@@ -18,8 +18,8 @@ $extraFieldsService = new ExtraFieldsService($mysqli);
 $router->get('/settings/extra-fields', function() use ($twig, $authService) {
     $authService->ensureCan('manage_settings');
     echo $twig->render('extra-fields/extra-fields.twig', [
-        'title' => 'Extra Fields Management',
-        'header_title' => 'Extra Fields Management',
+        'title' => 'অতিরিক্ত ফিল্ড ব্যবস্থাপনা',
+        'header_title' => 'অতিরিক্ত ফিল্ড ব্যবস্থাপনা',
     ]);
 });
 

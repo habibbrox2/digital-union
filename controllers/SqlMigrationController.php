@@ -28,7 +28,7 @@ $router->get('/admin/database/migrations', function() use ($twig, $migrationServ
             'csrf_token' => $csrf_token,
             'page_title' => 'Database Migrations',
             'page_icon' => 'database',
-            'title' => 'Database Migrations',
+            'title' => 'ডাটাবেস মাইগ্রেশন',
             'header_title' => 'Database Migrations',
             'db_stats' => $data['db_stats']
         ]);

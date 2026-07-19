@@ -1,4 +1,4 @@
-# Digital Union - LGDHAKA
+# Digital Union 
 
 > **Local Government Digital Union Management System**
 >

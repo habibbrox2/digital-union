@@ -58,8 +58,8 @@ $router->get('/permissions', function () use ($mysqli, $twig, $requireSuperadmin
         'modules' => $modules,
         'permissionsByModule' => $permissionsByModule,
         'permissions' => $allPerms,
-        'title' => 'Permissions Management',
-        'header_title' => 'Permissions Management'
+        'title' => 'পারমিশন ব্যবস্থাপনা',
+        'header_title' => 'পারমিশন ব্যবস্থাপনা'
     ]);
 });
 
@@ -98,7 +98,7 @@ $router->get('/manage-permissions', function () use ($mysqli, $twig, $requireSup
         'permissions' => $permissions,
         'assigned_role_permissions' => $assignedRolePermissions,
         'assigned_user_permissions' => [], // Empty - user permissions removed
-        'title' => 'Manage Permissions',
+        'title' => 'পারমিশন পরিচালনা',
         'header_title' => 'Manage Permissions'
     ]);
 });
@@ -190,8 +190,8 @@ $router->post('/permissions/add', function() use ($mysqli, $twig, $requireSupera
         $modules = $pm->getAllModules();
         echo $twig->render('permissions/add_permission.twig', [
             'modules' => $modules,
-            'title' => 'Add New Permission',
-            'header_title' => 'Add New Permission'
+            'title' => 'নতুন পারমিশন যোগ করুন',
+            'header_title' => 'নতুন পারমিশন যোগ করুন'
         ]);
         exit;
     }
@@ -202,8 +202,8 @@ $router->post('/permissions/add', function() use ($mysqli, $twig, $requireSupera
         $modules = $pm->getAllModules();
         echo $twig->render('permissions/add_permission.twig', [
             'modules' => $modules,
-            'title' => 'Add New Permission',
-            'header_title' => 'Add New Permission'
+            'title' => 'নতুন পারমিশন যোগ করুন',
+            'header_title' => 'নতুন পারমিশন যোগ করুন'
         ]);
         exit;
     }
@@ -220,8 +220,8 @@ $router->post('/permissions/add', function() use ($mysqli, $twig, $requireSupera
         $modules = $pm->getAllModules();
         echo $twig->render('permissions/add_permission.twig', [
             'modules' => $modules,
-            'title' => 'Add New Permission',
-            'header_title' => 'Add New Permission'
+            'title' => 'নতুন পারমিশন যোগ করুন',
+            'header_title' => 'নতুন পারমিশন যোগ করুন'
         ]);
     }
 });
@@ -250,8 +250,8 @@ $router->get('/permissions/{id}/edit', function($id) use ($mysqli, $twig, $requi
         echo $twig->render('permissions/edit_permission.twig', [
         'permission' => $perm,
         'modules' => $modules,
-        'title' => 'Edit Permission',
-        'header_title' => 'Edit Permission'
+        'title' => 'পারমিশন সম্পাদনা',
+        'header_title' => 'পারমিশন সম্পাদনা'
     ]);
 });
 
@@ -276,8 +276,8 @@ $router->post('/permissions/{id}/edit', function($id) use ($mysqli, $twig, $requ
         echo $twig->render('permissions/edit_permission.twig', [
             'permission' => $perm,
             'modules' => $modules,
-            'title' => 'Edit Permission',
-            'header_title' => 'Edit Permission'
+            'title' => 'পারমিশন সম্পাদনা',
+            'header_title' => 'পারমিশন সম্পাদনা'
         ]);
         exit;
     }
@@ -296,8 +296,8 @@ $router->post('/permissions/{id}/edit', function($id) use ($mysqli, $twig, $requ
         echo $twig->render('permissions/edit_permission.twig', [
             'permission' => $perm,
             'modules' => $modules,
-            'title' => 'Edit Permission',
-            'header_title' => 'Edit Permission'
+            'title' => 'পারমিশন সম্পাদনা',
+            'header_title' => 'পারমিশন সম্পাদনা'
         ]);
     }
 });
@@ -323,8 +323,8 @@ $router->get('/permissions/{id}/delete', function($id) use ($mysqli, $twig, $req
     
     echo $twig->render('permissions/delete_confirm.twig', [
         'permission' => $perm,
-        'title' => 'Delete Permission',
-        'header_title' => 'Delete Permission'
+        'title' => 'পারমিশন মুছুন',
+        'header_title' => 'পারমিশন মুছুন'
     ]);
 });
 
@@ -349,7 +349,7 @@ $router->post('/permissions/{id}/delete', function($id) use ($mysqli, $twig, $re
         $perm = $pm->getPermissionById((int)$id);
         echo $twig->render('permissions/delete_confirm.twig', [
             'permission' => $perm,
-            'title' => 'Delete Permission',
+        'title' => 'পারমিশন মুছুন',
             'header_title' => 'Delete Permission'
         ]);
     }
@@ -561,7 +561,7 @@ $router->get('/permissions/assign', function () use ($mysqli, $twig, $authServic
         'roles' => $roles,
         'permissions' => $permissions,
         'assigned_role_permissions' => $assignedRolePermissions,
-        'title' => 'Assign Permissions',
+        'title' => 'পারমিশন বরাদ্দ করুন',
         'header_title' => 'Assign Permissions'
     ]);
 });
@@ -741,7 +741,7 @@ $router->get('/permissions/revoke/{roleId}/{permissionId}', function($roleId, $p
     echo $twig->render('permissions/revoke_permission.twig', [
         'role' => $role,
         'permission' => $permission,
-        'title' => 'Revoke Permission',
+        'title' => 'পারমিশন প্রত্যাহার',
         'header_title' => 'Revoke Permission'
     ]);
 });

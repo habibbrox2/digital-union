@@ -1123,3 +1123,433 @@ a:hover {
     height: 60px;
     padding: 5px 15px;
 }
+
+/* ================================================================
+   FRONTEND POLISH - Shared page components (teal theme)
+   ================================================================ */
+
+/* Subtle success/subtle backgrounds (Bootstrap 5.3+ safe) */
+.bg-success-subtle { background-color: rgba(40, 167, 69, 0.12) !important; }
+.text-success { color: #198754 !important; }
+
+/* Page header bar */
+.page-header-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.page-header-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-dark, #333);
+    line-height: 1.2;
+}
+
+.page-header-subtitle {
+    font-size: 0.9rem;
+    color: #6c757d;
+}
+
+.badge-page {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.4rem 0.9rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--primary, #008B8B);
+    background: rgba(0, 139, 139, 0.1);
+    border: 1px solid rgba(0, 139, 139, 0.2);
+    border-radius: 999px;
+    white-space: nowrap;
+}
+
+/* Search box with icon */
+.search-box {
+    position: relative;
+    min-width: 220px;
+    flex: 1 1 220px;
+    max-width: 320px;
+}
+
+.search-box i {
+    position: absolute;
+    top: 50%;
+    left: 12px;
+    transform: translateY(-50%);
+    color: #adb5bd;
+    font-size: 0.8rem;
+    pointer-events: none;
+}
+
+.search-box .form-control {
+    padding-left: 32px;
+    border-radius: 999px;
+    border-color: #e0e0e0;
+    transition: all 0.2s ease;
+}
+
+.search-box .form-control:focus {
+    border-color: var(--primary, #008B8B);
+    box-shadow: 0 0 0 0.2rem rgba(0, 139, 139, 0.15);
+}
+
+/* Enhanced table polish */
+.table-enhanced {
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+.table-enhanced thead th {
+    background: rgba(0, 139, 139, 0.06);
+    color: #495057;
+    font-weight: 600;
+    font-size: 0.82rem;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    border-bottom: 2px solid rgba(0, 139, 139, 0.15);
+    white-space: nowrap;
+}
+
+.table-enhanced thead th.sortable {
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.2s ease;
+}
+
+.table-enhanced thead th.sortable:hover {
+    background: rgba(0, 139, 139, 0.12);
+}
+
+.table-enhanced thead th .sort-icon {
+    font-size: 0.75rem;
+    color: var(--primary, #008B8B);
+    margin-left: 4px;
+}
+
+.table-enhanced tbody tr {
+    transition: background 0.15s ease;
+}
+
+.table-enhanced tbody tr:hover {
+    background: rgba(0, 139, 139, 0.05);
+}
+
+.table-enhanced td {
+    border-color: #f0f0f0;
+    font-size: 0.92rem;
+}
+
+.term-slug {
+    font-size: 0.85rem;
+    color: #495057;
+    background: #f1f3f5;
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+/* Empty state */
+.table-empty {
+    text-align: center;
+    padding: 2.5rem 1rem;
+    color: #adb5bd;
+}
+
+.table-empty i {
+    font-size: 2.2rem;
+    margin-bottom: 0.5rem;
+    opacity: 0.6;
+}
+
+/* Pagination polish */
+.pagination .page-link {
+    border-radius: 8px;
+    margin: 0 2px;
+    border: 1px solid #e0e0e0;
+    min-width: 38px;
+    text-align: center;
+    transition: all 0.2s ease;
+}
+
+.pagination .page-item.active .page-link {
+    border-color: var(--primary, #008B8B);
+}
+
+.pagination .page-link:hover {
+    background: rgba(0, 139, 139, 0.08);
+}
+
+/* Section card title with icon */
+.section-title i {
+    width: 24px;
+    text-align: center;
+}
+
+/* Outline action buttons */
+.btn-outline-primary {
+    transition: all 0.2s ease;
+}
+
+.btn-outline-primary:hover {
+    transform: translateY(-1px);
+}
+
+.btn-outline-danger:hover {
+    transform: translateY(-1px);
+}
+
+/* Responsive page header */
+@media (max-width: 575px) {
+    .page-header-bar {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    .badge-page {
+        align-self: flex-start;
+    }
+    .search-box {
+        max-width: 100%;
+    }
+}
+
+/* ================================================================
+   EXTRA FIELDS PAGE - Compact editable table
+   ================================================================ */
+.extra-fields-table td {
+    padding: 0.35rem 0.4rem;
+}
+
+.extra-fields-table td .form-control-sm,
+.extra-fields-table td .form-select-sm {
+    font-size: 0.82rem;
+    border-radius: 6px;
+    min-width: 90px;
+}
+
+.extra-fields-table td .field_id {
+    font-family: 'Roboto Mono', 'Courier New', monospace;
+    min-width: 120px;
+}
+
+/* Hide number input spinners for a cleaner look */
+.extra-fields-table input[type=number]::-webkit-inner-spin-button,
+.extra-fields-table input[type=number]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+.extra-fields-table input[type=number] {
+    -moz-appearance: textfield;
+}
+
+/* Subtle custom arrow for select inside editable cells */
+.extra-fields-table td .form-select-sm {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath fill='%236c757d' d='M0 0l5 6 5-6z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.5rem center;
+    padding-right: 1.6rem;
+}
+
+@media (max-width: 768px) {
+    .extra-fields-table td .form-control-sm,
+    .extra-fields-table td .form-select-sm {
+        font-size: 0.76rem;
+        padding: 0.25rem 0.4rem;
+        min-width: 80px;
+    }
+}
+
+/* Info note (Bengali helper text) */
+.alert-info-soft {
+    background: rgba(0, 139, 139, 0.06);
+    border: 1px solid rgba(0, 139, 139, 0.18);
+    border-left: 4px solid var(--primary, #008B8B);
+    border-radius: 10px;
+    color: #495057;
+    font-size: 0.88rem;
+    line-height: 1.6;
+    padding: 0.85rem 1rem;
+}
+
+.alert-info-soft i.fa-circle-info {
+    color: var(--primary, #008B8B);
+    font-size: 1.05rem;
+}
+
+.alert-info-soft code {
+    background: rgba(0, 139, 139, 0.1);
+    color: #007A7A;
+    padding: 1px 5px;
+    border-radius: 4px;
+    font-size: 0.82rem;
+}
+
+/* ================================================================
+   ROLES & PERMISSIONS PAGES - Shared components
+   (used by roles/* and permissions/* index, add, edit, delete)
+   ================================================================ */
+
+/* Page header (legacy .page-header pattern, kept for these pages) */
+.page-header {
+    border-bottom: 1px solid var(--border-light, #e3e6f0);
+    padding-bottom: 1rem;
+}
+
+.page-title {
+    color: var(--text-dark, #333);
+    font-weight: 600;
+    font-size: 2rem;
+}
+
+.page-title-wrapper {
+    padding: 1rem 0;
+}
+
+/* Stat cards */
+.stat-card {
+    border-radius: 0.75rem;
+    transition: all 0.25s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 0.6rem 1.2rem rgba(0, 0, 0, 0.12) !important;
+}
+
+.stat-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 0.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 1.5rem;
+    margin-right: 1rem;
+    flex-shrink: 0;
+}
+
+.stat-icon.bg-primary { background: var(--primary, #008B8B); }
+.stat-icon.bg-info { background: var(--info, #17a2b8); }
+.stat-icon.bg-warning { background: var(--warning, #ffc107); }
+.stat-icon.bg-success { background: var(--success, #28a745); }
+.stat-icon.bg-danger { background: var(--danger, #dc3545); }
+
+.stat-content h6 { font-size: 0.82rem; letter-spacing: 0.3px; }
+.stat-content h3 { font-weight: 700; }
+
+/* Roles / permissions table */
+.roles-table tbody tr,
+.permissions-table tbody tr {
+    border-bottom: 1px solid #eef0f4;
+    transition: background 0.15s ease;
+}
+
+.roles-table tbody tr:hover,
+.permissions-table tbody tr:hover {
+    background-color: rgba(0, 139, 139, 0.05);
+}
+
+/* Action cards (Quick Actions) */
+.action-card {
+    border-radius: 0.75rem;
+    transition: all 0.3s ease;
+    border: none;
+}
+
+.action-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 1rem 2rem rgba(0, 0, 0, 0.12) !important;
+}
+
+.action-icon {
+    height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.bg-primary-light { background-color: rgba(var(--primary-rgb, 0, 139, 139), 0.08); }
+.bg-warning-light { background-color: rgba(255, 193, 7, 0.1); }
+.bg-info-light { background-color: rgba(13, 110, 253, 0.08); }
+.bg-success-light { background-color: rgba(40, 167, 69, 0.08); }
+
+/* Card header gradient used on list cards */
+.bg-gradient-primary {
+    background: var(--primary, #008B8B) !important;
+    border: none !important;
+}
+
+/* Form card headers (add/edit role & permission) */
+.form-card .card-header {
+    border-bottom: none;
+}
+
+/* Permission module badge */
+.module-badge {
+    font-size: 0.7rem;
+    letter-spacing: 0.5px;
+}
+
+/* Role card (assign_permissions) */
+.role-card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.role-card:hover {
+    transform: translateY(-4px);
+}
+
+.role-header-gradient {
+    background: linear-gradient(135deg, var(--primary, #008B8B) 0%, var(--primary-600, #007A7A) 100%);
+    color: #fff;
+}
+
+.role-permissions-form {
+    min-height: 280px;
+}
+
+.permissions-scroll {
+    max-height: 360px;
+    overflow-y: auto;
+}
+
+.module-group .module-header small {
+    letter-spacing: 0.5px;
+}
+
+.permission-item {
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #f1f3f5;
+}
+
+.permission-item:hover {
+    background: rgba(0, 139, 139, 0.04);
+    border-radius: 8px;
+}
+
+/* Revoke confirm page */
+.page-header-gradient {
+    background: linear-gradient(135deg, #008B8B 0%, #007A7A 100%);
+    color: #fff;
+    border-radius: 0.75rem;
+    padding: 1.5rem;
+    text-align: center;
+    margin-bottom: 1.5rem;
+}
+
+.page-header-title { font-weight: 700; }
+.page-header-subtitle { opacity: 0.9; margin: 0; }
+
+/* Responsive */
+@media (max-width: 768px) {
+    .page-title { font-size: 1.5rem; }
+    .btn-group { display: flex; flex-direction: column; gap: 0.5rem; }
+    .btn-group .btn { width: 100%; }
+}

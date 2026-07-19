@@ -37,8 +37,8 @@ $router->get('/settings/business-types', function() use ($twig, $businessOwnersh
     $data = $businessOwnership->fetchBusinessTypes(1, $limit, $search, $sort, $order, $unionId);
 
     echo $twig->render('settings/business-types.twig', [
-        'title' => 'Business Types',
-        'header_title' => 'Manage Business Types',
+        'title' => 'ব্যবসার ধরন',
+        'header_title' => 'ব্যবসার ধরন পরিচালনা',
         'businessTypes' => $data['businessTypes'],
         'currentPage' => $data['currentPage'],
         'totalPages' => $data['totalPages'],
@@ -145,8 +145,8 @@ $router->get('/settings/business-types/edit/{id}', function($id) use ($twig, $bu
     $businessType = $businessOwnership->getBusinessTypeById((int)$id);
     if (!$businessType) {
         echo $twig->render('settings/edit-business-type.twig', [
-            'title' => 'Edit Business Type',
-            'header_title' => 'Edit Business Type',
+            'title' => 'ব্যবসার ধরন সম্পাদনা',
+            'header_title' => 'ব্যবসার ধরন সম্পাদনা',
             'businessType' => null,
             'status' => 'error',
             'message' => 'ব্যবসার ধরণ খুঁজে পাওয়া যায়নি।',
@@ -160,8 +160,8 @@ $router->get('/settings/business-types/edit/{id}', function($id) use ($twig, $bu
     $userUnionId = (int)($userData['union_id'] ?? 0);
     if (!$isSuperAdmin && $userUnionId > 0 && (int)$businessType['union_id'] !== $userUnionId && (int)$businessType['union_id'] > 0) {
         echo $twig->render('settings/edit-business-type.twig', [
-            'title' => 'Edit Business Type',
-            'header_title' => 'Edit Business Type',
+            'title' => 'ব্যবসার ধরন সম্পাদনা',
+            'header_title' => 'ব্যবসার ধরন সম্পাদনা',
             'businessType' => $businessType,
             'status' => 'error',
             'message' => 'আপনার এই ব্যবসার ধরণ সম্পাদনা করার অনুমতি নেই।',
@@ -170,7 +170,7 @@ $router->get('/settings/business-types/edit/{id}', function($id) use ($twig, $bu
     }
 
     echo $twig->render('settings/edit-business-type.twig', [
-        'title' => 'Edit Business Type',
+        'title' => 'ব্যবসার ধরন সম্পাদনা',
         'header_title' => 'ব্যবসার ধরণ সম্পাদনা করুন',
         'businessType' => $businessType,
         'status' => null,
@@ -191,7 +191,7 @@ $router->get('/settings/ownership-types', function() use ($twig, $businessOwners
     $data = $businessOwnership->fetchOwnershipTypes();
 
     echo $twig->render('settings/ownership-types.twig', [
-        'title' => 'Ownership Types',
+        'title' => 'মালিকানার ধরন',
         'header_title' => 'Manage Ownership Types',
         'ownershipTypes' => $data,
     ]);

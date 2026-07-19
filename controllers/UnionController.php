@@ -35,7 +35,7 @@ $router->get('/unions', function () use ($twig, $unionModel, $authService) {
         'sortDir'      => $sortDir,
         'status'       => '',
         'message'      => '',
-        'title'        => 'Unions Management',
+        'title'        => 'ইউনিয়ন ব্যবস্থাপনা',
         'header_title' => 'All Unions'
     ]);
 });
@@ -47,7 +47,7 @@ $router->get('/unions/add', function () use ($twig, $authService) {
     $authService->ensureCan('manage_unions', 'unions');
 
     echo $twig->render('unions/add.twig', [
-        'title'        => 'Create Union',
+        'title'        => 'নতুন ইউনিয়ন তৈরি করুন',
         'header_title' => 'Create Union'
     ]);
 });
@@ -104,7 +104,7 @@ $router->get('/unions/edit/{id}', function ($id) use ($twig, $unionModel, $authS
 
     echo $twig->render('unions/edit.twig', [
         'union'        => $union,
-        'title'        => 'Edit Union',
+        'title'        => 'ইউনিয়ন সম্পাদনা',
         'header_title' => 'Edit Union'
     ]);
 });
@@ -124,7 +124,7 @@ $router->get('/unions/view/{id}', function ($id) use ($twig, $unionModel, $authS
 
     echo $twig->render('unions/view.twig', [
         'union'        => $union,
-        'title'        => 'Union Details',
+        'title'        => 'ইউনিয়নের বিবরণ',
         'header_title' => 'Union Details'
     ]);
 });

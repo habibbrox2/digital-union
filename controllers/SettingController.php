@@ -38,7 +38,7 @@ $router->get('/settings', function () use ($twig, $mysqli, $authService) {
     $unions = $unionModel->getAllUnions();
 
     echo $twig->render('settings/setting.twig', [
-        'title'            => 'Settings',
+        'title'            => 'সেটিংস',
         'system_settings'  => $systemSettings,
         'union_settings'   => $unionSettings,
         'unions'           => $unions,
@@ -176,7 +176,7 @@ $router->get('/settings/security', function () use ($twig, $mysqli, $authService
     $securitySettings = $service->getSystemSettingsByKeys($keys);
 
     echo $twig->render('settings/security.twig', [
-        'title'             => 'Security Settings',
+        'title'             => 'নিরাপত্তা সেটিংস',
         'security_settings' => $securitySettings,
         'header_title'      => 'Security Settings'
     ]);
@@ -212,7 +212,7 @@ $router->get('/settings/notifications', function () use ($twig, $mysqli, $authSe
     $notificationSettings = $service->getSystemSettingsByKeys($keys);
 
     echo $twig->render('settings/notifications.twig', [
-        'title'                  => 'Notification Settings',
+        'title'                  => 'বিজ্ঞপ্তি সেটিংস',
         'notification_settings'  => $notificationSettings,
         'header_title'           => 'Notification Settings'
     ]);
@@ -233,7 +233,7 @@ $router->get('/settings/email-templates', function () use ($twig, $mysqli, $auth
     $systemSettings = $service->getSystemSettingsByKeys($keys);
 
     echo $twig->render('settings/email_templates.twig', [
-        'title'           => 'Email Templates',
+        'title'           => 'ইমেইল টেমপ্লেট',
         'system_settings' => $systemSettings,
         'header_title'    => 'Email Templates',
         'csrf_token'      => generateCsrfToken()

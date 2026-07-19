@@ -46,8 +46,8 @@ $router->get('/roles', function() use ($mysqli, $twig, $requireSuperadmin, $auth
 
     echo $twig->render('roles/index.twig', [
         'roles' => $roles,
-        'header_title' => 'Roles Management',
-        'title' => 'Roles Management'
+        'header_title' => 'ভূমিকা ব্যবস্থাপনা',
+        'title' => 'ভূমিকা ব্যবস্থাপনা'
     ]);
 });
 
@@ -60,8 +60,8 @@ $router->get('/roles/add', function() use ($twig, $requireSuperadmin, $authServi
     $authService->ensureCan('manage_roles', 'roles');
     
     echo $twig->render('roles/add_role.twig', [
-        'title' => 'Add New Role',
-        'header_title' => 'Add New Role'
+        'title' => 'নতুন ভূমিকা যোগ করুন',
+        'header_title' => 'নতুন ভূমিকা যোগ করুন'
     ]);
 });
 
@@ -81,8 +81,8 @@ $router->post('/roles/add', function() use ($mysqli, $twig, $requireSuperadmin, 
     if (empty($name) || strlen($name) < 2) {
         errorAlert('ফর্ম ত্রুটি', 'রোলের নাম কমপক্ষে ২ অক্ষরের হওয়া উচিত');
         echo $twig->render('roles/add_role.twig', [
-            'title' => 'Add New Role',
-            'header_title' => 'Add New Role',
+            'title' => 'নতুন ভূমিকা যোগ করুন',
+            'header_title' => 'নতুন ভূমিকা যোগ করুন',
             'form_data' => $_POST
         ]);
         exit;
@@ -98,8 +98,8 @@ $router->post('/roles/add', function() use ($mysqli, $twig, $requireSuperadmin, 
     } else {
         errorAlert('ত্রুটি', 'রোল তৈরি ব্যর্থ হয়েছে। নামটি ইতিমধ্যে বিদ্যমান থাকতে পারে।');
         echo $twig->render('roles/add_role.twig', [
-            'title' => 'Add New Role',
-            'header_title' => 'Add New Role',
+            'title' => 'নতুন ভূমিকা যোগ করুন',
+            'header_title' => 'নতুন ভূমিকা যোগ করুন',
             'form_data' => $_POST
         ]);
     }
@@ -126,7 +126,7 @@ $router->get('/roles/{id}', function($id) use ($mysqli, $twig, $requireSuperadmi
         'role' => $role,
         'permissions' => $permissions,
         'permissionCount' => count($permissions),
-        'title' => 'View Role',
+        'title' => 'ভূমিকা দেখুন',
         'header_title' => 'View Role'
     ]);
 });
@@ -155,8 +155,8 @@ $router->get('/roles/{id}/edit', function($id) use ($mysqli, $twig, $requireSupe
 
     echo $twig->render('roles/edit_role.twig', [
         'role' => $role,
-        'title' => 'Edit Role',
-        'header_title' => 'Edit Role'
+        'title' => 'ভূমিকা সম্পাদনা',
+        'header_title' => 'ভূমিকা সম্পাদনা'
     ]);
 });
 
@@ -174,8 +174,8 @@ $router->post('/roles/{id}/edit', function($id) use ($mysqli, $twig, $requireSup
         $role = (new RolesManager($mysqli))->getRoleById((int)$id);
         echo $twig->render('roles/edit_role.twig', [
             'role' => $role,
-            'title' => 'Edit Role',
-            'header_title' => 'Edit Role',
+            'title' => 'ভূমিকা সম্পাদনা',
+            'header_title' => 'ভূমিকা সম্পাদনা',
             'form_data' => $_POST
         ]);
         exit;
@@ -193,8 +193,8 @@ $router->post('/roles/{id}/edit', function($id) use ($mysqli, $twig, $requireSup
         $role = $rolesManager->getRoleById((int)$id);
         echo $twig->render('roles/edit_role.twig', [
             'role' => $role,
-            'title' => 'Edit Role',
-            'header_title' => 'Edit Role'
+            'title' => 'ভূমিকা সম্পাদনা',
+            'header_title' => 'ভূমিকা সম্পাদনা'
         ]);
     }
 });
@@ -216,8 +216,8 @@ $router->get('/roles/{id}/delete', function($id) use ($mysqli, $twig, $requireSu
 
     echo $twig->render('roles/delete_confirm.twig', [
         'role' => $role,
-        'title' => 'Delete Role',
-        'header_title' => 'Delete Role'
+        'title' => 'ভূমিকা মুছুন',
+        'header_title' => 'ভূমিকা মুছুন'
     ]);
 });
 
@@ -239,8 +239,8 @@ $router->post('/roles/{id}/delete', function($id) use ($mysqli, $twig, $requireS
         $role = $rolesManager->getRoleById((int)$id);
         echo $twig->render('roles/delete_confirm.twig', [
             'role' => $role,
-            'title' => 'Delete Role',
-            'header_title' => 'Delete Role'
+        'title' => 'ভূমিকা মুছুন',
+            'header_title' => 'ভূমিকা মুছুন'
         ]);
     }
 });
@@ -262,8 +262,8 @@ $router->get('/roles/{id}/permissions', function($id) use ($mysqli, $twig, $requ
 
     echo $twig->render('roles/manage_permissions.twig', [
         'role' => $role,
-        'title' => 'Manage Role Permissions',
-        'header_title' => 'Manage Role Permissions'
+        'title' => 'ভূমিকার পারমিশন পরিচালনা',
+        'header_title' => 'ভূমিকার পারমিশন পরিচালনা'
     ]);
 });
 
