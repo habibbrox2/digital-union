@@ -99,7 +99,7 @@
                 </div>
                 <div class="header-right">
                     <div class="header-profile dropdown-toggle" id="profileDropdown">
-                        <img src="{{ auth_user.profile_image_url ?: url ~ '/assets/images/default-avatar.png' }}" alt="Profile" class="header-avatar">
+                        <img src="{{ auth_user.profile_picture_url ?: '/assets/images/default-avatar.png' }}" alt="Profile" class="header-avatar">
                         <div class="header-user-info">
                             <span class="header-user-name">{{ auth_user.name_bn ?: auth_user.name_en }}</span>
                             <span class="header-user-role">{{ user_role }}</span>
@@ -143,7 +143,7 @@
                 <div class="header-col text-end">
                     {% if auth_user %}
                         <div class="user-profile d-inline-flex align-items-center">
-                            <img class="user-avatar" src="{{ auth_user.profile_image_url ?: '/assets/images/default-avatar.png' }}" alt="Profile" />
+                            <img class="user-avatar" src="{{ auth_user.profile_picture_url ?: '/assets/images/default-avatar.png' }}" alt="Profile" />
                             <div class="user-info">
                                 <span class="user-name">{{ auth_user.name_bn ?: auth_user.name_en }}</span>
                                 <div class="user-links">
