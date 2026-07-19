@@ -139,7 +139,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
     /**
      * Toggle the sidebar between collapsed and expanded.
-     * On desktop: toggles the pinned state (sidebar stays expanded until unpinned).
+     * On desktop: click toggles the pinned open/closed state (sidebar stays
+     *   open until toggled closed again). Hover still previews-expands when
+     *   not pinned.
      * On mobile: opens/closes as overlay.
      */
     function toggleSidebar() {
@@ -149,11 +151,11 @@ document.addEventListener('DOMContentLoaded', function () {
         if (isDesktop) {
             const isPinned = document.body.classList.contains('sidebar-pinned');
             if (isPinned) {
-                // Unpin: collapse back
+                // Currently open (pinned) -> close
                 document.body.classList.remove('sidebar-pinned');
                 setSidebarCollapsed(true);
             } else {
-                // Pin: expand and lock
+                // Currently collapsed -> open and lock (pin)
                 document.body.classList.add('sidebar-pinned');
                 setSidebarCollapsed(false);
             }
