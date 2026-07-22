@@ -18,11 +18,13 @@
 - ✅ **Multi-language Support** - English and Bengali interfaces
 - ✅ **Document Management** - Upload and verify supporting documents
 
-### Recent Enhancements (April 2026)
-- 🆕 **Trade License Expiry Detection** - Automatic watermarking of expired certificates
-- 🆕 **Auto-populate Forms** - Name fields automatically sync with summary section
-- 🆕 **Database Integrity** - Foreign key constraints and data validation
-- 🆕 **Migration System** - Safe database updates with rollback capability
+### Recent Enhancements (July 2026)
+- 🆕 Refactored `ApplicationController` / `ApplicationControllerV2` and `GeoController`
+- 🆕 New `ApplicationService` and `DashboardService` layers
+- 🆕 Certificate template refactor: Bangla/English per-group layouts, shared certificate paragraph partials
+- 🆕 PDF generation updates with corrected certificate templates
+- 🆕 Model and error-handler improvements with validated fields
+- 🆕 Replaced `bg.jpg` with optimized `bg.svg` and `bg_hd.png` assets
 
 ## 🔧 Technology Stack
 
@@ -169,12 +171,16 @@ php migrate.php
 
 ### File Structure
 ```
-├── classes/          # Business logic classes
 ├── config/           # Configuration files
 ├── controllers/      # Request handlers
+├── database/         # Migrations and seeds
 ├── helpers/          # Utility functions
+├── models/           # Data models and ORM logic
+├── modules/          # Feature modules & services
+│   └── Services/     # Application and dashboard services
 ├── public/           # Web root (index.php)
 │   └── assets/       # CSS, JS, images
+├── scripts/          # CLI and maintenance scripts
 ├── storage/          # Cache, logs, uploads
 ├── templates/        # Twig templates
 └── vendor/           # Composer packages
@@ -210,6 +216,13 @@ Contributions are welcome! Please follow these steps:
 
 ## 📝 Changelog
 
+### Version 1.1.0 (July 2026)
+- ✅ Certificate template refactor with Bangla/English group layouts
+- ✅ New service layer (`ApplicationService`, `DashboardService`)
+- ✅ PDF generation improvements
+- ✅ Controller cleanup (`GeoController`, `ApplicationControllerV2`)
+- ✅ Asset updates (`bg.svg`, `bg_hd.png`) and tightened error handling
+
 ### Version 1.0.0 (April 2026)
 - ✅ Initial release with core features
 - ✅ Trade license expiry watermarking
@@ -236,7 +249,7 @@ This project is licensed under the MIT License. See LICENSE file for details.
 
 ---
 
-**Last Updated**: April 16, 2026  
+**Last Updated**: July 22, 2026  
 **Maintained By**: Hr Habib Brox  
 **Repository**: https://github.com/habibbrox2/digital-union
 
