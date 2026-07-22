@@ -24,7 +24,7 @@
         }
 
         .content-wrapper {
-            background-image: url('{{ url }}/assets/bg.png');
+            background-image: url('{{ url }}/assets/bg_hd.png');
             background-size: cover;
             background-repeat: no-repeat;
             width: 209mm;
@@ -146,19 +146,19 @@
                 
                     <div class="parishad-name">
                         {% if union.union_name_en is defined and union.union_name_en %}
-                            {{ union.union_name_en }}
+                            {{ union.union_name_en|title }}
                         {% else %}
                             {{ union.union_name_bn }}
                         {% endif %}
                     </div>
                     <div class="sub-header">
                        {% if union.upazila_name_en is defined and union.upazila_name_en %}
-                           {{ union.upazila_name_en }},
+                           {{ union.upazila_name_en|title }},
                        {% else %}
                            {{ union.upazila_name_bn }},
                        {% endif %}
                        {% if union.district_name_en is defined and union.district_name_en %}
-                           {{ union.district_name_en }}
+                           {{ union.district_name_en|title }}
                        {% else %}
                            {{ union.district_name_bn }}
                        {% endif %}
@@ -182,7 +182,7 @@
                 <tr>
                     <td colspan="2" style="text-align:center; font-size:19.5pt; font-weight:bold; padding-top: 7.5pt; padding-bottom: 3.75pt;">
                         <font style="">
-                                <u>{{ data.certificate_type_en|default(data.certificate_type_bn) }}</u>
+                                <u>{{ data.certificate_type_en }}</u>
                             </font>
                     </td>
                 </tr>
@@ -223,39 +223,39 @@
 <table align="center" border="0" height="285pt" width="99%" cellspacing="0" style="border-collapse:collapse; margin:0 auto; table-layout:fixed; margin-bottom: 15pt;">
     <tr class="person-info">
         <td>Name</td>
-        <td>: {{ data.name_en|default(data.name_bn) }}</td>
+        <td>: {{ data.name_en|title }}</td>
     </tr>
     <tr class="person-info">
         <td>Father's Name</td>
-        <td>: {{ data.father_name_en|default(data.father_name_bn) }}</td>
+        <td>: {{ data.father_name_en|title }}</td>
     </tr>
     <tr class="person-info">
         <td>Mother's Name</td>
-        <td>: {{ data.mother_name_en|default(data.mother_name_bn) }}</td>
+        <td>: {{ data.mother_name_en|title }}</td>
     </tr>
      {% if citizen.marital_status == 'Married' %}
      <tr class="person-info">
         <td>Spouse Name</td>
-        <td>: {{ data.spouse_name_en|default(data.spouse_name_bn) }}</td>
+        <td>: {{ data.spouse_name_en|title }}</td>
     </tr>
      {% endif %}
     <tr class="person-info">
         <td>Present Address</td>
         <td>
-            : Village: {{ data.present_village_en|default(data.present_village_bn) }},
+            : Village: {{ data.present_village_en|title }},
             
-            Road/Block: {{ data.present_rbs_en|default(data.present_rbs_bn) }}, 
-                    Post Office: {{ data.present_postoffice_en|default(data.present_postoffice_bn) }}, <br> 
-                   &nbsp; Upazila: {{ data.present_upazila_en|default(data.present_upazila_bn) }}, District: {{ data.present_district_en|default(data.present_district_bn) }}
+            Road/Block: {{ data.present_rbs_en|title }}, 
+                    Post Office: {{ data.present_postoffice_en|title }}, <br> 
+                   &nbsp; Upazila: {{ data.present_upazila_en|title }}, District: {{ data.present_district_en|title }}
         </td>
     </tr>
     <tr class="person-info">
         <td>Permanent Address</td>
         <td>
             :  
-                Village: {{ data.permanent_village_en|default(data.permanent_village_bn) }}, Road/Block: {{ data.permanent_rbs_en|default(data.permanent_rbs_bn) }}, 
-                    Post Office: {{ data.permanent_postoffice_en|default(data.permanent_postoffice_bn) }}, <br> 
-                   &nbsp; Upazila: {{ data.permanent_upazila_en|default(data.permanent_upazila_bn) }}, District: {{ data.permanent_district_en|default(data.permanent_district_bn) }}
+                Village: {{ data.permanent_village_en|title }}, Road/Block: {{ data.permanent_rbs_en|title }}, 
+                    Post Office: {{ data.permanent_postoffice_en|title }}, <br> 
+                   &nbsp; Upazila: {{ data.permanent_upazila_en|title }}, District: {{ data.permanent_district_en|title }}
         </td>
     </tr>
     
@@ -308,7 +308,7 @@
 </table>
 
             <!-- Paragraph Section -->
-            {% include 'applications/certificate_paragraph_english.twig' with { certificate_type: certificate_type, data: data } %}
+            {% include 'partials/certificate_paragraph_english.twig' with { certificate_type: certificate_type, data: data } %}
 
 
 
@@ -329,29 +329,37 @@
                     </td>
                 </tr>
             </table>
-            <!-- Instructions Section -->
-            <table class="instructions" style="margin-top: 40px;">
-                <tr>
-                    <td style="border-right:0.75pt solid black; border-top:0.75pt solid black; text-align:center;">
-                        <img src="https://quickchart.io/qr?text={{ url }}/verify/{{ data.certificate_type }}_en/{{ data.sonod_number }}/{{ union.union_code }}/1&margin=1&size=300" height="82.5pt" width="82.5pt" style="padding:11.25pt;">
-                    </td>
-                    <td style="padding-left:22.5pt; border-bottom:0.75pt solid black;">
-                        <b>Instructions:</b><br />
-                        1) Verify this certificate using the 17-digit certificate number from the website ({{ union.website }}) or install "Smart UP, Dhaka" app from Play Store and scan the QR code.<br />
-                        2) For any information, call or email us.
-                    </td>
-                </tr>
-                <tr>
-                    <td style="width: 25%; text-align:center;">
-                        <font style="font-size:6pt;">Developed by Innovation IT</font><br/>
-                        <font style="font-size:6pt;">www.innovationit.com.bd</font>
-                    </td>
-                    <td style="width: 75%; text-align:center;">
-                        <font style="font-size:6pt;">{{ union.website }}- {{ union.email }}</font>
-                    </td>
-                </tr>
-            </table>
+
         </div>
     </div>
+
+<!-- Footer -->
+<htmlpagefooter name="MyFooter">
+    <table class="instructions" style="width: 94%; border-collapse: collapse; margin: 0 auto;">
+        <tr>
+            <td style="border-right:1px solid black; border-top:1px solid black; text-align:center; width: 25%;">
+                <img src="https://quickchart.io/qr?text={{ url }}/verify/{{ data.certificate_type }}_en/{{ data.sonod_number }}/{{ union.union_code }}/1&margin=1&size=300" height="110" width="110">
+            </td>
+            <td style="padding-left:30px; border-bottom:1px solid black; width: 75%;">
+                <b>Instructions:</b><br>
+                1) Verify this certificate using the 17-digit certificate number from the website ({{ union.website }}) or install "Smart UP, Dhaka" app from Play Store and scan the QR code.<br>
+                2) For any information, call or email us.
+            </td>
+        </tr>
+        <tr>
+            <td style="text-align:center;">
+                <font style="font-size:8px;">Developed by Innovation IT</font><br>
+                <font style="font-size:8px;">www.innovationit.com.bd</font>
+            </td>
+            <td style="text-align:center;">
+                <font style="font-size:8px;">{{ union.website }} - {{ union.email }}</font>
+            </td>
+        </tr>
+    </table>
+</htmlpagefooter>
+
+<!-- Enable Footer -->
+<sethtmlpagefooter name="MyFooter" value="on" />
+
 </body>
 </html>

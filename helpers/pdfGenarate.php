@@ -65,10 +65,10 @@ function createMpdf(array $options = []): \Mpdf\Mpdf
             'helvetica'    => ['R' => 'Helvetica.ttf',     'useOTL' => 0xFF],
         ],
         'default_font' => 'solaimanlipi',
-        'margin_left'   => 5,
-        'margin_right'  => 5,
-        'margin_top'    => 5,
-        'margin_bottom' => 5,
+        'margin_left'   => 2,
+        'margin_right'  => 2,
+        'margin_top'    => 2,
+        'margin_bottom' => 2,
     ];
 
     $config = array_merge($defaults, $options);
@@ -128,10 +128,10 @@ function generatePdf($htmlContent, $Filename = null)
 
     try {
         $mpdf = createMpdf([
-            'margin_left'   => 5,
-            'margin_right'  => 5,
-            'margin_top'    => 5,
-            'margin_bottom' => 5,
+            'margin_left'   => 2,
+            'margin_right'  => 2,
+            'margin_top'    => 2,
+            'margin_bottom' => 2,
         ]);
 
         $mpdf->SetDisplayMode('fullpage');

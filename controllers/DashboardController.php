@@ -96,34 +96,57 @@ $router->get('/admin/logs', function () use ($twig, $mysqli, $authService) {
     $authService->ensureCan('manage_dashboard', 'dashboard');
 
     $service = new DashboardService($mysqli);
+    $logType = isset($_GET['log']) ? $_GET['log'] : 'error';
+
+    // Validate log type
+    $validTypes = array_keys($service->getLogTypes());
+    if (!in_array($logType, $validTypes, true)) {
+        $logType = 'error';
+    }
 
     // Clear log
     if (isset($_GET['action']) && $_GET['action'] === 'clear') {
-        $service->clearErrorLogs();
-        header('Location: /admin/logs?cleared=1');
+        $service->clearErrorLogs($logType);
+        header("Location: /admin/logs?cleared=1&log={$logType}");
         exit;
     }
 
     // Download log
     if (isset($_GET['action']) && $_GET['action'] === 'download') {
-        $logFile = $service->getErrorLogFile();
+        $logFile = $service->getErrorLogFile($logType);
+        $filename = basename($logFile);
         header('Content-Type: text/plain');
-        header('Content-Disposition: attachment; filename="error.log"');
+        header("Content-Disposition: attachment; filename=\"{$filename}\"");
         readfile($logFile);
         exit;
     }
 
     // AJAX Live refresh
     if (isset($_GET['ajax']) && $_GET['ajax'] === '1') {
-        $data = $service->getErrorLogs();
+        $data = $service->getErrorLogs($logType);
         header('Content-Type: application/json; charset=utf-8');
         echo json_encode($data, JSON_UNESCAPED_UNICODE);
         exit;
     }
 
     echo $twig->render('errors/error_logs.twig', [
-        'title'        => 'ত্রুটির লগ',
-        'header_title' => '🧠 Error Log Viewer',
-        'cleared'      => isset($_GET['cleared']),
+        'title'         => 'ত্রুটির লগ',
+        'header_title'  => '🧠 Error Log Viewer',
+        'cleared'       => isset($_GET['cleared']),
+        'log_types'     => $service->getLogTypes(),
+        'current_log'   => $logType,
     ]);
+});
+
+// ================================================================
+// GET : System health check
+// ================================================================
+$router->get('/admin/health', function () use ($mysqli, $authService) {
+    $authService->ensureCan('manage_dashboard', 'dashboard');
+
+    $service = new DashboardService($mysqli);
+    $health = $service->getHealthCheck();
+
+    header('Content-Type: application/json; charset=utf-8');
+    echo json_encode($health, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
 });

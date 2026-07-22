@@ -179,7 +179,6 @@
 
 
 
-
                 
                {% if data.birth_id or data.nid or data.passport_no %}
                 <tr class="citizen-info" style="font-size: 12pt;">
@@ -280,34 +279,37 @@
             </table>
 
 
-
-            <!-- Instructions Section -->
-            <table class="instructions">
-                <tr>
-                    <td style="border-right:0.75pt solid black; border-top:0.75pt solid black; text-align:center;">
-                        <img src="https://quickchart.io/qr?text={{ url }}/verify/nagorik_bn/{{ data.sonod_number }}/{{ union.union_code }}/1&margin=1&size=300" height="82.5pt" width="82.5pt" style="padding:11.25pt;">
-                    </td>
-                    <td style="padding-left:22.5pt; border-bottom:0.75pt solid black; font-size: 10.5pt;">
-                        নির্দেশাবলীঃ <br />
-                        ১) সার্টিফিকেট টি ১৭ ডিজিটের সনদ নাম্বার দিয়ে ওয়েবসাইট ({{ union.website }}) থেকে যাচাই করুন অথবা Play Store থেকে "স্মার্ট ইউপি, ঢাকা" Apps টি install করে QR code টি Scan করুন।<br />
-                        ২) যে কোন ধরনের তথ্য নেয়ার জন্য ফোন করুন অথবা ইমেইল করুন।
-                    </td>
-                </tr>
-                <tr>
-                    <td style="width: 25%; text-align:center;">
-                        <font style="font-size:6pt;">Developed by Innovation IT</font><br/>
-                        <font style="font-size:6pt;">www.innovationit.com.bd</font>
-                    </td>
-                    <td style="width: 75%; text-align:center;">
-                            <font style="font-size:8pt; font-weight:bold;">
-                                অল্প, স্বল্প খরচে সঠিক বিচার পেতে চলো যাই গ্রাম আদালতে。
-                            </font>
-                            <br/>
-                        <font style="font-size:6pt;">{{ union.website }}- {{ union.email }}</font>
-                    </td>
-                </tr>
-            </table>
         </div>
     </div>
+
+<!-- Footer -->
+<htmlpagefooter name="MyFooter">
+    <table class="instructions" style="width: 98%; border-collapse: collapse;">
+        <tr>
+            <td style="border-right:1px solid black; border-top:1px solid black; text-align:center; width: 25%;">
+                <img src="https://quickchart.io/qr?text={{ url }}/verify/nagorik_bn/{{ data.sonod_number }}/{{ union.union_code }}/1&margin=1&size=300" height="110" width="110">
+            </td>
+            <td style="padding-left:30px; border-bottom:1px solid black; width: 75%;">
+                <b>নির্দেশাবলীঃ</b><br>
+                ১] সার্টিফিকেট টি ১৭ ডিজিটের সনদ নাম্বার দিয়ে ওয়েবসাইট ({{ union.website }}) থেকে যাচাই করুন অথবা Play Store থেকে "স্মার্ট ইউপি, ঢাকা" Apps টি install করে QR code টি Scan করুন।<br>
+                ২) যে কোন ধরনের তথ্য নেয়ার জন্য ফোন করুন অথবা ইমেইল করুন।
+            </td>
+        </tr>
+        <tr>
+            <td style="text-align:center;">
+                <font style="font-size:8px;">Developed by Innovation IT</font><br>
+                <font style="font-size:8px;">www.innovationit.com.bd</font>
+            </td>
+            <td style="text-align:center;">
+                <font style="font-size:8px;">অল্প, স্বল্প খরচে সঠিক বিচার পেতে চলো যাই গ্রাম আদালতে।</font><br>
+                <font style="font-size:8px;">{{ union.website }} - {{ union.email }}</font>
+            </td>
+        </tr>
+    </table>
+</htmlpagefooter>
+
+<!-- Enable Footer -->
+<sethtmlpagefooter name="MyFooter" value="on" />
+
 </body>
 </html>

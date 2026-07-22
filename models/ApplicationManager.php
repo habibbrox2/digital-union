@@ -71,7 +71,7 @@ class ApplicationManager
 
                 -- Documents
                 a.documents AS existing_documents,
-                a.extra_data AS extra,
+                a.extra_data AS extra_data,
 
                 -- Certificate Info
                 " . static::getCertificateTypeFields() . "
@@ -1528,6 +1528,77 @@ class ApplicationManager
         $result = $stmt->get_result();
 
         return $result->fetch_assoc() ?: null;
+    }
+
+    /**
+     * Search applications with LIKE on name/id fields — returns multiple results.
+     * Used by the v2 search API for broader queries (name search, not just exact ID match).
+     *
+     * @param string   $query    The search term
+     * @param int|null $unionId  Optional union filter
+     * @param int      $limit    Max results to return
+     * @return array Array of application result rows
+     */
+    public function searchApplications(string $query, ?int $unionId = null, int $limit = 20): array
+    {
+        $selectFields = self::getSelectFields();
+        $joins = self::getJoinStatements();
+
+        $searchPattern = '%' . $query . '%';
+
+        // Broader search: match IDs exactly OR match name fields via LIKE
+        $sql = "SELECT $selectFields
+                FROM applications a
+                $joins
+                WHERE (
+                    a.nid = ?
+                    OR a.birth_id = ?
+                    OR a.passport_no = ?
+                    OR a.application_id = ?
+                    OR a.applicant_id = ?
+                    OR a.name_bn LIKE ?
+                    OR a.name_en LIKE ?
+                    OR a.father_name_bn LIKE ?
+                    OR a.father_name_en LIKE ?
+                    OR a.mother_name_bn LIKE ?
+                    OR a.mother_name_en LIKE ?
+                    OR a.spouse_name_bn LIKE ?
+                    OR a.spouse_name_en LIKE ?
+                    OR a.sonod_number LIKE ?
+                    OR a.applicant_name LIKE ?
+                )";
+
+        $params = [
+            $query, $query, $query, $query, $query,
+            $searchPattern, $searchPattern, $searchPattern, $searchPattern,
+            $searchPattern, $searchPattern, $searchPattern, $searchPattern,
+            $searchPattern, $searchPattern
+        ];
+        $types = 'sssssssssssssss';
+
+        if ($unionId !== null) {
+            $sql .= " AND a.union_id = ?";
+            $params[] = $unionId;
+            $types .= 'i';
+        }
+
+        $sql .= " ORDER BY a.apply_date DESC LIMIT ?";
+        $params[] = $limit;
+        $types .= 'i';
+
+        $stmt = $this->conn->prepare($sql);
+        if (!$stmt) {
+            return [];
+        }
+
+        $stmt->bind_param($types, ...$params);
+        $stmt->execute();
+        $result = $stmt->get_result();
+
+        $rows = $result->fetch_all(MYSQLI_ASSOC);
+        $stmt->close();
+
+        return $rows;
     }
 
     /**

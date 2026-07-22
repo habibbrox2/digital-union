@@ -81,7 +81,7 @@
         }
         .bottom-text {
             position: absolute;
-            bottom: 10mm;
+            bottom: 4mm;
             left: 50%;
             transform: translateX(-50%);
             font-size: 12pt;
@@ -91,7 +91,7 @@
 
         .overlay-bottom {
             position: fixed;
-            bottom: 5mm;
+            bottom: 2mm;
             left: 0;
             width: 100%;
             margin: 0;
@@ -131,14 +131,13 @@
             </td>
             <td style="text-align: center;">
                 <img src="{{ url }}/assets/logo/logo.png" alt="বাংলাদেশ সরকার" height="75pt" width="75pt">
-                <br>
-                {% if union.stamp_logo_url is defined and union.stamp_logo_url %}
-                    <img src="{{ url ~ union.stamp_logo_url }}" alt="Stamp" height="60pt" width="60pt" style="margin-top:5pt;">
-                {% else %}
-                    <img src="{{ url }}/assets/img/band-cross.png" alt="X" height="60pt" width="60pt" style="margin-top:5pt;">
-                {% endif %}
+
             </td>
             <td style="width: 2.1in;">
+                {% if union.stamp_logo_url is defined and union.stamp_logo_url %}
+                    <img src="{{ url ~ union.stamp_logo_url }}" alt="Stamp" height="60pt" width="60pt" style="margin-top:5pt;">
+
+                {% endif %}
                 {% if data.applicant_photo %}
                     <img src="{{ url ~ data.applicant_photo }}" style="padding: 10px;" alt="applicant photo" height="60pt" width="60pt">
                 {% else %}
@@ -418,7 +417,7 @@
 
 
 	<!-- ইউপি প্রশাসনিক কর্মকর্তা এবং চেয়ারম্যান -->
-	<table border="0" width="100%" style="margin-top:50px; font-family:solaimanlipi; font-size:14pt;">
+	<table border="0" width="100%" style="margin-top:80px; font-family:solaimanlipi; font-size:14pt;">
 	    <tr>
 	        <!-- Left column: positioned further left -->
 	        <td style="width:35%; text-align:center;">
@@ -433,10 +432,6 @@
 	            চেয়ারম্যান
 	        </td>
     </tr>
-    </table>
-
-
-
     </table>
 
     <table border="0" class="overlay-bottom" style="font-family:solaimanlipi;">

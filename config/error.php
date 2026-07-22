@@ -41,29 +41,33 @@ function renderError(int $code, string $message): void
     http_response_code($code);
     header('Content-Type: text/html; charset=utf-8');
 
-    // Log detailed error information
-    $logPath = __DIR__ . '/../storage/logs/error.log';
-    $fallbackLogPath = __DIR__ . '/../storage/logs/bdris_log.txt';
-    if (!is_dir(dirname($logPath))) {
-        mkdir(dirname($logPath), 0755, true);
-    }
-    if (!file_exists($logPath)) {
-        @touch($logPath);
-    }
-    if (!is_writable($logPath)) {
-        $logPath = $fallbackLogPath;
+    // Log to http-error.log via ErrorHandler (uses dedicated http-error.log)
+    if (class_exists('ErrorHandler')) {
+        ErrorHandler::logHttpError($code, $message);
+    } else {
+        // Log detailed error information
+        $logPath = __DIR__ . '/../storage/logs/http-error.log';
+        $fallbackLogPath = __DIR__ . '/../storage/logs/bdris_log.txt';
+        if (!is_dir(dirname($logPath))) {
+            mkdir(dirname($logPath), 0755, true);
+        }
         if (!file_exists($logPath)) {
             @touch($logPath);
         }
-    }
-    
-    // বিস্তারিত error information সংগ্রহ
-    $timestamp = date('d-M-Y H:i:s e');
-    $currentUrl = $_SERVER['REQUEST_METHOD'] . ' ' . $_SERVER['REQUEST_URI'];
-    $clientIp = $_SERVER['REMOTE_ADDR'] ?? 'Unknown';
-    $userAgent = $_SERVER['HTTP_USER_AGENT'] ?? 'Unknown';
-    
-    $logEntry = <<<LOG
+        if (!is_writable($logPath)) {
+            $logPath = $fallbackLogPath;
+            if (!file_exists($logPath)) {
+                @touch($logPath);
+            }
+        }
+        
+        // বিস্তারিত error information সংগ্রহ
+        $timestamp = date('d-M-Y H:i:s e');
+        $currentUrl = $_SERVER['REQUEST_METHOD'] . ' ' . $_SERVER['REQUEST_URI'];
+        $clientIp = $_SERVER['REMOTE_ADDR'] ?? 'Unknown';
+        $userAgent = $_SERVER['HTTP_USER_AGENT'] ?? 'Unknown';
+        
+        $logEntry = <<<LOG
 ================================================================================
 [$timestamp] ERROR CODE: $code
 MESSAGE: $message
@@ -73,9 +77,10 @@ USER AGENT: $userAgent
 ================================================================================
 
 LOG;
-    
-    if (!@error_log($logEntry, 3, $logPath)) {
-        @file_put_contents($fallbackLogPath, $logEntry, FILE_APPEND);
+        
+        if (!@error_log($logEntry, 3, $logPath)) {
+            @file_put_contents($fallbackLogPath, $logEntry, FILE_APPEND);
+        }
     }
 
     // Check both Twig and SafeTwig wrapper

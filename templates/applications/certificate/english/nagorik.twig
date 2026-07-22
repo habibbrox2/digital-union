@@ -27,19 +27,19 @@
                         <div class="gov-title" style="font-size: 9pt; color: red;">Government of Bangladesh</div>
                         <div class="union-name" style="font-size: 19.5pt; color: #3c01c5; font-weight: bold; padding: 3.75pt 0;">
                             {% if union.union_name_en is defined and union.union_name_en %}
-                                {{ union.union_name_en }}
+                                {{ union.union_name_en|title }}
                             {% else %}
                                 {{ union.union_name_bn }}
                             {% endif %}
                         </div>
                         <div class="union-address" style="font-size: 12pt; color: black; line-height: 1.5;">
                             {% if union.upazila_name_en is defined and union.upazila_name_en %}
-                                {{ union.upazila_name_en }},
+                                {{ union.upazila_name_en|title }},
                             {% else %}
                                 {{ union.upazila_name_bn }},
                             {% endif %}
                             {% if union.district_name_en is defined and union.district_name_en %}
-                                {{ union.district_name_en }}
+                                {{ union.district_name_en|title }}
                             {% else %}
                                 {{ union.district_name_bn }}
                             {% endif %}
@@ -64,7 +64,7 @@
             <table style="width:100%; border-color:lightgray; border-collapse:collapse; margin-top: 4.5pt;" cellpadding="0" cellspacing="0">
                 <tr>
                     <td colspan="2" style="text-align:center; font-size:13.5pt; font-weight:bold; padding-bottom: 3.75pt">
-                        <u>{{ data.certificate_type_en|default(data.certificate_type_bn) }}</u>
+                        <u>{{ data.certificate_type_en }}</u>
                     </td>
                 </tr>
                 <tr>
@@ -103,7 +103,7 @@
                 <tr class="citizen-info" style="font-size: 12pt;">
                     
                     <td>Name</td>
-                    <td>: {{ data.name_en|default(data.name_bn) }}</td>
+                    <td>: {{ data.name_en|title }}</td>
                     <td rowspan="4" valign="top" style="text-align: center; z-index: 10;">
                         {% if data.applicant_photo %}
                             <img src="{{ url }}/{{ data.applicant_photo }}" height="75pt" width="75pt" alt="profile"
@@ -113,16 +113,16 @@
                 </tr>
                 <tr class="citizen-info" style="font-size: 12pt;">
                     <td>Father's Name</td>
-                    <td>: {{ data.father_name_en|default(data.father_name_bn) }}</td>
+                    <td>: {{ data.father_name_en|title }}</td>
                 </tr>
                 <tr class="citizen-info" style="font-size: 12pt;">
                     <td>Mother's Name</td>
-                    <td>: {{ data.mother_name_en|default(data.mother_name_bn) }}</td>
+                    <td>: {{ data.mother_name_en|title }}</td>
                 </tr>
                         {% if data.marital_status == 'Married' %}
                         <tr class="citizen-info" style="font-size: 12pt;">
                             <td>Spouse Name</td>
-                            <td>: {{ data.spouse_name_en|default(data.spouse_name_bn) | default('N/A') }}</td>
+                            <td>: {{ data.spouse_name_en | default('N/A') }}</td>
                         </tr>
                         {% endif %}
                                      
@@ -131,12 +131,12 @@
     <td rowspan="2" valign="top">Present Address</td>
     <td style="white-space: pre-line;" valign="top">:
         {% set line1 = [] %}
-        {% if data.present_village_en %}
+        {% if data.present_village_en|title }}}
             {% set line1 = line1|merge(['Village: ' ~ data.present_village_en]) %}
         {% elseif data.present_village_bn %}
             {% set line1 = line1|merge(['Village: ' ~ data.present_village_bn]) %}
         {% endif %}
-        {% if data.present_rbs_en %}
+        {% if data.present_rbs_en|title }}}
             {% set line1 = line1|merge(['Road/Block: ' ~ data.present_rbs_en]) %}
         {% elseif data.present_rbs_bn %}
             {% set line1 = line1|merge(['Road/Block: ' ~ data.present_rbs_bn]) %}
@@ -149,17 +149,17 @@
 <tr class="citizen-info" style="font-size: 12pt;">
     <td style="white-space: pre-line;" valign="top"> &nbsp;
         {% set line2 = [] %}
-        {% if data.present_postoffice_en %}
+        {% if data.present_postoffice_en|title }}}
             {% set line2 = line2|merge(['Post Office: ' ~ data.present_postoffice_en]) %}
         {% elseif data.present_postoffice_bn %}
             {% set line2 = line2|merge(['Post Office: ' ~ data.present_postoffice_bn]) %}
         {% endif %}
-        {% if data.present_upazila_en %}
+        {% if data.present_upazila_en|title }}}
             {% set line2 = line2|merge(['Upazila: ' ~ data.present_upazila_en]) %}
         {% elseif data.present_upazila_bn %}
             {% set line2 = line2|merge(['Upazila: ' ~ data.present_upazila_bn]) %}
         {% endif %}
-        {% if data.present_district_en %}
+        {% if data.present_district_en|title }}}
             {% set line2 = line2|merge(['District: ' ~ data.present_district_en]) %}
         {% elseif data.present_district_bn %}
             {% set line2 = line2|merge(['District: ' ~ data.present_district_bn]) %}
@@ -174,12 +174,12 @@
     <td rowspan="2" valign="top">Permanent Address</td>
     <td style="white-space: pre-line;" valign="top">:
         {% set p1 = [] %}
-        {% if data.permanent_village_en %}
+        {% if data.permanent_village_en|title }}}
             {% set p1 = p1|merge(['Village: ' ~ data.permanent_village_en]) %}
         {% elseif data.permanent_village_bn %}
             {% set p1 = p1|merge(['Village: ' ~ data.permanent_village_bn]) %}
         {% endif %}
-        {% if data.permanent_rbs_en %}
+        {% if data.permanent_rbs_en|title }}}
             {% set p1 = p1|merge(['Road/Block: ' ~ data.permanent_rbs_en]) %}
         {% elseif data.permanent_rbs_bn %}
             {% set p1 = p1|merge(['Road/Block: ' ~ data.permanent_rbs_bn]) %}
@@ -192,17 +192,17 @@
 <tr class="citizen-info" style="font-size: 12pt;">
     <td style="white-space: pre-line;" valign="top"> &nbsp;
         {% set p2 = [] %}
-        {% if data.permanent_postoffice_en %}
+        {% if data.permanent_postoffice_en|title }}}
             {% set p2 = p2|merge(['Post Office: ' ~ data.permanent_postoffice_en]) %}
         {% elseif data.permanent_postoffice_bn %}
             {% set p2 = p2|merge(['Post Office: ' ~ data.permanent_postoffice_bn]) %}
         {% endif %}
-        {% if data.permanent_upazila_en %}
+        {% if data.permanent_upazila_en|title }}}
             {% set p2 = p2|merge(['Upazila: ' ~ data.permanent_upazila_en]) %}
         {% elseif data.permanent_upazila_bn %}
             {% set p2 = p2|merge(['Upazila: ' ~ data.permanent_upazila_bn]) %}
         {% endif %}
-        {% if data.permanent_district_en %}
+        {% if data.permanent_district_en|title }}}
             {% set p2 = p2|merge(['District: ' ~ data.permanent_district_en]) %}
         {% elseif data.permanent_district_bn %}
             {% set p2 = p2|merge(['District: ' ~ data.permanent_district_bn]) %}
@@ -316,29 +316,37 @@
 
 
 
-            <!-- Instructions Section -->
-            <table class="instructions">
-                <tr>
-                    <td style="border-right:0.75pt solid black; border-top:0.75pt solid black; text-align:center;">
-                        <img src="https://quickchart.io/qr?text={{ url }}/verify/nagorik_en/{{ data.sonod_number }}/{{ union.union_code }}/1&margin=1&size=300" height="82.5pt" width="82.5pt" style="padding:11.25pt;">
-                    </td>
-                    <td style="padding-left:22.5pt; border-bottom:0.75pt solid black; font-size: 10.5pt;">
-                        Instructions: <br />
-                        1) Verify this certificate using the 17-digit certificate number from the website ({{ union.website }}) or install "Smart UP, Dhaka" app from Play Store and scan the QR code.<br />
-                        2) For any information, call or email us.
-                    </td>
-                </tr>
-                <tr>
-                    <td style="width: 25%; text-align:center;">
-                        <font style="font-size:6pt;">Developed by Innovation IT</font><br/>
-                        <font style="font-size:6pt;">www.innovationit.com.bd</font>
-                    </td>
-                    <td style="width: 75%; text-align:center;">
-                        <font style="font-size:6pt;">{{ union.website }}- {{ union.email }}</font>
-                    </td>
-                </tr>
-            </table>
+
         </div>
     </div>
+
+<!-- Footer -->
+<htmlpagefooter name="MyFooter">
+    <table class="instructions" style="width: 94%; border-collapse: collapse;">
+        <tr>
+            <td style="border-right:1px solid black; border-top:1px solid black; text-align:center; width: 25%;">
+                <img src="https://quickchart.io/qr?text={{ url }}/verify/nagorik_en/{{ data.sonod_number }}/{{ union.union_code }}/1&margin=1&size=300" height="110" width="110">
+            </td>
+            <td style="padding-left:30px; border-bottom:1px solid black; width: 75%;">
+                <b>Instructions:</b><br>
+                1) Verify this certificate using the 17-digit certificate number from the website ({{ union.website }}) or install "Smart UP, Dhaka" app from Play Store and scan the QR code.<br>
+                2) For any information, call or email us.
+            </td>
+        </tr>
+        <tr>
+            <td style="text-align:center;">
+                <font style="font-size:8px;">Developed by Innovation IT</font><br>
+                <font style="font-size:8px;">www.innovationit.com.bd</font>
+            </td>
+            <td style="text-align:center;">
+                <font style="font-size:8px;">{{ union.website }} - {{ union.email }}</font>
+            </td>
+        </tr>
+    </table>
+</htmlpagefooter>
+
+<!-- Enable Footer -->
+<sethtmlpagefooter name="MyFooter" value="on" />
+
 </body>
 </html>

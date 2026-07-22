@@ -41,7 +41,7 @@
     /* Intro Text */
     .intro-text {
         font-size: 10.5pt;
-        line-height: 1.8;
+        line-height: 1.4;
         margin: 7.5pt 0;
         font-weight: normal;
         color: #000;
@@ -69,20 +69,19 @@
     /* Warish Statement */
     .warish-statement {
         font-size: 10.5pt;
-        line-height: 1.8;
+        line-height: 1.4;
         margin: 7.5pt 0 7.5pt 0;
         color: #000;
     }
 
 /* Warish Table - mPDF Ready */
 table.warish-table {
-    width: 98%;
+    width: 95%;
     border-collapse: collapse;
-    font-size: 10.5pt;           /* Default font-size */
+    font-size: 10.5pt;
     margin-bottom: 7.5pt;
     color: #000;
-    table-layout: fixed; 
-    page-break-inside: auto;   /* Table can break across pages */
+    page-break-inside: auto;
     word-wrap: break-word;
     word-break: break-word;
 }
@@ -91,27 +90,15 @@ table.warish-table {
 table.warish-table th,
 table.warish-table td {
     border: 0.75pt solid #000;
-    padding: 4.5pt 6pt;
     text-align: center;
     vertical-align: middle;
     word-wrap: break-word;
     word-break: break-all;   /* Ensures long words break inside cells */
 }
 
-/* Avoid row break inside a page */
+/* Row break allowed for single-page fit */
 table.warish-table tr {
-    page-break-inside: avoid;
-}
-
-/* Compact Version for many rows */
-table.warish-table.warish-compact {
-    font-size: 9pt !important;
-}
-
-table.warish-table.warish-compact th,
-table.warish-table.warish-compact td {
-    padding: 2.25pt 3pt !important;
-    line-height: 1.2 !important;
+    page-break-inside: auto;
 }
 
 /* Last row summary */
@@ -124,17 +111,10 @@ table.warish-table td {
     white-space: normal !important;
 }
 
-.instructions-md-top {
-        margin-top: 20pt !important;
-
-}
-
-
-
     .indented-paragraph {
         width: 98%;
         text-indent: 37.5pt;
-        line-height: 1.8;
+        line-height: 1.4;
         margin: 9pt 0 9pt 0;
         padding: 0;
     word-wrap: break-word;
@@ -206,11 +186,18 @@ table.warish-table td {
                 </tr>
             </table>
 
+            {% set member_count = data.warish_members|length %}
+            {% if member_count > 15 %}
+                {% set compact_scale = 0.75 %}
+            {% else %}
+                {% set compact_scale = 1.0 %}
+            {% endif %}
+
             <!-- Intro Text -->
             <table><tr><td class="intro-text"> &nbsp; &nbsp;&nbsp; &nbsp;এই মর্মে প্রত্যয়ন করা যাচ্ছে যে,</td></tr></table>
 
             <!-- Personal Information Table -->
-            <table class="personal-info">
+            <table class="personal-info" style="{% if compact_scale < 1 %}font-size: {{ (10.5 * compact_scale)|round(1) }}pt; margin: {{ (4.5 * compact_scale)|round(1) }}pt 0;{% endif %}">
                 <tr>
                     <td class="info-label">নাম</td>
                     <td>: {{ data.name_bn }}</td>
@@ -259,18 +246,22 @@ table.warish-table td {
             </table>
 
             <!-- Warish Statement -->
-            <table><tr><td class="warish-statement"> &nbsp; &nbsp;&nbsp; &nbsp; অত্র ইউনিয়নের স্থায়ী অধিবাসী ছিলেন। তিনি {{ data.extra.death_year ? (data.extra.death_year|bn ~ ' সালে') : (data.birth_date|date("d-m-Y")|bn ~ ' তারিখে') }}
+            <table><tr><td class="warish-statement" style="{% if compact_scale < 1 %}font-size: {{ (10.5 * compact_scale)|round(1) }}pt; margin: {{ (4 * compact_scale)|round(1) }}pt 0; line-height: {{ (1.8 * compact_scale + 0.3)|round(1) }};{% endif %}"> &nbsp; &nbsp;&nbsp; &nbsp; অত্র ইউনিয়নের স্থায়ী অধিবাসী ছিলেন। তিনি {{ data.extra.death_year ? (data.extra.death_year|bn ~ ' সালে') : (data.birth_date|date("d-m-Y")|bn ~ ' তারিখে') }}
 
 
             মৃত্যুবরণ করেন। মৃত্যুকালে তিনি নিম্নলিখিত ওয়ারিশগণকে রাখিয়া মৃত্যুবরণ করেন।</td></tr></table>
 
             <!-- Warish List -->
-            <table class="warish-table {% if data.warish_members|length > 7 %}warish-compact{% endif %}">
+            <table class="warish-table" style="{% if compact_scale < 1 %}font-size: {{ (10.5 * compact_scale)|round(1) }}pt; margin-bottom: {{ (7.5 * compact_scale)|round(1) }}pt;{% endif %}">
 
-                <tr>
-                    <th>ক্রমিক নং</th><th>নাম</th><th>সম্পর্ক</th>
-                    <th>বয়স/জন্ম তারিখ</th><th>জাতীয় পরিচয়পত্র/নিবন্ধন নং</th>
-                    <th>বৈবাহিক অবস্থা</th><th>জীবিত/মৃত</th>
+                <tr style="{% if compact_scale < 1 %}font-size: {{ (10.5 * compact_scale)|round(1) }}pt;{% endif %}">
+                    <th style="width: 5%;">ক্রমিক নং</th>
+                    <th style="width: 24%;">নাম</th>
+                    <th style="width: 16%;">সম্পর্ক</th>
+                    <th style="width: 15%;">বয়স/জন্ম তারিখ</th>
+                    <th style="width: 18%;">জাতীয় পরিচয়পত্র নং</th>
+                    <th style="width: 10%;">বৈবাহিক অবস্থা</th>
+                    <th style="width: 10%;">জীবিত/মৃত</th>
                 </tr>
                 {% for member in data.warish_members %}
                     <tr>
@@ -293,24 +284,27 @@ table.warish-table td {
             </table>
 
 
-            <table>
+            <table style="{% if compact_scale < 1 %}font-size: {{ (10.5 * compact_scale)|round(1) }}pt; margin-top: {{ (4 * compact_scale)|round(1) }}pt;{% endif %}">
             <tr>
-                <td colspan="5" class="indented-paragraph">
+                <td colspan="5" class="indented-paragraph" style="{% if compact_scale < 1 %}font-size: {{ (10.5 * compact_scale)|round(1) }}pt; line-height: {{ (1.8 * compact_scale + 0.3)|round(1) }}; text-indent: {{ (37.5 * compact_scale)|round(1) }}pt; margin: {{ (5 * compact_scale)|round(1) }}pt 0;{% endif %}">
                     &nbsp; &nbsp;&nbsp; &nbsp;অত্র ইউনিয়নের {{ approval.verifier_name_bn is not empty ? '"' ~ approval.verifier_name_bn ~ '"' : '' }} এর প্রদত্ত তথ্যের ভিত্তিতে এই সনদ প্রদান করা হলো। এখানে উল্লেখ্য যে, আবেদন পত্রে আবেদনকারী কর্তৃক ওয়ারিশান সংক্রান্ত কোন ভুল তথ্য প্রদান করা হলে ওয়ারিশ সনদটি বাতিল বলে গণ্য হবে।
                 </td>
             </tr>
 		<tr>
-		    <td colspan="5" style="line-height:20pt;">&nbsp;</td>
+		    <td colspan="5" style="line-height:{{ (20 * compact_scale)|round(1) }}pt;">&nbsp;</td>
 		</tr>
             <tr>
-                <td class="no-border" colspan="2">আবেদনকারী: {{ data.applicant_name }}</td>
-                <td class="no-border" colspan="3" style="text-align: left;">পিতা/স্বামী: {{ data.extra.applicant_name_father_bn }}</td>
+                <td class="no-border" colspan="2" style="{% if compact_scale < 1 %}font-size: {{ (10.5 * compact_scale)|round(1) }}pt;{% endif %}">আবেদনকারী: {{ data.applicant_name }}</td>
+                <td class="no-border" colspan="3" style="text-align: left;{% if compact_scale < 1 %} font-size: {{ (10.5 * compact_scale)|round(1) }}pt;{% endif %}">পিতা/স্বামী: {{ data.extra.applicant_name_father_bn }}</td>
             </tr>
             </table>
             
             
 
-            <table class="instructions {% if data.warish_members|length > 7 %}instructions-md-top{% endif %}">
+
+<!-- Footer -->
+<htmlpagefooter name="MyFooter">
+    <table class="instructions" style="width: 94%; border-collapse: collapse;">
                 <tr>
                     <td style="border-right:1px solid black; border-top:1px solid black; text-align:center; width: 25%;">
                         <img src="https://quickchart.io/qr?text={{ url }}/verify/warish_bn/{{ data.sonod_number }}/{{ union.union_code }}/1&margin=1&size=300" height="110" width="110">
@@ -327,12 +321,16 @@ table.warish-table td {
                         <font style="font-size:8px;">www.innovationit.com.bd</font>
                     </td>
                     <td style="text-align:center;">
+                     <font style="font-size:8px;">অল্প সময়ে, কম খরচে সঠিক বিচার পেতে চলো যাই গ্রাম আদালতে। </font><br>
                         <font style="font-size:8px;">{{ union.website }} - {{ union.email }}</font>
                     </td>
                 </tr>
-            </table>
-            
- 
+    </table>
+</htmlpagefooter>
+
+<!-- Enable Footer -->
+<sethtmlpagefooter name="MyFooter" value="on" />
+
         </div>
     </div>
 </body>

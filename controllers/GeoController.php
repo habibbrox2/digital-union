@@ -9,6 +9,8 @@
 
 global $router, $twig, $mysqli;
 
+require_once __DIR__ . '/../modules/Services/GeoService.php';
+
 $authService = new AuthService($mysqli);
 $geoService = new GeoService($mysqli);
 
@@ -141,6 +143,92 @@ $router->post('/geo/geoUnion', function() use ($geoService) {
 $router->post('/geo/getByTypeTree', function() {
     header('Content-Type: application/json');
     echo json_encode(['status' => 'success', 'data' => []]);
+});
+
+// ================================================================
+// V2 GEO API ROUTES (for cascading dropdowns)
+// ================================================================
+
+// GET /api/v2/geo/districts — list all districts
+$router->get('/api/v2/geo/districts', function() use ($mysqli) {
+    header('Content-Type: application/json; charset=utf-8');
+    
+    $result = $mysqli->query(
+        "SELECT id, name_en, name_bn FROM geo_location WHERE geo_order = 1 ORDER BY name_en"
+    );
+    
+    $districts = [];
+    if ($result) {
+        while ($row = $result->fetch_assoc()) {
+            $districts[] = $row;
+        }
+    }
+    
+    echo json_encode($districts);
+});
+
+// GET /api/v2/geo/upazilas/{district_id} — list upazilas for a district
+$router->get('/api/v2/geo/upazilas/{district_id}', function($district_id = null) use ($mysqli) {
+    header('Content-Type: application/json; charset=utf-8');
+    
+    $districtId = (int)($district_id ?: 0);
+    if ($districtId <= 0) {
+        echo json_encode([]);
+        return;
+    }
+    
+    $stmt = $mysqli->prepare(
+        "SELECT id, name_en, name_bn FROM geo_location WHERE geo_order = 2 AND parent_geo_id = ? ORDER BY name_en"
+    );
+    
+    if (!$stmt) {
+        echo json_encode([]);
+        return;
+    }
+    
+    $stmt->bind_param('i', $districtId);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    
+    $upazilas = [];
+    while ($row = $result->fetch_assoc()) {
+        $upazilas[] = $row;
+    }
+    $stmt->close();
+    
+    echo json_encode($upazilas);
+});
+
+// GET /api/v2/geo/unions/{upazila_id} — list unions for an upazila
+$router->get('/api/v2/geo/unions/{upazila_id}', function($upazila_id = null) use ($mysqli) {
+    header('Content-Type: application/json; charset=utf-8');
+    
+    $upazilaId = (int)($upazila_id ?: 0);
+    if ($upazilaId <= 0) {
+        echo json_encode([]);
+        return;
+    }
+    
+    $stmt = $mysqli->prepare(
+        "SELECT union_id AS id, union_name_en AS name_en, union_name_bn AS name_bn, union_code FROM unions WHERE upazila_id = ? AND is_active = 1 ORDER BY union_name_en ASC"
+    );
+    
+    if (!$stmt) {
+        echo json_encode([]);
+        return;
+    }
+    
+    $stmt->bind_param('i', $upazilaId);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    
+    $unions = [];
+    while ($row = $result->fetch_assoc()) {
+        $unions[] = $row;
+    }
+    $stmt->close();
+    
+    echo json_encode($unions);
 });
 
 // ================================================================

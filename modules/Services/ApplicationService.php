@@ -870,6 +870,10 @@ class ApplicationService
         $is_deads         = $post['is_dead'] ?? [];
 
         $count = count($serial_nos);
+        // Validate consistency of member data arrays (prevents index-out-of-bounds)
+        if ($count !== count($member_name_bns)) {
+            throw new \Exception('Member data arrays are inconsistent: serial_no count (' . $count . ') != warish_name_bn count (' . count($member_name_bns) . ')');
+        }
         for ($i = 0; $i < $count; $i++) {
             $relation_value = $relations[$i] ?? '';
             $relation_bn = '';
@@ -883,25 +887,32 @@ class ApplicationService
             }
 
             $memberData = [
-                'application_id'  => $applicationId,
+                'application_id'   => $applicationId,
                 'certificate_type' => $certificateType,
-                'name_en'         => sanitize_input($member_name_ens[$i] ?? ''),
-                'name_bn'         => sanitize_input($member_name_bns[$i] ?? ''),
-                'relation_en'     => $relation_en,
-                'relation_bn'     => $relation_bn,
-                'birth_date'      => sanitize_input($member_birth_dates[$i] ?? ''),
-                'nid'             => sanitize_input($relation_nids[$i] ?? ''),
-                'serial_no'       => (int)($serial_nos[$i] ?? 0),
-                'marital_status'  => sanitize_input($marriage_states[$i] ?? ''),
-                'is_dead'         => (!empty($is_deads[$i]) && $is_deads[$i] === '1') ? '1' : '0',
+                'name_en'          => sanitize_input($member_name_ens[$i] ?? ''),
+                'name_bn'          => sanitize_input($member_name_bns[$i] ?? ''),
+                'relation_en'      => $relation_en,
+                'relation_bn'      => $relation_bn,
+                'birth_date'       => sanitize_input($member_birth_dates[$i] ?? ''),
+                'nid'              => sanitize_input($relation_nids[$i] ?? ''),
+                'gender'           => '',
+                'occupation'       => '',
+                'mobile'           => '',
+                'serial_no'        => (int)($serial_nos[$i] ?? 0),
+                'address'          => '',
+                'marital_status'   => sanitize_input($marriage_states[$i] ?? ''),
+                'is_dead'          => (!empty($is_deads[$i]) && $is_deads[$i] === '1') ? '1' : '0',
             ];
 
             $addResult = $this->appManager->addMember($memberData);
             $ok = is_array($addResult)
-                ? (($addResult['status'] ?? false) === true)
+                ? (($addResult['status'] ?? '') === 'success')
                 : (bool)$addResult;
             if (!$ok) {
                 $msg = is_array($addResult) ? ($addResult['message'] ?? '') : '';
+                // Log the actual MySQL error for debugging
+                error_log('[insertApplicationMembers] Failed at index ' . $i . ' for application ' . $applicationId . ': ' . $msg);
+                error_log('[insertApplicationMembers] memberData keys: ' . implode(', ', array_keys($memberData)));
                 throw new \Exception(($msg ?: 'Member insertion failed') . ' at index ' . $i);
             }
         }

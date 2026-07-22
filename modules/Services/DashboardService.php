@@ -315,33 +315,189 @@ class DashboardService
     }
 
     /**
-     * Get error logs for live view
+     * Single source of truth for all log types — each entry has:
+     *   'file'  => filename inside storage/logs/
+     *   'label' => human-readable name for the dropdown
      */
-    public function getErrorLogs(): array
-    {
-        $logFile = __DIR__ . '/../../storage/logs/error.log';
-        if (!file_exists($logFile)) {
-            return ['logs' => []];
-        }
+    private const LOG_TYPES = [
+        'error' => ['file' => 'error.log',          'label' => 'PHP Runtime (error.log)'],
+        'route' => ['file' => 'route-error.log',    'label' => 'Route Errors (route-error.log)'],
+        'twig'  => ['file' => 'twig-error.log',     'label' => 'Twig Errors (twig-error.log)'],
+        'fatal' => ['file' => 'fatal-error.log',    'label' => 'Fatal Errors (fatal-error.log)'],
+        '404'   => ['file' => 'route-404.log',      'label' => '404 Not Found (route-404.log)'],
+        'http'  => ['file' => 'http-error.log',     'label' => 'HTTP Errors (http-error.log)'],
+    ];
 
-        $logs = file($logFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-        return ['logs' => array_slice($logs, -1000)];
+    /**
+     * Get all available log types with display names
+     */
+    public function getLogTypes(): array
+    {
+        return array_map(fn(array $t): string => $t['label'], self::LOG_TYPES);
     }
 
     /**
-     * Clear error logs
+     * Resolve a log type to a full file path
      */
-    public function clearErrorLogs(): bool
+    private function resolveLogFile(string $logType): string
     {
-        $logFile = __DIR__ . '/../../storage/logs/error.log';
+        $logDir = __DIR__ . '/../../storage/logs';
+        $filename = (self::LOG_TYPES[$logType]['file'] ?? 'error.log');
+        return $logDir . '/' . $filename;
+    }
+
+    /**
+     * Get error logs for live view (specific log type)
+     */
+    public function getErrorLogs(string $logType = 'error'): array
+    {
+        $logFile = $this->resolveLogFile($logType);
+        if (!file_exists($logFile)) {
+            return ['logs' => [], 'type' => $logType];
+        }
+
+        $logs = file($logFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+        return [
+            'logs' => array_slice($logs, -1000),
+            'type' => $logType,
+        ];
+    }
+
+    /**
+     * Clear a specific error log
+     */
+    public function clearErrorLogs(string $logType = 'error'): bool
+    {
+        $logFile = $this->resolveLogFile($logType);
         return file_put_contents($logFile, '') !== false;
     }
 
     /**
-     * Check if error log file exists and is readable
+     * Get the file path for a specific log type
      */
-    public function getErrorLogFile(): string
+    public function getErrorLogFile(string $logType = 'error'): string
     {
-        return __DIR__ . '/../../storage/logs/error.log';
+        return $this->resolveLogFile($logType);
+    }
+
+    /**
+     * Format bytes into a human-readable string
+     */
+    private static function formatBytes(int $bytes): string
+    {
+        if ($bytes >= 1048576) {
+            return round($bytes / 1048576, 1) . ' MB';
+        }
+        if ($bytes >= 1024) {
+            return round($bytes / 1024, 1) . ' KB';
+        }
+        return $bytes . ' B';
+    }
+
+    /**
+     * Get real-time health check with per-file stats for all log files
+     *
+     * Counts entries ONLY from the per-file loop (avoiding double-reads)
+     * and skips reading files larger than 10MB to prevent OOM.
+     */
+    public function getHealthCheck(): array
+    {
+        $logDir = __DIR__ . '/../../storage/logs';
+        $maxReadSize = 10 * 1024 * 1024; // 10MB — skip file content reads beyond this
+
+        $totalEntries  = 0;
+        $totalBytes    = 0;
+        $files         = [];
+
+        $errorCounts = [
+            'route_errors'     => 0,
+            'twig_errors'      => 0,
+            'route_404_errors' => 0,
+            'http_errors'      => 0,
+            'fatal_errors'     => 0,
+            'exceptions'       => 0,
+            'warnings'         => 0,
+            'notices'          => 0,
+        ];
+
+        foreach (self::LOG_TYPES as $key => $config) {
+            $path = $logDir . '/' . $config['file'];
+            $exists  = file_exists($path);
+            $size    = $exists ? @filesize($path) : 0;
+            $size    = ($size !== false) ? $size : 0;
+            $entryCount = 0;
+            $content = null;
+
+            // Only read if the file is small enough
+            if ($exists && $size > 0 && $size <= $maxReadSize) {
+                $content = @file_get_contents($path);
+                if ($content !== false && $content !== '') {
+                    $entryCount = substr_count($content, "---\n");
+                }
+            } elseif ($exists && $size > $maxReadSize) {
+                // File too large — mark entries as unknown
+                $entryCount = null;
+            }
+
+            $totalEntries += ($entryCount !== null) ? max($entryCount, 0) : 0;
+            $totalBytes   += $size;
+
+            $files[$key] = [
+                'label'         => $config['label'],
+                'file'          => $config['file'],
+                'exists'        => $exists,
+                'writable'      => $exists ? is_writable($path) : false,
+                'size_bytes'    => $size,
+                'size_display'  => self::formatBytes($size),
+                'entries'       => $entryCount,
+                'last_modified' => $exists ? date('Y-m-d H:i:s', @filemtime($path)) : null,
+            ];
+
+            // Aggregate sub-counts per type (avoids calling getErrorStats which re-reads)
+            if ($content !== null && $content !== '') {
+                switch ($key) {
+                    case 'main':
+                        $errorCounts['warnings'] += substr_count($content, '[WARNING]');
+                        $errorCounts['notices']  += substr_count($content, '[NOTICE]');
+                        break;
+                    case 'route':
+                        $errorCounts['route_errors'] += substr_count($content, '[ROUTE_ERROR]');
+                        break;
+                    case 'twig':
+                        $errorCounts['twig_errors'] += substr_count($content, '[TWIG_ERROR]');
+                        break;
+                    case 'fatal':
+                        $errorCounts['fatal_errors'] += substr_count($content, '[FATAL_');
+                        $errorCounts['exceptions']   += substr_count($content, '[UNCAUGHT EXCEPTION]');
+                        break;
+                    case '404':
+                        $errorCounts['route_404_errors'] += substr_count($content, '[ROUTE_404]');
+                        break;
+                    case 'http':
+                        $errorCounts['http_errors'] += substr_count($content, '[HTTP_ERROR');
+                        break;
+                }
+            }
+        }
+
+        $errorStats = array_merge($errorCounts, [
+            'total_errors'       => $totalEntries,
+            'file_size_bytes'    => $totalBytes,
+            'file_size_display'  => self::formatBytes($totalBytes),
+        ]);
+
+        return [
+            'status'     => 'ok',
+            'timestamp'  => date('Y-m-d H:i:s'),
+            'server'     => [
+                'php_version'      => PHP_VERSION,
+                'php_memory_limit' => ini_get('memory_limit'),
+                'server_software'  => $_SERVER['SERVER_SOFTWARE'] ?? 'Unknown',
+                'app_env'          => getenv('APP_ENV') ?: 'production',
+                'request_time'     => date('Y-m-d H:i:s', $_SERVER['REQUEST_TIME'] ?? time()),
+            ],
+            'log_files'   => $files,
+            'error_stats' => $errorStats,
+        ];
     }
 }

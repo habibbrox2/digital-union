@@ -22,11 +22,9 @@
         enctype="multipart/form-data">
 
         <!-- Hidden Inputs -->
-        {# certificate_type comes from the URL when prefilled (edit/reuse mode) — it never changes #}
-        {% if not reuse_mode and data.application_id is not defined %}
-            <input type="hidden" name="certificate_type" value="{{ certificate_type }}">
-        {% endif %}
-        {# Make certificate_type available to JS even when hidden input is omitted #}
+        {# certificate_type hidden input — always present so JS initExtraFields() can find it #}
+        <input type="hidden" name="certificate_type" value="{{ certificate_type }}">
+        {# Fallback: Make certificate_type available to JS via data attribute as well #}
         <span id="certificate_type_data" data-certificate-type="{{ certificate_type }}" style="display:none"></span>
 
         {# Only show application_id if not reuse_mode and data exists #}

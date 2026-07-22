@@ -162,11 +162,11 @@ $router->get('/verify/{url_path}_en/{sonod_number}/{union_code}/{rmo_code}', fun
     }
 
     $union = !empty($application['union_id']) ? $appService->getUnionById((int)$application['union_id']) : null;
-    $template = $appService->resolveTemplate('applications/online-verify/bangla', $application['certificate_type']);
+    $template = $appService->resolveTemplate('applications/online-verify/english', $application['certificate_type']);
 
     $viewData = $appService->buildCertificateViewData($application, $union, [
-        'title' => 'যাচাই',
-        'header_title' => 'যাচাই',
+        'title' => 'Certificate Verification',
+        'header_title' => 'Online Certificate Verification',
         'certificate_type' => $certificate_type,
         'certificate_type_en' => $certificate_type_en,
         'union_code' => $union_code,

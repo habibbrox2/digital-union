@@ -315,7 +315,7 @@
             </fieldset>
 
             <!-- অনুমোদন ফর্ম -->
-            <form id="approvalForm" method="POST" class="mb-4" autocomplete="on">
+            <form id="approvalForm" method="POST" action="/applications/{{ data.certificate_type }}/approve/{{ data.application_id }}" class="mb-4" autocomplete="on">
                 <input type="hidden" id="certificate_type" name="certificate_type" value="{{ data.certificate_type }}">
                 <input type="hidden" id="application_id" name="application_id" value="{{ data.application_id }}">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token }}">

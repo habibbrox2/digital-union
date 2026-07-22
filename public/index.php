@@ -16,13 +16,28 @@ $logDir = __DIR__ . '/../storage/logs';
 $logFile = $logDir . '/error.log';
 $fallbackLogFile = $logDir . '/bdris_log.txt';
 
+// Ensure log directory exists
 if (!is_dir($logDir)) {
     mkdir($logDir, 0755, true);
 }
 
-if (!file_exists($logFile)) {
-    @touch($logFile);
+// Create all separate log files
+$logFiles = [
+    'error' => $logFile,
+    'route' => $logDir . '/route-error.log',
+    'twig'  => $logDir . '/twig-error.log',
+    'fatal' => $logDir . '/fatal-error.log',
+    '404'   => $logDir . '/route-404.log',
+    'http'  => $logDir . '/http-error.log',
+];
+
+foreach ($logFiles as $path) {
+    if (!file_exists($path)) {
+        @touch($path);
+    }
 }
+
+// Main error.log writability check (fallback to bdris_log.txt)
 if (!is_writable($logFile)) {
     $logFile = $fallbackLogFile;
     if (!file_exists($logFile)) {
@@ -50,7 +65,13 @@ if ($showErrors) {
 
 // Load ErrorHandler class early
 require_once __DIR__ . '/../models/ErrorHandler.php';
-ErrorHandler::init($logFile, $showErrors);
+ErrorHandler::init($logFile, $showErrors, null, [
+    'route' => $logFiles['route'],
+    'twig'  => $logFiles['twig'],
+    'fatal' => $logFiles['fatal'],
+    '404'   => $logFiles['404'],
+    'http'  => $logFiles['http'],
+]);
 
 // ----------------------------
 // 0a. Global Error/Exception/Shutdown Handlers
@@ -60,22 +81,8 @@ ErrorHandler::init($logFile, $showErrors);
 // are all registered in config/error.php using ErrorHandler class methods.
 
 // ----------------------------
-// 1. Load Config Files
-// ----------------------------
-foreach (glob(__DIR__ . '/../config/*.php') as $file) {
-    require_once $file;
-}
-
-// ----------------------------
-// 1a. Setup Migration Permissions (RBAC)
-// ----------------------------
-require_once __DIR__ . '/../helpers/migration_helper.php';
-if (function_exists('setupMigrationPermissions')) {
-    setupMigrationPermissions($mysqli);
-}
-
-// ----------------------------
-// 2. Autoloader (PSR-4 style)
+// 1. Autoloader (PSR-4 style) — MUST be registered before loading config files
+//     because models like PermissionsManager are needed during TwigManager setup.
 // ----------------------------
 spl_autoload_register(function ($className) {
     // Search in classes/ directory first
@@ -94,6 +101,20 @@ spl_autoload_register(function ($className) {
         return;
     }
 
+    // Then search in helpers/ directory (case-insensitive on Linux)
+    $helperFile = __DIR__ . '/../helpers/' . str_replace('\\', '/', $className) . '.php';
+    if (file_exists($helperFile)) {
+        require_once $helperFile;
+        return;
+    }
+    // Fallback: case-insensitive glob scan for helpers (handles Linux case-sensitivity)
+    foreach (glob(__DIR__ . '/../helpers/*.php') as $f) {
+        if (strcasecmp(basename($f, '.php'), $className) === 0) {
+            require_once $f;
+            return;
+        }
+    }
+
     error_log("Class not found: {$className}");
     if (function_exists('renderError')) {
         renderError(500, "সার্ভার ত্রুটি: '{$className}' ক্লাস পাওয়া যায়নি।");
@@ -103,6 +124,21 @@ spl_autoload_register(function ($className) {
     }
     exit;
 });
+
+// ----------------------------
+// 2. Load Config Files
+// ----------------------------
+foreach (glob(__DIR__ . '/../config/*.php') as $file) {
+    require_once $file;
+}
+
+// ----------------------------
+// 2a. Setup Migration Permissions (RBAC)
+// ----------------------------
+require_once __DIR__ . '/../helpers/migration_helper.php';
+if (function_exists('setupMigrationPermissions')) {
+    setupMigrationPermissions($mysqli);
+}
 
 // ----------------------------
 // 3. Initialize Router
@@ -143,6 +179,11 @@ try {
     $router->dispatch($requestMethod, $requestUri);
 
 } catch (RouteNotFoundException $e) {
+
+    // Log 404 to dedicated route-404.log
+    if (class_exists('ErrorHandler')) {
+        ErrorHandler::logRoute404($requestMethod, $requestUri);
+    }
 
     renderError(404, "<h3>404 ত্রুটি</h3><p>পৃষ্ঠাটি পাওয়া যায়নি</p>");
 

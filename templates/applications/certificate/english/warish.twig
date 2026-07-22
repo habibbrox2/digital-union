@@ -64,18 +64,17 @@
     /* Warish Statement */
     .warish-statement {
         font-size: 10.5pt;
-        line-height: 1.8;
+        line-height: 1.4;
         margin: 7.5pt 0 7.5pt 0;
         color: #000;
     }
 
 table.warish-table {
-    width: 98%;
+    width: 90%;
     border-collapse: collapse;
     font-size: 10.5pt;
     margin-bottom: 7.5pt;
     color: #000;
-    table-layout: fixed; 
     page-break-inside: auto;
     word-wrap: break-word;
     word-break: break-word;
@@ -84,7 +83,6 @@ table.warish-table {
 table.warish-table th,
 table.warish-table td {
     border: 0.75pt solid #000;
-    padding: 4.5pt 6pt;
     text-align: center;
     vertical-align: middle;
     word-wrap: break-word;
@@ -92,17 +90,7 @@ table.warish-table td {
 }
 
 table.warish-table tr {
-    page-break-inside: avoid;
-}
-
-table.warish-table.warish-compact {
-    font-size: 9pt !important;
-}
-
-table.warish-table.warish-compact th,
-table.warish-table.warish-compact td {
-    padding: 2.25pt 3pt !important;
-    line-height: 1.2 !important;
+    page-break-inside: auto;
 }
 
 table.warish-table tr:last-child td {
@@ -111,10 +99,6 @@ table.warish-table tr:last-child td {
 
 table.warish-table td {
     white-space: normal !important;
-}
-
-.instructions-md-top {
-        margin-top: 22.5pt !important;
 }
 
     .indented-paragraph {
@@ -141,9 +125,9 @@ table.warish-table td {
                     <td>
                     <div class="gov-info">
                         <div class="gov-title">People's Republic of Bangladesh Government</div>
-                        <div class="union-name">{{ union.union_name_en|default(union.union_name_bn) }}</div>
+                        <div class="union-name">{{ union.union_name_en|title }}</div>
                         <div class="union-address">
-                            {{ union.upazila_name_en|default(union.upazila_name_bn) }}, {{ union.district_name_en|default(union.district_name_bn) }} - {{ union.postcode }}<br>
+                            {{ union.upazila_name_en|title }}, {{ union.district_name_en|title }} - {{ union.postcode }}<br>
                             Email: {{ union.email }}<br>
                             Website: {{ union.website }}
                         </div>
@@ -166,7 +150,7 @@ table.warish-table td {
             <table width="98%" cellspacing="0" style="margin: 0 auto;">
                 <tr>
                     <td colspan="2" style="text-align:center; font-size:13.5pt; font-weight:bold; padding-bottom: 3.75pt">
-                        <u>{{ certificate_type_en|default(certificate_type_bn) }}</u>
+                        <u>{{ certificate_type_en }}</u>
                     </td>
                 </tr>
                 <tr>
@@ -188,20 +172,31 @@ table.warish-table td {
             </table>
 
             <!-- Intro Text -->
-            <table><tr><td class="intro-text"> &nbsp; &nbsp;&nbsp; &nbsp;This is to certify that,</td></tr></table>
+            {% set member_count = data.warish_members|length %}
+{% if member_count > 15 %}
+    {% set compact_scale = 0.55 %}
+{% elseif member_count > 12 %}
+    {% set compact_scale = 0.65 %}
+{% elseif member_count > 10 %}
+    {% set compact_scale = 0.75 %}
+{% else %}
+    {% set compact_scale = 1.0 %}
+{% endif %}
+
+<table><tr><td class="intro-text"> &nbsp; &nbsp;&nbsp; &nbsp;This is to certify that,</td></tr></table>
 
             <!-- Personal Information Table -->
-            <table class="personal-info">
+            <table class="personal-info" style="{% if compact_scale < 1 %}font-size: {{ (10.5 * compact_scale)|round(1) }}pt; margin: {{ (4.5 * compact_scale)|round(1) }}pt 0;{% endif %}">
                 <tr>
                     <td class="info-label">Name</td>
-                    <td>: {{ data.name_en|default(data.name_bn) }}</td>
-                    <td class="info-label">Father's Name: {{ data.father_name_en|default(data.father_name_bn) }}</td>
+                    <td>: {{ data.name_en|title }}</td>
+                    <td class="info-label">Father's Name: {{ data.father_name_en|title }}</td>
                     <td></td>
                 </tr>
                 {% if data.mother_name_en or data.mother_name_bn %}
                 <tr>
                     <td class="info-label">Mother's Name</td>
-                    <td colspan="3">: {{ data.mother_name_en|default(data.mother_name_bn) }}</td>
+                    <td colspan="3">: {{ data.mother_name_en|title }}</td>
                 </tr>
                 {% endif %}
                 
@@ -216,39 +211,50 @@ table.warish-table td {
                             Husband/Wife Name
                         {% endif %}
                     </td>
-                    <td colspan="3">: {{ data.spouse_name_en|default(data.spouse_name_bn) }}</td>
+                    <td colspan="3">: {{ data.spouse_name_en|title }}</td>
                 </tr>
                 {% endif %}
 
                 <tr>
                     <td class="info-label">Permanent Address</td>
-                    <td colspan="3">: Village/Locality : {{ data.present_village_en|default(data.present_village_bn) }}, Road/Block/Sector : {{ data.present_rbs_en|default(data.present_rbs_bn) }}, Ward : {{ data.present_ward_no }}
-                    Post Office : {{ data.present_postoffice_en|default(data.present_postoffice_bn) }}, <br> 
-                    &nbsp; Upazila : {{ data.present_upazila_en|default(data.present_upazila_bn) }}, District : {{ data.present_district_en|default(data.present_district_bn) }}</td>
+                    <td colspan="3">: Village/Locality : {{ data.present_village_en|title }}, Road/Block/Sector : {{ data.present_rbs_en|title }}, Ward : {{ data.present_ward_no }}
+                    Post Office : {{ data.present_postoffice_en|title }}, <br> 
+                    &nbsp; Upazila : {{ data.present_upazila_en|title }}, District : {{ data.present_district_en|title }}</td>
                 </tr>
                 <tr>
                     <td class="info-label">Present Address</td>
-                    <td colspan="3">: Village/Locality : {{ data.permanent_village_en|default(data.permanent_village_bn) }}, Road/Block/Sector : {{ data.permanent_rbs_en|default(data.permanent_rbs_bn) }}, Ward : {{ data.permanent_ward_no }}
-                    Post Office : {{ data.permanent_postoffice_en|default(data.permanent_postoffice_bn) }}, <br> 
-                    &nbsp; Upazila : {{ data.permanent_upazila_en|default(data.permanent_upazila_bn) }}, District : {{ data.permanent_district_en|default(data.permanent_district_bn) }} </td>
+                    <td colspan="3">: Village/Locality : {{ data.permanent_village_en|title }}, Road/Block/Sector : {{ data.permanent_rbs_en|title }}, Ward : {{ data.permanent_ward_no }}
+                    Post Office : {{ data.permanent_postoffice_en|title }}, <br> 
+                    &nbsp; Upazila : {{ data.permanent_upazila_en|title }}, District : {{ data.permanent_district_en|title }} </td>
                 </tr>
             </table>
 
             <!-- Warish Statement -->
-            <table><tr><td class="warish-statement"> &nbsp; &nbsp;&nbsp; &nbsp; was {% if (data.resident|default('permanent')) == 'temporary' %}a temporary resident{% else %}a permanent resident{% endif %} of this union. He/She died in {{ (data.extra.death_date ?? (data.birth_date ?? '')) | date('Y') }}. At the time of death, he/she left behind the following heirs.</td></tr></table>
+            <table><tr><td class="warish-statement" style="{% if compact_scale < 1 %}font-size: {{ (10.5 * compact_scale)|round(1) }}pt; margin: {{ (4 * compact_scale)|round(1) }}pt 0; line-height: {{ (1.4 * compact_scale + 0.4)|round(1) }};{% endif %}"> &nbsp; &nbsp;&nbsp; &nbsp; was {% if (data.resident|default('permanent')) == 'temporary' %}a temporary resident{% else %}a permanent resident{% endif %} of this union. He/She died in {{ (data.extra.death_date ?? (data.birth_date ?? '')) | date('Y') }}. At the time of death, he/she left behind the following heirs.</td></tr></table>
 
             <!-- Warish List -->
-            <table class="warish-table {% if data.warish_members|length > 10 %}warish-compact{% endif %}">
-                <tr>
-                    <th>Serial No</th><th>Name</th><th>Relation</th>
-                    <th>Age/Date of Birth</th><th>National ID/Registration No</th>
-                    <th>Marital Status</th><th>Alive/Deceased</th>
+            <table class="warish-table" autosize="1-7" style="{% if compact_scale < 1 %}font-size: {{ (10.5 * compact_scale)|round(1) }}pt; margin-bottom: {{ (7.5 * compact_scale)|round(1) }}pt;{% endif %}">
+                <col style="width: 5%;">
+                <col style="width: 20%;">
+                <col style="width: 15%;">
+                <col style="width: 15%;">
+                <col style="width: 25%;">
+                <col style="width: 10%;">
+                <col style="width: 10%;">
+                <tr style="{% if compact_scale < 1 %}font-size: {{ (10.5 * compact_scale)|round(1) }}pt;{% endif %}">
+                    <th>Serial No</th>
+                    <th>Name</th>
+                    <th>Relation</th>
+                    <th>Age/DOB</th>
+                    <th>National ID No</th>
+                    <th>Marital Status</th>
+                    <th>Alive/Deceased</th>
                 </tr>
                 {% for member in data.warish_members %}
                     <tr>
                         <td>{{ loop.index }}</td>
-                        <td>{{ member.name_en|default(member.name_bn) }}</td>
-                        <td>{{ member.relation_en|default(member.relation_bn) }}</td>
+                        <td>{{ member.name_en|title }}</td>
+                        <td>{{ member.relation_en|title }}</td>
                         <td>{{ member.birth_date }}</td>
                         <td>{{ member.nid }}</td>
                         <td>{{ member.marital_status }}</td>
@@ -261,39 +267,46 @@ table.warish-table td {
             </table>
 
 
-            <table>
+            <table style="{% if compact_scale < 1 %}font-size: {{ (10.5 * compact_scale)|round(1) }}pt; margin-top: {{ (4 * compact_scale)|round(1) }}pt;{% endif %}">
             <tr>
-                <td colspan="5" class="indented-paragraph">
+                <td colspan="5" class="indented-paragraph" style="{% if compact_scale < 1 %}font-size: {{ (10.5 * compact_scale)|round(1) }}pt; line-height: {{ (1.8 * compact_scale + 0.3)|round(1) }}; text-indent: {{ (37.5 * compact_scale)|round(1) }}pt; margin: {{ (5 * compact_scale)|round(1) }}pt 0;{% endif %}">
                     &nbsp; &nbsp;&nbsp; &nbsp;This certificate is issued on the basis of information provided by the Union Ward Member "{{ approval.verifier_name }}" of this union. It may be noted that if any false information regarding the heirs is provided by the applicant in the application form, this inheritance certificate shall be considered void.
                 </td>
             </tr>
             <tr>
-                <td class="no-border" colspan="2">Applicant: {{ data.applicant_name }}</td>
-                <td class="no-border" colspan="3" style="text-align: left;">Father/Husband: {{ data.extra.applicant_name_father_en|default(data.extra.applicant_name_father_bn) }}</td>
+                <td class="no-border" colspan="2" style="{% if compact_scale < 1 %}font-size: {{ (10.5 * compact_scale)|round(1) }}pt;{% endif %}">Applicant: {{ data.applicant_name|title }}</td>
+                <td class="no-border" colspan="3" style="text-align: left;{% if compact_scale < 1 %} font-size: {{ (10.5 * compact_scale)|round(1) }}pt;{% endif %}">Father/Husband: {{ data.extra.applicant_name_father_en|title }}</td>
             </tr>
             </table>
 
-            <table class="instructions {% if data.warish_members|length > 10 %}instructions-md-top{% endif %}">
-                <tr>
-                    <td style="border-right:0.75pt solid black; border-top:0.75pt solid black; text-align:center; width: 25%;">
-                        <img src="https://quickchart.io/qr?text={{ url }}/verify/warish_en/{{ data.sonod_number }}/{{ union.union_code }}/1&margin=1&size=300" height="82.5pt" width="82.5pt">
-                    </td>
-                    <td style="padding-left:22.5pt; border-bottom:0.75pt solid black; width: 75%; font-size: 10.5pt;">
-                        <b>Instructions:</b><br>
-                        1) Verify the certificate using the 17-digit certificate number from the website ({{ union.website }}) or download "Smart UP, Dhaka" app from Play Store and scan the QR code.<br>
-                        2) For any information, contact us by phone or email.
-                    </td>
-                </tr>
-                <tr>
-                    <td style="text-align:center;">
-                        <font style="font-size:6pt;">Developed by Innovation IT</font><br>
-                        <font style="font-size:6pt;">www.innovationit.com.bd</font>
-                    </td>
-                    <td style="text-align:center;">
-                        <font style="font-size:6pt;">{{ union.website }} - {{ union.email }}</font>
-                    </td>
-                </tr>
-            </table>
+
+<!-- Footer -->
+<htmlpagefooter name="MyFooter">
+    <table class="instructions" style="width: 94%; border-collapse: collapse;">
+        <tr>
+            <td style="border-right:0.75pt solid black; border-top:0.75pt solid black; text-align:center; width: 25%;">
+                <img src="https://quickchart.io/qr?text={{ url }}/verify/warish_en/{{ data.sonod_number }}/{{ union.union_code }}/1&margin=1&size=300" height="82.5pt" width="82.5pt">
+            </td>
+            <td style="padding-left:22.5pt; border-bottom:0.75pt solid black; width: 75%; font-size: 10.5pt;">
+                <b>Instructions:</b><br>
+                1) Verify the certificate using the 17-digit certificate number from the website ({{ union.website }}) or download "Smart UP, Dhaka" app from Play Store and scan the QR code.<br>
+                2) For any information, contact us by phone or email.
+            </td>
+        </tr>
+        <tr>
+            <td style="text-align:center;">
+                <font style="font-size:6pt;">Developed by Innovation IT</font><br>
+                <font style="font-size:6pt;">www.innovationit.com.bd</font>
+            </td>
+            <td style="text-align:center;">
+                <font style="font-size:6pt;">{{ union.website }} - {{ union.email }}</font>
+            </td>
+        </tr>
+    </table>
+</htmlpagefooter>
+
+<!-- Enable Footer -->
+<sethtmlpagefooter name="MyFooter" value="on" />
 
     </div>
 </body>

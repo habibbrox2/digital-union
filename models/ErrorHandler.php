@@ -3,7 +3,7 @@
 /**
  * ErrorHandler Class
  * Handles all application errors with isolated error handling per route/template
- * - Logs errors to error.log (structured format)
+ * - Logs errors to separate files based on type (route, twig, fatal, 404, HTTP, PHP)
  * - Shows error page only for that specific route/template
  * - Doesn't affect other routes/templates
  *
@@ -16,11 +16,36 @@
  * স্তর ৪: Error Logging        → logError()
  * স্তর ৫: Log Rotation         → rotateLog()
  * ════════════════════════════════════════════════════════
+ *
+ * Log Files:
+ *   error.log          → PHP runtime errors (warnings, notices, deprecations)
+ *   route-error.log    → ROUTE_ERROR (500 route callback failures)
+ *   twig-error.log     → TWIG_ERROR (template rendering failures)
+ *   fatal-error.log    → FATAL_* and UNCAUGHT EXCEPTION
+ *   route-404.log      → RouteNotFoundException (404 pages)
+ *   http-error.log     → renderError() manual 400/403/404/500 calls
  */
 
 class ErrorHandler
 {
+    /** @var string Main PHP runtime error log */
     private static $logFile;
+    
+    /** @var string Route callback errors (500) */
+    private static $routeErrorLog;
+    
+    /** @var string Twig template rendering errors */
+    private static $twigErrorLog;
+    
+    /** @var string Fatal errors & uncaught exceptions */
+    private static $fatalErrorLog;
+    
+    /** @var string 404 route not found */
+    private static $route404Log;
+    
+    /** @var string HTTP error pages (renderError) */
+    private static $httpErrorLog;
+    
     private static $showErrors = false;
     private static $twig = null;
     private static $routeStartTime = null;
@@ -34,14 +59,19 @@ class ErrorHandler
     
     /**
      * Initialize Error Handler
+     *
+     * @param string|null $logFilePath    Main PHP runtime error log path
+     * @param bool        $showErrors     Whether to show detailed errors
+     * @param object|null $twig           Twig environment instance
+     * @param array       $logFiles       Associative array of custom log file paths:
+     *                                    ['route' => ..., 'twig' => ..., 'fatal' => ..., '404' => ..., 'http' => ...]
      */
-    public static function init($logFilePath = null, $showErrors = false, $twig = null)
+    public static function init($logFilePath = null, $showErrors = false, $twig = null, $logFiles = [])
     {
         self::$logFile = $logFilePath ?? ini_get('error_log');
         self::$showErrors = $showErrors;
         self::$twig = $twig;
         
-        // Ensure log directory exists
         $logDir = dirname(self::$logFile);
         if (!is_dir($logDir)) {
             mkdir($logDir, 0755, true);
@@ -56,6 +86,39 @@ class ErrorHandler
         if (!file_exists(self::$logFile)) {
             @touch(self::$logFile);
         }
+        
+        // Set up separate log file paths (fallback to main log if not specified)
+        $logNames = [
+            'route' => 'route-error.log',
+            'twig'  => 'twig-error.log',
+            'fatal' => 'fatal-error.log',
+            '404'   => 'route-404.log',
+            'http'  => 'http-error.log',
+        ];
+        
+        $map = [
+            'route' => &self::$routeErrorLog,
+            'twig'  => &self::$twigErrorLog,
+            'fatal' => &self::$fatalErrorLog,
+            '404'   => &self::$route404Log,
+            'http'  => &self::$httpErrorLog,
+        ];
+        
+        foreach ($map as $key => &$target) {
+            $target = isset($logFiles[$key])
+                ? $logFiles[$key]
+                : $logDir . '/' . $logNames[$key];
+            
+            // Ensure the file exists (and the directory)
+            $dir = dirname($target);
+            if (!is_dir($dir)) {
+                @mkdir($dir, 0755, true);
+            }
+            if (!file_exists($target)) {
+                @touch($target);
+            }
+        }
+        unset($target);
     }
     
     /**
@@ -77,8 +140,15 @@ class ErrorHandler
     
     /**
      * Log error to file
+     *
+     * @param string $type            Error type identifier (e.g. ROUTE_ERROR, TWIG_ERROR)
+     * @param string $message         Error description
+     * @param string $file            Source file where the error occurred
+     * @param int    $line            Line number in source file
+     * @param array  $context         Additional context data
+     * @param string|null $logFile    Optional custom log file. If null, auto-selects based on type.
      */
-    public static function logError($type, $message, $file, $line, $context = [])
+    public static function logError($type, $message, $file, $line, $context = [], $logFile = null)
     {
         $timestamp = date('Y-m-d H:i:s');
         $route = self::$currentRoute ?? self::detectRoute();
@@ -102,10 +172,40 @@ class ErrorHandler
         
         $logMessage .= "---\n";
         
-        if (!@error_log($logMessage, 3, self::$logFile)) {
+        // Determine which log file to use
+        $targetLog = $logFile ?? self::resolveLogFile($type);
+        
+        if (!@error_log($logMessage, 3, $targetLog)) {
             $fallback = dirname(self::$logFile) . '/bdris_log.txt';
             @file_put_contents($fallback, $logMessage, FILE_APPEND);
         }
+    }
+    
+    /**
+     * Resolve the appropriate log file path based on error type
+     */
+    private static function resolveLogFile($type)
+    {
+        $type = strtoupper($type);
+        
+        if (strpos($type, 'ROUTE_ERROR') === 0) {
+            return self::$routeErrorLog ?? self::$logFile;
+        }
+        if (strpos($type, 'TWIG_ERROR') === 0) {
+            return self::$twigErrorLog ?? self::$logFile;
+        }
+        if (strpos($type, 'FATAL_') === 0 || strpos($type, 'UNCAUGHT') === 0) {
+            return self::$fatalErrorLog ?? self::$logFile;
+        }
+        if (strpos($type, 'ROUTE_404') === 0) {
+            return self::$route404Log ?? self::$logFile;
+        }
+        if (strpos($type, 'HTTP_ERROR') === 0 || strpos($type, 'HTTP_') === 0) {
+            return self::$httpErrorLog ?? self::$logFile;
+        }
+        
+        // Default to main log for warnings, notices, deprecations, etc.
+        return self::$logFile;
     }
     
     /**
@@ -121,12 +221,13 @@ class ErrorHandler
     /**
      * Handle callback/route exceptions
      * Error is isolated to that route only
+     * Logged to: route-error.log
      */
     public static function handleRouteError(\Throwable $exception, $method = null, $uri = null)
     {
-        $route = "{$method} {$uri}" ?? self::$currentRoute ?? 'unknown route';
+        $route = ($method !== null && $uri !== null) ? "{$method} {$uri}" : (self::$currentRoute ?? 'unknown route');
         
-        // Log the error
+        // Log the error to route-error.log (dedicated file for route failures)
         self::logError(
             'ROUTE_ERROR',
             $exception->getMessage(),
@@ -135,7 +236,8 @@ class ErrorHandler
             [
                 'route' => $route,
                 'trace' => $exception->getTraceAsString()
-            ]
+            ],
+            self::$routeErrorLog
         );
         
         // Set response code if not already set
@@ -153,12 +255,13 @@ class ErrorHandler
     /**
      * Handle Twig rendering errors
      * Error is isolated to that template only
+     * Logged to: twig-error.log
      */
     public static function handleTwigError(\Throwable $exception, $templateName = null)
     {
         $template = $templateName ?? 'unknown template';
         
-        // Log the error
+        // Log the error to twig-error.log
         self::logError(
             'TWIG_ERROR',
             $exception->getMessage(),
@@ -168,7 +271,8 @@ class ErrorHandler
                 'template' => $template,
                 'route' => self::$currentRoute ?? 'unknown',
                 'trace' => $exception->getTraceAsString()
-            ]
+            ],
+            self::$twigErrorLog
         );
         
         // Set response code if not already set
@@ -185,6 +289,7 @@ class ErrorHandler
     
     /**
      * Handle fatal errors
+     * Logged to: fatal-error.log
      */
     public static function handleFatalError($error)
     {
@@ -198,7 +303,8 @@ class ErrorHandler
             [
                 'route' => self::$currentRoute ?? 'system',
                 'type'  => $typeName,
-            ]
+            ],
+            self::$fatalErrorLog
         );
         
         // 🔔 স্তর ৩-বি: Send email notification to admin
@@ -308,6 +414,7 @@ class ErrorHandler
     /**
      * Handle uncaught exceptions
      * Use: set_exception_handler(['ErrorHandler', 'handleException'])
+     * Logged to: fatal-error.log
      */
     public static function handleException(\Throwable $exception)
     {
@@ -319,7 +426,8 @@ class ErrorHandler
             [
                 'code'  => $exception->getCode(),
                 'trace' => $exception->getTraceAsString(),
-            ]
+            ],
+            self::$fatalErrorLog
         );
         
         // 🔔 স্তর ২-বি: Send email notification to admin
@@ -360,6 +468,51 @@ class ErrorHandler
             self::handleFatalError($error);
         }
     }
+    
+    /**
+     * Log a 404 route-not-found error to route-404.log
+     */
+    public static function logRoute404($method, $uri)
+    {
+        $route = "{$method} {$uri}";
+        $referer = $_SERVER['HTTP_REFERER'] ?? 'Direct access';
+        
+        self::logError(
+            'ROUTE_404',
+            "Route not found: {$route}",
+            __FILE__,
+            __LINE__,
+            [
+                'method'  => $method,
+                'uri'     => $uri,
+                'referer' => $referer,
+                'query'   => $_SERVER['QUERY_STRING'] ?? '',
+            ],
+            self::$route404Log
+        );
+    }
+    
+    /**
+     * Log HTTP error pages (renderError calls) to http-error.log
+     */
+    public static function logHttpError($code, $message)
+    {
+        $route = self::$currentRoute ?? self::detectRoute();
+        
+        self::logError(
+            'HTTP_ERROR_' . $code,
+            $message,
+            __FILE__,
+            __LINE__,
+            [
+                'http_code' => $code,
+                'route'     => $route,
+            ],
+            self::$httpErrorLog
+        );
+    }
+    
+
     
     /**
      * Render error page using Twig or fallback HTML
@@ -495,58 +648,107 @@ class ErrorHandler
     }
     
     /**
-     * Get error statistics
+     * Get all log file paths keyed by type
      */
-    public static function getErrorStats()
+    private static function getAllLogFiles(): array
     {
-        if (!file_exists(self::$logFile)) {
-            return [
-                'total_errors'    => 0,
-                'fatal_errors'    => 0,
-                'warnings'        => 0,
-                'notices'         => 0,
-                'exceptions'      => 0,
-                'route_errors'    => 0,
-                'twig_errors'     => 0,
-                'file_size_bytes' => 0,
-            ];
+        return [
+            'main'  => self::$logFile,
+            'route' => self::$routeErrorLog,
+            'twig'  => self::$twigErrorLog,
+            'fatal' => self::$fatalErrorLog,
+            '404'   => self::$route404Log,
+            'http'  => self::$httpErrorLog,
+        ];
+    }
+    
+    /**
+     * Get aggregated error statistics across all log files
+     *
+     * @return array Keys: total_errors, fatal_errors, warnings, notices,
+     *               exceptions, route_errors, twig_errors, http_errors,
+     *               route_404_errors, file_size_bytes
+     */
+    public static function getErrorStats(): array
+    {
+        $logFiles = self::getAllLogFiles();
+        
+        $stats = [
+            'total_errors'     => 0,
+            'fatal_errors'     => 0,
+            'warnings'         => 0,
+            'notices'          => 0,
+            'exceptions'       => 0,
+            'route_errors'     => 0,
+            'twig_errors'      => 0,
+            'http_errors'      => 0,
+            'route_404_errors' => 0,
+            'file_size_bytes'  => 0,
+        ];
+        
+        foreach ($logFiles as $key => $logPath) {
+            if (!$logPath || !file_exists($logPath)) {
+                continue;
+            }
+            
+            $size = @filesize($logPath);
+            $stats['file_size_bytes'] += ($size !== false) ? $size : 0;
+            
+            $content = @file_get_contents($logPath);
+            if ($content === false || $content === '') {
+                continue;
+            }
+            
+            // Count complete log entries — each entry ends with "---\n" (written by logError)
+            $entryCount = substr_count($content, "---\n");
+            $stats['total_errors'] += $entryCount;
+            
+            switch ($key) {
+                case 'main':
+                    $stats['warnings'] += substr_count($content, '[WARNING]');
+                    $stats['notices']  += substr_count($content, '[NOTICE]');
+                    break;
+                case 'route':
+                    $stats['route_errors'] += substr_count($content, '[ROUTE_ERROR]');
+                    break;
+                case 'twig':
+                    $stats['twig_errors'] += substr_count($content, '[TWIG_ERROR]');
+                    break;
+                case 'fatal':
+                    $stats['fatal_errors'] += substr_count($content, '[FATAL_');
+                    $stats['exceptions']   += substr_count($content, '[UNCAUGHT EXCEPTION]');
+                    break;
+                case '404':
+                    $stats['route_404_errors'] += substr_count($content, '[ROUTE_404]');
+                    break;
+                case 'http':
+                    $stats['http_errors'] += substr_count($content, '[HTTP_ERROR');
+                    break;
+                default:
+                    break;
+            }
         }
         
-        $content = file_get_contents(self::$logFile);
-        
-        return [
-            'total_errors'    => substr_count($content, '['),
-            'fatal_errors'    => substr_count($content, '[FATAL '),
-            'warnings'        => substr_count($content, '[WARNING]'),
-            'notices'         => substr_count($content, '[NOTICE]'),
-            'exceptions'      => substr_count($content, '[UNCAUGHT EXCEPTION]'),
-            'route_errors'    => substr_count($content, '[ROUTE_ERROR]'),
-            'twig_errors'     => substr_count($content, '[TWIG_ERROR]'),
-            'file_size_bytes' => filesize(self::$logFile),
-        ];
+        return $stats;
     }
     
     // ──────────────── স্তর ৫: Log Rotation ────────────────
     
     /**
-     * Rotate log file when it exceeds max size
-     * Call this periodically or at the start of each request
+     * Rotate a specific log file when it exceeds max size
      */
-    public static function rotateLog($maxSize = null, $maxFiles = null)
+    private static function rotateSingleLog($logPath, $maxSize, $maxFiles)
     {
-        $maxSize  = $maxSize  ?? self::$maxLogSize;
-        $maxFiles = $maxFiles ?? self::$maxLogFiles;
-        
-        if (!file_exists(self::$logFile)) {
+        if (!file_exists($logPath)) {
             return;
         }
         
-        if (filesize(self::$logFile) < $maxSize) {
+        if (filesize($logPath) < $maxSize) {
             return;
         }
         
-        $logDir  = dirname(self::$logFile);
-        $logName = basename(self::$logFile);
+        $logDir  = dirname($logPath);
+        $logName = basename($logPath);
         
         // Rotate existing backups (shift by 1)
         for ($i = $maxFiles - 1; $i >= 1; $i--) {
@@ -558,11 +760,34 @@ class ErrorHandler
         }
         
         // Rename current log → .1
-        @rename(self::$logFile, $logDir . '/' . $logName . '.1');
+        @rename($logPath, $logDir . '/' . $logName . '.1');
         
         // Create fresh empty log
-        @touch(self::$logFile);
+        @touch($logPath);
+    }
+    
+    /**
+     * Rotate all log files when they exceed max size
+     * Call this periodically or at the start of each request
+     */
+    public static function rotateLog($maxSize = null, $maxFiles = null)
+    {
+        $maxSize  = $maxSize  ?? self::$maxLogSize;
+        $maxFiles = $maxFiles ?? self::$maxLogFiles;
         
-        self::logError('LOG_ROTATION', "Log file rotated. Previous log saved as {$logName}.1", __FILE__, __LINE__);
+        $logFiles = [
+            self::$logFile,
+            self::$routeErrorLog,
+            self::$twigErrorLog,
+            self::$fatalErrorLog,
+            self::$route404Log,
+            self::$httpErrorLog,
+        ];
+        
+        foreach ($logFiles as $logPath) {
+            if ($logPath && file_exists($logPath)) {
+                self::rotateSingleLog($logPath, $maxSize, $maxFiles);
+            }
+        }
     }
 }

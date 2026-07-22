@@ -17,10 +17,28 @@
         </div>
     </div>
 
+    <!-- Log File Selector -->
+    <div class="section-card p-3 mb-3" style="background: #f8f9fa;">
+        <div class="d-flex flex-wrap align-items-center gap-3">
+            <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-file-earmark-text text-secondary"></i>
+                <span class="fw-medium small">Log File:</span>
+            </div>
+            <select id="logTypeSelect" class="form-select form-select-sm" style="min-width:280px;" onchange="switchLogType(this.value)">
+                {% for key, label in log_types %}
+                    <option value="{{ key }}" {% if key == current_log %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+            <span class="small text-muted" id="logFileName">
+                Currently viewing: <strong>{{ log_types[current_log] ?? current_log }}</strong>
+            </span>
+        </div>
+    </div>
+
     {% if cleared %}
     <div class="section-card p-3 mb-3 d-flex align-items-center gap-2" style="border-left: 4px solid #28a745;">
         <i class="bi bi-check-circle-fill text-success"></i>
-        <span class="fw-medium">Log file has been cleared successfully.</span>
+        <span class="fw-medium">"{{ log_types[current_log] ?? current_log }}" has been cleared successfully.</span>
     </div>
     {% endif %}
 
@@ -36,7 +54,7 @@
             <button id="copyBtn" class="btn btn-outline-secondary rounded-pill px-3">
                 <i class="bi bi-clipboard me-1"></i> Copy
             </button>
-            <a href="/admin/logs?action=download" class="btn btn-success rounded-pill px-3 shadow-sm">
+            <a id="downloadLink" href="/admin/logs?action=download&amp;log={{ current_log }}" class="btn btn-success rounded-pill px-3 shadow-sm">
                 <i class="bi bi-download me-1"></i> Download
             </a>
             <button type="button" class="btn btn-outline-danger rounded-pill px-3" id="clearLogBtn">
@@ -104,12 +122,21 @@
 </style>
 
 <script>
+// Current log type
+let currentLogType = '{{ current_log }}';
+
+// Switch log file type — reload page
+function switchLogType(value) {
+    window.location.href = '/admin/logs?log=' + encodeURIComponent(value);
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     const logContent = document.getElementById('logContent');
     const refreshBtn = document.getElementById('refreshBtn');
     const copyBtn = document.getElementById('copyBtn');
     const autoRefreshBtn = document.getElementById('autoRefreshBtn');
     const logStats = document.getElementById('logStats');
+    const downloadLink = document.getElementById('downloadLink');
 
     let logsLoadedOnce = false;
     let rawLogLines = []; // Store raw escapeHtml'd lines for filtering
@@ -154,7 +181,7 @@ document.addEventListener('DOMContentLoaded', () => {
             logContent.innerHTML = '<span style="color:#6c757d;"><i class="bi bi-arrow-repeat me-1 bi-spin"></i> Loading logs...</span>';
         }
         try {
-            const res = await fetch('/admin/logs?ajax=1');
+            const res = await fetch('/admin/logs?ajax=1&log=' + encodeURIComponent(currentLogType));
             const data = await res.json();
             logsLoadedOnce = true;
 
@@ -185,7 +212,7 @@ document.addEventListener('DOMContentLoaded', () => {
             buttonsStyling: false
         });
         if (result.isConfirmed) {
-            window.location.href = '/admin/logs?action=clear';
+            window.location.href = '/admin/logs?action=clear&log=' + encodeURIComponent(currentLogType);
         }
     });
 

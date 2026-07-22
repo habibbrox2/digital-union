@@ -175,7 +175,7 @@
 
             <div id="errorStatsGrid" class="row g-3" style="display:none;">
                 <!-- Total Errors -->
-                <div class="col-md-3 col-6">
+                <div class="col-md-2 col-sm-4 col-6">
                     <div class="rounded-3 p-3 text-center border" style="background:#f8f9fa;">
                         <div class="display-6 fw-bold text-dark" id="statTotal">—</div>
                         <div class="small text-muted mt-1">মোট Errors</div>
@@ -183,7 +183,7 @@
                 </div>
 
                 <!-- Fatal Errors -->
-                <div class="col-md-3 col-6">
+                <div class="col-md-2 col-sm-4 col-6">
                     <div class="rounded-3 p-3 text-center border" style="background:#fff5f5;">
                         <div class="display-6 fw-bold text-danger" id="statFatal">—</div>
                         <div class="small text-muted mt-1">Fatal</div>
@@ -191,7 +191,7 @@
                 </div>
 
                 <!-- Warnings -->
-                <div class="col-md-3 col-6">
+                <div class="col-md-2 col-sm-4 col-6">
                     <div class="rounded-3 p-3 text-center border" style="background:#fffbeb;">
                         <div class="display-6 fw-bold text-warning" id="statWarning">—</div>
                         <div class="small text-muted mt-1">Warnings</div>
@@ -199,7 +199,7 @@
                 </div>
 
                 <!-- Exceptions -->
-                <div class="col-md-3 col-6">
+                <div class="col-md-2 col-sm-4 col-6">
                     <div class="rounded-3 p-3 text-center border" style="background:#f0f7ff;">
                         <div class="display-6 fw-bold text-primary" id="statException">—</div>
                         <div class="small text-muted mt-1">Exceptions</div>
@@ -207,7 +207,7 @@
                 </div>
 
                 <!-- Notices -->
-                <div class="col-md-3 col-6">
+                <div class="col-md-2 col-sm-4 col-6">
                     <div class="rounded-3 p-3 text-center border" style="background:#fefce8;">
                         <div class="display-6 fw-bold text-info" id="statNotice">—</div>
                         <div class="small text-muted mt-1">Notices</div>
@@ -215,7 +215,7 @@
                 </div>
 
                 <!-- Route Errors -->
-                <div class="col-md-3 col-6">
+                <div class="col-md-2 col-sm-4 col-6">
                     <div class="rounded-3 p-3 text-center border" style="background:#f5f3ff;">
                         <div class="display-6 fw-bold text-purple" id="statRoute">—</div>
                         <div class="small text-muted mt-1">Route Errors</div>
@@ -223,15 +223,31 @@
                 </div>
 
                 <!-- Twig Errors -->
-                <div class="col-md-3 col-6">
+                <div class="col-md-2 col-sm-4 col-6">
                     <div class="rounded-3 p-3 text-center border" style="background:#fff0f6;">
                         <div class="display-6 fw-bold" style="color:#e83e8c;" id="statTwig">—</div>
                         <div class="small text-muted mt-1">Twig Errors</div>
                     </div>
                 </div>
 
+                <!-- HTTP Errors (new) -->
+                <div class="col-md-2 col-sm-4 col-6">
+                    <div class="rounded-3 p-3 text-center border" style="background:#e7f5ff;">
+                        <div class="display-6 fw-bold text-info" id="statHttp">—</div>
+                        <div class="small text-muted mt-1">HTTP Errors</div>
+                    </div>
+                </div>
+
+                <!-- 404 Not Found (new) -->
+                <div class="col-md-2 col-sm-4 col-6">
+                    <div class="rounded-3 p-3 text-center border" style="background:#fff4e6;">
+                        <div class="display-6 fw-bold" style="color:#fd7e14;" id="stat404">—</div>
+                        <div class="small text-muted mt-1">404 Not Found</div>
+                    </div>
+                </div>
+
                 <!-- Log File Size -->
-                <div class="col-md-3 col-6">
+                <div class="col-md-2 col-sm-4 col-6">
                     <div class="rounded-3 p-3 text-center border" style="background:#f0fdf4;">
                         <div class="display-6 fw-bold text-success" id="statFileSize">—</div>
                         <div class="small text-muted mt-1">Log Size</div>
@@ -616,6 +632,8 @@ $(function () {
             animate('#statNotice', stats.notices);
             animate('#statRoute', stats.route_errors);
             animate('#statTwig', stats.twig_errors);
+            animate('#statHttp', stats.http_errors || 0);
+            animate('#stat404', stats.route_404_errors || 0);
             $('#statFileSize').text(stats.file_size_display || '—');
         })
         .fail(function () {

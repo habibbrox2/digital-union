@@ -156,27 +156,27 @@
     <table style="width: 100%; border-collapse: collapse;">
         <tr>
             <td style="width: 30%; font-weight: bold;">Business Name</td>
-            <td colspan="4" style="font-size: 12pt;">: {{ business_meta.business_name_en }}</td>
+            <td colspan="4" style="font-size: 12pt;">: {{ business_meta.business_name_en|title }}</td>
         </tr>
         <tr>
             <td>Owner/Proprietor Name</td>
-            <td colspan="4">: {{ data.name_en }}</td>
+            <td colspan="4">: {{ data.name_en|title }}</td>
         </tr>
         <tr>
             <td>Mother's Name</td>
-            <td colspan="4">: {{ data.mother_name_en }}</td>
+            <td colspan="4">: {{ data.mother_name_en|title }}</td>
         </tr>
         <tr>
             <td>Father's Name</td>
-            <td colspan="4">: {{ data.father_name_en }}</td>
+            <td colspan="4">: {{ data.father_name_en|title }}</td>
         </tr>
         <tr>
             <td>Nature of Business</td>
-            <td colspan="4">: {{ business_meta.ownership_name_en }}</td>
+            <td colspan="4">: {{ business_meta.ownership_name_en|title }}</td>
         </tr>
         <tr>
             <td>Type of Business</td>
-            <td colspan="4">: {{ business_meta.business_type_en }}</td>
+            <td colspan="4">: {{ business_meta.business_type_en|title }}</td>
         </tr>
         <tr>
             <td>Business Address</td>

@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 210 297" width="210mm" height="297mm">
+  <defs>
+    <!-- Top row 1: red triangle + green triangle pointing down -->
+    <pattern id="top1" x="0" y="0" width="11.7" height="4.0" patternUnits="userSpaceOnUse">
+      <polygon points="0,0 2.5,4.0 5.1,0" fill="#DC1E1E"/>
+      <polygon points="5.1,0 7.6,4.0 10.1,0" fill="#006428"/>
+    </pattern>
+    <!-- Top row 2: green + red (offset) -->
+    <pattern id="top2" x="0" y="0" width="11.7" height="4.0" patternUnits="userSpaceOnUse">
+      <polygon points="0,0 2.5,4.0 5.1,0" fill="#006428"/>
+      <polygon points="5.1,0 7.6,4.0 10.1,0" fill="#DC1E1E"/>
+    </pattern>
+    <!-- Bottom row 1: red + green pointing up -->
+    <pattern id="bot1" x="0" y="0" width="11.7" height="4.0" patternUnits="userSpaceOnUse">
+      <polygon points="0,4.0 2.5,0 5.1,4.0" fill="#DC1E1E"/>
+      <polygon points="5.1,4.0 7.6,0 10.1,4.0" fill="#006428"/>
+    </pattern>
+    <!-- Bottom row 2: green + red -->
+    <pattern id="bot2" x="0" y="0" width="11.7" height="4.0" patternUnits="userSpaceOnUse">
+      <polygon points="0,4.0 2.5,0 5.1,4.0" fill="#006428"/>
+      <polygon points="5.1,4.0 7.6,0 10.1,4.0" fill="#DC1E1E"/>
+    </pattern>
+    <!-- Left col 1: red + green pointing right -->
+    <pattern id="left1" x="0" y="0" width="4.0" height="11.7" patternUnits="userSpaceOnUse">
+      <polygon points="0,0 4.0,2.5 0,5.1" fill="#DC1E1E"/>
+      <polygon points="0,5.1 4.0,7.6 0,10.1" fill="#006428"/>
+    </pattern>
+    <!-- Left col 2: green + red -->
+    <pattern id="left2" x="0" y="0" width="4.0" height="11.7" patternUnits="userSpaceOnUse">
+      <polygon points="0,0 4.0,2.5 0,5.1" fill="#006428"/>
+      <polygon points="0,5.1 4.0,7.6 0,10.1" fill="#DC1E1E"/>
+    </pattern>
+    <!-- Right col 1: red + green pointing left -->
+    <pattern id="right1" x="0" y="0" width="4.0" height="11.7" patternUnits="userSpaceOnUse">
+      <polygon points="4.0,0 0,2.5 4.0,5.1" fill="#DC1E1E"/>
+      <polygon points="4.0,5.1 0,7.6 4.0,10.1" fill="#006428"/>
+    </pattern>
+    <!-- Right col 2: green + red -->
+    <pattern id="right2" x="0" y="0" width="4.0" height="11.7" patternUnits="userSpaceOnUse">
+      <polygon points="4.0,0 0,2.5 4.0,5.1" fill="#006428"/>
+      <polygon points="4.0,5.1 0,7.6 4.0,10.1" fill="#DC1E1E"/>
+    </pattern>
+  </defs>
+  <rect width="210" height="297" fill="white"/>
+  <rect x="3" y="3" width="204" height="7.9" fill="url(#top1)"/>
+  <rect x="3" y="7.0" width="204" height="7.9" fill="url(#top2)"/>
+  <rect x="3" y="286.1" width="204" height="7.9" fill="url(#bot2)"/>
+  <rect x="3" y="290.0" width="204" height="7.9" fill="url(#bot1)"/>
+  <rect x="3" y="10.9" width="7.9" height="275.2" fill="url(#left1)"/>
+  <rect x="7.0" y="10.9" width="7.9" height="275.2" fill="url(#left2)"/>
+  <rect x="199.1" y="10.9" width="7.9" height="275.2" fill="url(#right2)"/>
+  <rect x="203.0" y="10.9" width="7.9" height="275.2" fill="url(#right1)"/>
+</svg>

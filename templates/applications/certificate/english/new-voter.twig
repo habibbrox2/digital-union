@@ -24,7 +24,7 @@
         }
 
         .content-wrapper {
-            background-image: url('{{ url }}/assets/bg.png');
+            background-image: url('{{ url }}/assets/bg_hd.png');
             background-size: cover;
             background-repeat: no-repeat;
             width: 209mm;
@@ -135,19 +135,19 @@
                     <div class="bd-govt">Government of Bangladesh</div>
                     <div class="parishad-name">
                         {% if union.union_name_en is defined and union.union_name_en %}
-                            {{ union.union_name_en }}
+                            {{ union.union_name_en|title }}
                         {% else %}
                             {{ union.union_name_bn }}
                         {% endif %}
                     </div>
                     <div class="sub-header">
                         {% if union.upazila_name_en is defined and union.upazila_name_en %}
-                            {{ union.upazila_name_en }},
+                            {{ union.upazila_name_en|title }},
                         {% else %}
                             {{ union.upazila_name_bn }},
                         {% endif %}
                         {% if union.district_name_en is defined and union.district_name_en %}
-                            {{ union.district_name_en }}
+                            {{ union.district_name_en|title }}
                         {% else %}
                             {{ union.district_name_bn }}
                         {% endif %}
@@ -194,14 +194,14 @@
 
         <!-- Person Info -->
         <table class="person-info">
-            <tr><td>Name</td><td>: {{ data.name_en|default(data.name_bn) }}</td></tr>
-            <tr><td>Father's Name</td><td>: {{ data.father_name_en|default(data.father_name_bn) }}</td></tr>
-            <tr><td>Mother's Name</td><td>: {{ data.mother_name_en|default(data.mother_name_bn) }}</td></tr>
+            <tr><td>Name</td><td>: {{ data.name_en|title }}</td></tr>
+            <tr><td>Father's Name</td><td>: {{ data.father_name_en|title }}</td></tr>
+            <tr><td>Mother's Name</td><td>: {{ data.mother_name_en|title }}</td></tr>
             {% if citizen.marital_status == 'Married' %}
-            <tr><td>Spouse Name</td><td>: {{ data.spouse_name_en|default(data.spouse_name_bn) }}</td></tr>
+            <tr><td>Spouse Name</td><td>: {{ data.spouse_name_en|title }}</td></tr>
             {% endif %}
-            <tr><td>Present Address</td><td>: Village: {{ data.present_village_en|default(data.present_village_bn) }}, Road/Block: {{ data.present_rbs_en|default(data.present_rbs_bn) }}, Post Office: {{ data.present_postoffice_en|default(data.present_postoffice_bn) }}, Upazila: {{ data.present_upazila_en|default(data.present_upazila_bn) }}, District: {{ data.present_district_en|default(data.present_district_bn) }}</td></tr>
-            <tr><td>Permanent Address</td><td>: Village: {{ data.permanent_village_en|default(data.permanent_village_bn) }}, Road/Block: {{ data.permanent_rbs_en|default(data.permanent_rbs_bn) }}, Post Office: {{ data.permanent_postoffice_en|default(data.permanent_postoffice_bn) }}, Upazila: {{ data.permanent_upazila_en|default(data.permanent_upazila_bn) }}, District: {{ data.permanent_district_en|default(data.permanent_district_bn) }}</td></tr>
+            <tr><td>Present Address</td><td>: Village: {{ data.present_village_en|title }}, Road/Block: {{ data.present_rbs_en|title }}, Post Office: {{ data.present_postoffice_en|title }}, Upazila: {{ data.present_upazila_en|title }}, District: {{ data.present_district_en|title }}</td></tr>
+            <tr><td>Permanent Address</td><td>: Village: {{ data.permanent_village_en|title }}, Road/Block: {{ data.permanent_rbs_en|title }}, Post Office: {{ data.permanent_postoffice_en|title }}, Upazila: {{ data.permanent_upazila_en|title }}, District: {{ data.permanent_district_en|title }}</td></tr>
             {% if data.birth_id or data.nid or data.passport_no %}
             <tr><td>{% if data.birth_id %} Birth Registration No {% elseif data.nid %} National ID No {% else %} Passport No {% endif %}</td>
                 <td>: {% if data.birth_id %} {{ data.birth_id }} {% elseif data.nid %} {{ data.nid }} {% elseif data.passport_no %} {{ data.passport_no }} {% endif %}</td></tr>
