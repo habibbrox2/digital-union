@@ -14,6 +14,7 @@
     <link rel="stylesheet" href="{{ url }}/assets/css/other/font-awesome.min.css">
     <link rel="stylesheet" href="https://pro.fontawesome.com/releases/v5.10.0/css/all.css">
     <link rel="stylesheet" href="{{ url }}/assets/css/other/combined.public.css?t={{ "now"|date("Hiss") }}">
+    <link rel="stylesheet" href="{{ url }}/assets/css/chat.css?t={{ "now"|date("Hiss") }}">
     <style>
         .body-bg {
             background-image: url('/assets/images/bg_main2.gif') !important;
@@ -547,6 +548,11 @@
 
 <!-- SweetAlert2 JS -->
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<!-- DOMPurify - XSS Protection -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.1.7/purify.min.js"></script>
+
+<script src="{{ url }}/assets/js/chat.js?t={{ "now"|date("Hiss") }}"></script>
 
 <script>
 // ===============================

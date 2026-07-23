@@ -1,0 +1,307 @@
+{% extends "layout.twig" %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url }}/assets/css/chat.css?t={{ "now"|date("Hiss") }}">
+<style>
+.canned-manager { max-width: 1100px; margin: 0 auto; }
+.canned-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+.canned-header h4 { margin: 0; color: #333; }
+.canned-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+@media (max-width: 900px) { .canned-grid { grid-template-columns: 1fr; } }
+.canned-list { background: #fff; border-radius: 8px; border: 1px solid #e9ecef; overflow: hidden; }
+.canned-list-header { padding: 14px 16px; border-bottom: 1px solid #e9ecef; font-weight: 600; color: #008B8B; background: #f8fffe; display: flex; justify-content: space-between; align-items: center; }
+.canned-list-body { max-height: 500px; overflow-y: auto; }
+.canned-item { padding: 12px 16px; border-bottom: 1px solid #f1f3f5; cursor: pointer; transition: background 0.15s; }
+.canned-item:hover { background: #f1f8f8; }
+.canned-item:last-child { border-bottom: none; }
+.canned-item-title { font-weight: 600; font-size: 14px; color: #333; margin-bottom: 2px; }
+.canned-item-preview { font-size: 13px; color: #888; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.canned-item-category { display: inline-block; font-size: 10px; color: #008B8B; background: #e8f5f5; padding: 1px 8px; border-radius: 8px; margin-top: 4px; }
+.canned-item-actions { margin-top: 6px; display: flex; gap: 6px; }
+.canned-item-actions button { background: none; border: 1px solid #dee2e6; border-radius: 4px; padding: 2px 8px; font-size: 11px; cursor: pointer; transition: all 0.15s; }
+.canned-item-actions .btn-edit { color: #008B8B; border-color: #008B8B; }
+.canned-item-actions .btn-edit:hover { background: #008B8B; color: #fff; }
+.canned-item-actions .btn-del { color: #e74c3c; border-color: #e74c3c; }
+.canned-item-actions .btn-del:hover { background: #e74c3c; color: #fff; }
+.canned-form-card { background: #fff; border-radius: 8px; border: 1px solid #e9ecef; padding: 20px; }
+.canned-form-card h5 { color: #333; margin-bottom: 16px; font-weight: 600; }
+.canned-form-group { margin-bottom: 14px; }
+.canned-form-group label { display: block; font-size: 13px; font-weight: 500; color: #555; margin-bottom: 4px; }
+.canned-form-group input,
+.canned-form-group textarea,
+.canned-form-group select { width: 100%; border: 1px solid #dee2e6; border-radius: 6px; padding: 8px 12px; font-size: 14px; outline: none; font-family: inherit; transition: border-color 0.2s; }
+.canned-form-group input:focus,
+.canned-form-group textarea:focus,
+.canned-form-group select:focus { border-color: #008B8B; box-shadow: 0 0 0 3px rgba(0,139,139,0.12); }
+.canned-form-group textarea { min-height: 80px; resize: vertical; }
+.canned-form-row { display: flex; gap: 12px; }
+.canned-form-row > * { flex: 1; }
+.canned-form-actions { display: flex; gap: 8px; margin-top: 16px; }
+.canned-form-actions button { padding: 8px 20px; border-radius: 6px; font-size: 14px; cursor: pointer; border: none; transition: all 0.2s; font-weight: 500; }
+.canned-form-actions .btn-save { background: #008B8B; color: #fff; }
+.canned-form-actions .btn-save:hover { background: #007A7A; }
+.canned-form-actions .btn-cancel { background: #e9ecef; color: #555; }
+.canned-form-actions .btn-cancel:hover { background: #dee2e6; }
+.empty-canned { text-align: center; padding: 40px 20px; color: #999; font-size: 14px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-3 canned-manager">
+    <div class="canned-header">
+        <h4><i class="fas fa-bolt me-2" style="color: #008B8B;"></i>কুইক রিপ্লাই ব্যবস্থাপনা</h4>
+        <small class="text-muted">চ্যাটে দ্রুত উত্তর দেওয়ার জন্য পূর্ব-লিখিত বার্তা তৈরি করুন</small>
+    </div>
+
+    <div class="canned-grid">
+        <!-- Left: List of canned responses -->
+        <div class="canned-list">
+            <div class="canned-list-header">
+                <span><i class="fas fa-list me-1"></i>সংরক্ষিত উত্তর</span>
+                <span class="badge bg-info" id="cannedCount">0</span>
+            </div>
+            <div class="canned-list-body" id="cannedListBody">
+                <div class="empty-canned" id="cannedEmpty">
+                    <i class="fas fa-inbox fa-2x mb-2 d-block" style="color: #ddd;"></i>
+                    এখনো কোনো কুইক রিপ্লাই তৈরি করা হয়নি
+                </div>
+            </div>
+        </div>
+
+        <!-- Right: Add/Edit form -->
+        <div class="canned-form-card">
+            <h5 id="formTitle"><i class="fas fa-plus-circle me-1" style="color: #008B8B;"></i>নতুন কুইক রিপ্লাই</h5>
+            <form id="cannedForm" autocomplete="off">
+                <input type="hidden" id="editId" value="">
+
+                <div class="canned-form-group">
+                    <label for="cannedTitle">শিরোনাম <span class="text-danger">*</span></label>
+                    <input type="text" id="cannedTitle" placeholder="যেমন: নাগরিকত্ব সনদ" maxlength="150" required>
+                </div>
+
+                <div class="canned-form-group">
+                    <label for="cannedMessage">বার্তা <span class="text-danger">*</span></label>
+                    <textarea id="cannedMessage" placeholder="আপনার পূর্ব-লিখিত উত্তর লিখুন..." maxlength="2000" required></textarea>
+                </div>
+
+                <div class="canned-form-row">
+                    <div class="canned-form-group">
+                        <label for="cannedCategory">ক্যাটাগরি</label>
+                        <input type="text" id="cannedCategory" placeholder="যেমন: সেবা তথ্য, সাধারণ">
+                    </div>
+                    <div class="canned-form-group">
+                        <label for="cannedSortOrder">সাজানোর ক্রম</label>
+                        <input type="number" id="cannedSortOrder" value="0" min="0" max="999">
+                    </div>
+                </div>
+
+                <div class="canned-form-actions">
+                    <button type="submit" class="btn-save" id="cannedSaveBtn"><i class="fas fa-save me-1"></i>সংরক্ষণ</button>
+                    <button type="button" class="btn-cancel" id="cannedCancelBtn" style="display:none;"><i class="fas fa-times me-1"></i>বাতিল</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function() {
+    'use strict';
+
+    const listBody = document.getElementById('cannedListBody');
+    const emptyEl = document.getElementById('cannedEmpty');
+    const countEl = document.getElementById('cannedCount');
+    const form = document.getElementById('cannedForm');
+    const formTitle = document.getElementById('formTitle');
+    const editId = document.getElementById('editId');
+    const titleInput = document.getElementById('cannedTitle');
+    const messageInput = document.getElementById('cannedMessage');
+    const categoryInput = document.getElementById('cannedCategory');
+    const sortOrderInput = document.getElementById('cannedSortOrder');
+    const cancelBtn = document.getElementById('cannedCancelBtn');
+    const csrfToken = '{{ csrf_token }}';
+
+    function apiHeaders() {
+        return {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': csrfToken
+        };
+    }
+
+    async function loadList() {
+        try {
+            const res = await fetch('/api/chat/admin/canned');
+            if (!res.ok) { throw new Error('HTTP ' + res.status); }
+            const data = await res.json();
+            renderList(data.data || []);
+        } catch (e) {
+            console.error('Failed to load canned responses:', e);
+            showAlert('error', 'তালিকা লোড করতে ব্যর্থ হয়েছে');
+        }
+    }
+
+    function renderList(items) {
+        if (!items || items.length === 0) {
+            listBody.innerHTML = '<div class="empty-canned"><i class="fas fa-inbox fa-2x mb-2 d-block" style="color: #ddd;"></i>এখনো কোনো কুইক রিপ্লাই তৈরি করা হয়নি</div>';
+            countEl.textContent = '0';
+            return;
+        }
+
+        countEl.textContent = items.length;
+        listBody.innerHTML = '';
+
+        // Group by category
+        var categories = {};
+        items.forEach(function(item) {
+            var cat = item.category || 'অন্যান্য';
+            if (!categories[cat]) categories[cat] = [];
+            categories[cat].push(item);
+        });
+
+        Object.keys(categories).forEach(function(cat) {
+            // Category header
+            var catHeader = document.createElement('div');
+            catHeader.style.cssText = 'padding: 8px 16px; font-size: 12px; font-weight: 600; color: #008B8B; background: #f1f8f8; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid #e9ecef;';
+            catHeader.textContent = cat;
+            listBody.appendChild(catHeader);
+
+            categories[cat].forEach(function(item) {
+                var div = document.createElement('div');
+                div.className = 'canned-item';
+                
+                var preview = item.message || '';
+                if (preview.length > 80) preview = preview.substring(0, 80) + '...';
+
+                div.innerHTML = `
+                    <div class="canned-item-title">${escapeHtml(item.title || '')}</div>
+                    <div class="canned-item-preview">${escapeHtml(preview)}</div>
+                    <div class="canned-item-actions">
+                        <button class="btn-edit" data-id="${item.id}"><i class="fas fa-edit me-1"></i>সম্পাদনা</button>
+                        <button class="btn-del" data-id="${item.id}"><i class="fas fa-trash me-1"></i>মুছুন</button>
+                    </div>
+                `;
+                listBody.appendChild(div);
+            });
+        });
+
+        // Attach event listeners
+        listBody.querySelectorAll('.btn-edit').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                var id = parseInt(this.dataset.id);
+                var item = items.find(function(i) { return i.id == id; });
+                if (item) fillForm(item);
+            });
+        });
+
+        listBody.querySelectorAll('.btn-del').forEach(function(btn) {
+            btn.addEventListener('click', async function() {
+                var id = parseInt(this.dataset.id);
+                if (!confirm('এই কুইক রিপ্লাইটি মুছে ফেলবেন?')) return;
+                
+                try {
+                    const res = await fetch('/api/chat/admin/canned/' + id, { method: 'DELETE', headers: apiHeaders() });
+                    if (!res.ok) { throw new Error('HTTP ' + res.status); }
+                    const data = await res.json();
+                    if (data.status === 'success') {
+                        showAlert('success', 'মুছে ফেলা হয়েছে');
+                        loadList();
+                     } else {
+                         alert(data.message || 'মুছতে ব্যর্থ হয়েছে');
+                     }
+                 } catch (e) {
+                     alert('মুছতে ব্যর্থ হয়েছে');
+                 }
+            });
+        });
+    }
+
+    function escapeHtml(text) {
+        if (typeof text !== 'string') return '';
+        var div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    function fillForm(item) {
+        editId.value = item.id;
+        titleInput.value = item.title || '';
+        messageInput.value = item.message || '';
+        categoryInput.value = item.category || '';
+        sortOrderInput.value = item.sort_order || 0;
+        formTitle.innerHTML = '<i class="fas fa-edit me-1" style="color: #008B8B;"></i>কুইক রিপ্লাই সম্পাদনা';
+        cancelBtn.style.display = 'inline-block';
+    }
+
+    function resetForm() {
+        editId.value = '';
+        form.reset();
+        sortOrderInput.value = '0';
+        formTitle.innerHTML = '<i class="fas fa-plus-circle me-1" style="color: #008B8B;"></i>নতুন কুইক রিপ্লাই';
+        cancelBtn.style.display = 'none';
+    }
+
+    function showAlert(type, message) {
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                icon: type,
+                title: message,
+                timer: 2000,
+                showConfirmButton: false,
+                toast: true,
+                position: 'top-end'
+            });
+        }
+    }
+
+    // Form submit
+    form.addEventListener('submit', async function(e) {
+        e.preventDefault();
+
+        var id = editId.value;
+        var payload = {
+            title: titleInput.value.trim(),
+            message: messageInput.value.trim(),
+            category: categoryInput.value.trim(),
+            sort_order: parseInt(sortOrderInput.value) || 0,
+        };
+
+        if (!payload.title) { alert('শিরোনাম দিন'); return; }
+        if (!payload.message) { alert('বার্তা দিন'); return; }
+
+        try {
+            var url = '/api/chat/admin/canned';
+            var method = 'POST';
+            if (id) {
+                url += '/' + id;
+                method = 'PUT';
+            }
+
+            const res = await fetch(url, {
+                method: method,
+                headers: apiHeaders(),
+                body: JSON.stringify(payload)
+            });
+            if (!res.ok) { throw new Error('HTTP ' + res.status); }
+            const data = await res.json();
+
+            if (data.status === 'success') {
+                showAlert('success', id ? 'আপডেট করা হয়েছে' : 'যোগ করা হয়েছে');
+                resetForm();
+                loadList();
+            } else {
+                alert(data.message || 'ব্যর্থ হয়েছে');
+            }
+        } catch (e) {
+            alert('সংরক্ষণ করতে ব্যর্থ হয়েছে');
+        }
+    });
+
+    cancelBtn.addEventListener('click', resetForm);
+
+    // Initial load
+    loadList();
+})();
+</script>
+{% endblock %}

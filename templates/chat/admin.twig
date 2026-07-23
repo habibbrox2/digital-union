@@ -1,0 +1,1054 @@
+{% extends "layout.twig" %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url }}/assets/css/chat.css?t={{ "now"|date("Hiss") }}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-3">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="mb-0 fw-bold" style="color: #008B8B;">
+            <i class="fas fa-comments me-2"></i>লাইভ চ্যাট সমূহ
+        </h5>
+        <button class="btn btn-sm btn-outline-primary" onclick="location.reload()">
+            <i class="fas fa-sync-alt me-1"></i>রিফ্রেশ
+        </button>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-body p-0">
+            <div class="chat-admin-layout">
+                <!-- Conversations List -->
+                <div class="chat-conversations-list" id="convList">
+                    <div class="chat-conversations-header">
+                        <i class="fas fa-comment-dots" style="color: #008B8B;"></i>
+                        কথোপকথন
+                    </div>
+                    <div class="chat-search-area">
+                        <div class="chat-search-row">
+                            <div class="chat-search-input-wrapper">
+                                <i class="fas fa-search chat-search-icon"></i>
+                                <input type="text" class="chat-search-input" id="convSearchInput" placeholder="নাম, ইউনিয়ন বা বার্তা দ্বারা খুঁজুন..." autocomplete="off">
+                                <button type="button" class="chat-search-clear" id="convSearchClear" style="display:none;"><i class="fas fa-times"></i></button>
+                            </div>
+                            <select class="chat-status-filter" id="convStatusFilter">
+                                <option value="">সব</option>
+                                <option value="active">সক্রিয়</option>
+                                <option value="closed">বন্ধ</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div id="convItems">
+                        <div class="chat-no-convs">
+                            <i class="fas fa-inbox fa-2x mb-2 d-block" style="color: #ddd;"></i>
+                            কোনো কথোপকথন নেই
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Conversation View -->
+                <div class="chat-admin-view" id="chatAdminView">
+                    <div class="chat-empty-state" id="chatEmptyState">
+                        <div class="chat-empty-state-icon">
+                            <i class="fas fa-comment-dots"></i>
+                        </div>
+                        <div class="chat-empty-state-text">
+                            একটি কথোপকথন নির্বাচন করুন<br>
+                            <small style="color: #bbb;">বাম দিকের তালিকা থেকে একটি চ্যাট বেছে নিন</small>
+                        </div>
+                    </div>
+
+                    <div class="chat-admin-view-content" id="chatViewContent" style="display: none;">
+                        <div class="chat-admin-view-header">
+                            <div>
+                                <div class="chat-admin-view-title" id="chatViewTitle">কথোপকথন</div>
+                                <small class="text-muted" id="chatViewMeta"></small>
+                            </div>
+                            <div class="chat-admin-view-actions">
+                                <button class="btn btn-sm btn-outline-danger" id="closeConvBtn" title="কথোপকথন বন্ধ করুন">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="chat-admin-messages" id="chatAdminMessages"></div>
+                        <div class="chat-admin-input-area">
+                            <div class="chat-admin-toolbar">
+                                <button type="button" class="chat-admin-tool-btn" id="adminEmojiBtn" title="ইমোজি"><i class="far fa-smile"></i></button>
+                                <button type="button" class="chat-admin-tool-btn" id="adminFileBtn" title="ফাইল আপলোড"><i class="fas fa-paperclip"></i></button>
+                                <button type="button" class="chat-admin-tool-btn canned-btn" id="adminCannedBtn" title="কুইক রিপ্লাই"><i class="fas fa-bolt"></i></button>
+                                <input type="file" class="chat-file-input" id="adminFileInput" accept="image/jpeg,image/png,image/gif,image/webp,application/pdf,.doc,.docx,.xls,.xlsx,.txt,.csv,.zip">
+                            </div>
+                            <div style="position: relative;">
+                                <div class="chat-admin-emoji-picker" id="adminEmojiPicker"></div>
+                                <div class="chat-canned-panel" id="adminCannedPanel">
+                                    <div class="canned-search">
+                                        <input type="text" id="cannedSearchInput" placeholder="খুঁজুন..." autocomplete="off">
+                                    </div>
+                                    <div id="cannedResults">
+                                        <div class="canned-no-results">লোড হচ্ছে...</div>
+                                    </div>
+                                </div>
+                                <div id="adminUploadPreview"></div>
+                                <div class="chat-admin-input-row">
+                                    <textarea class="chat-admin-input" id="adminChatInput" rows="2" placeholder="উত্তর লিখুন..." maxlength="1000"></textarea>
+                                    <button class="btn" id="adminSendBtn" style="background: #008B8B; color: #fff; border-radius: 10px; padding: 10px 20px; white-space: nowrap;">
+                                        <i class="fas fa-paper-plane me-1"></i>পাঠান
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function() {
+    'use strict';
+
+    let activeSessionId = null;
+    let pendingFile = null;
+
+    // Common emojis
+    const EMOJIS = [
+        '😀','😃','😄','😁','😅','😂','🤣',
+        '😊','😇','🙂','😉','😌','😍','🥰',
+        '😘','😗','😙','😚','🤗','🤩','🤔',
+        '🤨','😐','😑','😶','🙄','😏','😣',
+        '😥','😮','🤐','😯','😪','😫','😴',
+        '😤','😡','🤬','😈','👿','💀','☠️',
+        '💩','🤡','👹','👺','👻','👽','👾',
+        '👍','👎','👊','✊','🤛','🤜','👏',
+        '🙌','👐','🤲','🤝','🙏','✍️','💅',
+        '❤️','🧡','💛','💚','💙','💜','🖤',
+        '💔','❣️','💕','💞','💓','💗','💖',
+        '✨','🌟','⭐','🌠','🔥','💯','✅',
+    ];
+
+    // DOM refs
+    const convListEl = document.getElementById('convItems');
+    const emptyState = document.getElementById('chatEmptyState');
+    const viewContent = document.getElementById('chatViewContent');
+    const viewTitle = document.getElementById('chatViewTitle');
+    const viewMeta = document.getElementById('chatViewMeta');
+    const adminMessages = document.getElementById('chatAdminMessages');
+    const adminInput = document.getElementById('adminChatInput');
+    const adminSendBtn = document.getElementById('adminSendBtn');
+    const closeConvBtn = document.getElementById('closeConvBtn');
+    const adminEmojiBtn = document.getElementById('adminEmojiBtn');
+    const adminEmojiPicker = document.getElementById('adminEmojiPicker');
+    const adminFileBtn = document.getElementById('adminFileBtn');
+    const adminFileInput = document.getElementById('adminFileInput');
+    const adminUploadPreview = document.getElementById('adminUploadPreview');
+
+    // Init emoji picker
+    (function buildEmojiPicker() {
+        const grid = document.createElement('div');
+        grid.className = 'chat-emoji-grid';
+        EMOJIS.forEach(function(emoji) {
+            const btn = document.createElement('button');
+            btn.className = 'chat-emoji-item';
+            btn.textContent = emoji;
+            btn.type = 'button';
+            btn.addEventListener('click', function() {
+                const cursorPos = adminInput.selectionStart;
+                const text = adminInput.value;
+                adminInput.value = text.slice(0, cursorPos) + emoji + text.slice(cursorPos);
+                adminInput.focus();
+                adminInput.selectionStart = adminInput.selectionEnd = cursorPos + emoji.length;
+                adminEmojiPicker.classList.remove('open');
+            });
+            grid.appendChild(btn);
+        });
+        adminEmojiPicker.appendChild(grid);
+    })();
+
+    adminEmojiBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        adminEmojiPicker.classList.toggle('open');
+    });
+
+    document.addEventListener('click', function(e) {
+        if (adminEmojiPicker && !adminEmojiPicker.contains(e.target) && e.target !== adminEmojiBtn) {
+            adminEmojiPicker.classList.remove('open');
+        }
+    });
+
+    // File upload
+    adminFileBtn.addEventListener('click', function() {
+        adminFileInput.click();
+    });
+
+    adminFileInput.addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        if (file.size > 10 * 1024 * 1024) {
+            alert('ফাইলটি খুব বড়। সর্বোচ্চ ১০MB অনুমোদিত।');
+            e.target.value = '';
+            return;
+        }
+
+        pendingFile = file;
+        adminUploadPreview.innerHTML = `
+            <div class="chat-upload-preview">
+                <i class="fas ${file.type.startsWith('image/') ? 'fa-file-image' : 'fa-file'}"></i>
+                <span class="chat-upload-preview-name">${file.name}</span>
+                <button type="button" class="chat-upload-preview-remove" id="adminUploadRemove">&times;</button>
+                <div class="chat-upload-progress"><div class="chat-upload-progress-bar" id="adminUploadProgress"></div></div>
+            </div>
+        `;
+
+        document.getElementById('adminUploadRemove').addEventListener('click', function() {
+            pendingFile = null;
+            adminUploadPreview.innerHTML = '';
+            adminFileInput.value = '';
+        });
+    });
+
+    // Helper functions
+    function formatTime(dateStr) {
+        const d = new Date(dateStr);
+        const now = new Date();
+        const hrs = d.getHours().toString().padStart(2, '0');
+        const mins = d.getMinutes().toString().padStart(2, '0');
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const msgDate = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+        const diffDays = Math.floor((today - msgDate) / (1000 * 60 * 60 * 24));
+        if (diffDays === 0) return 'আজ ' + hrs + ':' + mins;
+        if (diffDays === 1) return 'গতকাল ' + hrs + ':' + mins;
+        return d.getDate().toString().padStart(2, '0') + '/' + (d.getMonth() + 1).toString().padStart(2, '0') + ' ' + hrs + ':' + mins;
+    }
+
+    function sanitizeHTML(text) {
+        if (typeof text !== 'string') return '';
+        if (typeof DOMPurify !== 'undefined' && DOMPurify.sanitize) {
+            return DOMPurify.sanitize(text, { ALLOWED_TAGS: [], ALLOWED_ATTR: [] });
+        }
+        return text.replace(/<[^>]*>/g, '');
+    }
+
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = sanitizeHTML(text);
+        return div.innerHTML;
+    }
+
+    function formatFileSize(bytes) {
+        if (bytes < 1024) return bytes + ' B';
+        if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+        return (bytes / 1048576).toFixed(1) + ' MB';
+    }
+
+    function getFileIcon(mimeType) {
+        if (!mimeType) return 'fa-file';
+        if (mimeType.startsWith('image/')) return 'fa-file-image';
+        if (mimeType.includes('pdf')) return 'fa-file-pdf';
+        if (mimeType.includes('word') || mimeType.includes('document')) return 'fa-file-word';
+        if (mimeType.includes('excel') || mimeType.includes('spreadsheet')) return 'fa-file-excel';
+        if (mimeType.includes('zip') || mimeType.includes('rar')) return 'fa-file-archive';
+        return 'fa-file';
+    }
+
+    // ========================================
+    // File Preview
+    // ========================================
+    function isPreviewableFile(msg) {
+        if (!msg || !msg.file_url) return false;
+        if (msg.message_type === 'image') return false;
+        const type = (msg.file_type || '').toLowerCase();
+        return type.indexOf('pdf') !== -1 ||
+            type.indexOf('word') !== -1 || type.indexOf('document') !== -1 ||
+            type.indexOf('excel') !== -1 || type.indexOf('spreadsheet') !== -1 ||
+            type.indexOf('presentation') !== -1 || type.indexOf('powerpoint') !== -1 ||
+            type.indexOf('text/plain') !== -1 || type.indexOf('text/csv') !== -1;
+    }
+
+    function getPreviewUrl(fileUrl, fileType) {
+        const type = (fileType || '').toLowerCase();
+        if (type.indexOf('pdf') !== -1) return fileUrl;
+        if (type.indexOf('word') !== -1 || type.indexOf('document') !== -1 ||
+            type.indexOf('excel') !== -1 || type.indexOf('spreadsheet') !== -1 ||
+            type.indexOf('presentation') !== -1 || type.indexOf('powerpoint') !== -1) {
+            return 'https://docs.google.com/viewer?url=' + encodeURIComponent(fileUrl) + '&embedded=true';
+        }
+        return null;
+    }
+
+    function showFilePreview(msg) {
+        if (!msg || !msg.file_url) return;
+
+        const existing = document.getElementById('chatFilePreview');
+        if (existing) existing.remove();
+
+        const overlay = document.createElement('div');
+        overlay.className = 'chat-preview-overlay';
+        overlay.id = 'chatFilePreview';
+
+        const container = document.createElement('div');
+        container.className = 'chat-preview-container';
+
+        const header = document.createElement('div');
+        header.className = 'chat-preview-header';
+
+        const title = document.createElement('span');
+        title.className = 'chat-preview-title';
+        title.textContent = msg.file_name || 'File Preview';
+        header.appendChild(title);
+
+        const closeBtn = document.createElement('button');
+        closeBtn.className = 'chat-preview-close';
+        closeBtn.innerHTML = '&times;';
+        closeBtn.setAttribute('aria-label', 'Close preview');
+        closeBtn.addEventListener('click', function () { overlay.remove(); });
+        header.appendChild(closeBtn);
+        container.appendChild(header);
+
+        const body = document.createElement('div');
+        body.className = 'chat-preview-body';
+
+        const type = (msg.file_type || '').toLowerCase();
+        if (type.indexOf('text/plain') !== -1 || type.indexOf('text/csv') !== -1) {
+            const pre = document.createElement('pre');
+            pre.className = 'chat-preview-text';
+            pre.textContent = '\u09b2\u09cb\u09a1 \u09b9\u099a\u09cd\u099b\u09c7...';
+            body.appendChild(pre);
+            container.appendChild(body);
+            overlay.appendChild(container);
+            document.body.appendChild(overlay);
+
+            fetch(msg.file_url)
+                .then(function (r) { return r.text(); })
+                .then(function (txt) { pre.textContent = txt; })
+                .catch(function () { pre.textContent = '\u09ab\u09be\u0987\u09b2 \u09b2\u09cb\u09a1 \u0995\u09b0\u09be \u09af\u09be\u09df\u09a8\u09bf\u0964'; });
+            return;
+        }
+
+        const previewUrl = getPreviewUrl(msg.file_url, msg.file_type);
+
+        if (type.indexOf('pdf') !== -1) {
+            const embed = document.createElement('embed');
+            embed.src = previewUrl;
+            embed.type = 'application/pdf';
+            embed.className = 'chat-preview-embed';
+            body.appendChild(embed);
+        } else if (previewUrl) {
+            const iframe = document.createElement('iframe');
+            iframe.src = previewUrl;
+            iframe.className = 'chat-preview-embed';
+            iframe.setAttribute('frameborder', '0');
+            iframe.setAttribute('allowfullscreen', 'true');
+            body.appendChild(iframe);
+        }
+
+        container.appendChild(body);
+        overlay.appendChild(container);
+        document.body.appendChild(overlay);
+
+        overlay.addEventListener('click', function (e) {
+            if (e.target === overlay) overlay.remove();
+        });
+
+        function onKeydown(e) {
+            if (e.key === 'Escape') {
+                overlay.remove();
+                document.removeEventListener('keydown', onKeydown);
+            }
+        }
+        document.addEventListener('keydown', onKeydown);
+    }
+
+    function renderMessageHTML(msg) {
+        const senderLabel = msg.sender_type === 'admin' ? 'সহায়ক' : 'দর্শক';
+        let html = '<div class="chat-msg-sender-row"><span class="chat-msg-sender">' + senderLabel + '</span>';
+        if (msg.sender_type === 'admin' && msg.auto_reply == 1) {
+            html += '<span class="chat-msg-auto-reply-badge">🤖 স্বচালিত উত্তর</span>';
+        }
+        html += '</div>';
+
+        if (msg.message_type === 'text' || !msg.message_type) {
+            html += '<div class="chat-msg-text">' + escapeHtml(msg.message) + '</div>';
+        }
+
+        if (msg.file_url) {
+            if (msg.message_type === 'image') {
+                html += '<a href="' + msg.file_url + '" target="_blank" class="chat-msg-image-link"><img src="' + msg.file_url + '" class="chat-msg-image" alt="' + escapeHtml(msg.file_name || 'Image') + '" loading="lazy"></a>';
+            } else {
+                html += '<a href="' + msg.file_url + '" target="_blank" class="chat-msg-file" download="' + escapeHtml(msg.file_name || 'file') + '">';
+                html += '<span class="chat-msg-file-icon"><i class="fas ' + getFileIcon(msg.file_type) + '"></i></span>';
+                html += '<span class="chat-msg-file-info"><span class="chat-msg-file-name">' + escapeHtml(msg.file_name || 'File') + '</span>';
+                if (msg.file_size) {
+                    html += '<span class="chat-msg-file-size">' + formatFileSize(parseInt(msg.file_size)) + '</span>';
+                }
+                html += '</span></a>';                    // Preview button for previewable files
+                if (isPreviewableFile(msg)) {
+                    html += '<button type="button" class="chat-msg-preview-btn" data-preview-msg=\'" + escapeAttr(JSON.stringify(msg)) + "\'';
+                    html += '<i class="fas fa-eye"></i> \u09aa\u09cd\u09b0\u09bf\u09ad\u09bf\u0989';
+                    html += '</button>';
+                }
+            }
+        }
+
+        html += '<div class="chat-msg-footer">';
+        html += '<span class="chat-msg-time">' + formatTime(msg.created_at) + '</span>';
+        // Read status for visitor messages
+        if (msg.sender_type === 'visitor') {
+            html += '<span class="chat-msg-status">';
+            if (msg.is_read == 1) {
+                html += '<span class="status-icon status-read"><i class="fas fa-check-double"></i> পঠিত</span>';
+            } else {
+                html += '<span class="status-icon status-sent"><i class="fas fa-check"></i> প্রেরিত</span>';
+            }
+            html += '</span>';
+        }
+        html += '</div>';
+
+        return html;
+    }
+
+    // Conversation search/filter + pagination
+    const CONV_PAGE_SIZE = 50;
+    let allConversations = [];
+    let conversationsOffset = 0;
+    let hasMoreConversations = true;
+    let isLoadingConversations = false;
+    let loadedConversationIds = new Set();
+    const convSearchInput = document.getElementById('convSearchInput');
+    const convSearchClear = document.getElementById('convSearchClear');
+    const convStatusFilter = document.getElementById('convStatusFilter');
+    let convSearchFilter = '';
+    let convStatusValue = '';
+
+    function filterConversations() {
+        const q = convSearchFilter.trim().toLowerCase();
+
+        let filtered = allConversations;
+
+        // Apply status filter
+        if (convStatusValue) {
+            filtered = filtered.filter(function(conv) {
+                return conv.status === convStatusValue;
+            });
+        }
+
+        // Apply text search
+        if (q) {
+            filtered = filtered.filter(function(conv) {
+                const name = (conv.visitor_name || '').toLowerCase();
+                const union = (conv.visitor_union_name || '').toLowerCase();
+                const msgText = (conv.last_message || '').toLowerCase();
+                return name.indexOf(q) !== -1 || union.indexOf(q) !== -1 || msgText.indexOf(q) !== -1;
+            });
+        }
+
+        return filtered;
+    }
+
+    function applyFilters() {
+        renderConversations(filterConversations());
+    }
+
+    convSearchInput.addEventListener('input', function() {
+        convSearchFilter = this.value;
+        convSearchClear.style.display = this.value ? 'block' : 'none';
+        applyFilters();
+    });
+
+    convStatusFilter.addEventListener('change', function() {
+        convStatusValue = this.value;
+        applyFilters();
+    });
+
+    convSearchClear.addEventListener('click', function() {
+        convSearchInput.value = '';
+        convSearchFilter = '';
+        convSearchClear.style.display = 'none';
+        convStatusFilter.value = '';
+        convStatusValue = '';
+        renderConversations(filterConversations());
+        convSearchInput.focus();
+    });
+
+    // Fetch conversations with pagination
+    async function loadConversations(append) {
+        if (isLoadingConversations) return;
+        if (append && !hasMoreConversations) return;
+
+        isLoadingConversations = true;
+        const offset = append ? conversationsOffset : 0;
+
+        try {
+            const res = await fetch('/api/chat/admin/conversations?offset=' + offset + '&limit=' + CONV_PAGE_SIZE);
+            const data = await res.json();
+            const newConvs = data.data || [];
+            hasMoreConversations = data.has_more || false;
+
+            if (append) {
+                // Append mode: add only new conversation IDs (avoid duplicates)
+                newConvs.forEach(function(conv) {
+                    if (!loadedConversationIds.has(conv.session_id)) {
+                        loadedConversationIds.add(conv.session_id);
+                        allConversations.push(conv);
+                    }
+                });
+                conversationsOffset = allConversations.length;
+            } else {
+                // Full reload: reset everything
+                allConversations = newConvs;
+                conversationsOffset = newConvs.length;
+                loadedConversationIds.clear();
+                newConvs.forEach(function(conv) {
+                    loadedConversationIds.add(conv.session_id);
+                });
+            }
+
+            renderConversations(filterConversations());
+            renderLoadMoreButton();
+        } catch (e) {
+            console.error('Failed to load conversations:', e);
+        } finally {
+            isLoadingConversations = false;
+        }
+    }
+
+    // Load-more button
+    function renderLoadMoreButton() {
+        // Remove existing load-more button
+        const existing = convListEl.querySelector('.chat-load-more-convs');
+        if (existing) existing.remove();
+
+        if (hasMoreConversations && allConversations.length > 0) {
+            const loadMore = document.createElement('div');
+            loadMore.className = 'chat-load-more-convs';
+            loadMore.innerHTML = '<button type="button" class="chat-load-more-btn"><i class="fas fa-chevron-down"></i> আরও লোড করুন (' + conversationsOffset + ' loaded)</button>';
+            loadMore.querySelector('button').addEventListener('click', function() {
+                loadConversations(true);
+            });
+            convListEl.appendChild(loadMore);
+        }
+    }
+
+    function renderConversations(convs) {
+        convListEl.innerHTML = '';
+
+        if (!convs || convs.length === 0) {
+            // Show different empty message based on whether there's an active search
+            if (convSearchFilter.trim()) {
+                convListEl.innerHTML = '<div class="chat-no-convs"><i class="fas fa-search fa-2x mb-2 d-block" style="color: #ddd;"></i>কিছু পাওয়া যায়নি</div>';
+            } else {
+                convListEl.innerHTML = '<div class="chat-no-convs"><i class="fas fa-inbox fa-2x mb-2 d-block" style="color: #ddd;"></i>কোনো কথোপকথন নেই</div>';
+            }
+            return;
+        }
+
+        convs.forEach(function(conv) {
+            const item = document.createElement('div');
+            item.className = 'chat-conversation-item' + (conv.session_id === activeSessionId ? ' active' : '');
+            item.dataset.sessionId = conv.session_id;
+
+            const name = conv.visitor_name || 'অজ্ঞাত দর্শক';
+            const union = conv.visitor_union_name || '';
+            let preview = conv.last_message || 'কোনো বার্তা নেই';
+            let previewPrefix = '';
+            if (conv.last_message_type === 'image') previewPrefix = '🖼️ ';
+            else if (conv.last_message_type === 'file') previewPrefix = '📎 ';
+
+            if (preview.length > 50) preview = preview.substring(0, 50) + '...';
+            const time = conv.last_message_time ? formatTime(conv.last_message_time) : formatTime(conv.created_at);
+            const isActive = conv.status === 'active';
+
+            item.innerHTML = `
+                <div class="chat-conv-name">${escapeHtml(name)}</div>
+                ${union ? '<div class="chat-conv-union"><i class="fas fa-map-marker-alt" style="font-size: 11px; margin-right: 4px;"></i>' + escapeHtml(union) + '</div>' : ''}
+                <div class="chat-conv-preview">${previewPrefix}${escapeHtml(preview)}</div>
+                <div class="chat-conv-meta">
+                    <span class="chat-conv-time">${time}</span>
+                    <div>
+                        ${parseInt(conv.unread) > 0 ? '<span class="chat-conv-unread">' + conv.unread + '</span>' : ''}
+                        <span class="chat-conv-status ${isActive ? 'active' : 'closed'}">${isActive ? 'সক্রিয়' : 'বন্ধ'}</span>
+                    </div>
+                </div>
+            `;
+
+            item.addEventListener('click', function() {
+                loadConversation(conv.session_id);
+            });
+
+            convListEl.appendChild(item);
+        });
+    }
+
+    // Load a specific conversation
+    async function loadConversation(sessionId) {
+        activeSessionId = sessionId;
+
+        document.querySelectorAll('.chat-conversation-item').forEach(function(el) {
+            el.classList.toggle('active', el.dataset.sessionId === sessionId);
+        });
+
+        try {
+            const res = await fetch('/api/chat/admin/conversations/' + encodeURIComponent(sessionId));
+            const data = await res.json();
+            const messages = data.data || [];
+
+            emptyState.style.display = 'none';
+            viewContent.style.display = 'flex';
+
+            const activeConv = document.querySelector('.chat-conversation-item.active');
+            const convName = activeConv ? (activeConv.querySelector('.chat-conv-name')?.textContent || 'অজ্ঞাত') : 'অজ্ঞাত';
+            const convUnion = activeConv ? (activeConv.querySelector('.chat-conv-union')?.textContent || '') : '';
+            viewTitle.textContent = convName;
+            viewMeta.innerHTML = '<i class="fas fa-map-marker-alt" style="color: #008B8B; font-size: 12px; margin-right: 4px;"></i> ' + (convUnion ? escapeHtml(convUnion.trim()) : '<span style="color: #bbb;">ইউনিয়ন দেওয়া হয়নি</span>') + ' &nbsp;·&nbsp; ' + messages.length + ' টি বার্তা';
+
+            adminMessages.innerHTML = '';
+            messages.forEach(function(msg) {
+                const div = document.createElement('div');
+                div.className = 'chat-msg ' + (msg.sender_type === 'admin' ? 'admin' : 'visitor');
+                div.innerHTML = renderMessageHTML(msg);
+                div.setAttribute('data-auto-reply', msg.auto_reply || 0);
+                adminMessages.appendChild(div);
+            });
+
+            adminMessages.scrollTop = adminMessages.scrollHeight;
+            adminInput.focus();
+
+        } catch (e) {
+            console.error('Failed to load conversation:', e);
+        }
+    }
+
+    // ========================================
+    // Optimistic message append helper
+    // ========================================
+    function renderAdminMessageEl(msg) {
+        const div = document.createElement('div');
+        div.className = 'chat-msg admin';
+        div.innerHTML = renderMessageHTML(msg);
+        return div;
+    }
+
+    function appendAdminMessage(msgEl) {
+        adminMessages.appendChild(msgEl);
+        adminMessages.scrollTop = adminMessages.scrollHeight;
+    }
+
+    // ========================================
+    // File Preview — Event Delegation
+    // ========================================
+    adminMessages.addEventListener('click', function(e) {
+        const btn = e.target.closest('.chat-msg-preview-btn');
+        if (btn && btn.dataset.previewMsg) {
+            e.preventDefault();
+            try {
+                const msg = JSON.parse(btn.dataset.previewMsg);
+                showFilePreview(msg);
+            } catch (parseErr) {
+                console.error('[Admin Chat] Failed to parse preview data:', parseErr);
+            }
+        }
+    });
+
+    // ========================================
+    // Send admin reply (optimistic updates)
+    // ========================================
+    async function sendReply() {
+        const text = adminInput.value.trim();
+        const hasFile = !!pendingFile;
+        if (!text && !hasFile) return;
+
+        adminInput.value = '';
+
+        if (hasFile) {
+            const progressBar = document.getElementById('adminUploadProgress');
+            if (progressBar) progressBar.style.width = '30%';
+
+            // Save file info before clearing pendingFile
+            const fileToUpload = pendingFile;
+            const isImage = pendingFile.type.startsWith('image/');
+            const fileName = pendingFile.name;
+            const fileSize = pendingFile.size;
+            const fileType = pendingFile.type;
+
+            pendingFile = null;
+            adminUploadPreview.innerHTML = '';
+            adminFileInput.value = '';
+
+            // Optimistically show the message text (set message_type to 'text' so the
+            // text renders; the actual file attachment appears after upload completes)
+            const fileMsg = {
+                sender_type: 'admin',
+                message: text || '[ফাইল] ' + fileName,
+                message_type: 'text',
+                file_url: null,
+                file_name: fileName,
+                file_size: fileSize,
+                file_type: fileType,
+                created_at: new Date().toISOString(),
+                is_read: 1,
+            };
+            const tempFileMsg = renderAdminMessageEl(fileMsg);
+            // Add a small spinner to show it's uploading
+            const spinner = document.createElement('span');
+            spinner.innerHTML = ' <i class="fas fa-spinner fa-spin" style="font-size: 11px; color: #999;"></i>';
+            tempFileMsg.querySelector('.chat-msg-footer')?.appendChild(spinner);
+            appendAdminMessage(tempFileMsg);
+
+            const formData = new FormData();
+            formData.append('file', fileToUpload);
+            formData.append('session_id', activeSessionId);
+            formData.append('message', text);
+
+            try {
+                const res = await fetch('/api/chat/admin/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await res.json();
+
+                if (data.status === 'success') {
+                    if (progressBar) progressBar.style.width = '100%';
+                    // Replace the optimistic text message with the real file message
+                    const realMsg = {
+                        sender_type: 'admin',
+                        message: text || '[ফাইল] ' + data.data.file_name,
+                        message_type: isImage ? 'image' : 'file',
+                        file_url: data.data.file_url,
+                        file_name: data.data.file_name,
+                        file_size: fileSize,
+                        file_type: fileType,
+                        created_at: new Date().toISOString(),
+                        is_read: 1,
+                    };
+                    const realMsgEl = renderAdminMessageEl(realMsg);
+                    tempFileMsg.replaceWith(realMsgEl);
+                    refreshFirstPage();
+                } else {
+                    tempFileMsg.style.opacity = '0.5';
+                    tempFileMsg.title = 'পাঠানো ব্যর্থ';
+                    alert('ফাইল পাঠানো যায়নি: ' + (data.message || 'অজানা ত্রুটি'));
+                }
+            } catch (e) {
+                tempFileMsg.style.opacity = '0.5';
+                tempFileMsg.title = 'পাঠানো ব্যর্থ';
+                alert('ফাইল পাঠানো যায়নি।');
+            }
+            return;
+        }
+
+        // --- Text only path (already optimistic) ---
+        adminSendBtn.disabled = true;
+
+        const tempMsg = document.createElement('div');
+        tempMsg.className = 'chat-msg admin';
+        tempMsg.innerHTML = '<span class="chat-msg-sender">সহায়ক</span><div class="chat-msg-text">' + escapeHtml(text) + '</div><div class="chat-msg-footer"><span class="chat-msg-time">এখনই</span></div>';
+        appendAdminMessage(tempMsg);
+
+        try {
+            const res = await fetch('/api/chat/admin/reply', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ session_id: activeSessionId, message: text })
+            });
+            const data = await res.json();
+
+            if (data.status === 'success') {
+                refreshFirstPage();
+            } else {
+                tempMsg.style.opacity = '0.5';
+                tempMsg.title = 'পাঠানো ব্যর্থ';
+                alert('বার্তা পাঠানো যায়নি: ' + (data.message || 'অজানা ত্রুটি'));
+            }
+        } catch (e) {
+            tempMsg.style.opacity = '0.5';
+            tempMsg.title = 'পাঠানো ব্যর্থ';
+            alert('বার্তা পাঠানো যায়নি। আবার চেষ্টা করুন।');
+        } finally {
+            adminSendBtn.disabled = false;
+            adminInput.focus();
+        }
+    }
+
+    // ========================================
+    // Typing Indicator (Admin side)
+    // ========================================
+    let lastAdminTypingSent = 0;
+    let typingCheckInterval = null;
+
+    function sendAdminTypingNotification() {
+        if (!activeSessionId) return;
+        const now = Date.now();
+        if (now - lastAdminTypingSent < 3000) return;
+        lastAdminTypingSent = now;
+
+        fetch('/api/chat/admin/typing', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ session_id: activeSessionId })
+        }).catch(function() {});
+    }
+
+    adminInput.addEventListener('input', function() {
+        sendAdminTypingNotification();
+    });
+
+    function startTypingCheck() {
+        if (typingCheckInterval) clearInterval(typingCheckInterval);
+        let typingEl = document.getElementById('adminTypingIndicator');
+        if (typingEl) typingEl.remove();
+
+        if (activeSessionId) {
+            typingCheckInterval = setInterval(function() {
+                if (!activeSessionId) return;
+                fetch('/api/chat/admin/typing?session_id=' + encodeURIComponent(activeSessionId))
+                    .then(function(res) { return res.json(); })
+                    .then(function(data) {
+                        if (data.status === 'success' && data.data && data.data.is_typing) {
+                            let el = document.getElementById('adminTypingIndicator');
+                            if (!el && adminMessages) {
+                                el = document.createElement('div');
+                                el.id = 'adminTypingIndicator';
+                                el.className = 'chat-typing chat-admin-typing visible';
+                                el.innerHTML = '<span></span><span></span><span></span>';
+                                adminMessages.appendChild(el);
+                                adminMessages.scrollTop = adminMessages.scrollHeight;
+                            } else if (el) {
+                                el.classList.add('visible');
+                            }
+                        } else {
+                            const el = document.getElementById('adminTypingIndicator');
+                            if (el) el.remove();
+                        }
+                    }).catch(function() {});
+            }, 4000);
+        }
+    }
+
+    function stopTypingCheck() {
+        if (typingCheckInterval) {
+            clearInterval(typingCheckInterval);
+            typingCheckInterval = null;
+        }
+        const el = document.getElementById('adminTypingIndicator');
+        if (el) el.remove();
+    }
+
+    // Cleanup on page unload
+    window.addEventListener('beforeunload', function() {
+        stopTypingCheck();
+        if (_refreshTimer) {
+            clearInterval(_refreshTimer);
+            _refreshTimer = null;
+        }
+    });
+
+    // Merge typing into loadConversation
+    const origLoadConv = loadConversation;
+    loadConversation = async function(sessionId) {
+        stopTypingCheck();
+        await origLoadConv(sessionId);
+        startTypingCheck();
+    };
+
+    // Close conversation (single handler with typing cleanup)
+    closeConvBtn.addEventListener('click', async function() {
+        if (!activeSessionId) return;
+        if (!confirm('এই কথোপকথনটি বন্ধ করবেন?')) return;
+
+        try {
+            const res = await fetch('/api/chat/admin/close/' + encodeURIComponent(activeSessionId), { method: 'POST' });
+            const data = await res.json();
+            if (data.status === 'success') {
+                stopTypingCheck();
+                activeSessionId = null;
+                emptyState.style.display = 'flex';
+                viewContent.style.display = 'none';
+                loadConversations();
+            }
+        } catch (e) {
+            alert('বন্ধ করতে ব্যর্থ হয়েছে।');
+        }
+    });
+
+    // ========================================
+    // Canned Responses (Quick Replies)
+    // ========================================
+    let allCannedResponses = [];
+    const cannedPanel = document.getElementById('adminCannedPanel');
+    const cannedBtn = document.getElementById('adminCannedBtn');
+    const cannedResults = document.getElementById('cannedResults');
+    const cannedSearchInput = document.getElementById('cannedSearchInput');
+
+    async function loadCannedResponses() {
+        try {
+            const res = await fetch('/api/chat/admin/canned');
+            const data = await res.json();
+            allCannedResponses = data.data || [];
+        } catch (e) {
+            console.error('Failed to load canned responses:', e);
+        }
+    }
+
+    function renderCannedResponses(filter) {
+        if (!allCannedResponses || allCannedResponses.length === 0) {
+            cannedResults.innerHTML = '<div class="canned-no-results">কোনো কুইক রিপ্লাই নেই<br><small>/settings/chat/canned এ তৈরি করুন</small></div>';
+            return;
+        }
+
+        let filtered = allCannedResponses;
+        if (filter && filter.trim()) {
+            const q = filter.toLowerCase();
+            filtered = allCannedResponses.filter(function(item) {
+                return (item.title && item.title.toLowerCase().indexOf(q) !== -1) ||
+                       (item.message && item.message.toLowerCase().indexOf(q) !== -1) ||
+                       (item.category && item.category.toLowerCase().indexOf(q) !== -1);
+            });
+        }
+
+        if (filtered.length === 0) {
+            cannedResults.innerHTML = '<div class="canned-no-results">কিছু পাওয়া যায়নি</div>';
+            return;
+        }
+
+        // Group by category
+        const categories = {};
+        filtered.forEach(function(item) {
+            const cat = item.category || 'অন্যান্য';
+            if (!categories[cat]) categories[cat] = [];
+            categories[cat].push(item);
+        });
+
+        let html = '';
+        const catKeys = Object.keys(categories);
+        catKeys.forEach(function(cat, idx) {
+            if (idx > 0) html += '<div style="border-top: 1px solid #e9ecef;"></div>';
+            html += '<div class="canned-group-header">' + escapeHtml(cat) + '</div>';
+            categories[cat].forEach(function(item) {
+                let preview = item.message || '';
+                if (preview.length > 60) preview = preview.substring(0, 60) + '...';
+                html += '<div class="canned-item" data-canned-id="' + item.id + '" data-canned-message="' + escapeAttr(item.message) + '">';
+                html += '<div class="canned-item-title">' + escapeHtml(item.title) + '</div>';
+                html += '<div class="canned-item-text">' + escapeHtml(preview) + '</div>';
+                html += '</div>';
+            });
+        });
+
+        cannedResults.innerHTML = html;
+
+        // Click handlers
+        cannedResults.querySelectorAll('.canned-item').forEach(function(el) {
+            el.addEventListener('click', function() {
+                const message = this.dataset.cannedMessage || '';
+                if (message) {
+                    adminInput.value = message;
+                    adminInput.focus();
+                    // Auto-resize
+                    adminInput.style.height = 'auto';
+                    adminInput.style.height = Math.min(adminInput.scrollHeight, 80) + 'px';
+                    // Close panel
+                    cannedPanel.classList.remove('open');
+                    cannedBtn.classList.remove('active');
+                }
+            });
+        });
+    }
+
+    function escapeAttr(text) {
+        if (typeof text !== 'string') return '';
+        return text.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/'/g, '&#39;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    // Toggle canned panel
+    cannedBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        const isOpen = cannedPanel.classList.contains('open');
+        // Close other overlays
+        adminEmojiPicker.classList.remove('open');
+        
+        if (!isOpen) {
+            renderCannedResponses('');
+            cannedSearchInput.value = '';
+        }
+        cannedPanel.classList.toggle('open');
+        this.classList.toggle('active');
+        if (!isOpen) {
+            setTimeout(function() { cannedSearchInput.focus(); }, 100);
+        }
+    });
+
+    // Search
+    cannedSearchInput.addEventListener('input', function() {
+        renderCannedResponses(this.value);
+    });
+
+    // Close on outside click
+    document.addEventListener('click', function(e) {
+        if (cannedPanel && !cannedPanel.contains(e.target) && e.target !== cannedBtn) {
+            cannedPanel.classList.remove('open');
+            if (cannedBtn) cannedBtn.classList.remove('active');
+        }
+    });
+
+    // Load canned responses on init
+    loadCannedResponses();
+
+    // Send on Enter (Shift+Enter for new line)
+    adminInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            sendReply();
+        }
+    });
+
+    adminSendBtn.addEventListener('click', sendReply);
+
+    // Auto-refresh conversations every 10s (only first page, preserves pagination state)
+    async function refreshFirstPage() {
+        if (isLoadingConversations) return;
+        try {
+            const res = await fetch('/api/chat/admin/conversations?offset=0&limit=' + CONV_PAGE_SIZE);
+            const data = await res.json();
+            const freshConvs = data.data || [];
+            const newHasMore = data.has_more || false;
+
+            // Use a Map for O(1) lookups instead of O(n²) findIndex
+            const convMap = new Map();
+            allConversations.forEach(function(c) {
+                convMap.set(c.session_id, c);
+            });
+
+            // Merge fresh first-page items into allConversations (update status, unread, etc.)
+            // This preserves older loaded pages while updating the most recent items
+            freshConvs.forEach(function(fc) {
+                const existing = convMap.get(fc.session_id);
+                if (existing) {
+                    // Update existing item in place
+                    Object.assign(existing, fc);
+                } else {
+                    // New conversation — add to front
+                    allConversations.unshift(fc);
+                    loadedConversationIds.add(fc.session_id);
+                }
+            });
+
+            // Update offset and has_more
+            conversationsOffset = allConversations.length;
+            hasMoreConversations = newHasMore || allConversations.length >= CONV_PAGE_SIZE;
+
+            renderConversations(filterConversations());
+            renderLoadMoreButton();
+        } catch (e) {
+            console.error('Failed to refresh conversations:', e);
+        }
+    }
+
+    let _refreshTimer = setInterval(refreshFirstPage, 10000);
+
+    // Initial load
+    loadConversations(false);
+})();
+</script>
+{% endblock %}

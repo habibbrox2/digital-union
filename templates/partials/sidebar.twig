@@ -13,6 +13,12 @@
         <li><a href="/#" title="হোম"><i class="fas fa-home-lg-alt"></i><span class="nav-text">হোম</span></a></li>
         <li><a href="/dashboard" title="ড্যাশবোর্ড"><i class="fas fa-chart-line"></i><span class="nav-text">ড্যাশবোর্ড</span></a></li>
 
+        {# Live Chat #}
+        {% if is_superadmin or can('manage_chat') %}
+        <li><a href="/chat/admin" title="লাইভ চ্যাট"><i class="fas fa-comment-dots"></i><span class="nav-text">লাইভ চ্যাট</span></a></li>
+        <li><a href="/chat/admin/offline" title="অফলাইন বার্তা"><i class="fas fa-inbox"></i><span class="nav-text">অফলাইন বার্তা</span></a></li>
+        {% endif %}
+
         {# Applications / Certificates #}
         <li class="menu-item">
             <a href="#" class="submenu-toggle" title="সনদসমূহ">
@@ -97,6 +103,8 @@
                         {% endif %}
                         <li><a href="/settings/business-types" title="ব্যবসা ধরণ"><i class="fas fa-briefcase"></i> ব্যবসা ধরণ</a></li>
                         <li><a href="/settings/ownership-types" title="মালিকানা ধরণ"><i class="fas fa-users"></i> মালিকানা ধরণ</a></li>
+                        <li><a href="/settings/chat" title="চ্যাট সেটিংস"><i class="fas fa-comment-dots"></i> চ্যাট সেটিংস</a></li>
+                        <li><a href="/settings/chat/canned" title="কুইক রিপ্লাই"><i class="fas fa-bolt"></i> কুইক রিপ্লাই</a></li>
                         <li><a href="/settings/extra-fields" title="অতিরিক্ত ইনপুট"><i class="fas fa-layer-group"></i> অতিরিক্ত ইনপুট</a></li>
                         {% if is_superadmin %}
                             <li><a href="/settings/geo" title="জিও লোকেশন"><i class="fas fa-globe"></i> জিও লোকেশন</a></li>

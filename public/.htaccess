@@ -82,6 +82,18 @@ ErrorDocument 500 /error?code=500
 AddType application/pdf .pdf
 AddType application/pdf pdf
 
+# ============================================================
+# UTF-8 Charset for All Text Output
+# ============================================================
+
+# Default charset for all text/* responses served by Apache
+AddDefaultCharset UTF-8
+
+# Explicit charset for JavaScript and CSS files
+<IfModule mod_mime.c>
+    AddCharset UTF-8 .js .css .json .html .xml .svg
+</IfModule>
+
 # php -- BEGIN cPanel-generated handler, do not edit
 # Set the “ea-php82” package as the default “PHP” programming language.
 <IfModule mime_module>

@@ -118,7 +118,9 @@ if (session_status() === PHP_SESSION_NONE) {
 
     ]);
 
-}// ============================
+}
+
+// ============================
 // Encryption Configuration 🔐
 // ============================
 // Read from .env — fallback retains existing values for backward compatibility

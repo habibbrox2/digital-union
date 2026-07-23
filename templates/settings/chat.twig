@@ -1,0 +1,301 @@
+{% extends "layout.twig" %}
+
+{% block title %}চ্যাট সেটিংস{% endblock %}
+
+{% block content %}
+{% include 'components/sweetAlert.twig' %}
+
+<div class="container-fluid px-4 py-3">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h5 class="mb-0 fw-bold" style="color: #008B8B;">
+            <i class="fas fa-comment-dots me-2"></i>চ্যাট উইজেট সেটিংস
+        </h5>
+    </div>
+
+    <form id="chatSettingsForm">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+        <!-- General Settings -->
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-white d-flex align-items-center" style="border-left: 4px solid #008B8B;">
+                <i class="fas fa-cog me-2" style="color: #008B8B;"></i>
+                <h6 class="mb-0 fw-semibold">সাধারণ সেটিংস</h6>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label fw-medium">চ্যাট সক্রিয়</label>
+                        <div class="form-check form-switch mt-2">
+                            <input type="checkbox" class="form-check-input" id="chat_enabled" name="settings[chat_enabled]" value="1" {% if settings.chat_enabled == '1' %}checked{% endif %}>
+                            <label class="form-check-label" for="chat_enabled">উইজেট সক্রিয় করুন</label>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="chat_primary_color" class="form-label fw-medium">প্রাথমিক রঙ</label>
+                        <div class="input-group">
+                            <input type="color" class="form-control form-control-color" id="chat_primary_color" name="settings[chat_primary_color]" value="{{ settings.chat_primary_color ?: '#008B8B' }}" style="max-width: 60px;">
+                            <input type="text" class="form-control" id="chat_primary_color_text" value="{{ settings.chat_primary_color ?: '#008B8B' }}" readonly>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="chat_agent_name" class="form-label fw-medium">এজেন্টের নাম</label>
+                        <input type="text" class="form-control" id="chat_agent_name" name="settings[chat_agent_name]" value="{{ settings.chat_agent_name ?: 'সহায়ক' }}" maxlength="50">
+                        <small class="text-muted">ভিজিটরদের কাছে প্রদর্শিত এজেন্টের নাম</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Widget Header -->
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-white d-flex align-items-center" style="border-left: 4px solid #008B8B;">
+                <i class="fas fa-header me-2" style="color: #008B8B;"></i>
+                <h6 class="mb-0 fw-semibold">উইজেট হেডার</h6>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label for="chat_title" class="form-label fw-medium">শিরোনাম</label>
+                        <input type="text" class="form-control" id="chat_title" name="settings[chat_title]" value="{{ settings.chat_title ?: 'লাইভ চ্যাট সহায়তা' }}" maxlength="100">
+                    </div>
+                    <div class="col-md-6">
+                        <label for="chat_subtitle" class="form-label fw-medium">উপশিরোনাম</label>
+                        <input type="text" class="form-control" id="chat_subtitle" name="settings[chat_subtitle]" value="{{ settings.chat_subtitle ?: 'স্মার্ট ইউনিয়ন পরিষদ' }}" maxlength="100">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Welcome Message -->
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-white d-flex align-items-center" style="border-left: 4px solid #008B8B;">
+                <i class="fas fa-hand-peace me-2" style="color: #008B8B;"></i>
+                <h6 class="mb-0 fw-semibold">স্বাগতম বার্তা</h6>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label for="chat_welcome_title" class="form-label fw-medium">স্বাগতম শিরোনাম</label>
+                        <input type="text" class="form-control" id="chat_welcome_title" name="settings[chat_welcome_title]" value="{{ settings.chat_welcome_title ?: 'সাহায্য প্রয়োজন?' }}" maxlength="100">
+                    </div>
+                    <div class="col-md-6">
+                        <label for="chat_welcome_message" class="form-label fw-medium">স্বাগতম বার্তা</label>
+                        <input type="text" class="form-control" id="chat_welcome_message" name="settings[chat_welcome_message]" value="{{ settings.chat_welcome_message ?: 'আপনার প্রশ্ন লিখুন, আমরা সহায়তা করব।' }}" maxlength="200">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Input Placeholders -->
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-white d-flex align-items-center" style="border-left: 4px solid #008B8B;">
+                <i class="fas fa-keyboard me-2" style="color: #008B8B;"></i>
+                <h6 class="mb-0 fw-semibold">ইনপুট ফিল্ড</h6>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label for="chat_placeholder" class="form-label fw-medium">বার্তা ইনপুট প্লেসহোল্ডার</label>
+                        <input type="text" class="form-control" id="chat_placeholder" name="settings[chat_placeholder]" value="{{ settings.chat_placeholder ?: 'বার্তা লিখুন...' }}" maxlength="100">
+                    </div>
+                    <div class="col-md-6">
+                        <label for="chat_name_placeholder" class="form-label fw-medium">নাম ইনপুট প্লেসহোল্ডার</label>
+                        <input type="text" class="form-control" id="chat_name_placeholder" name="settings[chat_name_placeholder]" value="{{ settings.chat_name_placeholder ?: 'আপনার নাম (ঐচ্ছিক)' }}" maxlength="100">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Notification Settings -->
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-white d-flex align-items-center" style="border-left: 4px solid #008B8B;">
+                <i class="fas fa-bell me-2" style="color: #008B8B;"></i>
+                <h6 class="mb-0 fw-semibold">বিজ্ঞপ্তি সেটিংস</h6>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <div class="form-check form-switch mt-2">
+                            <input type="checkbox" class="form-check-input" id="chat_sound_enabled" name="settings[chat_sound_enabled]" value="1" {% if settings.chat_sound_enabled == '1' %}checked{% endif %}>
+                            <label class="form-check-label" for="chat_sound_enabled">
+                                <strong>সাউন্ড নোটিফিকেশন</strong>
+                                <br>
+                                <small class="text-muted">নতুন বার্তা এলে সাউন্ড বাজান (ডেস্কটপ নোটিফিকেশন স্বাধীন)</small>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Offline Hours -->
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-white d-flex align-items-center" style="border-left: 4px solid #008B8B;">
+                <i class="fas fa-clock me-2" style="color: #008B8B;"></i>
+                <h6 class="mb-0 fw-semibold">অফলাইন সময়</h6>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <div class="form-check form-switch mt-2">
+                            <input type="checkbox" class="form-check-input" id="chat_offline_enabled" name="settings[chat_offline_enabled]" value="1" {% if settings.chat_offline_enabled == '1' %}checked{% endif %}>
+                            <label class="form-check-label" for="chat_offline_enabled">অফলাইন সময় সক্রিয় করুন</label>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="chat_offline_start" class="form-label fw-medium">শুরুর সময়</label>
+                        <input type="time" class="form-control" id="chat_offline_start" name="settings[chat_offline_start]" value="{{ settings.chat_offline_start ?: '17:00' }}">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="chat_offline_end" class="form-label fw-medium">শেষের সময়</label>
+                        <input type="time" class="form-control" id="chat_offline_end" name="settings[chat_offline_end]" value="{{ settings.chat_offline_end ?: '09:00' }}">
+                    </div>
+                    <div class="col-md-12">
+                        <label for="chat_offline_message" class="form-label fw-medium">অফলাইন বার্তা</label>
+                        <textarea class="form-control" id="chat_offline_message" name="settings[chat_offline_message]" rows="2" maxlength="300">{{ settings.chat_offline_message ?: 'আমরা বর্তমানে অফলাইনে আছি। আপনার বার্তা ছেড়ে দিন, আমরা পরে উত্তর দেব।' }}</textarea>
+                    </div>
+                </div>
+                <small class="text-muted mt-2 d-block">
+                    <i class="fas fa-info-circle me-1"></i>
+                    অফলাইন সময়ে ভিজিটররা বার্তা পাঠাতে পারবে কিন্তু উত্তর পাবে না। শুরুর সময় এবং শেষের সময়ের মধ্যে থাকলে অফলাইন মোড সক্রিয় হবে।
+                </small>
+            </div>
+        </div>
+
+        <!-- Preview -->
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-white d-flex align-items-center" style="border-left: 4px solid #008B8B;">
+                <i class="fas fa-eye me-2" style="color: #008B8B;"></i>
+                <h6 class="mb-0 fw-semibold">প্রিভিউ</h6>
+            </div>
+            <div class="card-body text-center py-4">
+                <div style="max-width: 300px; margin: 0 auto; position: relative;">
+                    <div style="background: linear-gradient(135deg, var(--preview-color, #008B8B), #007A7A); color: #fff; border-radius: 12px 12px 0 0; padding: 12px 16px; text-align: left; display: flex; align-items: center; gap: 10px;">
+                        <div style="width: 32px; height: 32px; border-radius: 50%; background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center;">
+                            <i class="fas fa-headset" style="font-size: 16px;"></i>
+                        </div>
+                        <div style="flex: 1;">
+                            <div style="font-size: 13px; font-weight: 600;" id="previewTitle">লাইভ চ্যাট সহায়তা</div>
+                            <div style="font-size: 11px; opacity: 0.85;" id="previewSubtitle">স্মার্ট ইউনিয়ন পরিষদ</div>
+                        </div>
+                    </div>
+                    <div style="background: #f8f9fa; padding: 20px; border-radius: 0 0 12px 12px; text-align: left;">
+                        <div style="font-size: 13px; color: #666;" id="previewWelcome">
+                            <div style="font-size: 14px; font-weight: 600; color: #333; margin-bottom: 4px;">সাহায্য প্রয়োজন?</div>
+                            আপনার প্রশ্ন লিখুন, আমরা সহায়তা করব।
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Submit -->
+        <div class="d-flex justify-content-center gap-3 mb-5">
+            <button type="submit" class="btn btn-primary px-5" style="background: #008B8B; border-color: #008B8B; border-radius: 8px; padding: 10px 30px;">
+                <i class="fas fa-save me-2"></i>সেটিংস সংরক্ষণ করুন
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function() {
+    const form = document.getElementById('chatSettingsForm');
+
+    // Live preview
+    function updatePreview() {
+        const title = document.getElementById('chat_title').value || 'লাইভ চ্যাট সহায়তা';
+        const subtitle = document.getElementById('chat_subtitle').value || 'স্মার্ট ইউনিয়ন পরিষদ';
+        const welcomeTitle = document.getElementById('chat_welcome_title').value || 'সাহায্য প্রয়োজন?';
+        const welcomeMsg = document.getElementById('chat_welcome_message').value || 'আপনার প্রশ্ন লিখুন, আমরা সহায়তা করব।';
+        const color = document.getElementById('chat_primary_color').value || '#008B8B';
+
+        document.getElementById('previewTitle').textContent = title;
+        document.getElementById('previewSubtitle').textContent = subtitle;
+        document.getElementById('previewWelcome').innerHTML =
+            '<div style="font-size: 14px; font-weight: 600; color: #333; margin-bottom: 4px;">' + welcomeTitle + '</div>' +
+            welcomeMsg;
+        document.querySelector('[style*="--preview-color"]').style.setProperty('--preview-color', color);
+    }
+
+    // Listen to all relevant inputs
+    ['chat_title', 'chat_subtitle', 'chat_welcome_title', 'chat_welcome_message', 'chat_primary_color'].forEach(function(id) {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener('input', updatePreview);
+    });
+
+    // Color picker sync
+    const colorPicker = document.getElementById('chat_primary_color');
+    const colorText = document.getElementById('chat_primary_color_text');
+    if (colorPicker && colorText) {
+        colorPicker.addEventListener('input', function() {
+            colorText.value = this.value;
+            updatePreview();
+        });
+    }
+
+    // Form submission
+    form.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const btn = form.querySelector('button[type="submit"]');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>সংরক্ষণ হচ্ছে...';
+
+        try {
+            const formData = new FormData(form);
+            const data = {};
+            for (const [key, value] of formData.entries()) {
+                if (key === 'csrf_token') continue;
+                const match = key.match(/^settings\[(.+)\]$/);
+                if (match) {
+                    data[match[1]] = value;
+                }
+            }
+
+            const res = await fetch('/api/chat/settings/save', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ settings: data, csrf_token: formData.get('csrf_token') })
+            });
+            const result = await res.json();
+
+            if (result.status === 'success') {
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'সফল',
+                        text: result.message || 'সেটিংস সংরক্ষণ করা হয়েছে',
+                        timer: 2000,
+                        showConfirmButton: false
+                    });
+                }
+            } else {
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'ত্রুটি',
+                        text: result.message || 'সংরক্ষণ ব্যর্থ হয়েছে'
+                    });
+                }
+            }
+        } catch (e) {
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'ত্রুটি',
+                    text: 'সার্ভার ত্রুটি'
+                });
+            }
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-save me-2"></i>সেটিংস সংরক্ষণ করুন';
+        }
+    });
+
+    // Initial preview
+    updatePreview();
+})();
+</script>
+{% endblock %}

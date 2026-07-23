@@ -16,6 +16,25 @@ class AuthService
     }
 
     /**
+     * Get the currently authenticated user's ID.
+     * Checks session timeout (30 min inactivity). Returns null if not logged in or session expired.
+     */
+    public function getCurrentUserId(): ?int
+    {
+        // Check session timeout (30 min)
+        if (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity']) > 1800) {
+            session_unset();
+            session_destroy();
+            return null;
+        }
+
+        // Update last activity timestamp
+        $_SESSION['last_activity'] = time();
+
+        return $_SESSION['user_id'] ?? null;
+    }
+
+    /**
      * Ensure the current user has the given permission (with optional module scope).
      * Exits with 403 if not allowed.
      */

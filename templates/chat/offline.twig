@@ -1,0 +1,470 @@
+{% extends "layout.twig" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block head %}
+<style>
+.offline-container {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 20px;
+}
+.offline-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+.offline-header h3 {
+    margin: 0;
+    font-size: 1.3rem;
+    color: #333;
+}
+.offline-header .offline-stats {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+}
+.offline-stat-badge {
+    background: #e8f5e9;
+    color: #2e7d32;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+.offline-stat-badge.unread {
+    background: #fce4ec;
+    color: #c62828;
+}
+.offline-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+.offline-card {
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 10px;
+    padding: 16px 20px;
+    transition: box-shadow 0.2s, border-color 0.2s;
+    position: relative;
+}
+.offline-card:hover {
+    box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    border-color: #bdbdbd;
+}
+.offline-card.unread {
+    border-left: 4px solid #e53935;
+    background: #fff8f8;
+}
+.offline-card-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 8px;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+.offline-card-name {
+    font-weight: 600;
+    font-size: 1rem;
+    color: #222;
+}
+.offline-card-contact {
+    font-size: 0.85rem;
+    color: #666;
+    margin-top: 2px;
+}
+.offline-card-contact a {
+    color: #1565c0;
+    text-decoration: none;
+}
+.offline-card-contact a:hover {
+    text-decoration: underline;
+}
+.offline-card-time {
+    font-size: 0.8rem;
+    color: #999;
+    white-space: nowrap;
+}
+.offline-card-message {
+    color: #444;
+    font-size: 0.92rem;
+    line-height: 1.6;
+    margin: 6px 0 10px;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+.offline-card-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+}
+.offline-card-actions button {
+    border: none;
+    padding: 6px 14px;
+    border-radius: 6px;
+    font-size: 0.82rem;
+    cursor: pointer;
+    transition: background 0.2s;
+    font-weight: 500;
+}
+.btn-read {
+    background: #e3f2fd;
+    color: #1565c0;
+}
+.btn-read:hover {
+    background: #bbdefb;
+}
+.btn-read:disabled {
+    opacity: 0.5;
+    cursor: default;
+}
+.btn-delete {
+    background: #fbe9e7;
+    color: #c62828;
+}
+.btn-delete:hover {
+    background: #ffccbc;
+}
+.offline-empty {
+    text-align: center;
+    padding: 60px 20px;
+    color: #999;
+}
+.offline-empty-icon {
+    font-size: 3rem;
+    margin-bottom: 12px;
+}
+.offline-empty-text {
+    font-size: 1.1rem;
+}
+.offline-load-more {
+    text-align: center;
+    margin-top: 20px;
+}
+.offline-load-more button {
+    background: #f5f5f5;
+    border: 1px solid #ddd;
+    padding: 10px 30px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    color: #555;
+    transition: background 0.2s;
+}
+.offline-load-more button:hover {
+    background: #eee;
+}
+.offline-load-more button:disabled {
+    opacity: 0.6;
+    cursor: default;
+}
+@media (max-width: 600px) {
+    .offline-header {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .offline-card-meta {
+        flex-direction: column;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="offline-container">
+    <div class="offline-header">
+        <div>
+            <h3>📩 অফলাইন ইনকোয়ারি বার্তা</h3>
+            <p style="margin:4px 0 0; color:#888; font-size:0.85rem;">দর্শকদের অফলাইনে পাঠানো বার্তা</p>
+        </div>
+        <div class="offline-stats">
+            <span class="offline-stat-badge" id="totalBadge">মোট: ০</span>
+            <span class="offline-stat-badge unread" id="unreadBadge">অপঠিত: ০</span>
+            <button onclick="loadOfflineMessages()" style="background:#f5f5f5;border:1px solid #ddd;border-radius:6px;padding:6px 14px;cursor:pointer;" title="রিফ্রেশ">🔄 রিফ্রেশ</button>
+        </div>
+    </div>
+
+    <div id="offlineList" class="offline-list">
+        <div class="offline-empty">
+            <div class="offline-empty-icon">📭</div>
+            <div class="offline-empty-text">লোড হচ্ছে...</div>
+        </div>
+    </div>
+
+    <div class="offline-load-more" id="offlineLoadMore" style="display:none;">
+        <button id="offlineLoadMoreBtn" onclick="loadMore()">আরো বার্তা দেখুন</button>
+    </div>
+</div>
+
+<script>
+(function() {
+    'use strict';
+
+    const PAGE_SIZE = 20;
+    let currentOffset = 0;
+    let hasMore = false;
+    let isLoading = false;
+
+    const listEl = document.getElementById('offlineList');
+    const loadMoreEl = document.getElementById('offlineLoadMore');
+    const totalBadge = document.getElementById('totalBadge');
+    const unreadBadge = document.getElementById('unreadBadge');
+
+    function escapeHtml(text) {
+        if (typeof text !== 'string') return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    function formatTime(dateStr) {
+        const d = new Date(dateStr);
+        const now = new Date();
+        const hrs = d.getHours().toString().padStart(2, '0');
+        const mins = d.getMinutes().toString().padStart(2, '0');
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const msgDate = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+        const diffDays = Math.floor((today - msgDate) / (1000 * 60 * 60 * 24));
+
+        if (diffDays === 0) return 'আজ ' + hrs + ':' + mins;
+        if (diffDays === 1) return 'গতকাল ' + hrs + ':' + mins;
+        return d.getDate().toString().padStart(2, '0') + '/' + (d.getMonth() + 1).toString().padStart(2, '0') + '/' + d.getFullYear();
+    }
+
+    function renderCard(msg) {
+        const card = document.createElement('div');
+        card.className = 'offline-card' + (msg.is_read == 0 ? ' unread' : '');
+        card.dataset.id = msg.id;
+
+        const meta = document.createElement('div');
+        meta.className = 'offline-card-meta';
+
+        const info = document.createElement('div');
+        const nameSpan = document.createElement('div');
+        nameSpan.className = 'offline-card-name';
+        nameSpan.textContent = msg.visitor_name || 'অজানা';
+        info.appendChild(nameSpan);
+
+        const contact = document.createElement('div');
+        contact.className = 'offline-card-contact';
+        const contactParts = [];
+        if (msg.visitor_phone) {
+            contactParts.push('📞 ' + escapeHtml(msg.visitor_phone));
+        }
+        if (msg.visitor_email) {
+            contactParts.push('✉️ <a href="mailto:' + escapeHtml(msg.visitor_email) + '">' + escapeHtml(msg.visitor_email) + '</a>');
+        }
+        contact.innerHTML = contactParts.join(' &middot; ') || '<span style="color:#bbb;">(কোনো যোগাযোগ তথ্য নেই)</span>';
+        info.appendChild(contact);
+        meta.appendChild(info);
+
+        const timeSpan = document.createElement('div');
+        timeSpan.className = 'offline-card-time';
+        timeSpan.textContent = formatTime(msg.created_at);
+        meta.appendChild(timeSpan);
+
+        card.appendChild(meta);
+
+        const message = document.createElement('div');
+        message.className = 'offline-card-message';
+        message.textContent = msg.message;
+        card.appendChild(message);
+
+        const actions = document.createElement('div');
+        actions.className = 'offline-card-actions';
+
+        const readBtn = document.createElement('button');
+        readBtn.className = 'btn-read';
+        readBtn.textContent = msg.is_read == 1 ? '✓ পঠিত' : 'পঠিত হিসেবে চিহ্নিত';
+        readBtn.disabled = msg.is_read == 1;
+        readBtn.addEventListener('click', function() {
+            if (readBtn.disabled) return;
+            markRead(msg.id, card, readBtn);
+        });
+        actions.appendChild(readBtn);
+
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'btn-delete';
+        deleteBtn.textContent = '🗑 মুছুন';
+        deleteBtn.addEventListener('click', function() {
+            if (confirm('এই বার্তাটি মুছে ফেলবেন?')) {
+                deleteMessage(msg.id, card);
+            }
+        });
+        actions.appendChild(deleteBtn);
+
+        card.appendChild(actions);
+
+        return card;
+    }
+
+    async function fetchOfflineMessages(offset) {
+        const res = await fetch('/api/chat/admin/offline?offset=' + offset + '&limit=' + PAGE_SIZE, {
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        });
+        const result = await res.json();
+        if (result.status !== 'success') throw new Error(result.message || 'Failed to load');
+        return result;
+    }
+
+    async function fetchUnreadCount() {
+        try {
+            const res = await fetch('/api/chat/admin/offline/count', {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            });
+            const text = await res.text();
+            return parseInt(text) || 0;
+        } catch (e) {
+            return 0;
+        }
+    }
+
+    async function updateStats() {
+        try {
+            const [offlineData, unreadCount] = await Promise.all([
+                fetchOfflineMessages(0),
+                fetchUnreadCount()
+            ]);
+            totalBadge.textContent = 'মোট: ' + (offlineData.has_more ? (PAGE_SIZE + '+') : (offlineData.data ? offlineData.data.length : 0));
+            unreadBadge.textContent = 'অপঠিত: ' + unreadCount;
+        } catch (e) {
+            // silently fail
+        }
+    }
+
+    async function loadOfflineMessages() {
+        if (isLoading) return;
+        isLoading = true;
+        currentOffset = 0;
+
+        listEl.innerHTML = '<div class="offline-empty"><div class="offline-empty-icon">⏳</div><div class="offline-empty-text">লোড হচ্ছে...</div></div>';
+        loadMoreEl.style.display = 'none';
+
+        try {
+            const result = await fetchOfflineMessages(0);
+            const messages = result.data || [];
+
+            listEl.innerHTML = '';
+
+            if (messages.length === 0) {
+                listEl.innerHTML = '<div class="offline-empty"><div class="offline-empty-icon">📭</div><div class="offline-empty-text">কোনো অফলাইন বার্তা নেই</div></div>';
+                hasMore = false;
+            } else {
+                messages.forEach(function(msg) {
+                    listEl.appendChild(renderCard(msg));
+                });
+                currentOffset = messages.length;
+                hasMore = result.has_more;
+            }
+
+            if (hasMore) {
+                loadMoreEl.style.display = '';
+            } else {
+                loadMoreEl.style.display = 'none';
+            }
+
+            updateStats();
+        } catch (e) {
+            listEl.innerHTML = '<div class="offline-empty"><div class="offline-empty-icon">⚠️</div><div class="offline-empty-text">বার্তা লোড করতে ব্যর্থ হয়েছে</div></div>';
+        } finally {
+            isLoading = false;
+        }
+    }
+
+    async function loadMore() {
+        if (isLoading || !hasMore) return;
+        isLoading = true;
+
+        const btn = document.getElementById('offlineLoadMoreBtn');
+        btn.disabled = true;
+        btn.textContent = 'লোড হচ্ছে...';
+
+        try {
+            const result = await fetchOfflineMessages(currentOffset);
+            const messages = result.data || [];
+
+            messages.forEach(function(msg) {
+                listEl.appendChild(renderCard(msg));
+            });
+
+            currentOffset += messages.length;
+            hasMore = result.has_more;
+
+            if (!hasMore) {
+                loadMoreEl.style.display = 'none';
+            }
+        } catch (e) {
+            alert('বার্তা লোড করতে ব্যর্থ হয়েছে');
+        } finally {
+            isLoading = false;
+            btn.disabled = false;
+            btn.textContent = 'আরো বার্তা দেখুন';
+        }
+    }
+
+    async function markRead(id, cardEl, btnEl) {
+        try {
+            const res = await fetch('/api/chat/admin/offline/' + id + '/read', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            });
+            const result = await res.json();
+            if (result.status === 'success') {
+                cardEl.classList.remove('unread');
+                btnEl.disabled = true;
+                btnEl.textContent = '✓ পঠিত';
+                updateStats();
+            } else {
+                alert(result.message || 'ব্যর্থ হয়েছে');
+            }
+        } catch (e) {
+            alert('পঠিত হিসেবে চিহ্নিত করতে ব্যর্থ হয়েছে');
+        }
+    }
+
+    async function deleteMessage(id, cardEl) {
+        try {
+            const res = await fetch('/api/chat/admin/offline/' + id + '/delete', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            });
+            const result = await res.json();
+            if (result.status === 'success') {
+                cardEl.style.transition = 'opacity 0.3s';
+                cardEl.style.opacity = '0';
+                setTimeout(function() {
+                    cardEl.remove();
+                    if (listEl.children.length === 0) {
+                        listEl.innerHTML = '<div class="offline-empty"><div class="offline-empty-icon">📭</div><div class="offline-empty-text">কোনো অফলাইন বার্তা নেই</div></div>';
+                        loadMoreEl.style.display = 'none';
+                    }
+                    updateStats();
+                }, 300);
+            } else {
+                alert(result.message || 'ব্যর্থ হয়েছে');
+            }
+        } catch (e) {
+            alert('মুছে ফেলতে ব্যর্থ হয়েছে');
+        }
+    }
+
+    // Expose for inline onclick
+    window.loadOfflineMessages = loadOfflineMessages;
+    window.loadMore = loadMore;
+
+    // Initial load
+    document.addEventListener('DOMContentLoaded', loadOfflineMessages);
+})();
+</script>
+{% endblock %}

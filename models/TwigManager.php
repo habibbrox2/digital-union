@@ -163,6 +163,7 @@
                 if (function_exists('getSweetAlert')) $sweetAlert = getSweetAlert();
             }
             $this->twig->addGlobal('sweetAlert', $sweetAlert);
+
         }
 
         private function registerFunctions($mysqli) {
