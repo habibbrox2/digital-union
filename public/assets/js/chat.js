@@ -1326,12 +1326,12 @@
       });
 
       // Click notification to focus the tab and open the chat
-      notif.onclick = function () {
+      notif.addEventListener('click', function () {
         window.focus();
         if (els.button && !state.isOpen) {
           els.button.click();
         }
-      };
+      });
 
       // Auto-close after 8 seconds
       setTimeout(function () { notif.close(); }, 8000);

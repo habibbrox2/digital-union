@@ -1,17 +1,28 @@
-ONCLICK / ONSUBMIT AUDIT REPORT (UPDATED)
+ONCLICK / ONSUBMIT / ONCHANGE — COMPREHENSIVE FINAL AUDIT REPORT
 Project: lgdhaka (H:\Web\lgdhaka)
-Generated: 2026-07-24T21:30:00+06:00
-Status: ✅ ALL INLINE HANDLERS MIGRATED to addEventListener
+Generated: 2026-07-24
+Status: ✅ MIGRATED FILES CLEAN — 5 NEW onchange HANDLERS FOUND OUTSIDE SCOPE
 ================================================================================
 
 SUMMARY
 --------
-Total inline handlers in original report: 75+
-Total inline handlers remaining: 0
-Migration status: ✅ COMPLETE
+| Category | Handlers Found | Status |
+|----------|---------------|--------|
+| Twig onclick (migrated files) | 0 | ✅ All migrated |
+| Twig onsubmit (migrated files) | 0 | ✅ All migrated |
+| Twig onchange (migrated files) | 0 | ✅ No onchange in migrated files |
+| Twig oninput (migrated files) | 0 | ✅ All migrated |
+| Twig onchange (other files, NOT in scope) | 5 | 🔍 Found — not targeted in original audit |
+| PHP inline handlers (all .php + .twig) | 0 (except _db.php) | ✅ Clean |
+| PHP _db.php (inline HTML) | 42 onclick + 1 onsubmit + 7 .onclick = | ⏭️ Skipped per user request |
+| JS .onclick / .onsubmit / .onchange / .oninput property assignments | 0 (active code) | ✅ All active code migrated |
+| JS .onclick (dead code in chat.js) | 1 (commented-out block) | ⏭️ Dead code, left as-is |
+| JS .onload / .onerror / .onscroll (property assignments) | 0 | ✅ All migrated |
 
-Files that were migrated: 9
-Files skipped (_db.php as requested): 1
+Migration status: ✅ COMPLETE for targeted scope (onclick/onsubmit in 9 Twig files + .onclick/onload/onscroll in JS files)
+
+Files migrated: 9 Twig templates + 3 JS files (admin-chat-notify.js, chat.js, unions/index.twig inline script)
+Files skipped: 1 (public/_db.php per user request)
 
 ================================================================================
 
@@ -189,5 +200,48 @@ JS property assignments:
 
 ================================================================================
 
-VERDICT: ✅ ALL INLINE HANDLERS MIGRATED SUCCESSFULLY
+SECTION 5: NEW FINDINGS — ONCHANGE HANDLERS (NOT IN ORIGINAL SCOPE)
 ================================================================================
+
+During the comprehensive final audit, 5 inline `onchange` handlers were discovered in Twig files
+that were NOT part of the original migration scope (which targeted onclick/onsubmit only in
+9 identified files):
+
+| # | File | Line | Handler | Notes |
+|---|------|------|---------|-------|
+| 1 | `templates/roles/add_role.twig` | 33 | `onchange="updateTemplateInfo()"` | Select - role template info |
+| 2 | `templates/errors/error_logs.twig` | 27 | `onchange="switchLogType(this.value)"` | Select - log type filter |
+| 3 | `templates/permissions/manage_permissions.twig` | 20 | `onchange="document.getElementById('unionSelectForm').submit();"` | Select - union filter auto-submit |
+| 4 | `templates/applications/approve-page.twig` | 345 | `onchange="selectVerifierFromDropdown()"` | Select - verifier dropdown (not in original scope) |
+| 5 | `templates/applications/approve-page.twig` | 467 | `onchange="selectApproverFromDropdown()"` | Select - approver dropdown (not in original scope) |
+
+These 5 handlers are in 4 files and 7 total occurrences (2 per select ×2 in approve-page).
+None of these files were in the original migration scope, but they use inline `onchange`.
+
+================================================================================
+
+SECTION 6: REMAINING INLINE HANDLERS — COMPLETE INVENTORY
+================================================================================
+
+| File | onclick | onsubmit | onchange | oninput | onfocus/blur | .onclick= | Status |
+|------|---------|----------|----------|---------|-------------|-----------|--------|
+| Migrated 9 Twig files | 0 | 0 | 0 | 0 | 0 | 0 | ✅ Clean |
+| chat/offline.twig | 0 | 0 | 0 | 0 | 0 | 0 | ✅ Already clean |
+| roles/add_role.twig | 0 | 0 | 1 | 0 | 0 | 0 | ⚠️ onchange only |
+| errors/error_logs.twig | 0 | 0 | 1 | 0 | 0 | 0 | ⚠️ onchange only |
+| permissions/manage_permissions.twig | 0 | 0 | 1 | 0 | 0 | 0 | ⚠️ onchange only |
+| applications/approve-page.twig | 0 | 0 | 2 | 0 | 0 | 0 | ⚠️ onchange only (2 selects) |
+| public/_db.php | 42 | 1 | 1 | 0 | 0 | 7 | ⏭️ Skipped by request |
+| JS files (active code) | 0 | 0 | 0 | 0 | 0 | 0 | ✅ All active code migrated |
+| JS files (dead code) | 0 | 0 | 0 | 0 | 0 | 1 | ⏭️ Commented-out block |
+
+================================================================================
+
+FINAL VERDICT
+================================================================================
+
+✅ All 9 targeted Twig files are fully clean of inline onclick/onsubmit handlers.
+✅ All active JS property assignments (.onclick, .onload, .onerror, .onscroll) migrated to addEventListener.
+⚠️ 5 new onchange handlers discovered in 4 files NOT in original audit scope.
+⏭️ public/_db.php skipped by request (50 inline handlers remain).
+⏭️ 1 notif.onclick in chat.js dead code (commented-out block).

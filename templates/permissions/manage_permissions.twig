@@ -17,7 +17,7 @@
                     {% if isSuperadmin %}
                         <form method="get" id="unionSelectForm" class="form-inline">
                             <label for="union_id" class="mr-2 font-weight-bold text-white">ইউনিয়ন নির্বাচন:</label>
-                            <select name="union_id" id="union_id" class="form-control form-control-sm" onchange="document.getElementById('unionSelectForm').submit();"
+                            <select name="union_id" id="union_id" class="form-control form-control-sm"
                                     style="border-radius:50rem;">
                                 {% for union in allUnions %}
                                     <option value="{{ union.union_id }}" {% if union.union_id == unionId %}selected{% endif %}>
@@ -112,4 +112,15 @@
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const unionSelect = document.getElementById('union_id');
+    if (unionSelect) {
+        unionSelect.addEventListener('change', function () {
+            document.getElementById('unionSelectForm').submit();
+        });
+    }
+});
+</script>
 {% endblock %}

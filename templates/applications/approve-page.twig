@@ -341,8 +341,7 @@
 
                             <div class="input-group input-group-sm">
                                 <select id="verifier_select"
-                                        class="form-select form-select-sm shadow-sm"
-                                        onchange="selectVerifierFromDropdown()">
+                                        class="form-select form-select-sm shadow-sm">
                                     <option value="">-- যাচাইকারী নির্বাচন করুন --</option>
 
                                     {% for role_id, group in union_members %}
@@ -463,8 +462,7 @@
 
                             <div class="input-group input-group-sm">
                                 <select id="approver_select"
-                                        class="form-select form-select-sm shadow-sm"
-                                        onchange="selectApproverFromDropdown()">
+                                        class="form-select form-select-sm shadow-sm">
                                     <option value="">-- অনুমোদনকারী নির্বাচন করুন --</option>
 
                                         {% for role_id, group in union_members %}
@@ -2846,6 +2844,15 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // Event delegation for dropdown selections — avoids inline onchange
+    document.addEventListener('change', function(e) {
+        if (e.target && e.target.id === 'verifier_select') {
+            selectVerifierFromDropdown();
+        } else if (e.target && e.target.id === 'approver_select') {
+            selectApproverFromDropdown();
+        }
+    });
+
     /* ===============================
        Dropdown Functions
     =============================== */
@@ -2889,6 +2896,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (clearVerifierBtn) {
             clearVerifierBtn.addEventListener('click', clearVerifierSelection);
         }
+
     });
 
     window.clearVerifierSelection = function() {
@@ -2941,6 +2949,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (clearApproverBtn) {
             clearApproverBtn.addEventListener('click', clearApproverSelection);
         }
+
     });
 
     window.clearApproverSelection = function() {

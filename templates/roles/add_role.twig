@@ -29,8 +29,7 @@
                         <label for="template_id" class="form-label fw-semibold small text-secondary">টেমপ্লেট (ঐচ্ছিক)</label>
                         <select class="form-select rbac-input"
                                 id="template_id"
-                                name="template_id"
-                                onchange="updateTemplateInfo()">
+                                name="template_id">
                             <option value="">-- নিজে তৈরি করুন --</option>
                             {% for template in templates %}
                             <option value="{{ template.id }}" data-permissions="{{ template.permission_count }}">
@@ -126,6 +125,10 @@ function updateTemplateInfo() {
 document.addEventListener('DOMContentLoaded', function () {
     const form = document.getElementById('roleForm');
     if (!form) return;
+    const templateSelect = document.getElementById('template_id');
+    if (templateSelect) {
+        templateSelect.addEventListener('change', updateTemplateInfo);
+    }
     document.querySelectorAll('.char-counter').forEach(function (counter) {
         const el = document.getElementById(counter.dataset.target);
         if (!el) return;
