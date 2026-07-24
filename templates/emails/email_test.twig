@@ -48,10 +48,10 @@
             <div class="row mb-4">
                 <div class="col-12">
                     <div class="btn-group" role="group">
-                        <button type="button" class="btn btn-outline-primary" onclick="verifyConnection()">
+                        <button type="button" class="btn btn-outline-primary" id="verifySmtpBtn">
                             <i class="fas fa-plug"></i> Verify SMTP
                         </button>
-                        <button type="button" class="btn btn-outline-info" onclick="viewLogs()">
+                        <button type="button" class="btn btn-outline-info" id="viewLogsBtn">
                             <i class="fas fa-file-lines"></i> View Logs
                         </button>
                     </div>
@@ -71,7 +71,7 @@
                             <span class="badge bg-primary">1</span> Welcome Email
                             <small class="text-muted d-block">Sent on user registration</small>
                         </h6>
-                        <form id="welcomeForm" onsubmit="return sendEmail(event, '/settings/email-test/send-welcome', 'welcomeResult')">
+                        <form id="welcomeForm" data-endpoint="/settings/email-test/send-welcome" data-result-id="welcomeResult">
                             <div class="row">
                                 <div class="col-md-6">
                                     <div class="mb-2">
@@ -97,7 +97,7 @@
                             <span class="badge bg-primary">2</span> Password Reset Email
                             <small class="text-muted d-block">Sent when user requests password reset</small>
                         </h6>
-                        <form id="resetForm" onsubmit="return sendEmail(event, '/settings/email-test/send-reset', 'resetResult')">
+                        <form id="resetForm" data-endpoint="/settings/email-test/send-reset" data-result-id="resetResult">
                             <div class="row">
                                 <div class="col-md-6">
                                     <div class="mb-2">
@@ -123,7 +123,7 @@
                             <span class="badge bg-primary">3</span> Password Changed Confirmation
                             <small class="text-muted d-block">Sent after successful password change</small>
                         </h6>
-                        <form id="changedForm" onsubmit="return sendEmail(event, '/settings/email-test/send-changed', 'changedResult')">
+                        <form id="changedForm" data-endpoint="/settings/email-test/send-changed" data-result-id="changedResult">
                             <div class="row">
                                 <div class="col-md-6">
                                     <div class="mb-2">
@@ -149,7 +149,7 @@
                             <span class="badge bg-primary">4</span> Failed Login Alert
                             <small class="text-muted d-block">Sent after multiple failed login attempts</small>
                         </h6>
-                        <form id="failedForm" onsubmit="return sendEmail(event, '/settings/email-test/send-failed', 'failedResult')">
+                        <form id="failedForm" data-endpoint="/settings/email-test/send-failed" data-result-id="failedResult">
                             <div class="row">
                                 <div class="col-md-4">
                                     <div class="mb-2">
@@ -181,7 +181,7 @@
                             <span class="badge bg-primary">5</span> New Device Login Alert
                             <small class="text-muted d-block">Sent when login detected from new device</small>
                         </h6>
-                        <form id="deviceForm" onsubmit="return sendEmail(event, '/settings/email-test/send-device', 'deviceResult')">
+                        <form id="deviceForm" data-endpoint="/settings/email-test/send-device" data-result-id="deviceResult">
                             <div class="row">
                                 <div class="col-md-6">
                                     <div class="mb-2">
@@ -252,6 +252,37 @@
 </style>
 
 <script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Verify SMTP button
+    var verifyBtn = document.getElementById('verifySmtpBtn');
+    if (verifyBtn) {
+        verifyBtn.addEventListener('click', verifyConnection);
+    }
+
+    // View Logs button
+    var viewLogsBtn = document.getElementById('viewLogsBtn');
+    if (viewLogsBtn) {
+        viewLogsBtn.addEventListener('click', viewLogs);
+    }
+
+    // Email test forms - using data attributes
+    var emailForms = document.querySelectorAll('form[data-endpoint][data-result-id]');
+    emailForms.forEach(function(form) {
+        form.addEventListener('submit', function(e) {
+            var endpoint = this.getAttribute('data-endpoint');
+            var resultId = this.getAttribute('data-result-id');
+            sendEmail(e, endpoint, resultId);
+        });
+    });
+
+    // Result area clear buttons (dynamic content) - event delegation
+    document.getElementById('resultArea').addEventListener('click', function(e) {
+        if (e.target.closest('.clear-result-area-btn')) {
+            this.innerHTML = '';
+        }
+    });
+});
+
 async function sendEmail(event, endpoint, resultId) {
     event.preventDefault();
     const form = event.target;
@@ -367,7 +398,7 @@ async function viewLogs() {
             logsHTML += `
                     </div>
                     <div class="card-footer">
-                        <button type="button" class="btn btn-sm btn-secondary" onclick="document.getElementById('resultArea').innerHTML = ''">
+                        <button type="button" class="btn btn-sm btn-secondary clear-result-area-btn">
                             <i class="fas fa-times"></i> Close
                         </button>
                     </div>

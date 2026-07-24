@@ -143,8 +143,8 @@
                         <td>${escapeHtml(term.name_bl)}</td>
                         <td class="text-center">${certBadge}</td>
                         <td class="text-center text-nowrap">
-                            <button class="btn btn-sm btn-outline-primary me-1" onclick="editTerm(${term.id})"><i class="fas fa-pen"></i></button>
-                            <button class="btn btn-sm btn-outline-danger" onclick="deleteTerm(${term.id})"><i class="fas fa-trash"></i></button>
+                            <button class="btn btn-sm btn-outline-primary me-1 edit-term-btn" data-term-id="${term.id}"><i class="fas fa-pen"></i></button>
+                            <button class="btn btn-sm btn-outline-danger delete-term-btn" data-term-id="${term.id}"><i class="fas fa-trash"></i></button>
                         </td>
                     </tr>`;
                 });
@@ -319,6 +319,17 @@
             }
         });
     }
+
+    // Event delegation for edit/delete buttons - migrated from inline onclick
+    $(document).on('click', '.edit-term-btn', function() {
+        var id = $(this).data('term-id');
+        editTerm(id);
+    });
+
+    $(document).on('click', '.delete-term-btn', function() {
+        var id = $(this).data('term-id');
+        deleteTerm(id);
+    });
 
     $(document).ready(function() {
         loadTerms();

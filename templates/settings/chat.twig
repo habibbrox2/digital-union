@@ -114,14 +114,63 @@
             </div>
             <div class="card-body">
                 <div class="row g-3">
-                    <div class="col-md-6">
+                    <!-- Visitor notification sound -->
+                    <div class="col-md-4">
                         <div class="form-check form-switch mt-2">
                             <input type="checkbox" class="form-check-input" id="chat_sound_enabled" name="settings[chat_sound_enabled]" value="1" {% if settings.chat_sound_enabled == '1' %}checked{% endif %}>
                             <label class="form-check-label" for="chat_sound_enabled">
+                                <strong>ভিজিটর সাউন্ড</strong>
+                                <br>
+                                <small class="text-muted">ভিজিটরদের জন্য নতুন বার্তার সাউন্ড</small>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Admin notification toggles -->
+                    <div class="col-12">
+                        <hr class="my-2">
+                        <p class="fw-medium mb-2" style="color: #555;">
+                            <i class="fas fa-user-shield me-1"></i>এডমিন নোটিফিকেশন প্রেফারেন্স
+                        </p>
+                    </div>
+
+                    <div class="col-md-4">
+                        <div class="form-check form-switch mt-1">
+                            <input type="checkbox" class="form-check-input" id="chat_admin_notify_sound" name="settings[chat_admin_notify_sound]" value="1" {% if settings.chat_admin_notify_sound == '1' %}checked{% endif %}>
+                            <label class="form-check-label" for="chat_admin_notify_sound">
                                 <strong>সাউন্ড নোটিফিকেশন</strong>
                                 <br>
-                                <small class="text-muted">নতুন বার্তা এলে সাউন্ড বাজান (ডেস্কটপ নোটিফিকেশন স্বাধীন)</small>
+                                <small class="text-muted">নতুন ভিজিটর বার্তা এলে সাউন্ড বাজান</small>
                             </label>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <div class="form-check form-switch mt-1">
+                            <input type="checkbox" class="form-check-input" id="chat_admin_notify_desktop" name="settings[chat_admin_notify_desktop]" value="1" {% if settings.chat_admin_notify_desktop == '1' %}checked{% endif %}>
+                            <label class="form-check-label" for="chat_admin_notify_desktop">
+                                <strong>ডেস্কটপ নোটিফিকেশন</strong>
+                                <br>
+                                <small class="text-muted">ট্যাব হিডেন থাকলে ব্রাউজার নোটিফিকেশন দেখান</small>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <div class="form-check form-switch mt-1">
+                            <input type="checkbox" class="form-check-input" id="chat_admin_notify_toast" name="settings[chat_admin_notify_toast]" value="1" {% if settings.chat_admin_notify_toast == '1' %}checked{% endif %}>
+                            <label class="form-check-label" for="chat_admin_notify_toast">
+                                <strong>টোস্ট নোটিফিকেশন</strong>
+                                <br>
+                                <small class="text-muted">পৃষ্ঠায় পপ-আপ টোস্ট বার্তা দেখান</small>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="col-12 mt-2">
+                        <div class="alert alert-info py-2 px-3 mb-0" role="alert" style="font-size: 13px;">
+                            <i class="fas fa-info-circle me-1"></i>
+                            <strong>নোট:</strong> এই সেটিংস শুধুমাত্র এডমিনদের জন্য প্রযোজ্য। ভিজিটরদের সাউন্ড সেটিং উপরে আলাদাভাবে নিয়ন্ত্রণ করা যায়।
                         </div>
                     </div>
                 </div>
@@ -214,9 +263,13 @@
 
         document.getElementById('previewTitle').textContent = title;
         document.getElementById('previewSubtitle').textContent = subtitle;
-        document.getElementById('previewWelcome').innerHTML =
-            '<div style="font-size: 14px; font-weight: 600; color: #333; margin-bottom: 4px;">' + welcomeTitle + '</div>' +
-            welcomeMsg;
+        const previewWelcome = document.getElementById('previewWelcome');
+        previewWelcome.replaceChildren();
+        const previewWelcomeTitle = document.createElement('div');
+        previewWelcomeTitle.style.cssText = 'font-size: 14px; font-weight: 600; color: #333; margin-bottom: 4px;';
+        previewWelcomeTitle.textContent = welcomeTitle;
+        previewWelcome.appendChild(previewWelcomeTitle);
+        previewWelcome.appendChild(document.createTextNode(welcomeMsg));
         document.querySelector('[style*="--preview-color"]').style.setProperty('--preview-color', color);
     }
 

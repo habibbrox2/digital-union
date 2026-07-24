@@ -123,8 +123,8 @@
                         '<td>' + escapeHtml(item.bn_name) + '</td>' +
                         '<td>' + escapeHtml(item.post_code) + '</td>' +
                         '<td class="text-center">' +
-                            '<button class="btn btn-sm btn-warning me-1" onclick="editItem(' + item.id + ')">সম্পাদনা</button>' +
-                            '<button class="btn btn-sm btn-danger" onclick="deleteItem(' + item.id + ')">মুছুন</button>' +
+                            '<button class="btn btn-sm btn-warning me-1 edit-po-btn" data-po-id="' + item.id + '">সম্পাদনা</button>' +
+                            '<button class="btn btn-sm btn-danger delete-po-btn" data-po-id="' + item.id + '">মুছুন</button>' +
                         '</td>' +
                     '</tr>';
                 });
@@ -263,6 +263,17 @@
             .replace(/"/g, '&quot;')
             .replace(/'/g, '&#039;');
     }
+
+    // Event delegation for edit/delete buttons - migrated from inline onclick
+    $(document).on('click', '.edit-po-btn', function() {
+        var id = $(this).data('po-id');
+        editItem(id);
+    });
+
+    $(document).on('click', '.delete-po-btn', function() {
+        var id = $(this).data('po-id');
+        deleteItem(id);
+    });
 
     $(document).ready(function() {
         loadItems(1);

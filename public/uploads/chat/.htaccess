@@ -1,0 +1,7 @@
+# Chat attachments are data files, never executable scripts.
+Options -ExecCGI
+RemoveHandler .php .php3 .php4 .php5 .phtml .phar
+RemoveType .php .php3 .php4 .php5 .phtml .phar
+<FilesMatch "\.(php|php[0-9]?|phtml|phar)$">
+    Require all denied
+</FilesMatch>

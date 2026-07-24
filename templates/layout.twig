@@ -287,9 +287,22 @@
     <script src="{{ url }}/assets/js/permissions.js?t={{ "now"|date("Hiss") }}"></script>
     {% block scripts %} {% endblock %}
 
-    <!-- Custom Live Chat Widget -->
+    <!-- Visitor Live Chat Widget (never load it inside authenticated pages) -->
+    {% if not is_logged_in %}
     <link rel="stylesheet" href="{{ url }}/assets/css/chat.css?t={{ "now"|date("Hiss") }}">
     <script src="{{ url }}/assets/js/chat.js?t={{ "now"|date("Hiss") }}"></script>
+    {% else %}
+    <!-- Shared admin chat notification/FAB styles; visitor widget JS remains disabled. -->
+    <link rel="stylesheet" href="{{ url }}/assets/css/chat.css?t={{ "now"|date("Hiss") }}">
+    {% endif %}
+
+    <!-- Chat Image Zoom Modal (used by both visitor and admin chat) -->
+    <script src="{{ url }}/assets/js/chat-image-zoom.js?t={{ "now"|date("Hiss") }}"></script>
+
+    <!-- Global Admin Chat Notification (only loads on admin pages) -->
+    {% if is_logged_in %}
+    <script src="{{ url }}/assets/js/admin-chat-notify.js?t={{ "now"|date("Hiss") }}"></script>
+    {% endif %}
 
 </body>
 

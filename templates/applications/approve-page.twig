@@ -364,7 +364,7 @@
                                 </select>
                                 <button type="button"
                                         class="btn btn-outline-danger"
-                                        onclick="clearVerifierSelection()"
+                                        id="clearVerifierBtn"
                                         title="যাচাইকারী পরিষ্কার করুন">
                                     <i class="bi bi-x-circle"></i> পরিষ্কার
                                 </button>
@@ -487,7 +487,7 @@
                                 </select>
                                 <button type="button"
                                         class="btn btn-outline-danger"
-                                        onclick="clearApproverSelection()"
+                                        id="clearApproverBtn"
                                         title="অনুমোদনকারী পরিষ্কার করুন">
                                     <i class="bi bi-x-circle"></i> পরিষ্কার
                                 </button>
@@ -2884,6 +2884,13 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log('Verifier selected:', { userId, nameBn, nameEn, wardNo, roleId });
     };
 
+    document.addEventListener('DOMContentLoaded', function() {
+        var clearVerifierBtn = document.getElementById('clearVerifierBtn');
+        if (clearVerifierBtn) {
+            clearVerifierBtn.addEventListener('click', clearVerifierSelection);
+        }
+    });
+
     window.clearVerifierSelection = function() {
         document.getElementById('verifier_select').selectedIndex = 0;
         document.getElementById('verifier_id').value = '';
@@ -2928,6 +2935,13 @@ document.addEventListener('DOMContentLoaded', () => {
         
         console.log('Approver selected:', { userId, nameBn, nameEn, wardNo, roleId });
     };
+
+    document.addEventListener('DOMContentLoaded', function() {
+        var clearApproverBtn = document.getElementById('clearApproverBtn');
+        if (clearApproverBtn) {
+            clearApproverBtn.addEventListener('click', clearApproverSelection);
+        }
+    });
 
     window.clearApproverSelection = function() {
         document.getElementById('approver_select').selectedIndex = 0;

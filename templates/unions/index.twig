@@ -176,17 +176,17 @@ ul.list-unstyled li {
     // Scroll to top
     const topBtn = document.getElementById("topBtn");
     if(topBtn){
-        window.onscroll = () => {
+        window.addEventListener('scroll', function() {
             if (document.body.scrollTop > 100 || document.documentElement.scrollTop > 100) {
                 topBtn.style.display = "block";
             } else {
                 topBtn.style.display = "none";
             }
-        };
-        topBtn.onclick = () => {
+        });
+        topBtn.addEventListener('click', function() {
             document.body.scrollTop = 0;
             document.documentElement.scrollTop = 0;
-        };
+        });
     }
 
     // Delete union with SweetAlert confirmation

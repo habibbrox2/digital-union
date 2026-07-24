@@ -48,6 +48,9 @@ $router->post('/api/chat/send', function () use ($chatService, $chatModel) {
     if (empty($sessionId)) {
         ChatService::jsonResponse(['status' => 'error', 'message' => 'Session ID is required'], 400);
     }
+    if (!preg_match('/^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i', $sessionId)) {
+        ChatService::jsonResponse(['status' => 'error', 'message' => 'Invalid session ID'], 400);
+    }
     if (empty($message)) {
         ChatService::jsonResponse(['status' => 'error', 'message' => 'Message is required'], 400);
     }
@@ -55,9 +58,23 @@ $router->post('/api/chat/send', function () use ($chatService, $chatModel) {
         ChatService::jsonResponse(['status' => 'error', 'message' => 'Message too long (max 500 characters)'], 400);
     }
 
+    $preExisting = $chatModel->sessionExists($sessionId);
+    if (!$preExisting && $visitorName === '') {
+        ChatService::jsonResponse(['status' => 'error', 'message' => 'Visitor name is required to start a new conversation'], 400);
+    }
+    if (mb_strlen($visitorName) > 100 || mb_strlen($visitorUnionName) > 150) {
+        ChatService::jsonResponse(['status' => 'error', 'message' => 'Visitor information is too long'], 400);
+    }
+
+    // Existing sessions must prove ownership. New sessions are signed on creation.
+    if ($preExisting && !$chatService->verifySessionSig($sessionId, (string)($input['session_sig'] ?? ''))) {
+        ChatService::jsonResponse(['status' => 'error', 'message' => 'Invalid session signature'], 403);
+    }
+
     // Get or create session (new sessions get HMAC signature automatically)
     $session = $chatService->getOrCreateSession( $sessionId, $visitorName);
     $sessionSig = $session['session_sig'] ?? '';
+    $chatModel->updateVisitorMetadata($sessionId, ChatService::getVisitorMetadata());
 
     // If session was created by an older version without a signature, sign it now
     if (empty($sessionSig)) {
@@ -65,11 +82,15 @@ $router->post('/api/chat/send', function () use ($chatService, $chatModel) {
         $chatModel->setSessionSigBySessionId($sessionId, $sessionSig);
     }
 
-    // Check if session has timed out due to inactivity
-    $sessionExpired = false;
-    if ($session !== null && $chatService->isSessionTimedOut($sessionId)) {
-        $chatModel->closeSession($sessionId);
-        $sessionExpired = true;
+    // Do not append new messages to an expired/closed session. The client will
+    // reset its local session and can retry against a fresh conversation.
+    if ($session !== null && (($session['status'] ?? 'active') !== 'active' || $chatService->isSessionTimedOut($sessionId))) {
+        $chatModel->expireSession($sessionId);
+        ChatService::jsonResponse([
+            'status' => 'error',
+            'message' => 'Session expired',
+            'session_expired' => true,
+        ], 410);
     }
 
     // Update union name if provided
@@ -107,10 +128,6 @@ $router->post('/api/chat/send', function () use ($chatService, $chatModel) {
         ]
     ];
 
-    if ($sessionExpired) {
-        $response['session_expired'] = true;
-    }
-
     if ($autoReplyData) {
         $response['auto_reply'] = $autoReplyData;
     }
@@ -142,17 +159,36 @@ $router->post('/api/chat/upload', function () use ($chatService, $chatModel) {
     if (empty($_FILES['file'])) {
         ChatService::jsonResponse(['status' => 'error', 'message' => 'No file uploaded'], 400);
     }
+    if (!preg_match('/^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i', $sessionId)) {
+        ChatService::jsonResponse(['status' => 'error', 'message' => 'Invalid session ID'], 400);
+    }
 
     $preExisting = $chatModel->sessionExists($sessionId);
+
+    if (!$preExisting && $visitorName === '') {
+        ChatService::jsonResponse(['status' => 'error', 'message' => 'Visitor name is required to start a new conversation'], 400);
+    }
+    if (mb_strlen($visitorName) > 100 || mb_strlen($visitorUnionName) > 150) {
+        ChatService::jsonResponse(['status' => 'error', 'message' => 'Visitor information is too long'], 400);
+    }
 
     // Create or get session (new sessions get an HMAC signature automatically)
     $session = $chatService->getOrCreateSession( $sessionId, $visitorName);
 
-    // Auto-recover missing sig for pre-existing sessions
+    // Existing sessions must prove ownership; never rotate a signature on bad input.
     if ($preExisting && !$chatService->verifySessionSig( $sessionId, $providedSig)) {
-        $newSig = $chatService->signSession($sessionId);
-        $chatModel->setSessionSigBySessionId($sessionId, $newSig);
-        $providedSig = $newSig;
+        ChatService::jsonResponse(['status' => 'error', 'message' => 'Invalid session signature'], 403);
+    }
+
+    $chatModel->updateVisitorMetadata($sessionId, ChatService::getVisitorMetadata());
+
+    if (($session['status'] ?? 'active') !== 'active' || $chatService->isSessionTimedOut($sessionId)) {
+        $chatModel->expireSession($sessionId);
+        ChatService::jsonResponse([
+            'status' => 'error',
+            'message' => 'Session expired',
+            'session_expired' => true,
+        ], 410);
     }
 
     // Ensure sig exists for the response
@@ -211,8 +247,9 @@ $router->get('/api/chat/messages', function () use ($chatService, $chatModel) {
     $sessionId = $_GET['session_id'] ?? '';
     $providedSig = $_GET['session_sig'] ?? '';
     $after = $_GET['after'] ?? '';
-    $offset = (int)($_GET['offset'] ?? 0);
-    $limit = min((int)($_GET['limit'] ?? 50), 100);
+    $afterId = max(0, (int)($_GET['after_id'] ?? 0));
+    $offset = max(0, (int)($_GET['offset'] ?? 0));
+    $limit = max(1, min((int)($_GET['limit'] ?? 50), 100));
 
     if (empty($sessionId)) {
         ChatService::jsonResponse(['status' => 'error', 'message' => 'Session ID is required'], 400);
@@ -224,25 +261,39 @@ $router->get('/api/chat/messages', function () use ($chatService, $chatModel) {
 
     // Check if session has timed out due to inactivity
     if ($chatService->isSessionTimedOut($sessionId)) {
-        $chatModel->closeSession($sessionId);
+        $chatModel->expireSession($sessionId);
         ChatService::jsonResponse(['status' => 'success', 'data' => [], 'has_more' => false, 'session_expired' => true]);
     }
 
-    // Read-only: session UUID auth is sufficient; auto-recover missing sig
+    // Read-only endpoints still require the session signature.
     if (!$chatService->verifySessionSig( $sessionId, $providedSig)) {
-        // Generate a new signature for the client to recover
-        $newSig = $chatService->signSession($sessionId);
-        $chatModel->setSessionSigBySessionId($sessionId, $newSig);
-        $providedSig = $newSig;
+        ChatService::jsonResponse(['status' => 'error', 'message' => 'Invalid session signature'], 403);
     }
 
-    $messages = $chatService->getMessagesQuery( $sessionId, $after ?: null, $offset, $limit + 1);
+    // A fetch means messages reached the receiving client. Seen/read is
+    // handled separately by POST /read after the visitor renders them.
+    $chatModel->markMessagesDelivered($sessionId, 'admin');
+    $messages = $chatService->getMessagesQuery($sessionId, $after ?: null, $offset, $limit + 1, $afterId);
     $hasMore = count($messages) > $limit;
     if ($hasMore) {
         array_pop($messages);
     }
 
-    ChatService::jsonResponse(['status' => 'success', 'data' => $messages, 'has_more' => $hasMore, 'session_sig' => $providedSig], 200, 'no-cache, private');
+    $session = $chatModel->getSession($sessionId);
+    ChatService::jsonResponse([
+        'status' => 'success',
+        'data' => $messages,
+        'has_more' => $hasMore,
+        'session_sig' => $providedSig,
+        'server_time' => gmdate('c'),
+        'last_visitor_activity_at' => $chatService->getLastVisitorActivityAt($sessionId),
+        'timeout_seconds' => ChatService::SESSION_TIMEOUT,
+        'session' => $session ? [
+            'status' => $session['status'],
+            'created_at' => $session['created_at'],
+            'updated_at' => $session['updated_at'],
+        ] : null,
+    ], 200, 'no-cache, private');
 });
 
 /**
@@ -266,11 +317,9 @@ $router->get('/api/chat/unread', function () use ($chatService, $chatModel) {
         ChatService::jsonResponse(['status' => 'success', 'data' => ['count' => 0]]);
     }
 
-    // Read-only: session UUID auth is sufficient; auto-recover missing sig
+    // Read-only endpoints still require the session signature.
     if (!$chatService->verifySessionSig( $sessionId, $providedSig)) {
-        $newSig = $chatService->signSession($sessionId);
-        $chatModel->setSessionSigBySessionId($sessionId, $newSig);
-        $providedSig = $newSig;
+        ChatService::jsonResponse(['status' => 'error', 'message' => 'Invalid session signature'], 403);
     }
 
     $count = $chatModel->countUnreadAdminMessages($sessionId);
@@ -305,11 +354,9 @@ $router->get('/api/chat/unread/count', function () use ($chatService, $chatModel
         exit;
     }
 
-    // Read-only: auto-recover missing sig
+    // Read-only endpoints still require the session signature.
     if (!$chatService->verifySessionSig( $sessionId, $providedSig)) {
-        $newSig = $chatService->signSession($sessionId);
-        $chatModel->setSessionSigBySessionId($sessionId, $newSig);
-        $providedSig = $newSig;
+        ChatService::jsonResponse(['status' => 'error', 'message' => 'Invalid session signature'], 403);
     }
 
     $count = $chatModel->countUnreadAdminMessages($sessionId);
@@ -342,16 +389,25 @@ $router->post('/api/chat/read', function () use ($chatService, $chatModel) {
         ChatService::jsonResponse(['status' => 'success', 'message' => 'No messages to mark as read']);
     }
 
-    // Auto-recover missing sig
+    // Typing updates still require the session signature.
     if (!$chatService->verifySessionSig( $sessionId, $providedSig)) {
-        $newSig = $chatService->signSession($sessionId);
-        $chatModel->setSessionSigBySessionId($sessionId, $newSig);
-        $providedSig = $newSig;
+        ChatService::jsonResponse(['status' => 'error', 'message' => 'Invalid session signature'], 403);
     }
 
     $chatModel->markAdminMessagesRead($sessionId);
 
     ChatService::jsonResponse(['status' => 'success', 'message' => 'Messages marked as read', 'session_sig' => $providedSig]);
+});
+
+/**
+ * GET /api/chat/faq
+ * Public-safe FAQ entries for the visitor offline/help view.
+ */
+$router->get('/api/chat/faq', function () use ($chatModel) {
+    ChatService::jsonResponse([
+        'status' => 'success',
+        'data' => $chatModel->getPublicFaqs(8),
+    ], 200, 'public, max-age=300');
 });
 
 // ================================================================
@@ -364,8 +420,8 @@ $router->post('/api/chat/read', function () use ($chatService, $chatModel) {
 $router->get('/api/chat/admin/conversations', function () use ($chatService, $chatModel, $authService) {
     $authService->ensureCan('manage_chat');
 
-    $offset = (int)($_GET['offset'] ?? 0);
-    $limit = min((int)($_GET['limit'] ?? 50), 100);
+    $offset = max(0, (int)($_GET['offset'] ?? 0));
+    $limit = max(1, min((int)($_GET['limit'] ?? 50), 100));
 
     $result = $chatModel->getAdminConversations($offset, $limit);
 
@@ -378,12 +434,12 @@ $router->get('/api/chat/admin/conversations', function () use ($chatService, $ch
 $router->get('/api/chat/admin/conversations/{session_id}', function ($sessionId) use ($chatService, $chatModel, $authService) {
     $authService->ensureCan('manage_chat');
 
+    $chatModel->markMessagesDelivered($sessionId, 'visitor');
+    // Opening the admin conversation is the admin's seen/read action.
+    $chatModel->markVisitorMessagesRead($sessionId);
     $messages = $chatService->getMessagesQuery( $sessionId, null, 0, 200);
 
-    // Mark unread visitor messages as read
-    $chatModel->markVisitorMessagesRead($sessionId);
-
-    ChatService::jsonResponse(['status' => 'success', 'data' => $messages], 200, 'no-cache, private');
+    ChatService::jsonResponse(['status' => 'success', 'data' => $messages, 'session' => $chatModel->getSession($sessionId)], 200, 'no-cache, private');
 });
 
 /**
@@ -402,8 +458,21 @@ $router->post('/api/chat/admin/reply', function () use ($chatService, $mysqli, $
     if (empty($message)) {
         ChatService::jsonResponse(['status' => 'error', 'message' => 'Message is required'], 400);
     }
+    if (!$chatModel->sessionExists($sessionId)) {
+        ChatService::jsonResponse(['status' => 'error', 'message' => 'Conversation not found'], 404);
+    }
     if (mb_strlen($message) > 1000) {
         ChatService::jsonResponse(['status' => 'error', 'message' => 'Message too long (max 1000 characters)'], 400);
+    }
+
+    // Check if session is closed or timed out
+    $session = $chatModel->getSession($sessionId);
+    if ($session !== null && (($session['status'] ?? 'active') !== 'active' || $chatService->isSessionTimedOut($sessionId))) {
+        $chatModel->expireSession($sessionId);
+        ChatService::jsonResponse([
+            'status' => 'error',
+            'message' => 'এই কথোপকথনটি বন্ধ বা মেয়াদোত্তীর্ণ। দয়া করে দর্শককে একটি নতুন চ্যাট শুরু করতে বলুন।',
+        ], 410);
     }
 
     $adminId = $authService->getCurrentUserId();
@@ -433,6 +502,21 @@ $router->post('/api/chat/admin/upload', function () use ($chatService, $authServ
     }
     if (empty($_FILES['file'])) {
         ChatService::jsonResponse(['status' => 'error', 'message' => 'No file uploaded'], 400);
+    }
+    if (!$chatModel->sessionExists($sessionId)) {
+        ChatService::jsonResponse(['status' => 'error', 'message' => 'Conversation not found'], 404);
+    }
+
+    // A visitor-inactive session cannot receive a late admin reply. Expire it
+    // and remove the old conversation before returning a fresh-session signal.
+    $session = $chatModel->getSession($sessionId);
+    if ($session !== null && (($session['status'] ?? 'active') !== 'active' || $chatService->isSessionTimedOut($sessionId))) {
+        $chatModel->expireSession($sessionId);
+        ChatService::jsonResponse([
+            'status' => 'error',
+            'message' => 'Conversation expired',
+            'session_expired' => true,
+        ], 410);
     }
 
     $uploadResult = ChatService::handleFileUpload($_FILES['file']);
@@ -470,6 +554,30 @@ $router->post('/api/chat/admin/close/{session_id}', function ($sessionId) use ($
     ChatService::jsonResponse(['status' => 'success', 'message' => 'Conversation closed']);
 });
 
+/**
+ * POST /api/chat/admin/read-all
+ * Mark all unread visitor messages as read across all conversations
+ */
+$router->post('/api/chat/admin/read-all', function () use ($chatModel, $authService) {
+    $authService->ensureCan('manage_chat');
+
+    $count = $chatModel->markAllVisitorMessagesRead();
+
+    ChatService::jsonResponse(['status' => 'success', 'message' => 'সব বার্তা পঠিত হিসাবে চিহ্নিত করা হয়েছে', 'data' => ['marked_read' => $count]]);
+});
+
+/**
+ * POST /api/chat/admin/close-all
+ * Close all active conversations
+ */
+$router->post('/api/chat/admin/close-all', function () use ($chatModel, $authService) {
+    $authService->ensureCan('manage_chat');
+
+    $count = $chatModel->closeAllActiveSessions();
+
+    ChatService::jsonResponse(['status' => 'success', 'message' => 'সব সক্রিয় কথোপকথন বন্ধ করা হয়েছে', 'data' => ['closed' => $count]]);
+});
+
 // ================================================================
 // TYPING INDICATOR ENDPOINTS
 // ================================================================
@@ -495,10 +603,9 @@ $router->post('/api/chat/typing', function () use ($chatService, $chatModel) {
         ChatService::jsonResponse(['status' => 'success']);
     }
 
-    // Auto-recover missing sig
+    // Typing updates still require the session signature.
     if (!$chatService->verifySessionSig( $sessionId, $providedSig)) {
-        $newSig = $chatService->signSession($sessionId);
-        $chatModel->setSessionSigBySessionId($sessionId, $newSig);
+        ChatService::jsonResponse(['status' => 'error', 'message' => 'Invalid session signature'], 403);
     }
 
     $chatModel->setVisitorTyping($sessionId);
@@ -526,11 +633,9 @@ $router->get('/api/chat/typing', function () use ($chatService, $chatModel) {
         ChatService::jsonResponse(['status' => 'success', 'data' => ['is_typing' => false]]);
     }
 
-    // Read-only: auto-recover missing sig
+    // Read-only endpoint still requires the session signature.
     if (!$chatService->verifySessionSig( $sessionId, $providedSig)) {
-        $newSig = $chatService->signSession($sessionId);
-        $chatModel->setSessionSigBySessionId($sessionId, $newSig);
-        $providedSig = $newSig;
+        ChatService::jsonResponse(['status' => 'error', 'message' => 'Invalid session signature'], 403);
     }
 
     $isTyping = $chatModel->isAdminTyping($sessionId);
@@ -575,6 +680,46 @@ $router->get('/api/chat/admin/typing', function () use ($chatModel, $authService
     ChatService::jsonResponse(['status' => 'success', 'data' => ['is_typing' => $isTyping]], 200, 'no-cache, private');
 });
 
+/**
+ * GET /api/chat/admin/unread/total
+ * Get total count of unread visitor messages across all sessions.
+ * Lightweight endpoint for global notification polling.
+ */
+$router->get('/api/chat/admin/unread/total', function () use ($chatModel, $authService) {
+    $authService->ensureCan('manage_chat');
+
+    $count = $chatModel->countAllUnreadVisitorMessages();
+
+    // Get latest unread message info for the notification preview
+    $latestMsg = $chatModel->getLatestUnreadVisitorMessage();
+
+    // Get admin notification preference settings
+    $allSettings = $chatModel->getChatSettings();
+    $adminNotifySettings = [
+        'sound' => isset($allSettings['chat_admin_notify_sound']) ? $allSettings['chat_admin_notify_sound'] : '1',
+        'desktop' => isset($allSettings['chat_admin_notify_desktop']) ? $allSettings['chat_admin_notify_desktop'] : '1',
+        'toast' => isset($allSettings['chat_admin_notify_toast']) ? $allSettings['chat_admin_notify_toast'] : '1',
+    ];
+
+    header('Content-Type: application/json; charset=utf-8');
+    header('Cache-Control: no-cache, private');
+    echo json_encode([
+        'status' => 'success',
+        'data' => [
+            'total' => $count,
+            'latest' => $latestMsg ? [
+                'visitor_name' => $latestMsg['visitor_name'] ?? 'অজ্ঞাত',
+                'message' => $latestMsg['message'] ?? '',
+                'message_type' => $latestMsg['message_type'] ?? 'text',
+                'session_id' => $latestMsg['session_id'] ?? '',
+                'created_at' => $latestMsg['created_at'] ?? '',
+            ] : null,
+            'notify_settings' => $adminNotifySettings,
+        ]
+    ], JSON_UNESCAPED_UNICODE);
+    exit;
+});
+
 // ================================================================
 // SETTINGS API
 // ================================================================
@@ -608,7 +753,11 @@ $router->post('/api/chat/settings/save', function () use ($chatModel, $authServi
         'chat_offline_enabled', 'chat_offline_start', 'chat_offline_end',
         'chat_offline_message', 'chat_offline_form_title', 'chat_offline_form_subtitle',
         'chat_offline_success_message', 'chat_placeholder', 'chat_name_placeholder',
-        'chat_sound_enabled'
+        'chat_sound_enabled',
+        'chat_admin_notify_sound',
+        'chat_admin_notify_desktop',
+        'chat_admin_notify_toast',
+        'chat_typing_sound_enabled'
     ];
 
     try {
@@ -617,10 +766,23 @@ $router->post('/api/chat/settings/save', function () use ($chatModel, $authServi
         if (!isset($settings['chat_enabled'])) $settings['chat_enabled'] = '0';
         if (!isset($settings['chat_offline_enabled'])) $settings['chat_offline_enabled'] = '0';
         if (!isset($settings['chat_sound_enabled'])) $settings['chat_sound_enabled'] = '0';
+        if (!isset($settings['chat_admin_notify_sound'])) $settings['chat_admin_notify_sound'] = '0';
+        if (!isset($settings['chat_admin_notify_desktop'])) $settings['chat_admin_notify_desktop'] = '0';
+        if (!isset($settings['chat_admin_notify_toast'])) $settings['chat_admin_notify_toast'] = '0';
+        if (!isset($settings['chat_typing_sound_enabled'])) $settings['chat_typing_sound_enabled'] = '0';
 
         foreach ($allowedKeys as $key) {
             if (!isset($settings[$key])) continue;
-            $value = sanitize_input((string)$settings[$key]);
+            $value = trim((string)$settings[$key]);
+            if (in_array($key, ['chat_enabled', 'chat_offline_enabled', 'chat_sound_enabled', 'chat_admin_notify_sound', 'chat_admin_notify_desktop', 'chat_admin_notify_toast', 'chat_typing_sound_enabled'], true)) {
+                $value = $value === '1' ? '1' : '0';
+            } elseif ($key === 'chat_primary_color') {
+                if (!preg_match('/^#[0-9a-fA-F]{6}$/', $value)) $value = '#008B8B';
+            } elseif (in_array($key, ['chat_offline_start', 'chat_offline_end'], true)) {
+                if (!preg_match('/^(?:[01]\d|2[0-3]):[0-5]\d$/', $value)) $value = $key === 'chat_offline_start' ? '17:00' : '09:00';
+            } else {
+                $value = sanitize_input($value);
+            }
             if (mb_strlen($value) > 500) $value = mb_substr($value, 0, 500);
             $chatModel->saveChatSetting($key, $value);
         }
@@ -835,8 +997,8 @@ $router->get('/settings/chat/canned', function () use ($chatService, $twig, $aut
 $router->get('/api/chat/admin/offline', function () use ($chatService, $authService) {
     $authService->ensureCan('manage_chat');
 
-    $offset = (int)($_GET['offset'] ?? 0);
-    $limit = min((int)($_GET['limit'] ?? 50), 100);
+    $offset = max(0, (int)($_GET['offset'] ?? 0));
+    $limit = max(1, min((int)($_GET['limit'] ?? 50), 100));
 
     $result = $chatService->getOfflineMessages($offset, $limit);
 
@@ -988,8 +1150,11 @@ $router->get('/api/chat/cleanup', function () use ($chatService, $chatModel) {
     exit;
 });
 
-// Auto-trigger cleanup on admin page load (5% chance to spread load)
-if (mt_rand(1, 100) <= 5) {
+// Auto-trigger cleanup only on admin page load (5% chance to spread load)
+// Only runs for admin-related routes, NOT on every visitor API request
+$currentPath = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
+$isAdminRoute = strpos($currentPath, '/chat/admin') === 0 || strpos($currentPath, '/settings/chat') === 0;
+if ($isAdminRoute && mt_rand(1, 100) <= 5) {
     $cutoff = date('Y-m-d H:i:s', strtotime('-30 days'));
     $count = $chatModel->countOldClosedSessions($cutoff);
     if ($count > 0) {

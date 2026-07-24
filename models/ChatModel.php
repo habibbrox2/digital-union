@@ -32,7 +32,7 @@ class ChatModel
                 ) OR
                 EXISTS(
                     SELECT 1 FROM chat_messages
-                    WHERE sender_type = 'admin'
+                    WHERE (sender_type = 'admin' OR admin_id IS NOT NULL OR auto_reply = 1)
                     AND created_at > DATE_SUB(NOW(), INTERVAL 5 MINUTE)
                 ) OR
                 EXISTS(
@@ -64,6 +64,11 @@ class ChatModel
                 `session_sig` VARCHAR(72) DEFAULT NULL,
                 `visitor_name` VARCHAR(100) DEFAULT NULL,
                 `visitor_union_name` VARCHAR(150) NOT NULL DEFAULT '',
+                `visitor_location` VARCHAR(120) NOT NULL DEFAULT '',
+                `visitor_device` VARCHAR(40) NOT NULL DEFAULT '',
+                `visitor_browser` VARCHAR(100) NOT NULL DEFAULT '',
+                `visitor_os` VARCHAR(100) NOT NULL DEFAULT '',
+                `visitor_user_agent` VARCHAR(255) NOT NULL DEFAULT '',
                 `status` ENUM('active','closed') NOT NULL DEFAULT 'active',
                 `visitor_typing_at` DATETIME DEFAULT NULL,
                 `admin_typing_at` DATETIME DEFAULT NULL,
@@ -88,12 +93,16 @@ class ChatModel
                 `sender_type` ENUM('visitor','admin') NOT NULL DEFAULT 'visitor',
                 `admin_id` INT UNSIGNED DEFAULT NULL,
                 `is_read` TINYINT UNSIGNED NOT NULL DEFAULT 0,
+                `delivered_at` DATETIME DEFAULT NULL,
+                `read_at` DATETIME DEFAULT NULL,
                 `auto_reply` TINYINT UNSIGNED NOT NULL DEFAULT 0,
                 `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
                 KEY `idx_session` (`session_id`),
+                KEY `idx_session_created_id` (`session_id`, `created_at`, `id`),
                 KEY `idx_sender` (`sender_type`),
                 KEY `idx_created` (`created_at`),
-                KEY `idx_read` (`is_read`)
+                KEY `idx_read` (`is_read`),
+                KEY `idx_session_sender_read` (`session_id`, `sender_type`, `is_read`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
         ");
         $this->mysqli->query("
@@ -141,9 +150,24 @@ class ChatModel
     public function addMissingColumns(): void
     {
         $checks = [
+            ['table' => 'chat_sessions', 'column' => 'visitor_union_name', 'sql' => "ALTER TABLE chat_sessions ADD COLUMN `visitor_union_name` VARCHAR(150) NOT NULL DEFAULT '' AFTER `visitor_name`"],
+            ['table' => 'chat_sessions', 'column' => 'visitor_typing_at', 'sql' => "ALTER TABLE chat_sessions ADD COLUMN `visitor_typing_at` DATETIME DEFAULT NULL AFTER `status`"],
+            ['table' => 'chat_sessions', 'column' => 'admin_typing_at', 'sql' => "ALTER TABLE chat_sessions ADD COLUMN `admin_typing_at` DATETIME DEFAULT NULL AFTER `visitor_typing_at`"],
             ['table' => 'chat_messages', 'column' => 'auto_reply', 'sql' => "ALTER TABLE chat_messages ADD COLUMN `auto_reply` TINYINT UNSIGNED NOT NULL DEFAULT 0 AFTER `is_read`"],
+            ['table' => 'chat_messages', 'column' => 'file_url', 'sql' => "ALTER TABLE chat_messages ADD COLUMN `file_url` VARCHAR(500) DEFAULT NULL AFTER `message`"],
+            ['table' => 'chat_messages', 'column' => 'file_name', 'sql' => "ALTER TABLE chat_messages ADD COLUMN `file_name` VARCHAR(255) DEFAULT NULL AFTER `file_url`"],
+            ['table' => 'chat_messages', 'column' => 'file_size', 'sql' => "ALTER TABLE chat_messages ADD COLUMN `file_size` BIGINT UNSIGNED DEFAULT NULL AFTER `file_name`"],
+            ['table' => 'chat_messages', 'column' => 'file_type', 'sql' => "ALTER TABLE chat_messages ADD COLUMN `file_type` VARCHAR(100) DEFAULT NULL AFTER `file_size`"],
+            ['table' => 'chat_messages', 'column' => 'message_type', 'sql' => "ALTER TABLE chat_messages ADD COLUMN `message_type` VARCHAR(20) NOT NULL DEFAULT 'text' AFTER `file_type`"],
             ['table' => 'chat_sessions', 'column' => 'last_auto_reply_at', 'sql' => "ALTER TABLE chat_sessions ADD COLUMN `last_auto_reply_at` DATETIME DEFAULT NULL AFTER `admin_typing_at`"],
             ['table' => 'chat_sessions', 'column' => 'session_sig', 'sql' => "ALTER TABLE chat_sessions ADD COLUMN `session_sig` VARCHAR(72) DEFAULT NULL AFTER `session_id`"],
+            ['table' => 'chat_sessions', 'column' => 'visitor_location', 'sql' => "ALTER TABLE chat_sessions ADD COLUMN `visitor_location` VARCHAR(120) NOT NULL DEFAULT '' AFTER `visitor_union_name`"],
+            ['table' => 'chat_sessions', 'column' => 'visitor_device', 'sql' => "ALTER TABLE chat_sessions ADD COLUMN `visitor_device` VARCHAR(40) NOT NULL DEFAULT '' AFTER `visitor_location`"],
+            ['table' => 'chat_sessions', 'column' => 'visitor_browser', 'sql' => "ALTER TABLE chat_sessions ADD COLUMN `visitor_browser` VARCHAR(100) NOT NULL DEFAULT '' AFTER `visitor_device`"],
+            ['table' => 'chat_sessions', 'column' => 'visitor_os', 'sql' => "ALTER TABLE chat_sessions ADD COLUMN `visitor_os` VARCHAR(100) NOT NULL DEFAULT '' AFTER `visitor_browser`"],
+            ['table' => 'chat_sessions', 'column' => 'visitor_user_agent', 'sql' => "ALTER TABLE chat_sessions ADD COLUMN `visitor_user_agent` VARCHAR(255) NOT NULL DEFAULT '' AFTER `visitor_os`"],
+            ['table' => 'chat_messages', 'column' => 'delivered_at', 'sql' => "ALTER TABLE chat_messages ADD COLUMN `delivered_at` DATETIME DEFAULT NULL AFTER `is_read`"],
+            ['table' => 'chat_messages', 'column' => 'read_at', 'sql' => "ALTER TABLE chat_messages ADD COLUMN `read_at` DATETIME DEFAULT NULL AFTER `delivered_at`"],
         ];
         foreach ($checks as $c) {
             $r = $this->mysqli->query("SHOW COLUMNS FROM {$c['table']} LIKE '{$c['column']}'");
@@ -152,6 +176,23 @@ class ChatModel
             }
             if ($r) $r->free();
         }
+
+        $indexes = [
+            ['table' => 'chat_messages', 'name' => 'idx_session_created_id', 'sql' => 'ALTER TABLE chat_messages ADD INDEX `idx_session_created_id` (`session_id`, `created_at`, `id`)'],
+            ['table' => 'chat_messages', 'name' => 'idx_session_sender_read', 'sql' => 'ALTER TABLE chat_messages ADD INDEX `idx_session_sender_read` (`session_id`, `sender_type`, `is_read`)'],
+        ];
+        foreach ($indexes as $index) {
+            $r = $this->mysqli->query("SHOW INDEX FROM {$index['table']} WHERE Key_name = '{$index['name']}'");
+            $exists = $r && $r->num_rows > 0;
+            if ($r) $r->free();
+            if (!$exists) $this->mysqli->query($index['sql']);
+        }
+
+        // Older MySQL installations accepted an empty ENUM value when strict
+        // mode was disabled. admin_id/auto_reply are authoritative, so repair
+        // those rows once and keep all future reads consistent.
+        $this->mysqli->query("UPDATE chat_messages SET sender_type = 'admin' WHERE (admin_id IS NOT NULL OR auto_reply = 1) AND sender_type <> 'admin'");
+        $this->mysqli->query("UPDATE chat_messages SET sender_type = 'visitor' WHERE sender_type IS NULL OR sender_type = ''");
     }
 
     /**
@@ -187,7 +228,7 @@ class ChatModel
      */
     public function getSession(string $sessionId): ?array
     {
-        $stmt = $this->mysqli->prepare("SELECT id, session_id, session_sig, visitor_name, visitor_union_name, status, visitor_typing_at, admin_typing_at, last_auto_reply_at FROM chat_sessions WHERE session_id = ?");
+        $stmt = $this->mysqli->prepare("SELECT id, session_id, session_sig, visitor_name, visitor_union_name, visitor_location, visitor_device, visitor_browser, visitor_os, visitor_user_agent, status, visitor_typing_at, admin_typing_at, last_auto_reply_at, created_at, updated_at FROM chat_sessions WHERE session_id = ?");
         $stmt->bind_param("s", $sessionId);
         $stmt->execute();
         $result = $stmt->get_result();
@@ -253,6 +294,20 @@ class ChatModel
         $stmt->close();
     }
 
+    /** Store privacy-safe visitor metadata; raw IP/GPS is never persisted. */
+    public function updateVisitorMetadata(string $sessionId, array $metadata): void
+    {
+        $location = substr((string)($metadata['location'] ?? ''), 0, 120);
+        $device = substr((string)($metadata['device'] ?? ''), 0, 40);
+        $browser = substr((string)($metadata['browser'] ?? ''), 0, 100);
+        $os = substr((string)($metadata['os'] ?? ''), 0, 100);
+        $agent = substr((string)($metadata['user_agent'] ?? ''), 0, 255);
+        $stmt = $this->mysqli->prepare("UPDATE chat_sessions SET visitor_location = ?, visitor_device = ?, visitor_browser = ?, visitor_os = ?, visitor_user_agent = ? WHERE session_id = ?");
+        $stmt->bind_param("ssssss", $location, $device, $browser, $os, $agent, $sessionId);
+        $stmt->execute();
+        $stmt->close();
+    }
+
     /**
      * Update session updated_at timestamp.
      */
@@ -273,6 +328,37 @@ class ChatModel
         $stmt->bind_param("s", $sessionId);
         $stmt->execute();
         $stmt->close();
+    }
+
+    /**
+     * Expire a visitor session and remove its conversation messages.
+     * Closed sessions are retained as a lightweight audit record, while their
+     * message history is removed immediately as required by the chat policy.
+     */
+    public function expireSession(string $sessionId): void
+    {
+        $this->mysqli->begin_transaction();
+
+        try {
+            $delete = $this->mysqli->prepare("DELETE FROM chat_messages WHERE session_id = ?");
+            $delete->bind_param("s", $sessionId);
+            if (!$delete->execute()) {
+                throw new \RuntimeException('Unable to remove expired chat messages');
+            }
+            $delete->close();
+
+            $update = $this->mysqli->prepare("UPDATE chat_sessions SET status = 'closed', visitor_typing_at = NULL, admin_typing_at = NULL, last_auto_reply_at = NULL, updated_at = NOW() WHERE session_id = ?");
+            $update->bind_param("s", $sessionId);
+            if (!$update->execute()) {
+                throw new \RuntimeException('Unable to expire chat session');
+            }
+            $update->close();
+
+            $this->mysqli->commit();
+        } catch (\Throwable $e) {
+            $this->mysqli->rollback();
+            throw $e;
+        }
     }
 
     /**
@@ -374,6 +460,31 @@ class ChatModel
     }
 
     /**
+     * Get the last visitor activity for timeout calculations. Admin replies,
+     * typing indicators and admin-side session touches must not keep a visitor
+     * session alive.
+     */
+    public function getLastVisitorActivityAt(string $sessionId): ?string
+    {
+        $stmt = $this->mysqli->prepare(
+            "SELECT COALESCE(MAX(cm.created_at), cs.created_at) AS last_activity
+             FROM chat_sessions cs
+             LEFT JOIN chat_messages cm
+               ON cm.session_id = cs.session_id
+              AND cm.sender_type = 'visitor'
+              AND cm.admin_id IS NULL
+              AND cm.auto_reply = 0
+             WHERE cs.session_id = ?
+             GROUP BY cs.session_id, cs.created_at"
+        );
+        $stmt->bind_param("s", $sessionId);
+        $stmt->execute();
+        $row = $stmt->get_result()->fetch_assoc();
+        $stmt->close();
+        return $row['last_activity'] ?? null;
+    }
+
+    /**
      * Get session signature for verification.
      */
     public function getSessionSig(string $sessionId): ?string
@@ -396,10 +507,10 @@ class ChatModel
     public function insertMessage(string $sessionId, string $message, string $senderType, ?int $adminId = null, int $autoReply = 0): int
     {
         if ($adminId !== null) {
-            $stmt = $this->mysqli->prepare("INSERT INTO chat_messages (session_id, message, message_type, sender_type, admin_id, auto_reply, is_read, created_at) VALUES (?, ?, 'text', ?, ?, ?, 0, NOW())");
+            $stmt = $this->mysqli->prepare("INSERT INTO chat_messages (session_id, message, message_type, sender_type, admin_id, auto_reply, is_read, delivered_at, read_at, created_at) VALUES (?, ?, 'text', ?, ?, ?, 0, NULL, NULL, NOW())");
             $stmt->bind_param("ssiii", $sessionId, $message, $senderType, $adminId, $autoReply);
         } else {
-            $stmt = $this->mysqli->prepare("INSERT INTO chat_messages (session_id, message, message_type, sender_type, auto_reply, is_read, created_at) VALUES (?, ?, 'text', ?, ?, 0, NOW())");
+            $stmt = $this->mysqli->prepare("INSERT INTO chat_messages (session_id, message, message_type, sender_type, auto_reply, is_read, delivered_at, read_at, created_at) VALUES (?, ?, 'text', ?, ?, 0, NULL, NULL, NOW())");
             $stmt->bind_param("sssi", $sessionId, $message, $senderType, $autoReply);
         }
         $stmt->execute();
@@ -414,10 +525,10 @@ class ChatModel
     public function insertFileMessage(string $sessionId, string $message, string $messageType, string $fileUrl, string $fileName, int $fileSize, string $fileType, string $senderType, ?int $adminId = null): int
     {
         if ($adminId !== null) {
-            $stmt = $this->mysqli->prepare("INSERT INTO chat_messages (session_id, message, message_type, file_url, file_name, file_size, file_type, sender_type, admin_id, is_read, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, NOW())");
+            $stmt = $this->mysqli->prepare("INSERT INTO chat_messages (session_id, message, message_type, file_url, file_name, file_size, file_type, sender_type, admin_id, is_read, delivered_at, read_at, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, NULL, NULL, NOW())");
             $stmt->bind_param("sssssisii", $sessionId, $message, $messageType, $fileUrl, $fileName, $fileSize, $fileType, $senderType, $adminId);
         } else {
-            $stmt = $this->mysqli->prepare("INSERT INTO chat_messages (session_id, message, message_type, file_url, file_name, file_size, file_type, sender_type, is_read, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, NOW())");
+            $stmt = $this->mysqli->prepare("INSERT INTO chat_messages (session_id, message, message_type, file_url, file_name, file_size, file_type, sender_type, is_read, delivered_at, read_at, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, NULL, NULL, NOW())");
             $stmt->bind_param("sssssisi", $sessionId, $message, $messageType, $fileUrl, $fileName, $fileSize, $fileType, $senderType);
         }
         $stmt->execute();
@@ -429,13 +540,26 @@ class ChatModel
     /**
      * Get messages for a session with cursor/offset pagination.
      */
-    public function getMessages(string $sessionId, ?string $after = null, int $offset = 0, int $limit = 50): array
+    public function getMessages(string $sessionId, ?string $after = null, int $offset = 0, int $limit = 50, int $afterId = 0): array
     {
-        $sql = "SELECT id, session_id, message, message_type, file_url, file_name, file_size, file_type, sender_type, admin_id, is_read, auto_reply, created_at FROM chat_messages WHERE session_id = ?";
+        // Keep the conversation direction reliable even for legacy rows that were
+        // created before sender_type was set consistently. An admin id or an
+        // auto-reply flag is authoritative and must never render as visitor.
+        $sql = "SELECT id, session_id, message, message_type, file_url, file_name, file_size, file_type,
+                       CASE WHEN sender_type = 'admin' OR admin_id IS NOT NULL OR auto_reply = 1
+                            THEN 'admin' ELSE 'visitor' END AS sender_type,
+                       admin_id, is_read, delivered_at, read_at, auto_reply, created_at
+                FROM chat_messages WHERE session_id = ?";
         $params = [$sessionId];
         $types = 's';
 
-        if ($after) {
+        if ($afterId > 0 && $after) {
+            $sql .= " AND (created_at > ? OR (created_at = ? AND id > ?))";
+            $params[] = $after;
+            $params[] = $after;
+            $params[] = $afterId;
+            $types .= 'ssi';
+        } elseif ($after) {
             $sql .= " AND created_at > ?";
             $params[] = $after;
             $types .= 's';
@@ -465,7 +589,7 @@ class ChatModel
      */
     public function countUnreadAdminMessages(string $sessionId): int
     {
-        $stmt = $this->mysqli->prepare("SELECT COUNT(*) as count FROM chat_messages WHERE session_id = ? AND sender_type = 'admin' AND is_read = 0");
+        $stmt = $this->mysqli->prepare("SELECT COUNT(*) as count FROM chat_messages WHERE session_id = ? AND (sender_type = 'admin' OR admin_id IS NOT NULL OR auto_reply = 1) AND is_read = 0");
         $stmt->bind_param("s", $sessionId);
         $stmt->execute();
         $row = $stmt->get_result()->fetch_assoc();
@@ -478,7 +602,7 @@ class ChatModel
      */
     public function markAdminMessagesRead(string $sessionId): void
     {
-        $stmt = $this->mysqli->prepare("UPDATE chat_messages SET is_read = 1 WHERE session_id = ? AND sender_type = 'admin' AND is_read = 0");
+        $stmt = $this->mysqli->prepare("UPDATE chat_messages SET delivered_at = COALESCE(delivered_at, NOW()), read_at = NOW(), is_read = 1 WHERE session_id = ? AND (sender_type = 'admin' OR admin_id IS NOT NULL OR auto_reply = 1) AND is_read = 0");
         $stmt->bind_param("s", $sessionId);
         $stmt->execute();
         $stmt->close();
@@ -489,8 +613,18 @@ class ChatModel
      */
     public function markVisitorMessagesRead(string $sessionId): void
     {
-        $stmt = $this->mysqli->prepare("UPDATE chat_messages SET is_read = 1 WHERE session_id = ? AND sender_type = 'visitor' AND is_read = 0");
+        $stmt = $this->mysqli->prepare("UPDATE chat_messages SET delivered_at = COALESCE(delivered_at, NOW()), read_at = NOW(), is_read = 1 WHERE session_id = ? AND sender_type = 'visitor' AND admin_id IS NULL AND auto_reply = 0 AND is_read = 0");
         $stmt->bind_param("s", $sessionId);
+        $stmt->execute();
+        $stmt->close();
+    }
+
+    /** Mark messages delivered when the receiving client fetches them. */
+    public function markMessagesDelivered(string $sessionId, string $senderType): void
+    {
+        $senderType = $senderType === 'admin' ? 'admin' : 'visitor';
+        $stmt = $this->mysqli->prepare("UPDATE chat_messages SET delivered_at = COALESCE(delivered_at, NOW()) WHERE session_id = ? AND sender_type = ? AND delivered_at IS NULL");
+        $stmt->bind_param("ss", $sessionId, $senderType);
         $stmt->execute();
         $stmt->close();
     }
@@ -504,6 +638,7 @@ class ChatModel
         $sql = "
             SELECT
                 cs.id, cs.session_id, cs.visitor_name, cs.visitor_union_name,
+                cs.visitor_location, cs.visitor_device, cs.visitor_browser, cs.visitor_os,
                 cs.status, cs.created_at, cs.updated_at,
                 cm.message as last_message, cm.message_type as last_message_type,
                 cm.created_at as last_message_time,
@@ -517,7 +652,10 @@ class ChatModel
             LEFT JOIN (
                 SELECT cmv2.session_id, COUNT(*) as unread_count
                 FROM chat_messages cmv2
-                WHERE cmv2.sender_type = 'visitor' AND cmv2.is_read = 0
+                WHERE cmv2.sender_type = 'visitor'
+                  AND cmv2.admin_id IS NULL
+                  AND cmv2.auto_reply = 0
+                  AND cmv2.is_read = 0
                 GROUP BY cmv2.session_id
             ) cmv ON cmv.session_id = cs.session_id
             ORDER BY
@@ -656,6 +794,26 @@ class ChatModel
         while ($row = $result->fetch_assoc()) {
             $items[] = $row;
         }
+        return $items;
+    }
+
+    /** Public-safe FAQ payload for the visitor widget. */
+    public function getPublicFaqs(int $limit = 8): array
+    {
+        $limit = max(1, min($limit, 20));
+        $stmt = $this->mysqli->prepare("SELECT title, message, category FROM chat_canned_responses WHERE title <> '' AND message <> '' ORDER BY sort_order ASC, id ASC LIMIT ?");
+        $stmt->bind_param("i", $limit);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $items = [];
+        while ($row = $result->fetch_assoc()) {
+            $items[] = [
+                'title' => $row['title'],
+                'message' => $row['message'],
+                'category' => $row['category'],
+            ];
+        }
+        $stmt->close();
         return $items;
     }
 
@@ -832,6 +990,69 @@ class ChatModel
         $stmt->bind_param("i", $id);
         $stmt->execute();
         $stmt->close();
+    }
+
+    // ================================================================
+    // BULK ACTIONS
+    // ================================================================
+
+    /**
+     * Count total unread visitor messages across all sessions.
+     */
+    public function countAllUnreadVisitorMessages(): int
+    {
+        $result = $this->mysqli->query("SELECT COUNT(*) as cnt FROM chat_messages WHERE sender_type = 'visitor' AND admin_id IS NULL AND auto_reply = 0 AND is_read = 0");
+        if (!$result) return 0;
+        $row = $result->fetch_assoc();
+        $result->free();
+        return (int)($row['cnt'] ?? 0);
+    }
+
+    /**
+     * Get the latest unread visitor message with visitor name.
+     * Used by admin notification system.
+     */
+    public function getLatestUnreadVisitorMessage(): ?array
+    {
+        $result = $this->mysqli->query("
+            SELECT cm.message, cm.message_type, cm.session_id, cm.created_at, cs.visitor_name
+            FROM chat_messages cm
+            LEFT JOIN chat_sessions cs ON cm.session_id = cs.session_id
+            WHERE cm.sender_type = 'visitor'
+              AND cm.admin_id IS NULL
+              AND cm.auto_reply = 0
+              AND cm.is_read = 0
+            ORDER BY cm.created_at DESC
+            LIMIT 1
+        ");
+        if (!$result) return null;
+        $row = $result->fetch_assoc();
+        $result->free();
+        return $row ?: null;
+    }
+
+    /**
+     * Mark all unread visitor messages as read across all sessions.
+     */
+    public function markAllVisitorMessagesRead(): int
+    {
+        $stmt = $this->mysqli->prepare("UPDATE chat_messages SET is_read = 1 WHERE sender_type = 'visitor' AND admin_id IS NULL AND auto_reply = 0 AND is_read = 0");
+        $stmt->execute();
+        $count = $stmt->affected_rows;
+        $stmt->close();
+        return $count;
+    }
+
+    /**
+     * Close all active sessions.
+     */
+    public function closeAllActiveSessions(): int
+    {
+        $stmt = $this->mysqli->prepare("UPDATE chat_sessions SET status = 'closed', updated_at = NOW() WHERE status = 'active'");
+        $stmt->execute();
+        $count = $stmt->affected_rows;
+        $stmt->close();
+        return $count;
     }
 
     // ================================================================

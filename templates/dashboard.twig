@@ -138,7 +138,7 @@
 
     {% for c in cards %}
     <div class="col-md-3 col-sm-6">
-        <div class="card text-center p-3 h-100 shadow-sm" onclick="location.href='{{ c[0] }}'">
+        <div class="card text-center p-3 h-100 shadow-sm dashboard-nav-card" data-href="{{ c[0] }}">
             <i class="fas fa-{{ c[1] }} fa-2x text-success mb-2"></i>
             <h5>{{ c[2] }}</h5>
             <p class="small text-muted">{{ c[3] }}</p>
@@ -148,7 +148,7 @@
 
     {% if is_superadmin %}
     <div class="col-md-3 col-sm-6">
-        <div class="card text-center p-3 h-100 shadow-sm" onclick="location.href='/unions'">
+        <div class="card text-center p-3 h-100 shadow-sm dashboard-nav-card" data-href="/unions">
             <i class="fas fa-map-marker-alt fa-2x text-success mb-2"></i>
             <h5>সকল ইউনিয়ন</h5>
             <p class="small text-muted">সমস্ত ইউনিয়নের তথ্য ও ব্যবস্থাপনা।</p>
@@ -438,6 +438,14 @@ ${toBn(JSON.stringify(certificate.extra_data, null, 2))}
 /* ===============================
    Search Logic
 ================================= */
+// Dashboard navigation cards - migrated from inline onclick
+$(document).on('click', '.dashboard-nav-card', function() {
+    var href = $(this).data('href');
+    if (href) {
+        location.href = href;
+    }
+});
+
 $(function(){
     $("#certificateSearch").autocomplete({
         appendTo: ".position-relative",

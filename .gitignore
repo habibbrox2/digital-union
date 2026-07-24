@@ -73,6 +73,9 @@ public/uploads/*
 public/tmp/*
 !public/uploads/.gitkeep
 !public/tmp/.gitkeep
+!public/uploads/chat/
+public/uploads/chat/*
+!public/uploads/chat/.htaccess
 
 # ============================================
 # Backups & Database Dumps

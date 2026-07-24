@@ -35,11 +35,15 @@
     pollInterval: 4000,
     sessionKey: 'chat_session_id',
     sigKey: 'chat_session_sig',
+    expiredNoticeKey: 'chat_session_expired_notice',
     nameKey: 'chat_visitor_name',
     unionKey: 'chat_visitor_union',
     apiBase: '/api/chat',
     pageSize: 50,
     maxFileSize: 10 * 1024 * 1024, // 10MB
+    reconnectDelays: [2000, 5000, 10000, 20000, 30000],
+    sessionTimeoutSeconds: 300,
+    sessionWarningSeconds: 180,
   };
 
   // ========================
@@ -52,6 +56,7 @@
     visitorUnion: localStorage.getItem(CONFIG.unionKey) || '',
     isOpen: false,
     lastMessageTime: null,
+    lastMessageId: 0,
     pollTimer: null,
     hasMoreHistory: false,
     historyOffset: 0,
@@ -59,7 +64,23 @@
     pendingFile: null,
     sentMessageIds: new Set(),
     seenMessageIds: new Set(),
+    sessionEstablished: false,
+    sessionExpired: false,
+    adminOnline: null,
+    lastVisitorActivityAt: null,
+    connectionOnline: navigator.onLine !== false,
+    reconnectAttempt: 0,
+    reconnectTimer: null,
+    timeoutTimer: null,
   };
+
+  // sessionStorage is isolated to this browser tab. Clear a stale marker when
+  // a page is created/reloaded, so a new page/tab never shows an old expiry
+  // notice. During this page lifetime the marker survives closing/reopening
+  // the widget, which is the intended same-tab behavior.
+  try {
+    sessionStorage.removeItem(CONFIG.expiredNoticeKey);
+  } catch (e) {}
 
   // ========================
   // DOM References
@@ -158,6 +179,27 @@
     '\uD83D\uDC94', '\u2763\uFE0F', '\uD83D\uDC95', '\uD83D\uDC9E', '\uD83D\uDC93', '\uD83D\uDC97', '\uD83D\uDC96',
     '\u2728', '\uD83C\uDF1F', '\u2B50', '\uD83C\uDF20', '\uD83D\uDD25', '\uD83D\uDCAF', '\u2705',
   ];
+
+  // ========================
+  // Image Gallery Collection
+  // ========================
+  function collectGalleryImages() {
+    var result = [];
+    var container = els.messages;
+    if (!container) return result;
+
+    var imageLinks = container.querySelectorAll('.chat-msg-image-link');
+    imageLinks.forEach(function (link) {
+      var imgEl = link.querySelector('.chat-msg-image');
+      if (!imgEl) return;
+      result.push({
+        element: imgEl,
+        name: imgEl.alt || 'Image',
+        url: imgEl.src || '',
+      });
+    });
+    return result;
+  }
 
   // ========================
   // File Preview
@@ -350,13 +392,36 @@
     state.sessionId = generateId();
     state.sessionSig = '';
     state.lastMessageTime = null;
+    state.lastMessageId = 0;
     state.hasMoreHistory = false;
     state.historyOffset = 0;
     state.sentMessageIds = new Set();
+    state.seenMessageIds = new Set();
+    state.sessionEstablished = false;
+    state.visitorName = '';
+    state.visitorUnion = '';
 
     // Persist to localStorage
     localStorage.setItem(CONFIG.sessionKey, state.sessionId);
     localStorage.removeItem(CONFIG.sigKey);
+    localStorage.removeItem(CONFIG.nameKey);
+    localStorage.removeItem(CONFIG.unionKey);
+  }
+
+  function showRegistrationInput() {
+    state.pendingFile = null;
+    const uploadPreview = document.getElementById('chatUploadPreview');
+    if (uploadPreview) uploadPreview.remove();
+    if (els.fileInput) els.fileInput.value = '';
+    if (els.inputWrapper) els.inputWrapper.style.display = 'none';
+    if (els.regInputArea) {
+      els.regInputArea.style.display = '';
+      els.regNameInput.value = '';
+      els.regUnionInput.value = '';
+      setTimeout(function () {
+        if (els.regNameInput) els.regNameInput.focus();
+      }, 300);
+    }
   }
 
   function showSessionExpiredNotice() {
@@ -366,9 +431,8 @@
     const existing = els.messages.querySelector('.chat-expired-notice');
     if (existing) existing.remove();
 
-    // Remove welcome message to replace it
-    const welcome = els.messages.querySelector('.chat-welcome');
-    if (welcome) welcome.remove();
+    // Clear every old bubble. Expired conversations must never remain visible.
+    els.messages.innerHTML = '';
 
     const notice = document.createElement('div');
     notice.className = 'chat-expired-notice';
@@ -393,8 +457,34 @@
     setTimeout(function () {
       const n = els.messages.querySelector('.chat-expired-notice');
       if (n) n.remove();
+      if (state.sessionExpired) {
+        // Keep the message area clear while the visitor re-registers. The
+        // welcome message is rendered only after name submission starts the
+        // new session.
+        return;
+      }
       showWelcome();
     }, 5000);
+  }
+
+  function handleSessionExpired() {
+    const shouldNotify = state.sessionEstablished;
+    stopPolling();
+    resetSession();
+    state.sessionExpired = shouldNotify;
+
+    if (!shouldNotify) {
+      try { sessionStorage.removeItem(CONFIG.expiredNoticeKey); } catch (e) {}
+      return;
+    }
+
+    if (state.isOpen) {
+      try { sessionStorage.removeItem(CONFIG.expiredNoticeKey); } catch (e) {}
+      showSessionExpiredNotice();
+      showRegistrationInput();
+    } else {
+      try { sessionStorage.setItem(CONFIG.expiredNoticeKey, '1'); } catch (e) {}
+    }
   }
 
   async function apiCall(method, path, body) {
@@ -408,6 +498,9 @@
     try {
       const res = await fetch(url, options);
       const data = await res.json();
+      if (res.status === 403 && data.message === 'Invalid session signature') {
+        handleSessionExpired();
+      }
       // Auto-recover session signature from any API response
       if (data.session_sig) {
         state.sessionSig = data.session_sig;
@@ -415,8 +508,7 @@
       }
       // If session expired, auto-reset and start a fresh session
       if (data.session_expired) {
-        resetSession();              // update state + localStorage
-        showSessionExpiredNotice();  // handle UI (clears messages, shows notice, then shows welcome)
+        handleSessionExpired();
       }
       if (data.status === 'error') throw new Error(data.message || 'Unknown error');
       return data;
@@ -440,7 +532,11 @@
       visitor_union_name: state.visitorUnion || null,
     };
 
-    return await apiCall('POST', '/send', payload);
+    const result = await apiCall('POST', '/send', payload);
+    state.lastVisitorActivityAt = new Date().toISOString();
+    const warning = els.messages && els.messages.querySelector('.chat-timeout-warning');
+    if (warning) warning.remove();
+    return result;
   }
 
   async function fetchMessages() {
@@ -451,12 +547,26 @@
     if (state.lastMessageTime) {
       path += '&after=' + encodeURIComponent(state.lastMessageTime);
     }
+    if (state.lastMessageId) {
+      path += '&after_id=' + encodeURIComponent(state.lastMessageId);
+    }
 
     const result = await apiCall('GET', path);
+    if (result.last_visitor_activity_at) state.lastVisitorActivityAt = result.last_visitor_activity_at;
+    if (result.timeout_seconds) CONFIG.sessionTimeoutSeconds = parseInt(result.timeout_seconds, 10) || CONFIG.sessionTimeoutSeconds;
     if (result.data && result.data.length > 0) {
-      state.lastMessageTime = new Date().toISOString();
+      state.lastMessageTime = result.data[result.data.length - 1].created_at || null;
+      state.lastMessageId = result.data.reduce(function (maxId, msg) {
+        const id = parseInt(msg.id, 10);
+        return Number.isFinite(id) && id > maxId ? id : maxId;
+      }, state.lastMessageId);
     }
-    return { messages: result.data || [], has_more: result.has_more || false };
+    return {
+      messages: result.data || [],
+      has_more: result.has_more || false,
+      last_visitor_activity_at: result.last_visitor_activity_at || null,
+      timeout_seconds: result.timeout_seconds || CONFIG.sessionTimeoutSeconds,
+    };
   }
 
   async function loadHistory(offset) {
@@ -466,7 +576,15 @@
     if (state.sessionSig) path += '&session_sig=' + encodeURIComponent(state.sessionSig);
     path += '&offset=' + offset + '&limit=' + CONFIG.pageSize;
     const result = await apiCall('GET', path);
-    return { messages: result.data || [], has_more: result.has_more || false };
+    if (result.last_visitor_activity_at) state.lastVisitorActivityAt = result.last_visitor_activity_at;
+    if (result.timeout_seconds) CONFIG.sessionTimeoutSeconds = parseInt(result.timeout_seconds, 10) || CONFIG.sessionTimeoutSeconds;
+    return {
+      messages: result.data || [],
+      has_more: result.has_more || false,
+      session_expired: result.session_expired === true,
+      last_visitor_activity_at: result.last_visitor_activity_at || null,
+      timeout_seconds: result.timeout_seconds || CONFIG.sessionTimeoutSeconds,
+    };
   }
 
   async function uploadFile(file) {
@@ -487,9 +605,17 @@
       body: formData,
     });
     const result = await res.json();
+    if (result.session_expired) {
+      handleSessionExpired();
+    }
     if (result.data && result.data.session_sig) {
       state.sessionSig = result.data.session_sig;
       localStorage.setItem(CONFIG.sigKey, state.sessionSig);
+    }
+    if (result.status === 'success') {
+      state.lastVisitorActivityAt = new Date().toISOString();
+      const warning = els.messages && els.messages.querySelector('.chat-timeout-warning');
+      if (warning) warning.remove();
     }
     return result;
   }
@@ -497,14 +623,22 @@
   // ========================
   // Rendering (DOM-based, UTF-8 safe)
   // ========================
+  function getMessageSenderType(msg) {
+    const sender = String(msg && (msg.sender_type || msg.sender || msg.role) || '').toLowerCase();
+    return sender === 'admin' || msg.admin_id !== null && msg.admin_id !== undefined || Number(msg.auto_reply) === 1
+      ? 'admin'
+      : 'visitor';
+  }
+
   function renderMessage(msg) {
     const div = document.createElement('div');
-    div.className = 'chat-msg ' + (msg.sender_type === 'admin' ? 'admin' : 'visitor');
+    const senderType = getMessageSenderType(msg);
+    div.className = 'chat-msg ' + senderType;
     div.setAttribute('data-msg-id', msg.id);
-    div.setAttribute('data-sender', msg.sender_type);
+    div.setAttribute('data-sender', senderType);
     div.setAttribute('data-auto-reply', msg.auto_reply || 0);
 
-    if (msg.sender_type === 'admin') {
+    if (senderType === 'admin') {
       const senderRow = document.createElement('div');
       senderRow.className = 'chat-msg-sender-row';
       const sender = createTextEl('span', 'chat-msg-sender', widgetSettings.chat_agent_name || '\u09b8\u09b9\u09be\u09af\u09bc\u0995');
@@ -526,17 +660,41 @@
 
     if (msg.file_url) {
       if (msg.message_type === 'image') {
-        const link = document.createElement('a');
+        var link = document.createElement('a');
+        // Keep a real URL as a graceful fallback when the preview module is
+        // unavailable, while preventing the browser from navigating on click.
         link.href = msg.file_url;
-        link.target = '_blank';
-        link.rel = 'noopener noreferrer';
         link.className = 'chat-msg-image-link';
-        const img = document.createElement('img');
+        link.setAttribute('role', 'button');
+        link.setAttribute('aria-label', 'Open image preview');
+        link.setAttribute('title', 'Click to preview image');
+        link.setAttribute('data-preview-image', 'true');
+        var img = document.createElement('img');
         img.src = msg.file_url;
         img.className = 'chat-msg-image';
         img.alt = msg.file_name || 'Image';
         img.loading = 'lazy';
         link.appendChild(img);
+        var openImagePreview = function (e) {
+          e.preventDefault();
+          if (typeof ChatImageZoom !== 'undefined') {
+            // Collect all images in the messages container for gallery navigation
+            var images = collectGalleryImages();
+            // Compare the element, not the URL: img.src is normalized to an
+            // absolute URL by the browser while API URLs may be relative.
+            var currentIdx = images.findIndex(function (im) { return im.element === img; });
+            ChatImageZoom.open(img, msg.file_name || '', images, currentIdx >= 0 ? currentIdx : 0);
+          } else {
+            window.open(msg.file_url, '_blank', 'noopener,noreferrer');
+          }
+        };
+        link.addEventListener('click', openImagePreview);
+        link.addEventListener('keydown', function (e) {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            openImagePreview(e);
+          }
+        });
         div.appendChild(link);
       } else {
         const fileLink = document.createElement('a');
@@ -592,11 +750,13 @@
 
     footer.appendChild(createTextEl('span', 'chat-msg-time', formatTime(msg.created_at)));
 
-    if (msg.sender_type === 'visitor') {
+    if (senderType === 'visitor') {
       const statusSpan = document.createElement('span');
       statusSpan.className = 'chat-msg-status';
-      if (msg.is_read == 1) {
+      if (msg.read_at || msg.is_read == 1) {
         statusSpan.innerHTML = '<span class="status-icon status-read"><i class="fas fa-check-double"></i></span>';
+      } else if (msg.delivered_at) {
+        statusSpan.innerHTML = '<span class="status-icon status-delivered"><i class="fas fa-check-double"></i></span>';
       } else {
         statusSpan.innerHTML = '<span class="status-icon status-sent"><i class="fas fa-check"></i></span>';
       }
@@ -605,6 +765,18 @@
 
     div.appendChild(footer);
     return div;
+  }
+
+  function updateRenderedMessageStatus(msg) {
+    if (!els.messages || !msg || !msg.id) return;
+    const row = els.messages.querySelector('[data-msg-id="' + msg.id + '"]');
+    const status = row && row.querySelector('.chat-msg-status');
+    if (!status || getMessageSenderType(msg) !== 'visitor') return;
+    if (msg.read_at || msg.is_read == 1) {
+      status.innerHTML = '<span class="status-icon status-read"><i class="fas fa-check-double"></i></span>';
+    } else if (msg.delivered_at) {
+      status.innerHTML = '<span class="status-icon status-delivered"><i class="fas fa-check-double"></i></span>';
+    }
   }
 
   function scrollToBottom() {
@@ -619,6 +791,7 @@
     // Save to state & localStorage
     state.visitorName = name;
     state.visitorUnion = union || '';
+    state.sessionExpired = false;
     localStorage.setItem(CONFIG.nameKey, name);
     if (union) localStorage.setItem(CONFIG.unionKey, union);
 
@@ -689,6 +862,34 @@
     welcome.appendChild(msgText);
 
     els.messages.appendChild(welcome);
+    if (isOfflineMode) loadPublicFaqs(welcome);
+  }
+
+  async function loadPublicFaqs(container) {
+    if (!container || container.querySelector('.chat-faq-list')) return;
+    try {
+      const res = await fetch(CONFIG.apiBase + '/faq', { headers: { 'Accept': 'application/json' } });
+      const data = await res.json();
+      if (!data.data || !data.data.length || !container.isConnected) return;
+      const title = createTextEl('div', 'chat-faq-title', 'সাধারণ প্রশ্নের উত্তর');
+      const list = document.createElement('div');
+      list.className = 'chat-faq-list';
+      data.data.forEach(function (faq) {
+        const item = document.createElement('button');
+        item.type = 'button';
+        item.className = 'chat-faq-item';
+        item.textContent = faq.title || 'আরও তথ্য';
+        item.addEventListener('click', function () {
+          const answer = container.querySelector('.chat-faq-answer');
+          if (answer) answer.remove();
+          const answerEl = createTextEl('div', 'chat-faq-answer', faq.message || '');
+          item.after(answerEl);
+        });
+        list.appendChild(item);
+      });
+      container.appendChild(title);
+      container.appendChild(list);
+    } catch (e) {}
   }
 
   function addMessages(messages, prepend) {
@@ -699,7 +900,10 @@
 
     if (prepend) {
       messages.forEach(function (msg) {
-        if (els.messages.querySelector('[data-msg-id="' + msg.id + '"]')) return;
+        if (els.messages.querySelector('[data-msg-id="' + msg.id + '"]')) {
+          updateRenderedMessageStatus(msg);
+          return;
+        }
         const el = renderMessage(msg);
         const loadBtn = els.messages.querySelector('.chat-load-earlier');
         if (loadBtn) {
@@ -710,7 +914,10 @@
       });
     } else {
       messages.forEach(function (msg) {
-        if (els.messages.querySelector('[data-msg-id="' + msg.id + '"]')) return;
+        if (els.messages.querySelector('[data-msg-id="' + msg.id + '"]')) {
+          updateRenderedMessageStatus(msg);
+          return;
+        }
         els.messages.appendChild(renderMessage(msg));
       });
       scrollToBottom();
@@ -775,6 +982,7 @@
           });
         }
       }
+      if (result.last_visitor_activity_at) state.lastVisitorActivityAt = result.last_visitor_activity_at;
     } catch (e) {
       console.error('[Chat] Failed to load history:', e);
     } finally {
@@ -910,6 +1118,10 @@
           is_read: 0,
         };
         addMessages([tempMsg]);
+        if (result.data && result.data.id) {
+          const tempEl = els.messages.querySelector('[data-msg-id="' + tempMsg.id + '"]');
+          if (tempEl) tempEl.setAttribute('data-msg-id', result.data.id);
+        }
       } else {
         alert('\u09ab\u09be\u0987\u09b2 \u0986\u09aa\u09b2\u09cb\u09a1 \u09ac\u09cd\u09af\u09b0\u09cd\u09a5 \u09b9\u09df\u09c7\u099b\u09c7: ' + (result.message || '\u0985\u099c\u09be\u09a8\u09be \u09a4\u09cd\u09b0\u09c1\u099f\u09bf'));
       }
@@ -950,6 +1162,48 @@
     }
   }
 
+  // Typing sound state (prevents repeated playing on each poll cycle)
+  let _wasAdminTyping = false;
+
+  function playTypingSound() {
+    // Respect sound toggle
+    if (widgetSettings.chat_sound_enabled !== '1') return;
+    const ctx = getAudioContext();
+    if (!ctx) return;
+
+    try {
+      const now = ctx.currentTime;
+
+      // Short filtered noise burst for a natural keyboard click
+      const bufferSize = ctx.sampleRate * 0.04; // 40ms
+      const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (var i = 0; i < bufferSize; i++) {
+        data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (ctx.sampleRate * 0.008));
+      }
+      const noise = ctx.createBufferSource();
+      noise.buffer = buffer;
+
+      // Bandpass filter to shape the click
+      var filter = ctx.createBiquadFilter();
+      filter.type = 'bandpass';
+      filter.frequency.value = 1800;
+      filter.Q.value = 1.5;
+
+      var gain = ctx.createGain();
+      gain.gain.setValueAtTime(0.08, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
+
+      noise.connect(filter);
+      filter.connect(gain);
+      gain.connect(ctx.destination);
+      noise.start(now);
+      noise.stop(now + 0.04);
+    } catch (e) {
+      // Silently fail
+    }
+  }
+
   async function checkAdminTyping() {
     if (!state.sessionId || !state.isOpen) return;
     try {
@@ -963,11 +1217,27 @@
           state.sessionSig = data.session_sig;
           localStorage.setItem(CONFIG.sigKey, state.sessionSig);
         }
-        if (els.typing) {
-          els.typing.classList.toggle('visible', !!data.data.is_typing);
+
+        const isTyping = !!data.data.is_typing;
+
+        // Play typing sound when admin starts typing (transition from not typing to typing)
+        if (isTyping && !_wasAdminTyping) {
+          playTypingSound();
         }
+        _wasAdminTyping = isTyping;
+
+        if (els.typing) {
+          els.typing.classList.toggle('visible', isTyping);
+        }
+      } else {
+        _wasAdminTyping = false;
       }
     } catch (e) {}
+  }
+
+  // Reset typing sound state when chat is closed
+  function resetTypingSoundState() {
+    _wasAdminTyping = false;
   }
 
   // ========================
@@ -1039,6 +1309,9 @@
   }
 
   function showDesktopNotification(title, body) {
+    // Visitor browser notifications are intentionally disabled; use in-widget sound/title badge only.
+    return;
+    /*
     if (!('Notification' in window)) return;
     if (!_desktopNotifyGranted && Notification.permission !== 'granted') return;
     _desktopNotifyGranted = Notification.permission === 'granted';
@@ -1065,6 +1338,7 @@
     } catch (e) {
       // Notification not supported
     }
+    */
   }
 
   // ========================
@@ -1179,16 +1453,16 @@
       }
     }
 
-    img.onload = function () {
+    img.addEventListener('load', function () {
       ctx.clearRect(0, 0, 32, 32);
       ctx.drawImage(img, 0, 0, 32, 32);
       drawBadgeOnCtx();
-    };
+    });
 
-    img.onerror = function () {
+    img.addEventListener('error', function () {
       ctx.clearRect(0, 0, 32, 32);
       drawBadgeOnCtx();
-    };
+    });
 
     img.src = originalHref;
   }
@@ -1231,8 +1505,75 @@
   // ========================
   // Polling
   // ========================
+  function setConnectionState(online) {
+    state.connectionOnline = online;
+    if (els.window) els.window.classList.toggle('chat-disconnected', !online);
+    if (!online && els.headerSubtitle) {
+      els.headerSubtitle.textContent = 'সংযোগ পুনরায় যোগ হচ্ছে...';
+    } else if (online) {
+      updateAdminStatus();
+    }
+  }
+
+  function scheduleReconnect() {
+    if (state.reconnectTimer || !state.isOpen || state.sessionExpired || navigator.onLine === false) return;
+    setConnectionState(false);
+    const delay = CONFIG.reconnectDelays[Math.min(state.reconnectAttempt, CONFIG.reconnectDelays.length - 1)];
+    state.reconnectAttempt++;
+    state.reconnectTimer = setTimeout(async function () {
+      state.reconnectTimer = null;
+      try {
+        await fetchMessages();
+        state.reconnectAttempt = 0;
+        setConnectionState(true);
+        startPolling();
+      } catch (e) {
+        scheduleReconnect();
+      }
+    }, delay);
+  }
+
+  function startSessionTimeoutMonitor() {
+    stopSessionTimeoutMonitor();
+    state.timeoutTimer = setInterval(function () {
+      if (!state.isOpen || !state.lastVisitorActivityAt || state.sessionExpired) return;
+      const elapsed = Math.floor((Date.now() - new Date(state.lastVisitorActivityAt).getTime()) / 1000);
+      const remaining = CONFIG.sessionTimeoutSeconds - elapsed;
+      if (remaining <= 0) {
+        handleSessionExpired();
+        return;
+      }
+      if (elapsed < CONFIG.sessionWarningSeconds || !els.messages) return;
+      let notice = els.messages.querySelector('.chat-timeout-warning');
+      if (!notice) {
+        notice = document.createElement('div');
+        notice.className = 'chat-timeout-warning';
+        els.messages.appendChild(notice);
+      }
+      notice.textContent = remaining <= 60
+        ? 'আপনার চ্যাট সেশন শেষ হতে আর ' + remaining + ' সেকেন্ড বাকি। চালিয়ে যেতে একটি মেসেজ পাঠান।'
+        : 'আপনার চ্যাট সেশন নিষ্ক্রিয় হয়ে যাচ্ছে। চালিয়ে যেতে মেসেজ পাঠান।';
+      scrollToBottom();
+    }, 1000);
+  }
+
+  function stopSessionTimeoutMonitor() {
+    if (state.timeoutTimer) clearInterval(state.timeoutTimer);
+    state.timeoutTimer = null;
+  }
+
+  window.addEventListener('online', function () {
+    state.reconnectAttempt = 0;
+    if (state.isOpen && state.sessionId) scheduleReconnect();
+  });
+  window.addEventListener('offline', function () {
+    setConnectionState(false);
+    if (state.isOpen) scheduleReconnect();
+  });
+
   function startPolling() {
     stopPolling();
+    startSessionTimeoutMonitor();
     state.pollTimer = setInterval(async function () {
       if (!state.sessionId || !state.isOpen) return;
       try {
@@ -1266,21 +1607,17 @@
           }
 
           addMessages(result.messages);
+          apiCall('POST', '/read', { session_id: state.sessionId, session_sig: state.sessionSig }).catch(function () {});
           if (els.typing) els.typing.classList.remove('visible');
-          result.messages.forEach(function (msg) {
-            if (msg.sender_type === 'admin') {
-              document.querySelectorAll('.chat-msg.visitor[data-msg-id]').forEach(function (el) {
-                const statusEl = el.querySelector('.chat-msg-status');
-                if (statusEl) {
-                  statusEl.innerHTML = '<span class="status-icon status-read"><i class="fas fa-check-double"></i></span>';
-                }
-              });
-            }
-          });
-          updateUnreadBadge(result.messages.filter(function (m) { return m.sender_type === 'admin' && !m.is_read; }).length);
+          result.messages.forEach(updateRenderedMessageStatus);
+          fetchUnreadCount().then(updateUnreadBadge).catch(function () {});
         }
+        state.reconnectAttempt = 0;
+        setConnectionState(true);
         checkAdminTyping();
-      } catch (e) {}
+      } catch (e) {
+        scheduleReconnect();
+      }
     }, CONFIG.pollInterval);
   }
 
@@ -1290,6 +1627,7 @@
       state.pollTimer = null;
     }
     if (els.typing) els.typing.classList.remove('visible');
+    stopSessionTimeoutMonitor();
   }
 
   // Cleanup all timers on page unload
@@ -1322,23 +1660,32 @@
     state.isOpen = !state.isOpen;
 
     if (state.isOpen) {
-      // Request notification permission on first open
-      requestNotificationPermission();
       els.window.classList.add('open');
       els.button.classList.add('active');
 
+      let expiredForThisTab = state.sessionExpired;
+      try {
+        expiredForThisTab = sessionStorage.getItem(CONFIG.expiredNoticeKey) === '1' || state.sessionExpired;
+        if (expiredForThisTab) sessionStorage.removeItem(CONFIG.expiredNoticeKey);
+      } catch (e) {}
+
       stopBackgroundCheck();
+
+      // A timed-out session always requires fresh visitor identity details.
+      if (expiredForThisTab) {
+        state.sessionExpired = true;
+        showSessionExpiredNotice();
+        showRegistrationInput();
+        startPolling();
+        updateUnreadBadge(0);
+        stopTitleNotification();
+        return;
+      }
 
       // If visitor hasn't provided name yet, show welcome + registration in input area
       if (!state.visitorName) {
         showWelcome();
-        if (els.inputWrapper) els.inputWrapper.style.display = 'none';
-        if (els.regInputArea) {
-          els.regInputArea.style.display = '';
-          els.regNameInput.value = state.visitorName || '';
-          els.regUnionInput.value = state.visitorUnion || '';
-          setTimeout(function () { if (els.regNameInput) els.regNameInput.focus(); }, 300);
-        }
+        showRegistrationInput();
         updateUnreadBadge(0);
         stopTitleNotification();
         return;
@@ -1356,6 +1703,7 @@
       if (picker) picker.classList.remove('open');
       if (els.emojiBtn) els.emojiBtn.classList.remove('active');
       stopPolling();
+      resetTypingSoundState();
     }
   }
 
@@ -1367,10 +1715,16 @@
 
     try {
       const result = await loadHistory(0);
+      if (result.session_expired) return;
+      state.sessionEstablished = true;
       if (result.messages.length > 0) {
         state.historyOffset = result.messages.length;
         state.hasMoreHistory = result.has_more;
-        state.lastMessageTime = new Date().toISOString();
+        state.lastMessageTime = result.messages[result.messages.length - 1].created_at || null;
+        state.lastMessageId = result.messages.reduce(function (maxId, msg) {
+          const id = parseInt(msg.id, 10);
+          return Number.isFinite(id) && id > maxId ? id : maxId;
+        }, 0);
 
         // Track seen IDs so polling doesn't re-trigger sound for historical messages
         result.messages.forEach(function (m) {
@@ -1388,6 +1742,7 @@
         showWelcome();
       }
     } catch (e) {
+      if (state.sessionExpired) return;
       showWelcome();
     }
   }
@@ -1396,6 +1751,11 @@
   // Handle Send
   // ========================
   async function handleSend() {
+    if (state.sessionExpired) {
+      state.sessionExpired = false;
+      const expiredNotice = els.messages && els.messages.querySelector('.chat-expired-notice');
+      if (expiredNotice) expiredNotice.remove();
+    }
     const text = els.input.value.trim();
     if (!text && !state.pendingFile) return;
 
@@ -1423,6 +1783,11 @@
 
     try {
       const result = await sendMessage(text);
+      // Reconcile the optimistic row with the persisted row so polling does not duplicate it.
+      if (result && result.data && result.data.id) {
+        const tempEl = els.messages.querySelector('[data-msg-id="' + tempMsg.id + '"]');
+        if (tempEl) tempEl.setAttribute('data-msg-id', result.data.id);
+      }
       // Store session_sig from server response
       if (result && result.data && result.data.session_sig) {
         state.sessionSig = result.data.session_sig;
@@ -1432,7 +1797,14 @@
       if (result && result.auto_reply) {
         addMessages([result.auto_reply]);
       }
+      state.sessionEstablished = true;
+      startPolling();
     } catch (e) {
+      if (state.sessionExpired) {
+        const expiredTemp = els.messages.querySelector('[data-msg-id="' + tempMsg.id + '"]');
+        if (expiredTemp) expiredTemp.remove();
+        return;
+      }
       const errMsg = {
         id: 'err-' + Date.now(),
         message: '\u09ac\u09be\u09b0\u09cd\u09a4\u09be \u09aa\u09be\u09a0\u09be\u09a8\u09cb \u09af\u09be\u09df\u09a8\u09bf\u0964 \u0986\u09ac\u09be\u09b0 \u099a\u09c7\u09b7\u09cd\u099f\u09be \u0995\u09b0\u09c1\u09a8\u0964',
@@ -1477,6 +1849,7 @@
   }
 
   function isOffline() {
+    if (state.adminOnline === false) return true;
     if (widgetSettings.chat_offline_enabled !== '1') return false;
     const now = new Date();
     const currentMinutes = now.getHours() * 60 + now.getMinutes();
@@ -1618,6 +1991,14 @@
         submitOfflineForm();
       }
     });
+  }
+
+  function restoreNormalInput() {
+    if (!els.inputArea || !els.inputWrapper || !els.regInputArea) return;
+    if (!els.inputArea.querySelector('#chatOfflineForm')) return;
+    els.inputArea.innerHTML = '';
+    els.inputArea.appendChild(els.inputWrapper);
+    els.inputArea.appendChild(els.regInputArea);
   }
 
   async function submitOfflineForm() {
@@ -1876,7 +2257,7 @@
     regUnionInput.id = 'chatRegUnion';
     regUnionInput.setAttribute('aria-label', '\u0986\u09aa\u09a8\u09be\u09b0 \u0987\u0989\u09a8\u09bf\u09af\u09bc\u09a8\u09c7\u09b0 \u09a8\u09be\u09ae');
     regUnionInput.maxLength = 100;
-    regUnionInput.placeholder = '\u0986\u09aa\u09a8\u09be\u09b0 \u0987\u0989\u09a8\u09bf\u09af\u09bc\u09a8\u09c7\u09b0 \u09a8\u09be\u09ae';
+    regUnionInput.placeholder = '\u0986\u09aa\u09a8\u09be\u09b0 \u0987\u0989\u09a8\u09bf\u09af\u09bc\u09a8\u09c7\u09b0 \u09a8\u09be\u09ae (\u0990\u099a\u09cd\u099b\u09bf\u0995)';
 
     const regStartBtn = document.createElement('button');
     regStartBtn.className = 'chat-reg-start-btn';
@@ -2138,6 +2519,7 @@
       const data = await res.json();
       if (data.status === 'success' && data.data) {
         const isOnline = data.data.online;
+        state.adminOnline = !!isOnline;
         const isOfflineMode = isOffline();
         const isActive = isOnline && !isOfflineMode;
 
@@ -2151,6 +2533,18 @@
             ? (widgetSettings.chat_subtitle || '\u09b8\u09cd\u09ae\u09be\u09b0\u09cd\u099f \u0987\u0989\u09a8\u09bf\u09af\u09bc\u09a8 \u09aa\u09b0\u09bf\u09b7\u09a6')
             : '\u0985\u09ab\u09b2\u09be\u0987\u09a8';
           els.headerSubtitle.textContent = statusText;
+        }
+        if (state.isOpen && !state.visitorName && isOfflineMode && !els.inputArea.querySelector('#chatOfflineForm')) {
+          showOfflineForm();
+        }
+        if (state.isOpen && !isOfflineMode && !state.visitorName) {
+          restoreNormalInput();
+          showWelcome();
+          showRegistrationInput();
+        }
+        if (state.isOpen && isOfflineMode) {
+          const welcome = els.messages && els.messages.querySelector('.chat-welcome');
+          if (welcome) loadPublicFaqs(welcome);
         }
       }
     } catch (e) {
@@ -2182,6 +2576,12 @@
   async function init() {
     if (window.location.pathname.indexOf('/chat/admin') === 0) return;
     if (window.location.pathname.indexOf('/settings/chat') === 0) return;
+
+    // A session id without its signature is stale/corrupt. Do not keep
+    // polling a known-invalid session; force a clean registration instead.
+    if (state.sessionId && !state.sessionSig && state.visitorName) {
+      resetSession();
+    }
 
     await fetchSettings();
     if (widgetSettings.chat_enabled !== '1') return;

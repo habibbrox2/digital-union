@@ -12,8 +12,8 @@ class ChatService
     private const RATE_LIMIT_SALT_PREFIX = 'lgdhaka_chat_';
     private const SESSION_SECRET_PREFIX = 'chat_sesh_';
 
-    // Visitor session inactivity timeout: 24 hours (in seconds)
-    public const SESSION_TIMEOUT = 86400;
+    // Visitor session inactivity timeout: 5 minutes (in seconds)
+    public const SESSION_TIMEOUT = 300;
 
     private ChatModel $chatModel;
     private string $rateLimitSalt;
@@ -22,9 +22,13 @@ class ChatService
     public function __construct(ChatModel $chatModel)
     {
         $this->chatModel = $chatModel;
-        // Deterministic per-deployment secrets derived from this file's path
-        $this->rateLimitSalt = self::RATE_LIMIT_SALT_PREFIX . md5(__FILE__);
-        $this->sessionSecret = self::SESSION_SECRET_PREFIX . hash('sha256', __FILE__ . '|lgdhaka|2026');
+        $configuredSecret = $_ENV['CHAT_SESSION_SECRET'] ?? getenv('CHAT_SESSION_SECRET') ?: '';
+        if (!is_string($configuredSecret) || strlen($configuredSecret) < 32) {
+            error_log('[Chat] CHAT_SESSION_SECRET is missing or too short; using a temporary deployment fallback. Configure a 32+ character secret before production.');
+            $configuredSecret = hash('sha256', __FILE__ . '|' . ($_SERVER['SERVER_NAME'] ?? 'localhost'));
+        }
+        $this->rateLimitSalt = self::RATE_LIMIT_SALT_PREFIX . hash('sha256', $configuredSecret);
+        $this->sessionSecret = self::SESSION_SECRET_PREFIX . $configuredSecret;
     }
 
     // ================================================================
@@ -77,6 +81,16 @@ class ChatService
         $visitorName = $visitorName ?? '';
         $insertId = $this->chatModel->createSession($sessionId, $visitorName);
 
+        // Two browser requests can initialize the same session concurrently.
+        // Reuse the winner instead of returning an unusable session response.
+        if ($insertId <= 0) {
+            $existing = $this->chatModel->getSession($sessionId);
+            if ($existing !== null) {
+                return $existing;
+            }
+            throw new \RuntimeException('Unable to create chat session');
+        }
+
         $sig = $this->signSession($sessionId);
         $this->chatModel->setSessionSig($insertId, $sig);
 
@@ -114,9 +128,9 @@ class ChatService
     /**
      * Get messages for a session with optional cursor-based pagination.
      */
-    public function getMessagesQuery(string $sessionId, ?string $after = null, int $offset = 0, int $limit = 50): array
+    public function getMessagesQuery(string $sessionId, ?string $after = null, int $offset = 0, int $limit = 50, int $afterId = 0): array
     {
-        return $this->chatModel->getMessages($sessionId, $after, $offset, $limit);
+        return $this->chatModel->getMessages($sessionId, $after, $offset, $limit, $afterId);
     }
 
     // ================================================================
@@ -130,7 +144,9 @@ class ChatService
     public function checkRateLimit(string $endpoint, int $maxRequests = 30, int $windowSeconds = 60): array
     {
         $ip = $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
-        $window = date('YmdHi', time());
+        $windowSeconds = max(1, $windowSeconds);
+        $windowStart = intdiv(time(), $windowSeconds) * $windowSeconds;
+        $window = (string)$windowStart;
 
         $ipHash = md5($ip . $this->rateLimitSalt);
         $currentCount = $this->chatModel->getRateLimitCount($ipHash, $endpoint, $window);
@@ -138,7 +154,7 @@ class ChatService
         if ($currentCount !== null) {
             $newCount = $currentCount + 1;
             if ($newCount > $maxRequests) {
-                return ['allowed' => false, 'retry_after' => 60 - (time() % 60)];
+                return ['allowed' => false, 'retry_after' => max(1, $windowSeconds - (time() - $windowStart))];
             }
             $this->chatModel->incrementRateLimit($ipHash, $endpoint, $window, $newCount);
         } else {
@@ -170,9 +186,14 @@ class ChatService
      */
     public function isSessionTimedOut(string $sessionId): bool
     {
-        $updatedAt = $this->chatModel->getSessionUpdatedAt($sessionId);
-        if ($updatedAt === null) return false;
-        return (time() - strtotime($updatedAt)) > self::SESSION_TIMEOUT;
+        $lastVisitorActivity = $this->chatModel->getLastVisitorActivityAt($sessionId);
+        if ($lastVisitorActivity === null) return false;
+        return (time() - strtotime($lastVisitorActivity)) >= self::SESSION_TIMEOUT;
+    }
+
+    public function getLastVisitorActivityAt(string $sessionId): ?string
+    {
+        return $this->chatModel->getLastVisitorActivityAt($sessionId);
     }
 
     /**
@@ -404,17 +425,25 @@ class ChatService
 
         $maxSize = 10 * 1024 * 1024; // 10MB
 
-        if ($file['error'] !== UPLOAD_ERR_OK) {
-            return ['status' => 'error', 'message' => 'Upload failed with error code: ' . $file['error']];
+        $uploadError = $file['error'] ?? UPLOAD_ERR_NO_FILE;
+        if (!isset($file['size'], $file['tmp_name'], $file['name']) || $uploadError !== UPLOAD_ERR_OK) {
+            return ['status' => 'error', 'message' => 'Upload failed with error code: ' . $uploadError];
         }
 
         if ($file['size'] > $maxSize) {
             return ['status' => 'error', 'message' => 'File too large. Maximum 10MB.'];
         }
 
+        if (!is_uploaded_file($file['tmp_name']) || !is_readable($file['tmp_name'])) {
+            return ['status' => 'error', 'message' => 'Invalid upload.'];
+        }
+
         $finfo = finfo_open(FILEINFO_MIME_TYPE);
         $mimeType = finfo_file($finfo, $file['tmp_name']);
         finfo_close($finfo);
+        if (!$mimeType) {
+            return ['status' => 'error', 'message' => 'Could not determine file type.'];
+        }
 
         // Allow all image/* types except SVG (XSS risk with embedded scripts)
         $isImage = strpos($mimeType, 'image/') === 0;
@@ -426,7 +455,16 @@ class ChatService
             return ['status' => 'error', 'message' => 'File type not allowed.'];
         }
 
-        $ext = pathinfo($file['name'], PATHINFO_EXTENSION);
+        $extensionMap = [
+            'image/jpeg' => 'jpg', 'image/png' => 'png', 'image/gif' => 'gif', 'image/webp' => 'webp',
+            'application/pdf' => 'pdf', 'application/msword' => 'doc',
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document' => 'docx',
+            'application/vnd.ms-excel' => 'xls',
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' => 'xlsx',
+            'text/plain' => 'txt', 'text/csv' => 'csv', 'application/zip' => 'zip',
+            'application/x-rar-compressed' => 'rar',
+        ];
+        $ext = $extensionMap[$mimeType] ?? 'bin';
         $safeName = time() . '_' . bin2hex(random_bytes(8)) . '.' . $ext;
         $filePath = $uploadDir . $safeName;
 
@@ -462,5 +500,52 @@ class ChatService
     public function checkAdminOnline(): bool
     {
         return $this->chatModel->isAdminOnline();
+    }
+
+    /**
+     * Build coarse visitor metadata without collecting GPS or exposing raw IP.
+     * Geo headers are used only when supplied by a trusted reverse proxy.
+     */
+    public static function getVisitorMetadata(): array
+    {
+        $ua = trim((string)($_SERVER['HTTP_USER_AGENT'] ?? ''));
+        $location = trim((string)(
+            $_SERVER['HTTP_X_GEO_COUNTRY'] ??
+            $_SERVER['HTTP_CF_IPCOUNTRY'] ??
+            $_SERVER['GEOIP_COUNTRY_CODE'] ??
+            ''
+        ));
+        $location = $location !== '' ? strtoupper(substr($location, 0, 2)) : 'অজানা';
+
+        if (preg_match('/ipad|tablet|playbook|silk|kindle/i', $ua)) {
+            $device = 'tablet';
+        } elseif (preg_match('/mobile|android|iphone|ipod|windows phone/i', $ua)) {
+            $device = 'mobile';
+        } else {
+            $device = 'desktop';
+        }
+
+        $browser = 'অজানা';
+        if (preg_match('/Edg\/([\d.]+)/i', $ua, $m)) $browser = 'Edge ' . $m[1];
+        elseif (preg_match('/OPR\/([\d.]+)/i', $ua, $m)) $browser = 'Opera ' . $m[1];
+        elseif (preg_match('/Chrome\/([\d.]+)/i', $ua, $m)) $browser = 'Chrome ' . $m[1];
+        elseif (preg_match('/Firefox\/([\d.]+)/i', $ua, $m)) $browser = 'Firefox ' . $m[1];
+        elseif (preg_match('/Version\/([\d.]+).*Safari/i', $ua, $m)) $browser = 'Safari ' . $m[1];
+
+        $os = 'অজানা';
+        if (preg_match('/Windows NT/i', $ua)) $os = 'Windows';
+        elseif (preg_match('/Android/i', $ua)) $os = 'Android';
+        elseif (preg_match('/iPhone|iPad|iPod/i', $ua)) $os = 'iOS';
+        elseif (preg_match('/Mac OS X/i', $ua)) $os = 'macOS';
+        elseif (preg_match('/Linux/i', $ua)) $os = 'Linux';
+
+        return [
+            'location' => $location,
+            'device' => $device,
+            'browser' => $browser,
+            'os' => $os,
+            // Keep only a bounded summary; never store IP or GPS.
+            'user_agent' => substr($ua, 0, 255),
+        ];
     }
 }

@@ -55,7 +55,7 @@
                     </div>
 
                     <div class="d-flex flex-wrap gap-2">
-                        <button type="button" class="btn btn-danger rbac-btn" onclick="confirmRevoke()">
+                        <button type="button" class="btn btn-danger rbac-btn" id="confirmRevokeBtn">
                             <i class="bi bi-trash3 me-1"></i> নিশ্চিত - প্রত্যাহার করুন
                         </button>
                         <a href="/permissions/assign" class="btn btn-outline-secondary rbac-btn">
@@ -92,24 +92,29 @@
 </style>
 
 <script>
-function confirmRevoke() {
-    const permissionName = '{{ permission.name }}';
-    const roleName = '{{ role.role_name }}';
-    Swal.fire({
-        title: 'নিশ্চিত করুন',
-        html: `<p>আপনি কি নিশ্চিত যে আপনি <strong>${roleName}</strong> থেকে <strong>${permissionName}</strong> প্রত্যাহার করতে চান?</p>
-               <p style="color:#e74c3c;font-weight:500;margin-top:1rem;">এই কাজটি ফিরানো যাবে না।</p>`,
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#e74c3c',
-        cancelButtonColor: '#6c757d',
-        confirmButtonText: 'প্রত্যাহার করুন',
-        cancelButtonText: 'বাতিল করুন',
-        allowOutsideClick: false,
-        allowEscapeKey: false
-    }).then((result) => {
-        if (result.isConfirmed) document.getElementById('revokeForm').submit();
-    });
-}
+document.addEventListener('DOMContentLoaded', function() {
+    var confirmBtn = document.getElementById('confirmRevokeBtn');
+    if (confirmBtn) {
+        confirmBtn.addEventListener('click', function() {
+            const permissionName = '{{ permission.name }}';
+            const roleName = '{{ role.role_name }}';
+            Swal.fire({
+                title: 'নিশ্চিত করুন',
+                html: `<p>আপনি কি নিশ্চিত যে আপনি <strong>${roleName}</strong> থেকে <strong>${permissionName}</strong> প্রত্যাহার করতে চান?</p>
+                       <p style="color:#e74c3c;font-weight:500;margin-top:1rem;">এই কাজটি ফিরানো যাবে না।</p>`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#e74c3c',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'প্রত্যাহার করুন',
+                cancelButtonText: 'বাতিল করুন',
+                allowOutsideClick: false,
+                allowEscapeKey: false
+            }).then((result) => {
+                if (result.isConfirmed) document.getElementById('revokeForm').submit();
+            });
+        });
+    }
+});
 </script>
 {% endblock %}

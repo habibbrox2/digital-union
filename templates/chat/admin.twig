@@ -9,8 +9,9 @@
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h5 class="mb-0 fw-bold" style="color: #008B8B;">
             <i class="fas fa-comments me-2"></i>লাইভ চ্যাট সমূহ
+            <span class="chat-total-unread-badge" id="totalUnreadBadge" style="display:none;">0</span>
         </h5>
-        <button class="btn btn-sm btn-outline-primary" onclick="location.reload()">
+        <button class="btn btn-sm btn-outline-primary" id="adminRefreshBtn">
             <i class="fas fa-sync-alt me-1"></i>রিফ্রেশ
         </button>
     </div>
@@ -36,6 +37,14 @@
                                 <option value="active">সক্রিয়</option>
                                 <option value="closed">বন্ধ</option>
                             </select>
+                        </div>
+                        <div class="chat-bulk-actions">
+                            <button type="button" class="chat-bulk-btn chat-bulk-read" id="bulkReadAllBtn" title="সব পঠিত করুন">
+                                <i class="fas fa-check-double"></i> সব পঠিত
+                            </button>
+                            <button type="button" class="chat-bulk-btn chat-bulk-close" id="bulkCloseAllBtn" title="সকল সক্রিয় কথোপকথন বন্ধ করুন">
+                                <i class="fas fa-times-circle"></i> সব বন্ধ
+                            </button>
                         </div>
                     </div>
                     <div id="convItems">
@@ -70,6 +79,7 @@
                                 </button>
                             </div>
                         </div>
+                        <div class="chat-open-tabs" id="chatOpenTabs" role="tablist" aria-label="Open conversations"></div>
                         <div class="chat-admin-messages" id="chatAdminMessages"></div>
                         <div class="chat-admin-input-area">
                             <div class="chat-admin-toolbar">
@@ -89,7 +99,13 @@
                                     </div>
                                 </div>
                                 <div id="adminUploadPreview"></div>
-                                <div class="chat-admin-input-row">
+                                <div class="chat-admin-input-row" style="position: relative;">
+                                    <div class="chat-autocomplete-dropdown" id="adminAutocompleteDropdown">
+                                        <div class="chat-autocomplete-header">
+                                            <span><i class="fas fa-bolt"></i> কুইক রিপ্লাই সুপারিশ</span>
+                                        </div>
+                                        <div id="adminAutocompleteResults"></div>
+                                    </div>
                                     <textarea class="chat-admin-input" id="adminChatInput" rows="2" placeholder="উত্তর লিখুন..." maxlength="1000"></textarea>
                                     <button class="btn" id="adminSendBtn" style="background: #008B8B; color: #fff; border-radius: 10px; padding: 10px 20px; white-space: nowrap;">
                                         <i class="fas fa-paper-plane me-1"></i>পাঠান
@@ -112,6 +128,7 @@
 
     let activeSessionId = null;
     let pendingFile = null;
+    const openConversationIds = [];
 
     // Common emojis
     const EMOJIS = [
@@ -135,6 +152,7 @@
     const viewContent = document.getElementById('chatViewContent');
     const viewTitle = document.getElementById('chatViewTitle');
     const viewMeta = document.getElementById('chatViewMeta');
+    const openTabsEl = document.getElementById('chatOpenTabs');
     const adminMessages = document.getElementById('chatAdminMessages');
     const adminInput = document.getElementById('adminChatInput');
     const adminSendBtn = document.getElementById('adminSendBtn');
@@ -144,6 +162,50 @@
     const adminFileBtn = document.getElementById('adminFileBtn');
     const adminFileInput = document.getElementById('adminFileInput');
     const adminUploadPreview = document.getElementById('adminUploadPreview');
+    let isReplyPending = false;
+
+    function getConversationLabel(sessionId) {
+        const conv = allConversations.find(function(item) { return item.session_id === sessionId; });
+        return conv && conv.visitor_name ? conv.visitor_name : 'Visitor';
+    }
+
+    function renderOpenTabs() {
+        if (!openTabsEl) return;
+        openTabsEl.innerHTML = '';
+        openConversationIds.forEach(function(sessionId) {
+            const tab = document.createElement('button');
+            tab.type = 'button';
+            tab.className = 'chat-open-tab' + (sessionId === activeSessionId ? ' active' : '');
+            tab.setAttribute('role', 'tab');
+            tab.setAttribute('aria-selected', sessionId === activeSessionId ? 'true' : 'false');
+            tab.title = sessionId;
+            const label = document.createElement('span');
+            label.textContent = getConversationLabel(sessionId);
+            const close = document.createElement('span');
+            close.className = 'chat-open-tab-close';
+            close.innerHTML = '&times;';
+            close.setAttribute('aria-label', 'Close conversation tab');
+            close.addEventListener('click', function(e) {
+                e.stopPropagation();
+                const index = openConversationIds.indexOf(sessionId);
+                if (index >= 0) openConversationIds.splice(index, 1);
+                if (activeSessionId === sessionId) {
+                    const nextId = openConversationIds[index] || openConversationIds[index - 1] || null;
+                    if (nextId) loadConversation(nextId);
+                    else {
+                        activeSessionId = null;
+                        emptyState.style.display = 'flex';
+                        viewContent.style.display = 'none';
+                    }
+                }
+                renderOpenTabs();
+            });
+            tab.appendChild(label);
+            tab.appendChild(close);
+            tab.addEventListener('click', function() { loadConversation(sessionId); });
+            openTabsEl.appendChild(tab);
+        });
+    }
 
     // Init emoji picker
     (function buildEmojiPicker() {
@@ -188,7 +250,11 @@
         if (!file) return;
 
         if (file.size > 10 * 1024 * 1024) {
-            alert('ফাইলটি খুব বড়। সর্বোচ্চ ১০MB অনুমোদিত।');
+            if (typeof SweetAlertUtil !== 'undefined') {
+                SweetAlertUtil.toast('ফাইলটি খুব বড়। সর্বোচ্চ ১০MB অনুমোদিত।', 'error');
+            } else {
+                alert('ফাইলটি খুব বড়। সর্বোচ্চ ১০MB অনুমোদিত।');
+            }
             e.target.value = '';
             return;
         }
@@ -363,9 +429,10 @@
     }
 
     function renderMessageHTML(msg) {
-        const senderLabel = msg.sender_type === 'admin' ? 'সহায়ক' : 'দর্শক';
+        const senderType = getMessageSenderType(msg);
+        const senderLabel = senderType === 'admin' ? 'সহায়ক' : 'দর্শক';
         let html = '<div class="chat-msg-sender-row"><span class="chat-msg-sender">' + senderLabel + '</span>';
-        if (msg.sender_type === 'admin' && msg.auto_reply == 1) {
+        if (senderType === 'admin' && msg.auto_reply == 1) {
             html += '<span class="chat-msg-auto-reply-badge">🤖 স্বচালিত উত্তর</span>';
         }
         html += '</div>';
@@ -376,7 +443,7 @@
 
         if (msg.file_url) {
             if (msg.message_type === 'image') {
-                html += '<a href="' + msg.file_url + '" target="_blank" class="chat-msg-image-link"><img src="' + msg.file_url + '" class="chat-msg-image" alt="' + escapeHtml(msg.file_name || 'Image') + '" loading="lazy"></a>';
+                html += '<a href="javascript:void(0)" class="chat-msg-image-link chat-msg-image-zoom-trigger" data-img-src="' + msg.file_url + '" data-img-name="' + escapeAttr(msg.file_name || 'Image') + '" role="button"><img src="' + msg.file_url + '" class="chat-msg-image" alt="' + escapeHtml(msg.file_name || 'Image') + '" loading="lazy"></a>';
             } else {
                 html += '<a href="' + msg.file_url + '" target="_blank" class="chat-msg-file" download="' + escapeHtml(msg.file_name || 'file') + '">';
                 html += '<span class="chat-msg-file-icon"><i class="fas ' + getFileIcon(msg.file_type) + '"></i></span>';
@@ -386,7 +453,7 @@
                 }
                 html += '</span></a>';                    // Preview button for previewable files
                 if (isPreviewableFile(msg)) {
-                    html += '<button type="button" class="chat-msg-preview-btn" data-preview-msg=\'" + escapeAttr(JSON.stringify(msg)) + "\'';
+                    html += '<button type="button" class="chat-msg-preview-btn" data-preview-msg="' + escapeAttr(JSON.stringify(msg)) + '">';
                     html += '<i class="fas fa-eye"></i> \u09aa\u09cd\u09b0\u09bf\u09ad\u09bf\u0989';
                     html += '</button>';
                 }
@@ -396,18 +463,38 @@
         html += '<div class="chat-msg-footer">';
         html += '<span class="chat-msg-time">' + formatTime(msg.created_at) + '</span>';
         // Read status for visitor messages
-        if (msg.sender_type === 'visitor') {
+        if (senderType === 'visitor') {
             html += '<span class="chat-msg-status">';
-            if (msg.is_read == 1) {
+            if (msg.read_at || msg.is_read == 1) {
                 html += '<span class="status-icon status-read"><i class="fas fa-check-double"></i> পঠিত</span>';
+            } else if (msg.delivered_at) {
+                html += '<span class="status-icon status-delivered"><i class="fas fa-check-double"></i> প্রাপ্ত</span>';
             } else {
                 html += '<span class="status-icon status-sent"><i class="fas fa-check"></i> প্রেরিত</span>';
+            }
+            html += '</span>';
+        } else if (senderType === 'admin' && msg.auto_reply != 1) {
+            html += '<span class="chat-msg-status">';
+            if (msg.read_at || msg.is_read == 1) {
+                html += '<span class="status-icon status-read"><i class="fas fa-check-double"></i> Seen</span>';
+            } else if (msg.delivered_at) {
+                html += '<span class="status-icon status-delivered"><i class="fas fa-check-double"></i> Delivered</span>';
+            } else {
+                html += '<span class="status-icon status-sent"><i class="fas fa-check"></i> Sent</span>';
             }
             html += '</span>';
         }
         html += '</div>';
 
         return html;
+    }
+
+    // Normalize both current and legacy API payloads so a missing/invalid
+    // sender_type cannot move an admin reply into the visitor side.
+    function getMessageSenderType(msg) {
+        const sender = String((msg && (msg.sender_type || msg.sender || msg.role)) || '').toLowerCase();
+        return sender === 'admin' || (msg && msg.admin_id !== null && msg.admin_id !== undefined) || Number(msg && msg.auto_reply) === 1
+            ? 'admin' : 'visitor';
     }
 
     // Conversation search/filter + pagination
@@ -585,6 +672,8 @@
     // Load a specific conversation
     async function loadConversation(sessionId) {
         activeSessionId = sessionId;
+        if (!openConversationIds.includes(sessionId)) openConversationIds.push(sessionId);
+        renderOpenTabs();
 
         document.querySelectorAll('.chat-conversation-item').forEach(function(el) {
             el.classList.toggle('active', el.dataset.sessionId === sessionId);
@@ -604,20 +693,43 @@
             viewTitle.textContent = convName;
             viewMeta.innerHTML = '<i class="fas fa-map-marker-alt" style="color: #008B8B; font-size: 12px; margin-right: 4px;"></i> ' + (convUnion ? escapeHtml(convUnion.trim()) : '<span style="color: #bbb;">ইউনিয়ন দেওয়া হয়নি</span>') + ' &nbsp;·&nbsp; ' + messages.length + ' টি বার্তা';
 
-            adminMessages.innerHTML = '';
-            messages.forEach(function(msg) {
-                const div = document.createElement('div');
-                div.className = 'chat-msg ' + (msg.sender_type === 'admin' ? 'admin' : 'visitor');
-                div.innerHTML = renderMessageHTML(msg);
-                div.setAttribute('data-auto-reply', msg.auto_reply || 0);
-                adminMessages.appendChild(div);
-            });
-
-            adminMessages.scrollTop = adminMessages.scrollHeight;
+            renderConversationMessages(messages, true);
+            renderOpenTabs();
+            if (data.session) {
+                viewMeta.insertAdjacentHTML('beforeend', '<span class="chat-visitor-meta"><i class="fas fa-globe-asia"></i> ' + escapeHtml(data.session.visitor_location || 'Unknown') + ' &nbsp;·&nbsp; <i class="fas fa-mobile-alt"></i> ' + escapeHtml(data.session.visitor_device || 'Unknown') + ' &nbsp;·&nbsp; <i class="fas fa-window-maximize"></i> ' + escapeHtml(data.session.visitor_browser || 'Unknown') + ' &nbsp;·&nbsp; ' + escapeHtml(data.session.visitor_os || 'Unknown') + '</span>');
+            }
             adminInput.focus();
 
         } catch (e) {
             console.error('Failed to load conversation:', e);
+        }
+    }
+
+    function renderConversationMessages(messages, forceBottom) {
+        adminMessages.innerHTML = '';
+        (messages || []).forEach(function(msg) {
+            const div = document.createElement('div');
+            const senderType = getMessageSenderType(msg);
+            div.className = 'chat-msg ' + senderType;
+            div.setAttribute('data-msg-id', msg.id || '');
+            div.setAttribute('data-sender', senderType);
+            div.innerHTML = renderMessageHTML(msg);
+            div.setAttribute('data-auto-reply', msg.auto_reply || 0);
+            adminMessages.appendChild(div);
+        });
+        if (forceBottom) adminMessages.scrollTop = adminMessages.scrollHeight;
+    }
+
+    async function refreshActiveConversation() {
+        if (!activeSessionId || isReplyPending) return;
+        try {
+            const res = await fetch('/api/chat/admin/conversations/' + encodeURIComponent(activeSessionId));
+            const data = await res.json();
+            if (data.status !== 'success' || !activeSessionId) return;
+            const nearBottom = adminMessages.scrollHeight - adminMessages.scrollTop - adminMessages.clientHeight < 48;
+            renderConversationMessages(data.data || [], nearBottom);
+        } catch (e) {
+            // Keep the current response view when background refresh fails.
         }
     }
 
@@ -626,7 +738,9 @@
     // ========================================
     function renderAdminMessageEl(msg) {
         const div = document.createElement('div');
-        div.className = 'chat-msg admin';
+        div.className = 'chat-msg ' + getMessageSenderType(msg);
+        div.setAttribute('data-msg-id', msg.id || '');
+        div.setAttribute('data-sender', getMessageSenderType(msg));
         div.innerHTML = renderMessageHTML(msg);
         return div;
     }
@@ -634,6 +748,27 @@
     function appendAdminMessage(msgEl) {
         adminMessages.appendChild(msgEl);
         adminMessages.scrollTop = adminMessages.scrollHeight;
+    }
+
+    // ========================================
+    // Image Gallery Collection
+    // ========================================
+    function collectAdminGalleryImages() {
+        var result = [];
+        var container = adminMessages;
+        if (!container) return result;
+
+        var triggers = container.querySelectorAll('.chat-msg-image-zoom-trigger');
+        triggers.forEach(function (trigger) {
+            var imgEl = trigger.querySelector('.chat-msg-image');
+            if (!imgEl) return;
+            result.push({
+                element: imgEl,
+                name: trigger.dataset.imgName || imgEl.alt || 'Image',
+                url: trigger.dataset.imgSrc || imgEl.src || '',
+            });
+        });
+        return result;
     }
 
     // ========================================
@@ -650,6 +785,29 @@
                 console.error('[Admin Chat] Failed to parse preview data:', parseErr);
             }
         }
+
+        // Image zoom modal — triggered by clicking the image or its wrapper link
+        const imgLink = e.target.closest('.chat-msg-image-zoom-trigger');
+        if (imgLink) {
+            e.preventDefault();
+            const imgUrl = imgLink.dataset.imgSrc || '';
+            const imgName = imgLink.dataset.imgName || '';
+            const imgEl = imgLink.querySelector('.chat-msg-image');
+            if (imgUrl && typeof ChatImageZoom !== 'undefined') {
+                // Collect all images in the current conversation for gallery navigation
+                const images = collectAdminGalleryImages();
+                const currentIdx = images.findIndex(function (im) {
+                    return im.url === imgUrl;
+                });
+                if (imgEl && imgEl.complete) {
+                    ChatImageZoom.open(imgEl, imgName, images, currentIdx >= 0 ? currentIdx : 0);
+                } else {
+                    ChatImageZoom.openUrl(imgUrl, imgName, images, currentIdx >= 0 ? currentIdx : 0);
+                }
+            } else if (imgUrl) {
+                window.open(imgUrl, '_blank', 'noopener,noreferrer');
+            }
+        }
     });
 
     // ========================================
@@ -659,6 +817,7 @@
         const text = adminInput.value.trim();
         const hasFile = !!pendingFile;
         if (!text && !hasFile) return;
+        isReplyPending = true;
 
         adminInput.value = '';
 
@@ -729,13 +888,22 @@
                 } else {
                     tempFileMsg.style.opacity = '0.5';
                     tempFileMsg.title = 'পাঠানো ব্যর্থ';
-                    alert('ফাইল পাঠানো যায়নি: ' + (data.message || 'অজানা ত্রুটি'));
+                    if (typeof SweetAlertUtil !== 'undefined') {
+                        SweetAlertUtil.toast('ফাইল পাঠানো যায়নি: ' + (data.message || 'অজানা ত্রুটি'), 'error');
+                    } else {
+                        alert('ফাইল পাঠানো যায়নি: ' + (data.message || 'অজানা ত্রুটি'));
+                    }
                 }
             } catch (e) {
                 tempFileMsg.style.opacity = '0.5';
                 tempFileMsg.title = 'পাঠানো ব্যর্থ';
-                alert('ফাইল পাঠানো যায়নি।');
+                if (typeof SweetAlertUtil !== 'undefined') {
+                    SweetAlertUtil.toast('ফাইল পাঠানো যায়নি।', 'error');
+                } else {
+                    alert('ফাইল পাঠানো যায়নি।');
+                }
             }
+            isReplyPending = false;
             return;
         }
 
@@ -760,15 +928,24 @@
             } else {
                 tempMsg.style.opacity = '0.5';
                 tempMsg.title = 'পাঠানো ব্যর্থ';
-                alert('বার্তা পাঠানো যায়নি: ' + (data.message || 'অজানা ত্রুটি'));
+                if (typeof SweetAlertUtil !== 'undefined') {
+                    SweetAlertUtil.toast('বার্তা পাঠানো যায়নি: ' + (data.message || 'অজানা ত্রুটি'), 'error');
+                } else {
+                    alert('বার্তা পাঠানো যায়নি: ' + (data.message || 'অজানা ত্রুটি'));
+                }
             }
         } catch (e) {
             tempMsg.style.opacity = '0.5';
             tempMsg.title = 'পাঠানো ব্যর্থ';
-            alert('বার্তা পাঠানো যায়নি। আবার চেষ্টা করুন।');
+            if (typeof SweetAlertUtil !== 'undefined') {
+                SweetAlertUtil.toast('বার্তা পাঠানো যায়নি। আবার চেষ্টা করুন।', 'error');
+            } else {
+                alert('বার্তা পাঠানো যায়নি। আবার চেষ্টা করুন।');
+            }
         } finally {
             adminSendBtn.disabled = false;
             adminInput.focus();
+            isReplyPending = false;
         }
     }
 
@@ -795,10 +972,50 @@
         sendAdminTypingNotification();
     });
 
+    // Typing sound state
+    let _wasVisitorTyping = false;
+    let _typingAudioCtx = null;
+
+    function playTypingSound() {
+        try {
+            const AC = window.AudioContext || window.webkitAudioContext;
+            if (!AC) return;
+            if (!_typingAudioCtx) _typingAudioCtx = new AC();
+            const ctx = _typingAudioCtx;
+            const now = ctx.currentTime;
+
+            // Short filtered noise burst for a natural keyboard click
+            const bufferSize = Math.floor(ctx.sampleRate * 0.04);
+            const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+            const data = buffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) {
+                data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (ctx.sampleRate * 0.008));
+            }
+            const noise = ctx.createBufferSource();
+            noise.buffer = buffer;
+
+            const filter = ctx.createBiquadFilter();
+            filter.type = 'bandpass';
+            filter.frequency.value = 1800;
+            filter.Q.value = 1.5;
+
+            const gain = ctx.createGain();
+            gain.gain.setValueAtTime(0.06, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
+
+            noise.connect(filter);
+            filter.connect(gain);
+            gain.connect(ctx.destination);
+            noise.start(now);
+            noise.stop(now + 0.04);
+        } catch (e) {}
+    }
+
     function startTypingCheck() {
         if (typingCheckInterval) clearInterval(typingCheckInterval);
         let typingEl = document.getElementById('adminTypingIndicator');
         if (typingEl) typingEl.remove();
+        _wasVisitorTyping = false;
 
         if (activeSessionId) {
             typingCheckInterval = setInterval(function() {
@@ -806,19 +1023,33 @@
                 fetch('/api/chat/admin/typing?session_id=' + encodeURIComponent(activeSessionId))
                     .then(function(res) { return res.json(); })
                     .then(function(data) {
-                        if (data.status === 'success' && data.data && data.data.is_typing) {
-                            let el = document.getElementById('adminTypingIndicator');
-                            if (!el && adminMessages) {
-                                el = document.createElement('div');
-                                el.id = 'adminTypingIndicator';
-                                el.className = 'chat-typing chat-admin-typing visible';
-                                el.innerHTML = '<span></span><span></span><span></span>';
-                                adminMessages.appendChild(el);
-                                adminMessages.scrollTop = adminMessages.scrollHeight;
-                            } else if (el) {
-                                el.classList.add('visible');
+                        if (data.status === 'success' && data.data) {
+                            const isTyping = !!data.data.is_typing;
+
+                            // Play typing sound when visitor starts typing
+                            if (isTyping && !_wasVisitorTyping) {
+                                playTypingSound();
+                            }
+                            _wasVisitorTyping = isTyping;
+
+                            if (isTyping) {
+                                let el = document.getElementById('adminTypingIndicator');
+                                if (!el && adminMessages) {
+                                    el = document.createElement('div');
+                                    el.id = 'adminTypingIndicator';
+                                    el.className = 'chat-typing chat-admin-typing visible';
+                                    el.innerHTML = '<span></span><span></span><span></span>';
+                                    adminMessages.appendChild(el);
+                                    adminMessages.scrollTop = adminMessages.scrollHeight;
+                                } else if (el) {
+                                    el.classList.add('visible');
+                                }
+                            } else {
+                                const el = document.getElementById('adminTypingIndicator');
+                                if (el) el.remove();
                             }
                         } else {
+                            _wasVisitorTyping = false;
                             const el = document.getElementById('adminTypingIndicator');
                             if (el) el.remove();
                         }
@@ -832,6 +1063,7 @@
             clearInterval(typingCheckInterval);
             typingCheckInterval = null;
         }
+        _wasVisitorTyping = false;
         const el = document.getElementById('adminTypingIndicator');
         if (el) el.remove();
     }
@@ -839,9 +1071,14 @@
     // Cleanup on page unload
     window.addEventListener('beforeunload', function() {
         stopTypingCheck();
+        stopTotalUnreadPolling();
         if (_refreshTimer) {
             clearInterval(_refreshTimer);
             _refreshTimer = null;
+        }
+        if (_activeConversationTimer) {
+            clearInterval(_activeConversationTimer);
+            _activeConversationTimer = null;
         }
     });
 
@@ -856,20 +1093,32 @@
     // Close conversation (single handler with typing cleanup)
     closeConvBtn.addEventListener('click', async function() {
         if (!activeSessionId) return;
-        if (!confirm('এই কথোপকথনটি বন্ধ করবেন?')) return;
+        if (typeof SweetAlertUtil !== 'undefined') {
+            const confirmed = await SweetAlertUtil.question('কথোপকথন বন্ধ করুন', 'এই কথোপকথনটি বন্ধ করবেন?');
+            if (!confirmed.isConfirmed) return;
+        } else if (!confirm('এই কথোপকথনটি বন্ধ করবেন?')) {
+            return;
+        }
 
         try {
             const res = await fetch('/api/chat/admin/close/' + encodeURIComponent(activeSessionId), { method: 'POST' });
             const data = await res.json();
             if (data.status === 'success') {
                 stopTypingCheck();
+                const closedIndex = openConversationIds.indexOf(activeSessionId);
+                if (closedIndex >= 0) openConversationIds.splice(closedIndex, 1);
                 activeSessionId = null;
+                renderOpenTabs();
                 emptyState.style.display = 'flex';
                 viewContent.style.display = 'none';
                 loadConversations();
             }
         } catch (e) {
-            alert('বন্ধ করতে ব্যর্থ হয়েছে।');
+            if (typeof SweetAlertUtil !== 'undefined') {
+                SweetAlertUtil.toast('কথোপকথন বন্ধ করতে ব্যর্থ হয়েছে।', 'error');
+            } else {
+                alert('বন্ধ করতে ব্যর্থ হয়েছে।');
+            }
         }
     });
 
@@ -992,10 +1241,269 @@
         }
     });
 
+    // ========================================
+    // Autocomplete Reply while typing
+    // ========================================
+    const autocompleteDropdown = document.getElementById('adminAutocompleteDropdown');
+    const autocompleteResults = document.getElementById('adminAutocompleteResults');
+    let selectedAutocompleteIndex = -1;
+    let autocompleteTimer = null;
+
+    function filterCannedForAutocomplete(query) {
+        if (!query || query.trim().length < 2) {
+            autocompleteDropdown.classList.remove('open');
+            return [];
+        }
+        const q = query.toLowerCase();
+        return allCannedResponses.filter(function(item) {
+            return (item.title && item.title.toLowerCase().indexOf(q) !== -1) ||
+                   (item.message && item.message.toLowerCase().indexOf(q) !== -1);
+        }).slice(0, 8);
+    }
+
+    function renderAutocompleteSuggestions(results) {
+        autocompleteResults.innerHTML = '';
+        if (!results || results.length === 0) {
+            autocompleteDropdown.classList.remove('open');
+            return;
+        }
+
+        selectedAutocompleteIndex = -1;
+
+        results.forEach(function(item, idx) {
+            const el = document.createElement('div');
+            el.className = 'chat-autocomplete-item';
+            el.dataset.index = idx;
+            el.dataset.message = item.message;
+
+            const titleSpan = document.createElement('span');
+            titleSpan.className = 'chat-autocomplete-item-title';
+            titleSpan.textContent = item.title;
+
+            const previewSpan = document.createElement('span');
+            previewSpan.className = 'chat-autocomplete-item-preview';
+            let preview = item.message || '';
+            if (preview.length > 80) preview = preview.substring(0, 80) + '...';
+            previewSpan.textContent = preview;
+
+            el.appendChild(titleSpan);
+            el.appendChild(previewSpan);
+
+            el.addEventListener('click', function() {
+                applyAutocompleteMessage(item.message);
+            });
+
+            el.addEventListener('mouseenter', function() {
+                selectedAutocompleteIndex = idx;
+                updateAutocompleteHighlight();
+            });
+
+            autocompleteResults.appendChild(el);
+        });
+
+        autocompleteDropdown.classList.add('open');
+    }
+
+    function updateAutocompleteHighlight() {
+        const items = autocompleteResults.querySelectorAll('.chat-autocomplete-item');
+        items.forEach(function(el, idx) {
+            el.classList.toggle('selected', idx === selectedAutocompleteIndex);
+        });
+    }
+
+    function applyAutocompleteMessage(message) {
+        if (!message) return;
+        adminInput.value = message;
+        adminInput.focus();
+        adminInput.style.height = 'auto';
+        adminInput.style.height = Math.min(adminInput.scrollHeight, 80) + 'px';
+        autocompleteDropdown.classList.remove('open');
+        selectedAutocompleteIndex = -1;
+    }
+
+    // Handle input events for autocomplete
+    adminInput.addEventListener('input', function() {
+        // Debounced autocomplete (typing indicator handled by the original input listener)
+        if (autocompleteTimer) clearTimeout(autocompleteTimer);
+        autocompleteTimer = setTimeout(function() {
+            const query = adminInput.value;
+            // Close emoji/canned overlays when showing autocomplete
+            if (query.trim().length >= 2) {
+                adminEmojiPicker.classList.remove('open');
+                cannedPanel.classList.remove('open');
+                cannedBtn.classList.remove('active');
+            }
+            const results = filterCannedForAutocomplete(query);
+            renderAutocompleteSuggestions(results);
+        }, 250);
+    });
+
+    // Handle keyboard navigation in autocomplete
+    adminInput.addEventListener('keydown', function(e) {
+        if (!autocompleteDropdown.classList.contains('open')) {
+            // Let existing Enter handler work
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendReply();
+            }
+            return;
+        }
+
+        const items = autocompleteResults.querySelectorAll('.chat-autocomplete-item');
+        if (items.length === 0) return;
+
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            selectedAutocompleteIndex = Math.min(selectedAutocompleteIndex + 1, items.length - 1);
+            updateAutocompleteHighlight();
+            items[selectedAutocompleteIndex].scrollIntoView({ block: 'nearest' });
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            selectedAutocompleteIndex = Math.max(selectedAutocompleteIndex - 1, 0);
+            updateAutocompleteHighlight();
+            items[selectedAutocompleteIndex].scrollIntoView({ block: 'nearest' });
+        } else if (e.key === 'Enter' || e.key === 'Tab') {
+            e.preventDefault();
+            if (selectedAutocompleteIndex >= 0 && selectedAutocompleteIndex < items.length) {
+                const msg = items[selectedAutocompleteIndex].dataset.message;
+                applyAutocompleteMessage(msg);
+            } else {
+                // Fall through to send if no item selected
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    sendReply();
+                }
+            }
+        } else if (e.key === 'Escape') {
+            autocompleteDropdown.classList.remove('open');
+            selectedAutocompleteIndex = -1;
+        }
+    });
+
+    // Close autocomplete on outside click
+    document.addEventListener('click', function(e) {
+        if (autocompleteDropdown && !autocompleteDropdown.contains(e.target) && e.target !== adminInput) {
+            autocompleteDropdown.classList.remove('open');
+            selectedAutocompleteIndex = -1;
+        }
+    });
+
+    // ========================================
+    // Total Unread Count Badge
+    // ========================================
+    const totalUnreadBadge = document.getElementById('totalUnreadBadge');
+    let totalUnreadTimer = null;
+
+    async function fetchTotalUnread() {
+        try {
+            const res = await fetch('/api/chat/admin/unread/total');
+            const data = await res.json();
+            if (data.status === 'success') {
+                const count = parseInt(data.data.total) || 0;
+                updateTotalUnreadBadge(count);
+            }
+        } catch (e) {
+            // Silently fail
+        }
+    }
+
+    function updateTotalUnreadBadge(count) {
+        if (!totalUnreadBadge) return;
+        if (count > 0) {
+            totalUnreadBadge.textContent = count > 99 ? '99+' : count;
+            totalUnreadBadge.style.display = 'inline-flex';
+        } else {
+            totalUnreadBadge.style.display = 'none';
+        }
+    }
+
+    function startTotalUnreadPolling() {
+        fetchTotalUnread();
+        totalUnreadTimer = setInterval(fetchTotalUnread, 10000);
+    }
+
+    function stopTotalUnreadPolling() {
+        if (totalUnreadTimer) {
+            clearInterval(totalUnreadTimer);
+            totalUnreadTimer = null;
+        }
+    }
+
+    // ========================================
+    // Bulk Actions: Read All / Close All
+    // ========================================
+    const bulkReadAllBtn = document.getElementById('bulkReadAllBtn');
+    const bulkCloseAllBtn = document.getElementById('bulkCloseAllBtn');
+
+    bulkReadAllBtn.addEventListener('click', async function() {
+        if (isLoadingConversations) return;
+        this.disabled = true;
+        this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> প্রক্রিয়াকরণ...';
+
+        try {
+            const res = await fetch('/api/chat/admin/read-all', { method: 'POST' });
+            const data = await res.json();
+            if (data.status === 'success') {
+                // Update the total unread badge to 0 immediately
+                updateTotalUnreadBadge(0);
+                // Refresh conversations to update unread counts
+                await refreshFirstPage();
+                // If viewing a conversation, reload it
+                if (activeSessionId) {
+                    await refreshActiveConversation();
+                }
+            }
+        } catch (e) {
+            console.error('Failed to mark all as read:', e);
+            if (typeof SweetAlertUtil !== 'undefined') {
+                SweetAlertUtil.toast('সব বার্তা পঠিত করতে ব্যর্থ হয়েছে।', 'error');
+            } else {
+                alert('সব বার্তা পঠিত করতে ব্যর্থ হয়েছে।');
+            }
+        } finally {
+            this.disabled = false;
+            this.innerHTML = '<i class="fas fa-check-double"></i> সব পঠিত';
+        }
+    });
+
+    bulkCloseAllBtn.addEventListener('click', async function() {
+        if (typeof SweetAlertUtil !== 'undefined') {
+            const confirmed = await SweetAlertUtil.question('সব কথোপকথন বন্ধ করুন', 'আপনি কি সব সক্রিয় কথোপকথন বন্ধ করতে চান? এই কাজটি পূর্বাবস্থায় ফেরানো যাবে না।');
+            if (!confirmed.isConfirmed) return;
+        } else if (!confirm('আপনি কি সব সক্রিয় কথোপকথন বন্ধ করতে চান? এই কাজটি পূর্বাবস্থায় ফেরানো যাবে না।')) {
+            return;
+        }
+        this.disabled = true;
+        this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> প্রক্রিয়াকরণ...';
+
+        try {
+            const res = await fetch('/api/chat/admin/close-all', { method: 'POST' });
+            const data = await res.json();
+            if (data.status === 'success') {
+                // Clear active view
+                stopTypingCheck();
+                activeSessionId = null;
+                emptyState.style.display = 'flex';
+                viewContent.style.display = 'none';
+                // Reload conversation list
+                await loadConversations(false);
+            }
+        } catch (e) {
+            console.error('Failed to close all:', e);
+            if (typeof SweetAlertUtil !== 'undefined') {
+                SweetAlertUtil.toast('সব কথোপকথন বন্ধ করতে ব্যর্থ হয়েছে।', 'error');
+            } else {
+                alert('সব কথোপকথন বন্ধ করতে ব্যর্থ হয়েছে।');
+            }
+        } finally {
+            this.disabled = false;
+            this.innerHTML = '<i class="fas fa-times-circle"></i> সব বন্ধ';
+        }
+    });
+
     // Load canned responses on init
     loadCannedResponses();
 
-    // Send on Enter (Shift+Enter for new line)
+    // Send on Enter (Shift+Enter for new line) - Moved to autocomplete handler above
     adminInput.addEventListener('keydown', function(e) {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
@@ -1045,10 +1553,29 @@
         }
     }
 
-    let _refreshTimer = setInterval(refreshFirstPage, 10000);
+    // Start total unread badge polling
+    startTotalUnreadPolling();
 
-    // Initial load
-    loadConversations(false);
+    let _refreshTimer = setInterval(refreshFirstPage, 10000);
+    let _activeConversationTimer = setInterval(refreshActiveConversation, 5000);
+
+    // Initial load. A global admin FAB can pass the running session ID so the
+    // clicked notification opens that conversation directly.
+    loadConversations(false).then(function() {
+        const requestedSessionId = new URLSearchParams(window.location.search).get('session_id');
+        if (requestedSessionId && allConversations.some(function(conv) { return conv.session_id === requestedSessionId; })) {
+            loadConversation(requestedSessionId);
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }
+    });
+
+    // Refresh button - inline onclick migrated to addEventListener
+    var refreshBtn = document.getElementById('adminRefreshBtn');
+    if (refreshBtn) {
+        refreshBtn.addEventListener('click', function() {
+            location.reload();
+        });
+    }
 })();
 </script>
 {% endblock %}

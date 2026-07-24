@@ -4,200 +4,130 @@
 
 {% block head %}
 <style>
-.offline-container {
-    max-width: 1100px;
-    margin: 0 auto;
-    padding: 20px;
+.page-header-icon {
+    width: 48px; height: 48px;
+    background: var(--primary);
+    color: #fff;
+    border-radius: 12px;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 22px;
+    box-shadow: 0 4px 12px rgba(var(--primary-rgb, 0,139,139), 0.25);
 }
-.offline-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-    flex-wrap: wrap;
-    gap: 12px;
+.offline-header h3 { font-weight: 700; font-size: 1.25rem; margin: 0; color: var(--text-dark, #333); }
+.offline-header .page-subtitle { font-size: 0.85rem; color: #888; margin: 4px 0 0; }
+.stat-pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 5px 14px; border-radius: 20px;
+    font-size: 0.82rem; font-weight: 600;
+    letter-spacing: 0.2px;
 }
-.offline-header h3 {
-    margin: 0;
-    font-size: 1.3rem;
-    color: #333;
+.stat-pill.total { background: rgba(var(--primary-rgb, 0,139,139), 0.1); color: var(--primary, #008B8B); }
+.stat-pill.unread { background: rgba(220,53,69,0.08); color: #c62828; }
+.refresh-btn {
+    background: #fff; border: 1px solid var(--border, #D6D6D6);
+    color: #555; width: 38px; height: 38px; border-radius: 10px;
+    display: inline-flex; align-items: center; justify-content: center;
+    cursor: pointer; font-size: 16px; transition: all 0.2s;
 }
-.offline-header .offline-stats {
-    display: flex;
-    gap: 16px;
-    align-items: center;
-}
-.offline-stat-badge {
-    background: #e8f5e9;
-    color: #2e7d32;
-    padding: 4px 12px;
-    border-radius: 20px;
-    font-size: 0.85rem;
-    font-weight: 600;
-}
-.offline-stat-badge.unread {
-    background: #fce4ec;
-    color: #c62828;
-}
-.offline-list {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-}
-.offline-card {
-    background: #fff;
-    border: 1px solid #e0e0e0;
+.refresh-btn:hover { background: var(--primary, #008B8B); color: #fff; border-color: var(--primary, #008B8B); }
+.refresh-btn.spinning i { animation: spin 0.7s ease; }
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+.msg-card {
+    border: 1px solid var(--border-light, #E8E8E8);
     border-radius: 10px;
-    padding: 16px 20px;
-    transition: box-shadow 0.2s, border-color 0.2s;
-    position: relative;
+    background: #fff;
+    box-shadow: var(--shadow-sm, 0 1px 3px rgba(0,0,0,0.08));
+    transition: transform 0.18s, box-shadow 0.18s, border-color 0.18s;
 }
-.offline-card:hover {
-    box-shadow: 0 2px 12px rgba(0,0,0,0.08);
-    border-color: #bdbdbd;
+.msg-card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.07); border-color: #c4c4c4; }
+.msg-card.unread { border-left: 4px solid #e53935; }
+.msg-card.read { border-left: 4px solid transparent; }
+.msg-card .card-body { padding: 18px 22px; }
+
+.msg-name { font-weight: 700; font-size: 1rem; color: var(--text-dark, #333); }
+.msg-meta { font-size: 0.82rem; color: #888; display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.msg-meta a { color: var(--primary, #008B8B); text-decoration: none; }
+.msg-meta a:hover { text-decoration: underline; }
+.msg-time { font-size: 0.78rem; color: #aaa; white-space: nowrap; margin-left: auto; }
+.msg-body {
+    color: #444; font-size: 0.92rem; line-height: 1.7;
+    margin: 10px 0 14px; white-space: pre-wrap; word-break: break-word;
+    background: #fafbfc; border: 1px solid #f0f0f0; border-radius: 8px;
+    padding: 12px 14px;
 }
-.offline-card.unread {
-    border-left: 4px solid #e53935;
-    background: #fff8f8;
+
+.btn-action {
+    border: none; padding: 7px 16px; border-radius: 7px;
+    font-size: 0.82rem; font-weight: 500; cursor: pointer;
+    transition: all 0.2s; display: inline-flex; align-items: center; gap: 6px;
 }
-.offline-card-meta {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: 8px;
-    flex-wrap: wrap;
-    gap: 8px;
+.btn-read-action { background: rgba(var(--primary-rgb, 0,139,139), 0.1); color: var(--primary, #008B8B); }
+.btn-read-action:hover:not(:disabled) { background: var(--primary, #008B8B); color: #fff; }
+.btn-read-action:disabled { opacity: 0.4; cursor: default; }
+.btn-delete-action { background: rgba(220,53,69,0.08); color: #c62828; }
+.btn-delete-action:hover { background: rgba(220,53,69,0.15); }
+
+.empty-state {
+    text-align: center; padding: 70px 20px; color: #aaa;
 }
-.offline-card-name {
-    font-weight: 600;
-    font-size: 1rem;
-    color: #222;
+.empty-state .empty-icon-circle {
+    width: 80px; height: 80px; border-radius: 50%;
+    background: #f0f4f5; color: #b0b8bc;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 32px; margin-bottom: 16px;
 }
-.offline-card-contact {
-    font-size: 0.85rem;
-    color: #666;
-    margin-top: 2px;
+.empty-state .empty-title { font-size: 1.05rem; font-weight: 600; color: #888; margin-bottom: 4px; }
+.empty-state .empty-sub { font-size: 0.85rem; color: #bbb; }
+
+.load-more-wrap { text-align: center; margin-top: 20px; }
+.btn-load-more {
+    background: #fff; border: 1px solid var(--border, #D6D6D6); color: #555;
+    padding: 10px 30px; border-radius: 8px; font-weight: 500;
+    transition: all 0.2s; cursor: pointer;
 }
-.offline-card-contact a {
-    color: #1565c0;
-    text-decoration: none;
-}
-.offline-card-contact a:hover {
-    text-decoration: underline;
-}
-.offline-card-time {
-    font-size: 0.8rem;
-    color: #999;
-    white-space: nowrap;
-}
-.offline-card-message {
-    color: #444;
-    font-size: 0.92rem;
-    line-height: 1.6;
-    margin: 6px 0 10px;
-    white-space: pre-wrap;
-    word-break: break-word;
-}
-.offline-card-actions {
-    display: flex;
-    gap: 8px;
-    justify-content: flex-end;
-}
-.offline-card-actions button {
-    border: none;
-    padding: 6px 14px;
-    border-radius: 6px;
-    font-size: 0.82rem;
-    cursor: pointer;
-    transition: background 0.2s;
-    font-weight: 500;
-}
-.btn-read {
-    background: #e3f2fd;
-    color: #1565c0;
-}
-.btn-read:hover {
-    background: #bbdefb;
-}
-.btn-read:disabled {
-    opacity: 0.5;
-    cursor: default;
-}
-.btn-delete {
-    background: #fbe9e7;
-    color: #c62828;
-}
-.btn-delete:hover {
-    background: #ffccbc;
-}
-.offline-empty {
-    text-align: center;
-    padding: 60px 20px;
-    color: #999;
-}
-.offline-empty-icon {
-    font-size: 3rem;
-    margin-bottom: 12px;
-}
-.offline-empty-text {
-    font-size: 1.1rem;
-}
-.offline-load-more {
-    text-align: center;
-    margin-top: 20px;
-}
-.offline-load-more button {
-    background: #f5f5f5;
-    border: 1px solid #ddd;
-    padding: 10px 30px;
-    border-radius: 8px;
-    cursor: pointer;
-    font-size: 0.9rem;
-    color: #555;
-    transition: background 0.2s;
-}
-.offline-load-more button:hover {
-    background: #eee;
-}
-.offline-load-more button:disabled {
-    opacity: 0.6;
-    cursor: default;
-}
-@media (max-width: 600px) {
-    .offline-header {
-        flex-direction: column;
-        align-items: stretch;
-    }
-    .offline-card-meta {
-        flex-direction: column;
-    }
+.btn-load-more:hover { background: var(--primary, #008B8B); color: #fff; border-color: var(--primary, #008B8B); }
+.btn-load-more:disabled { opacity: 0.5; cursor: default; }
+
+@media (max-width: 576px) {
+    .msg-card .card-body { padding: 14px; }
+    .offline-header { gap: 14px; }
+    .msg-time { margin-left: 0; }
+    .msg-meta { gap: 6px; }
 }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="offline-container">
-    <div class="offline-header">
-        <div>
-            <h3>📩 অফলাইন ইনকোয়ারি বার্তা</h3>
-            <p style="margin:4px 0 0; color:#888; font-size:0.85rem;">দর্শকদের অফলাইনে পাঠানো বার্তা</p>
+    <div class="offline-header d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+        <div class="d-flex align-items-center gap-3">
+            <div class="page-header-icon">
+                <i class="fas fa-inbox"></i>
+            </div>
+            <div>
+                <h3>অফলাইন ইনকোয়ারি বার্তা</h3>
+                <p class="page-subtitle">দর্শকদের অফলাইনে পাঠানো বার্তা</p>
+            </div>
         </div>
-        <div class="offline-stats">
-            <span class="offline-stat-badge" id="totalBadge">মোট: ০</span>
-            <span class="offline-stat-badge unread" id="unreadBadge">অপঠিত: ০</span>
-            <button onclick="loadOfflineMessages()" style="background:#f5f5f5;border:1px solid #ddd;border-radius:6px;padding:6px 14px;cursor:pointer;" title="রিফ্রেশ">🔄 রিফ্রেশ</button>
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+            <span class="stat-pill total" id="totalBadge"><i class="fas fa-layer-group"></i> মোট: ০</span>
+            <span class="stat-pill unread" id="unreadBadge"><i class="fas fa-circle"></i> অপঠিত: ০</span>
+            <button class="refresh-btn" title="রিফ্রesh" id="offlineRefreshBtn">
+                <i class="fas fa-rotate-right"></i>
+            </button>
         </div>
     </div>
 
-    <div id="offlineList" class="offline-list">
-        <div class="offline-empty">
-            <div class="offline-empty-icon">📭</div>
-            <div class="offline-empty-text">লোড হচ্ছে...</div>
+    <div id="offlineList" class="offline-list d-flex flex-column gap-3">
+        <div class="empty-state">
+            <div class="empty-icon-circle"><i class="fas fa-spinner fa-spin"></i></div>
+            <div class="empty-title">লোড হচ্ছে...</div>
         </div>
     </div>
 
-    <div class="offline-load-more" id="offlineLoadMore" style="display:none;">
-        <button id="offlineLoadMoreBtn" onclick="loadMore()">আরো বার্তা দেখুন</button>
+    <div class="load-more-wrap" id="offlineLoadMore" style="display:none;">
+        <button id="offlineLoadMoreBtn" class="btn-load-more">আরো বার্তা দেখুন</button>
     </div>
 </div>
 
@@ -238,49 +168,48 @@
 
     function renderCard(msg) {
         const card = document.createElement('div');
-        card.className = 'offline-card' + (msg.is_read == 0 ? ' unread' : '');
+        card.className = 'msg-card' + (msg.is_read == 0 ? ' unread' : ' read');
         card.dataset.id = msg.id;
 
         const meta = document.createElement('div');
-        meta.className = 'offline-card-meta';
+        meta.className = 'msg-meta';
 
         const info = document.createElement('div');
         const nameSpan = document.createElement('div');
-        nameSpan.className = 'offline-card-name';
+        nameSpan.className = 'msg-name';
         nameSpan.textContent = msg.visitor_name || 'অজানা';
         info.appendChild(nameSpan);
 
         const contact = document.createElement('div');
-        contact.className = 'offline-card-contact';
         const contactParts = [];
         if (msg.visitor_phone) {
-            contactParts.push('📞 ' + escapeHtml(msg.visitor_phone));
+            contactParts.push('<i class="fas fa-phone-alt" style="font-size:11px;"></i> ' + escapeHtml(msg.visitor_phone));
         }
         if (msg.visitor_email) {
-            contactParts.push('✉️ <a href="mailto:' + escapeHtml(msg.visitor_email) + '">' + escapeHtml(msg.visitor_email) + '</a>');
+            contactParts.push('<i class="fas fa-envelope" style="font-size:11px;"></i> <a href="mailto:' + escapeHtml(msg.visitor_email) + '">' + escapeHtml(msg.visitor_email) + '</a>');
         }
-        contact.innerHTML = contactParts.join(' &middot; ') || '<span style="color:#bbb;">(কোনো যোগাযোগ তথ্য নেই)</span>';
+        contact.innerHTML = contactParts.join(' &nbsp;<span style="color:#ddd;">|</span>&nbsp; ') || '<span style="color:#bbb;">(কোনো যোগাযোগ তথ্য নেই)</span>';
         info.appendChild(contact);
         meta.appendChild(info);
 
         const timeSpan = document.createElement('div');
-        timeSpan.className = 'offline-card-time';
+        timeSpan.className = 'msg-time';
         timeSpan.textContent = formatTime(msg.created_at);
         meta.appendChild(timeSpan);
 
         card.appendChild(meta);
 
         const message = document.createElement('div');
-        message.className = 'offline-card-message';
+        message.className = 'msg-body';
         message.textContent = msg.message;
         card.appendChild(message);
 
         const actions = document.createElement('div');
-        actions.className = 'offline-card-actions';
+        actions.className = 'd-flex gap-2 justify-content-end';
 
         const readBtn = document.createElement('button');
-        readBtn.className = 'btn-read';
-        readBtn.textContent = msg.is_read == 1 ? '✓ পঠিত' : 'পঠিত হিসেবে চিহ্নিত';
+        readBtn.className = 'btn-action btn-read-action';
+        readBtn.innerHTML = '<i class="fas fa-check"></i> ' + (msg.is_read == 1 ? 'পঠিত' : 'পঠিত হিসেবে চিহ্নিত');
         readBtn.disabled = msg.is_read == 1;
         readBtn.addEventListener('click', function() {
             if (readBtn.disabled) return;
@@ -289,8 +218,8 @@
         actions.appendChild(readBtn);
 
         const deleteBtn = document.createElement('button');
-        deleteBtn.className = 'btn-delete';
-        deleteBtn.textContent = '🗑 মুছুন';
+        deleteBtn.className = 'btn-action btn-delete-action';
+        deleteBtn.innerHTML = '<i class="fas fa-trash-alt"></i> মুছুন';
         deleteBtn.addEventListener('click', function() {
             if (confirm('এই বার্তাটি মুছে ফেলবেন?')) {
                 deleteMessage(msg.id, card);
@@ -337,12 +266,16 @@
         }
     }
 
-    async function loadOfflineMessages() {
+    async function loadOfflineMessages(btnEl) {
         if (isLoading) return;
         isLoading = true;
         currentOffset = 0;
 
-        listEl.innerHTML = '<div class="offline-empty"><div class="offline-empty-icon">⏳</div><div class="offline-empty-text">লোড হচ্ছে...</div></div>';
+        if (btnEl && btnEl.classList) {
+            btnEl.classList.add('spinning');
+        }
+
+        listEl.innerHTML = '<div class="empty-state"><div class="empty-icon-circle"><i class="fas fa-spinner fa-spin"></i></div><div class="empty-title">লোড হচ্ছে...</div></div>';
         loadMoreEl.style.display = 'none';
 
         try {
@@ -352,7 +285,7 @@
             listEl.innerHTML = '';
 
             if (messages.length === 0) {
-                listEl.innerHTML = '<div class="offline-empty"><div class="offline-empty-icon">📭</div><div class="offline-empty-text">কোনো অফলাইন বার্তা নেই</div></div>';
+                listEl.innerHTML = '<div class="empty-state"><div class="empty-icon-circle"><i class="fas fa-inbox"></i></div><div class="empty-title">কোনো অফলাইন বার্তা নেই</div><div class="empty-sub">দর্শকরা অফলাইন ইনকোয়ারি পাঠালে এটি এখানে দেখাবে</div></div>';
                 hasMore = false;
             } else {
                 messages.forEach(function(msg) {
@@ -370,9 +303,12 @@
 
             updateStats();
         } catch (e) {
-            listEl.innerHTML = '<div class="offline-empty"><div class="offline-empty-icon">⚠️</div><div class="offline-empty-text">বার্তা লোড করতে ব্যর্থ হয়েছে</div></div>';
+            listEl.innerHTML = '<div class="empty-state"><div class="empty-icon-circle"><i class="fas fa-exclamation-triangle"></i></div><div class="empty-title">বার্তা লোড করতে ব্যর্থ হয়েছে</div></div>';
         } finally {
             isLoading = false;
+            if (btnEl) {
+                btnEl.classList.remove('spinning');
+            }
         }
     }
 
@@ -419,8 +355,9 @@
             const result = await res.json();
             if (result.status === 'success') {
                 cardEl.classList.remove('unread');
+                cardEl.classList.add('read');
                 btnEl.disabled = true;
-                btnEl.textContent = '✓ পঠিত';
+                btnEl.innerHTML = '<i class="fas fa-check"></i> পঠিত';
                 updateStats();
             } else {
                 alert(result.message || 'ব্যর্থ হয়েছে');
@@ -441,12 +378,13 @@
             });
             const result = await res.json();
             if (result.status === 'success') {
-                cardEl.style.transition = 'opacity 0.3s';
+                cardEl.style.transition = 'opacity 0.3s, transform 0.3s';
                 cardEl.style.opacity = '0';
+                cardEl.style.transform = 'translateX(20px)';
                 setTimeout(function() {
                     cardEl.remove();
                     if (listEl.children.length === 0) {
-                        listEl.innerHTML = '<div class="offline-empty"><div class="offline-empty-icon">📭</div><div class="offline-empty-text">কোনো অফলাইন বার্তা নেই</div></div>';
+                        listEl.innerHTML = '<div class="empty-state"><div class="empty-icon-circle"><i class="fas fa-inbox"></i></div><div class="empty-title">কোনো অফলাইন বার্তা নেই</div><div class="empty-sub">দর্শকরা অফলাইন ইনকোয়ারি পাঠালে এটি এখানে দেখাবে</div></div>';
                         loadMoreEl.style.display = 'none';
                     }
                     updateStats();
@@ -459,12 +397,25 @@
         }
     }
 
-    // Expose for inline onclick
-    window.loadOfflineMessages = loadOfflineMessages;
-    window.loadMore = loadMore;
-
     // Initial load
-    document.addEventListener('DOMContentLoaded', loadOfflineMessages);
+    document.addEventListener('DOMContentLoaded', function() {
+        const refreshBtn = document.getElementById('offlineRefreshBtn');
+        const loadMoreBtn = document.getElementById('offlineLoadMoreBtn');
+
+        if (refreshBtn) {
+            refreshBtn.addEventListener('click', function() {
+                loadOfflineMessages(refreshBtn);
+            });
+        }
+
+        if (loadMoreBtn) {
+            loadMoreBtn.addEventListener('click', function() {
+                loadMore();
+            });
+        }
+
+        loadOfflineMessages(refreshBtn);
+    });
 })();
 </script>
 {% endblock %}
