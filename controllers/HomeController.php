@@ -7,9 +7,9 @@
  * All logic is in modules/Services/HomeService.php.
  */
 
-global $router, $twig;
+global $router, $twig, $mysqli;
 
-$homeService = new HomeService();
+$homeService = new HomeService($mysqli);
 $pageConfigs = $homeService->getPageConfigs();
 
 // GET : Home page
