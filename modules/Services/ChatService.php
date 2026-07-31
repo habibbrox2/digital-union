@@ -391,6 +391,14 @@ class ChatService
     }
 
     /**
+     * Get the latest unread offline message.
+     */
+    public function getLatestOfflineMessage(): ?array
+    {
+        return $this->chatModel->getLatestOfflineMessage();
+    }
+
+    /**
      * Mark an offline message as read.
      */
     public function markOfflineRead(int $id): void
@@ -399,11 +407,51 @@ class ChatService
     }
 
     /**
+     * Mark all offline messages as read.
+     */
+    public function markAllOfflineRead(): int
+    {
+        return $this->chatModel->markAllOfflineRead();
+    }
+
+    /**
+     * Mark all offline messages as unread (undo).
+     */
+    public function markAllOfflineUnread(): int
+    {
+        return $this->chatModel->markAllOfflineUnread();
+    }
+
+    /**
+     * Delete all read offline messages.
+     */
+    public function deleteAllReadOfflineMessages(): int
+    {
+        return $this->chatModel->deleteAllReadOfflineMessages();
+    }
+
+    /**
      * Delete an offline message.
      */
     public function deleteOfflineMessage(int $id): void
     {
         $this->chatModel->deleteOfflineMessage($id);
+    }
+
+    /**
+     * Mark multiple offline messages as read.
+     */
+    public function batchMarkOfflineRead(array $ids): int
+    {
+        return $this->chatModel->batchMarkOfflineRead($ids);
+    }
+
+    /**
+     * Delete multiple offline messages.
+     */
+    public function batchDeleteOfflineMessages(array $ids): int
+    {
+        return $this->chatModel->batchDeleteOfflineMessages($ids);
     }
 
     public static function handleFileUpload(array $file): array

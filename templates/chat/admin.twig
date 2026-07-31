@@ -6,15 +6,31 @@
 
 {% block content %}
 <div class="container-fluid px-4 py-3">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <h5 class="mb-0 fw-bold" style="color: #008B8B;">
-            <i class="fas fa-comments me-2"></i>লাইভ চ্যাট সমূহ
-            <span class="chat-total-unread-badge" id="totalUnreadBadge" style="display:none;">0</span>
-        </h5>
-        <button class="btn btn-sm btn-outline-primary" id="adminRefreshBtn">
-            <i class="fas fa-sync-alt me-1"></i>রিফ্রেশ
+    <!-- Tab Navigation -->
+    <div class="chat-admin-tabs">
+        <button type="button" class="chat-admin-tab active" data-tab="live" id="chatTabLive">
+            <i class="fas fa-comments"></i>
+            <span>লাইভ চ্যাট</span>
+            <span class="chat-admin-tab-badge" id="totalUnreadBadge" style="display:none;">0</span>
         </button>
+        <button type="button" class="chat-admin-tab" data-tab="offline" id="chatTabOffline">
+            <i class="fas fa-inbox"></i>
+            <span>অফলাইন বার্তা</span>
+            <span class="chat-admin-tab-badge" id="offlineTabBadge" style="display:none;">0</span>
+        </button>
+        <div class="ms-auto chat-admin-header-actions">
+            <span class="stat-pill total" id="liveTotalBadge" style="display:none;">
+                <i class="fas fa-layer-group"></i> <span id="offlineTotalCount">0</span>
+            </span>
+            <button class="admin-refresh-btn" id="adminRefreshBtn">
+                <i class="fas fa-sync-alt"></i> রিফ্রেশ
+                <span class="admin-refresh-badge" id="refreshUnreadBadge" style="display:none;">0</span>
+            </button>
+        </div>
     </div>
+
+    <!-- Live Chat Section -->
+    <div class="chat-admin-section" id="chatSectionLive">
 
     <div class="card shadow-sm">
         <div class="card-body p-0">
@@ -107,7 +123,7 @@
                                         <div id="adminAutocompleteResults"></div>
                                     </div>
                                     <textarea class="chat-admin-input" id="adminChatInput" rows="2" placeholder="উত্তর লিখুন..." maxlength="1000"></textarea>
-                                    <button class="btn" id="adminSendBtn" style="background: #008B8B; color: #fff; border-radius: 10px; padding: 10px 20px; white-space: nowrap;">
+                                    <button class="btn chat-send-btn" id="adminSendBtn">
                                         <i class="fas fa-paper-plane me-1"></i>পাঠান
                                     </button>
                                 </div>
@@ -118,7 +134,62 @@
             </div>
         </div>
     </div>
+</div><!-- /chatSectionLive -->
+
+<!-- Offline Messages Section -->
+<div class="chat-admin-section" id="chatSectionOffline" style="display:none;">
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <div class="d-flex align-items-center justify-content-between flex-wrap gap-3 mb-3">
+                <div class="d-flex align-items-center gap-3">
+                    <label class="offline-select-all">
+                        <input type="checkbox" id="offlineSelectAll" title="সব নির্বাচন করুন">
+                        <span>সব নির্বাচন</span>
+                    </label>
+                    <span class="stat-pill total" id="offlineTotalCountBadge">
+                        <i class="fas fa-layer-group"></i> মোট: <span id="offlineTotalMessages">0</span>
+                    </span>
+                    <span class="stat-pill unread">
+                        <i class="fas fa-circle"></i> অপঠিত: <span id="offlineUnreadCount">0</span>
+                    </span>
+                </div>
+                <div class="d-flex gap-2">
+                    <button type="button" class="chat-bulk-btn chat-bulk-delete" id="offlineDeleteAllReadBtn" title="সব পঠিত বার্তা মুছুন">
+                        <i class="fas fa-trash-alt"></i> পঠিত মুছুন
+                    </button>
+                    <button type="button" class="chat-bulk-btn chat-bulk-read" id="offlineReadAllBtn" title="সব অফলাইন বার্তা পঠিত করুন">
+                        <i class="fas fa-check-double"></i> সব পঠিত
+                    </button>
+                </div>
+            </div>
+            <!-- Batch action bar for selected messages -->
+            <div class="offline-batch-bar" id="offlineBatchBar" style="display:none;">
+                <span class="offline-batch-count" id="offlineBatchCount">0টি নির্বাচিত</span>
+                <div class="offline-batch-actions">
+                    <button type="button" class="chat-bulk-btn chat-bulk-read" id="offlineBatchReadBtn" title="নির্বাচিত পঠিত করুন">
+                        <i class="fas fa-check-double"></i> পঠিত করুন
+                    </button>
+                    <button type="button" class="chat-bulk-btn chat-bulk-delete" id="offlineBatchDeleteBtn" title="নির্বাচিত মুছুন">
+                        <i class="fas fa-trash-alt"></i> মুছুন
+                    </button>
+                </div>
+            </div>
+            <div id="offlineList" class="d-flex flex-column gap-3">
+                <div class="offline-loading-state" id="offlineLoadingState">
+                    <div class="offline-loading-icon"><i class="fas fa-spinner fa-spin"></i></div>
+                    <div class="offline-loading-text">লোড হচ্ছে...</div>
+                    <div class="offline-loading-sub">অপেক্ষা করুন</div>
+                </div>
+            </div>
+            <div class="offline-load-more" id="offlineLoadMore" style="display:none;">
+                <button id="offlineLoadMoreBtn" class="offline-load-more-btn"><i class="fas fa-chevron-down"></i> আরো বার্তা দেখুন</button>
+            </div>
+        </div>
+    </div>
 </div>
+<!-- /chatSectionOffline -->
+
+</div><!-- /container-fluid -->
 {% endblock %}
 
 {% block scripts %}
@@ -129,6 +200,7 @@
     let activeSessionId = null;
     let pendingFile = null;
     const openConversationIds = [];
+    let activeTab = 'live';
 
     // Common emojis
     const EMOJIS = [
@@ -368,7 +440,7 @@
 
         const closeBtn = document.createElement('button');
         closeBtn.className = 'chat-preview-close';
-        closeBtn.innerHTML = '&times;';
+        closeBtn.textContent = '×';
         closeBtn.setAttribute('aria-label', 'Close preview');
         closeBtn.addEventListener('click', function () { overlay.remove(); });
         header.appendChild(closeBtn);
@@ -381,7 +453,7 @@
         if (type.indexOf('text/plain') !== -1 || type.indexOf('text/csv') !== -1) {
             const pre = document.createElement('pre');
             pre.className = 'chat-preview-text';
-            pre.textContent = '\u09b2\u09cb\u09a1 \u09b9\u099a\u09cd\u099b\u09c7...';
+            pre.textContent = 'লোড হচ্ছে...';
             body.appendChild(pre);
             container.appendChild(body);
             overlay.appendChild(container);
@@ -390,7 +462,7 @@
             fetch(msg.file_url)
                 .then(function (r) { return r.text(); })
                 .then(function (txt) { pre.textContent = txt; })
-                .catch(function () { pre.textContent = '\u09ab\u09be\u0987\u09b2 \u09b2\u09cb\u09a1 \u0995\u09b0\u09be \u09af\u09be\u09df\u09a8\u09bf\u0964'; });
+                .catch(function () { pre.textContent = 'ফাইল লোড করা যায়নি।'; });
             return;
         }
 
@@ -454,7 +526,7 @@
                 html += '</span></a>';                    // Preview button for previewable files
                 if (isPreviewableFile(msg)) {
                     html += '<button type="button" class="chat-msg-preview-btn" data-preview-msg="' + escapeAttr(JSON.stringify(msg)) + '">';
-                    html += '<i class="fas fa-eye"></i> \u09aa\u09cd\u09b0\u09bf\u09ad\u09bf\u0989';
+                    html += '<i class="fas fa-eye"></i> প্রিভিউ';
                     html += '</button>';
                 }
             }
@@ -1080,6 +1152,10 @@
             clearInterval(_activeConversationTimer);
             _activeConversationTimer = null;
         }
+        if (_offlineRefreshTimer) {
+            clearInterval(_offlineRefreshTimer);
+            _offlineRefreshTimer = null;
+        }
     });
 
     // Merge typing into loadConversation
@@ -1434,13 +1510,19 @@
     const bulkReadAllBtn = document.getElementById('bulkReadAllBtn');
     const bulkCloseAllBtn = document.getElementById('bulkCloseAllBtn');
 
-    bulkReadAllBtn.addEventListener('click', async function() {
-        if (isLoadingConversations) return;
-        this.disabled = true;
-        this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> প্রক্রিয়াকরণ...';
+bulkReadAllBtn.addEventListener('click', async function() {
+    if (isLoadingConversations) return;
+    if (typeof SweetAlertUtil !== 'undefined') {
+        const confirmed = await SweetAlertUtil.question('সব পঠিত করুন', 'সকল সক্রিয় কথোপকথন পঠিত হিসেবে চিহ্নিত করবেন?');
+        if (!confirmed.isConfirmed) return;
+    } else if (!confirm('সকল সক্রিয় কথোপকথন পঠিত হিসেবে চিহ্নিত করবেন?')) {
+        return;
+    }
+    this.disabled = true;
+    this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> প্রক্রিয়াকরণ...';
 
-        try {
-            const res = await fetch('/api/chat/admin/read-all', { method: 'POST' });
+    try {
+        const res = await fetch('/api/chat/admin/read-all', { method: 'POST' });
             const data = await res.json();
             if (data.status === 'success') {
                 // Update the total unread badge to 0 immediately
@@ -1558,6 +1640,7 @@
 
     let _refreshTimer = setInterval(refreshFirstPage, 10000);
     let _activeConversationTimer = setInterval(refreshActiveConversation, 5000);
+    let _offlineRefreshTimer = null;
 
     // Initial load. A global admin FAB can pass the running session ID so the
     // clicked notification opens that conversation directly.
@@ -1569,13 +1652,655 @@
         }
     });
 
-    // Refresh button - inline onclick migrated to addEventListener
+    // Refresh button - delegates to offline reload when on that tab
     var refreshBtn = document.getElementById('adminRefreshBtn');
+    function doRefresh() {
+        if (activeTab === 'offline') {
+            loadOfflineMessages();
+        } else if (activeTab === 'live') {
+            refreshFirstPage();
+        }
+    }
+
     if (refreshBtn) {
-        refreshBtn.addEventListener('click', function() {
-            location.reload();
+        refreshBtn.addEventListener('click', doRefresh);
+    }
+
+    // Keyboard shortcut: R to refresh (works regardless of button presence)
+    document.addEventListener('keydown', function(e) {
+        // Ignore if user is typing in an input, textarea, or contenteditable
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable) return;
+        if (e.key === 'r' || e.key === 'R') {
+            e.preventDefault();
+            doRefresh();
+        }
+    });
+    // ========================================
+    // TAB SWITCHING — Live Chat / Offline Messages
+    // ========================================
+    const chatTabLive = document.getElementById('chatTabLive');
+    const chatTabOffline = document.getElementById('chatTabOffline');
+    const chatSectionLive = document.getElementById('chatSectionLive');
+    const chatSectionOffline = document.getElementById('chatSectionOffline');
+    const offlineTabBadge = document.getElementById('offlineTabBadge');
+    const refreshUnreadBadge = document.getElementById('refreshUnreadBadge');
+
+    function switchTab(tab) {
+        activeTab = tab;
+        document.querySelectorAll('.chat-admin-tab').forEach(function(btn) {
+            btn.classList.toggle('active', btn.dataset.tab === tab);
+        });
+        chatSectionLive.style.display = tab === 'live' ? '' : 'none';
+        chatSectionOffline.style.display = tab === 'offline' ? '' : 'none';
+
+        if (tab === 'offline') {
+            loadOfflineMessages();
+            stopTypingCheck();
+
+            // Stop live timers to save resources
+            if (_refreshTimer) {
+                clearInterval(_refreshTimer);
+                _refreshTimer = null;
+            }
+            if (_activeConversationTimer) {
+                clearInterval(_activeConversationTimer);
+                _activeConversationTimer = null;
+            }
+
+            // Start auto-refresh for offline messages every 15s
+            if (!_offlineRefreshTimer) {
+                _offlineRefreshTimer = setInterval(loadOfflineMessages, 15000);
+            }
+        } else if (tab === 'live') {
+            // Stop offline refresh when switching to live
+            if (_offlineRefreshTimer) {
+                clearInterval(_offlineRefreshTimer);
+                _offlineRefreshTimer = null;
+            }
+
+            // Restart live timers if not running
+            if (!_refreshTimer) {
+                _refreshTimer = setInterval(refreshFirstPage, 10000);
+            }
+            if (!_activeConversationTimer) {
+                _activeConversationTimer = setInterval(refreshActiveConversation, 5000);
+            }
+
+            // Hide refresh badge when leaving offline tab
+            if (refreshUnreadBadge) {
+                refreshUnreadBadge.style.display = 'none';
+            }
+        }
+
+        // Update URL hash without triggering navigation
+        var url = new URL(window.location);
+        if (tab === 'offline') {
+            url.searchParams.set('tab', 'offline');
+        } else {
+            url.searchParams.delete('tab');
+        }
+        window.history.replaceState(null, '', url.toString());
+    }
+
+    chatTabLive.addEventListener('click', function() { switchTab('live'); });
+    chatTabOffline.addEventListener('click', function() { switchTab('offline'); });
+
+    // ========================================
+    // ========================================
+    // OFFLINE MESSAGES — Selection & Batch
+    // ========================================
+
+    const selectedIds = new Set();
+    const offlineSelectAll = document.getElementById('offlineSelectAll');
+    const offlineBatchBar = document.getElementById('offlineBatchBar');
+    const offlineBatchCount = document.getElementById('offlineBatchCount');
+    const offlineBatchReadBtn = document.getElementById('offlineBatchReadBtn');
+    const offlineBatchDeleteBtn = document.getElementById('offlineBatchDeleteBtn');
+
+    function updateOfflineBatchBar() {
+        var count = selectedIds.size;
+        if (offlineBatchBar) {
+            offlineBatchBar.style.display = count > 0 ? 'flex' : 'none';
+        }
+        if (offlineBatchCount) {
+            offlineBatchCount.textContent = count + ' টি নির্বাচিত';
+        }
+        if (offlineSelectAll) {
+            var allCbs = offlineListEl.querySelectorAll('.offline-msg-checkbox');
+            var checkedCbs = offlineListEl.querySelectorAll('.offline-msg-checkbox:checked').length;
+            offlineSelectAll.checked = allCbs.length > 0 && checkedCbs === allCbs.length;
+            offlineSelectAll.indeterminate = checkedCbs > 0 && checkedCbs < allCbs.length;
+        }
+        offlineListEl.querySelectorAll('.offline-message-card').forEach(function(card) {
+            var cb = card.querySelector('.offline-msg-checkbox');
+            if (cb) card.classList.toggle('selected', cb.checked);
         });
     }
+
+    if (offlineSelectAll) {
+        offlineSelectAll.addEventListener('change', function() {
+            var checked = this.checked;
+            offlineListEl.querySelectorAll('.offline-msg-checkbox').forEach(function(cb) {
+                cb.checked = checked;
+                var msgId = parseInt(cb.dataset.msgId);
+                if (checked) selectedIds.add(msgId);
+                else selectedIds.delete(msgId);
+            });
+            updateOfflineBatchBar();
+        });
+    }
+
+    if (offlineBatchReadBtn) {
+        offlineBatchReadBtn.addEventListener('click', async function() {
+            var ids = Array.from(selectedIds);
+            if (ids.length === 0) return;
+            this.disabled = true;
+            this.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            try {
+                var res = await fetch('/api/chat/admin/offline/batch-read', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ ids: ids })
+                });
+                var result = await res.json();
+                if (result.status === 'success') {
+                    selectedIds.clear();
+                    updateOfflineBatchBar();
+                    loadOfflineMessages();
+                    if (typeof SweetAlertUtil !== 'undefined') {
+                        SweetAlertUtil.toast('নির্বাচিত বার্তা পঠিত করা হয়েছে', 'success');
+                    }
+                }
+            } catch (e) {
+                console.error('Batch mark read failed:', e);
+            } finally {
+                this.disabled = false;
+                this.innerHTML = '<i class="fas fa-check-double"></i> পঠিত করুন';
+            }
+        });
+    }
+
+    if (offlineBatchDeleteBtn) {
+        offlineBatchDeleteBtn.addEventListener('click', async function() {
+            var ids = Array.from(selectedIds);
+            if (ids.length === 0) return;
+            if (typeof SweetAlertUtil !== 'undefined') {
+                var confirmed = await SweetAlertUtil.question('বার্তা মুছুন', ids.length + ' টি বার্তা মুছে ফেলবেন?', { confirmButtonColor: '#dc3545', confirmButtonText: 'মুছুন' });
+                if (!confirmed.isConfirmed) return;
+            } else if (!confirm(ids.length + ' টি বার্তা মুছে ফেলবেন?')) {
+                return;
+            }
+            this.disabled = true;
+            this.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            try {
+                var res = await fetch('/api/chat/admin/offline/batch-delete', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ ids: ids })
+                });
+                var result = await res.json();
+                if (result.status === 'success') {
+                    selectedIds.clear();
+                    updateOfflineBatchBar();
+                    offlineOffset = 0;
+                    loadOfflineMessages();
+                    if (typeof SweetAlertUtil !== 'undefined') {
+                        SweetAlertUtil.toast('নির্বাচিত বার্তা মুছে ফেলা হয়েছে', 'success');
+                    }
+                }
+            } catch (e) {
+                console.error('Batch delete failed:', e);
+            } finally {
+                this.disabled = false;
+                this.innerHTML = '<i class="fas fa-trash-alt"></i> মুছুন';
+            }
+        });
+    }
+
+    // ========================================
+    // OFFLINE MESSAGES — Load, Read, Delete
+    // ========================================
+    const OFFLINE_PAGE_SIZE = 20;
+    let offlineOffset = 0;
+    let offlineHasMore = false;
+    let offlineLoading = false;
+    const offlineListEl = document.getElementById('offlineList');
+    const offlineLoadMoreEl = document.getElementById('offlineLoadMore');
+    const offlineTotalEl = document.getElementById('offlineTotalMessages');
+    const offlineUnreadEl = document.getElementById('offlineUnreadCount');
+
+    function offlineEscapeHtml(text) {
+        if (typeof text !== 'string') return '';
+        var div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    function offlineFormatTime(dateStr) {
+        var d = new Date(dateStr);
+        var now = new Date();
+        var hrs = d.getHours().toString().padStart(2, '0');
+        var mins = d.getMinutes().toString().padStart(2, '0');
+        var today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        var msgDate = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+        var diffDays = Math.floor((today - msgDate) / (1000 * 60 * 60 * 24));
+        if (diffDays === 0) return 'আজ ' + hrs + ':' + mins;
+        if (diffDays === 1) return 'গতকাল ' + hrs + ':' + mins;
+        return d.getDate().toString().padStart(2, '0') + '/' + (d.getMonth() + 1).toString().padStart(2, '0') + '/' + d.getFullYear();
+    }
+
+    function renderOfflineCard(msg) {
+        var card = document.createElement('div');
+        card.className = 'offline-message-card' + (msg.is_read == 0 ? ' unread' : ' read');
+        card.dataset.id = msg.id;
+
+        // Checkbox
+        var cbWrapper = document.createElement('div');
+        cbWrapper.className = 'offline-card-checkbox';
+        var cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.className = 'offline-msg-checkbox';
+        cb.dataset.msgId = msg.id;
+        cb.addEventListener('change', function() {
+            if (this.checked) {
+                selectedIds.add(msg.id);
+            } else {
+                selectedIds.delete(msg.id);
+            }
+            updateOfflineBatchBar();
+        });
+        cbWrapper.appendChild(cb);
+        card.appendChild(cbWrapper);
+
+        // Avatar
+        var avatar = document.createElement('div');
+        avatar.className = 'offline-message-avatar';
+        avatar.textContent = (msg.visitor_name || 'অ').charAt(0).toUpperCase();
+        card.appendChild(avatar);
+
+        // Body
+        var body = document.createElement('div');
+        body.className = 'offline-message-body';
+
+        var nameEl = document.createElement('div');
+        nameEl.className = 'offline-message-name';
+        nameEl.textContent = msg.visitor_name || 'অজানা';
+        body.appendChild(nameEl);
+
+        var contactEl = document.createElement('div');
+        contactEl.className = 'offline-message-contact';
+        var contactParts = [];
+        if (msg.visitor_phone) {
+            contactParts.push('<i class="fas fa-phone-alt"></i> ' + offlineEscapeHtml(msg.visitor_phone));
+        }
+        if (msg.visitor_email) {
+            contactParts.push('<i class="fas fa-envelope"></i> <a href="mailto:' + offlineEscapeHtml(msg.visitor_email) + '">' + offlineEscapeHtml(msg.visitor_email) + '</a>');
+        }
+        contactEl.innerHTML = contactParts.join(' &nbsp;·&nbsp; ');
+        body.appendChild(contactEl);
+
+        var messageEl = document.createElement('div');
+        messageEl.className = 'offline-message-text';
+        messageEl.textContent = msg.message;
+        body.appendChild(messageEl);
+
+        var meta = document.createElement('div');
+        meta.className = 'offline-message-meta';
+        meta.innerHTML = '<i class="far fa-clock"></i> ' + offlineFormatTime(msg.created_at);
+        body.appendChild(meta);
+
+        card.appendChild(body);
+
+        // Actions
+        var actions = document.createElement('div');
+        actions.className = 'offline-message-actions';
+
+        var readBtn = document.createElement('button');
+        readBtn.className = 'btn btn-sm';
+        readBtn.style.cssText = 'background:rgba(0,139,139,0.1);color:#008B8B;border:none;';
+        readBtn.innerHTML = '<i class="fas fa-check"></i> ' + (msg.is_read == 1 ? 'পঠিত' : 'পঠিত হিসেবে চিহ্নিত');
+        readBtn.disabled = msg.is_read == 1;
+        readBtn.addEventListener('click', function() {
+            if (readBtn.disabled) return;
+            offlineMarkRead(msg.id, card, readBtn);
+        });
+        actions.appendChild(readBtn);
+
+        var deleteBtn = document.createElement('button');
+        deleteBtn.className = 'btn btn-sm';
+        deleteBtn.style.cssText = 'background:rgba(220,53,69,0.08);color:#c62828;border:none;';
+        deleteBtn.innerHTML = '<i class="fas fa-trash-alt"></i> মুছুন';
+        deleteBtn.addEventListener('click', function() {
+            if (confirm('এই বার্তাটি মুছে ফেলবেন?')) {
+                offlineDeleteMessage(msg.id, card);
+            }
+        });
+        actions.appendChild(deleteBtn);
+
+        body.appendChild(actions);
+        card.appendChild(body);
+        return card;
+    }
+
+    async function fetchOfflineMessages(offset) {
+        var res = await fetch('/api/chat/admin/offline?offset=' + offset + '&limit=' + OFFLINE_PAGE_SIZE, {
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        });
+        var result = await res.json();
+        if (result.status !== 'success') throw new Error(result.message || 'Failed to load');
+        return result;
+    }
+
+    async function fetchOfflineUnreadCount() {
+        try {
+            var res = await fetch('/api/chat/admin/offline/count', {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            });
+            var text = await res.text();
+            return parseInt(text) || 0;
+        } catch (e) {
+            return 0;
+        }
+    }
+
+    async function updateOfflineStats() {
+        try {
+            var [offlineData, unreadCount] = await Promise.all([
+                fetchOfflineMessages(0),
+                fetchOfflineUnreadCount()
+            ]);
+            offlineTotalEl.textContent = offlineData.has_more ? (OFFLINE_PAGE_SIZE + '+') : (offlineData.data ? offlineData.data.length : 0);
+            offlineUnreadEl.textContent = unreadCount;
+            // Update tab badge and icon indicator
+            if (offlineTabBadge) {
+                if (unreadCount > 0) {
+                    offlineTabBadge.textContent = unreadCount > 99 ? '99+' : unreadCount;
+                    offlineTabBadge.style.display = 'inline-flex';
+                } else {
+                    offlineTabBadge.style.display = 'none';
+                }
+            }
+            // Toggle visual indicator on offline tab icon
+            var offlineTab = document.getElementById('chatTabOffline');
+            if (offlineTab) {
+                offlineTab.classList.toggle('has-unread', unreadCount > 0);
+            }
+            // Update refresh button badge
+            if (refreshUnreadBadge) {
+                if (unreadCount > 0 && activeTab === 'offline') {
+                    refreshUnreadBadge.textContent = unreadCount > 99 ? '99+' : unreadCount;
+                    refreshUnreadBadge.style.display = 'inline-flex';
+                } else {
+                    refreshUnreadBadge.style.display = 'none';
+                }
+            }
+        } catch (e) {}
+    }
+
+    async function loadOfflineMessages() {
+        if (offlineLoading) return;
+        offlineLoading = true;
+        offlineOffset = 0;
+        selectedIds.clear();
+
+        offlineListEl.innerHTML = '<div class="offline-loading-state"><div class="offline-loading-icon"><i class="fas fa-spinner fa-spin"></i></div><div class="offline-loading-text">লোড হচ্ছে...</div></div>';
+        offlineLoadMoreEl.style.display = 'none';
+
+        try {
+            var result = await fetchOfflineMessages(0);
+            var messages = result.data || [];
+
+            offlineListEl.innerHTML = '';
+
+            if (messages.length === 0) {
+                offlineListEl.innerHTML = '<div class="offline-empty-state"><div class="offline-empty-icon"><i class="fas fa-inbox"></i></div><div class="offline-empty-text">কোনো অফলাইন বার্তা নেই</div><div class="offline-empty-sub">দর্শকরা অফলাইন ইনকোয়ারি পাঠালে এটি এখানে দেখাবে</div></div>';
+                offlineHasMore = false;
+            } else {
+                messages.forEach(function(msg) {
+                    offlineListEl.appendChild(renderOfflineCard(msg));
+                });
+                offlineOffset = messages.length;
+                offlineHasMore = result.has_more;
+            }
+
+            offlineLoadMoreEl.style.display = offlineHasMore ? '' : 'none';
+            updateOfflineStats();
+        } catch (e) {
+            offlineListEl.innerHTML = '<div class="offline-empty-state"><div class="offline-empty-icon" style="color:#dc3545;"><i class="fas fa-exclamation-triangle"></i></div><div class="offline-empty-text">বার্তা লোড করতে ব্যর্থ হয়েছে</div></div>';
+        } finally {
+            offlineLoading = false;
+        }
+    }
+
+    document.getElementById('offlineLoadMoreBtn').addEventListener('click', async function() {
+        if (offlineLoading || !offlineHasMore) return;
+        offlineLoading = true;
+        this.disabled = true;
+        this.textContent = 'লোড হচ্ছে...';
+
+        try {
+            var result = await fetchOfflineMessages(offlineOffset);
+            var messages = result.data || [];
+            messages.forEach(function(msg) {
+                offlineListEl.appendChild(renderOfflineCard(msg));
+            });
+            offlineOffset += messages.length;
+            offlineHasMore = result.has_more;
+            if (!offlineHasMore) {
+                offlineLoadMoreEl.style.display = 'none';
+            }
+        } catch (e) {
+            alert('বার্তা লোড করতে ব্যর্থ হয়েছে');
+        } finally {
+            offlineLoading = false;
+            this.disabled = false;
+            this.textContent = 'আরো বার্তা দেখুন';
+        }
+    });
+
+    // Mark all offline messages as read
+    document.getElementById('offlineReadAllBtn').addEventListener('click', async function() {
+        if (offlineLoading) return;
+
+        // Confirm before bulk action
+        if (typeof SweetAlertUtil !== 'undefined') {
+            var confirmed = await SweetAlertUtil.question('সব অফলাইন বার্তা পঠিত করুন', 'সব অফলাইন বার্তা পঠিত হিসেবে চিহ্নিত করবেন?');
+            if (!confirmed.isConfirmed) return;
+        } else if (!confirm('সব অফলাইন বার্তা পঠিত হিসেবে চিহ্নিত করবেন?')) {
+            return;
+        }
+
+        this.disabled = true;
+        this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> প্রক্রিয়াকরণ...';
+
+        try {
+            var res = await fetch('/api/chat/admin/offline/read-all', { method: 'POST' });
+            var result = await res.json();
+            if (result.status === 'success') {
+                // Update all cards to show as read
+                offlineListEl.querySelectorAll('.offline-message-card').forEach(function(card) {
+                    card.classList.remove('unread');
+                    card.classList.add('read');
+                    var readBtn = card.querySelector('button');
+                    if (readBtn && readBtn.disabled === false) {
+                        readBtn.disabled = true;
+                        readBtn.innerHTML = '<i class="fas fa-check"></i> পঠিত';
+                    }
+                });
+                updateOfflineStats();
+                // Show undo toast
+                if (typeof SweetAlertUtil !== 'undefined') {
+                    var UndoToast = Swal.mixin({
+                        toast: true,
+                        position: 'top-end',
+                        showConfirmButton: true,
+                        confirmButtonText: 'পূর্বাবস্থায় ফিরুন',
+                        confirmButtonColor: '#008B8B',
+                        timer: 8000,
+                        timerProgressBar: true,
+                        didOpen: function(toast) {
+                            toast.addEventListener('mouseenter', Swal.stopTimer);
+                            toast.addEventListener('mouseleave', Swal.resumeTimer);
+                        }
+                    });
+                    UndoToast.fire({
+                        icon: 'success',
+                        title: 'সব অফলাইন বার্তা পঠিত করা হয়েছে',
+                    }).then(function(undoResult) {
+                        if (undoResult.isConfirmed) {
+                            // Undo — mark all as unread
+                            fetch('/api/chat/admin/offline/unread-all', { method: 'POST' })
+                                .then(function(undoRes) { return undoRes.json(); })
+                                .then(function(undoData) {
+                                    if (undoData.status === 'success') {
+                                        // Restore cards to unread state
+                                        offlineListEl.querySelectorAll('.offline-message-card').forEach(function(card) {
+                                            card.classList.remove('read');
+                                            card.classList.add('unread');
+                                            var readBtn = card.querySelector('button');
+                                            if (readBtn) {
+                                                readBtn.disabled = false;
+                                                readBtn.innerHTML = '<i class="fas fa-check"></i> পঠিত হিসেবে চিহ্নিত';
+                                            }
+                                        });
+                                        updateOfflineStats();
+                                        if (typeof SweetAlertUtil !== 'undefined') {
+                                            SweetAlertUtil.toast('পূর্বাবস্থায় ফিরিয়ে আনা হয়েছে', 'success');
+                                        }
+                                    } else {
+                                        if (typeof SweetAlertUtil !== 'undefined') {
+                                            SweetAlertUtil.toast('পূর্বাবস্থায় ফিরাতে ব্যর্থ হয়েছে', 'error');
+                                        }
+                                    }
+                                })
+                                .catch(function() {
+                                    if (typeof SweetAlertUtil !== 'undefined') {
+                                        SweetAlertUtil.toast('পূর্বাবস্থায় ফিরাতে ব্যর্থ হয়েছে', 'error');
+                                    }
+                                });
+                        }
+                    });
+                }
+            } else {
+                if (typeof SweetAlertUtil !== 'undefined') {
+                    SweetAlertUtil.toast('ব্যর্থ হয়েছে: ' + (result.message || 'অজানা ত্রুটি'), 'error');
+                } else {
+                    alert('ব্যর্থ হয়েছে: ' + (result.message || 'অজানা ত্রুটি'));
+                }
+            }
+        } catch (e) {
+            if (typeof SweetAlertUtil !== 'undefined') {
+                SweetAlertUtil.toast('সব বার্তা পঠিত করতে ব্যর্থ হয়েছে।', 'error');
+            } else {
+                alert('সব বার্তা পঠিত করতে ব্যর্থ হয়েছে।');
+            }
+        } finally {
+            this.disabled = false;
+            this.innerHTML = '<i class="fas fa-check-double"></i> সব পঠিত';
+        }
+    });
+
+    // Delete all read offline messages
+    document.getElementById('offlineDeleteAllReadBtn').addEventListener('click', async function() {
+        if (offlineLoading) return;
+
+        if (typeof SweetAlertUtil !== 'undefined') {
+            var confirmed = await SweetAlertUtil.question('পঠিত বার্তা মুছুন', 'সব পঠিত অফলাইন বার্তা স্থায়ীভাবে মুছে ফেলবেন? এই কাজ পূর্বাবস্থায় ফিরিয়ে আনা যাবে না।', { confirmButtonColor: '#dc3545', confirmButtonText: 'মুছুন' });
+            if (!confirmed.isConfirmed) return;
+        } else if (!confirm('সব পঠিত অফলাইন বার্তা স্থায়ীভাবে মুছে ফেলবেন?')) {
+            return;
+        }
+
+        this.disabled = true;
+        this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> প্রক্রিয়াকরণ...';
+
+        try {
+            var res = await fetch('/api/chat/admin/offline/delete-all-read', { method: 'POST' });
+            var result = await res.json();
+            if (result.status === 'success') {
+                // Clear the offline list and show empty state via loadOfflineMessages
+                offlineListEl.innerHTML = '';
+                offlineOffset = 0;
+                loadOfflineMessages();
+                if (typeof SweetAlertUtil !== 'undefined') {
+                    SweetAlertUtil.toast('পঠিত বার্তা মুছে ফেলা হয়েছে', 'success');
+                }
+            } else {
+                if (typeof SweetAlertUtil !== 'undefined') {
+                    SweetAlertUtil.toast('ব্যর্থ হয়েছে: ' + (result.message || 'অজানা ত্রুটি'), 'error');
+                } else {
+                    alert('ব্যর্থ হয়েছে: ' + (result.message || 'অজানা ত্রুটি'));
+                }
+            }
+        } catch (e) {
+            if (typeof SweetAlertUtil !== 'undefined') {
+                SweetAlertUtil.toast('বার্তা মুছতে ব্যর্থ হয়েছে।', 'error');
+            } else {
+                alert('বার্তা মুছতে ব্যর্থ হয়েছে।');
+            }
+        } finally {
+            this.disabled = false;
+            this.innerHTML = '<i class="fas fa-trash-alt"></i> পঠিত মুছুন';
+        }
+    });
+
+    async function offlineMarkRead(id, cardEl, btnEl) {
+        try {
+            var res = await fetch('/api/chat/admin/offline/' + id + '/read', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+            });
+            var result = await res.json();
+            if (result.status === 'success') {
+                cardEl.classList.remove('unread');
+                cardEl.classList.add('read');
+                btnEl.disabled = true;
+                btnEl.innerHTML = '<i class="fas fa-check"></i> পঠিত';
+                updateOfflineStats();
+            } else {
+                alert(result.message || 'ব্যর্থ হয়েছে');
+            }
+        } catch (e) {
+            alert('পঠিত হিসেবে চিহ্নিত করতে ব্যর্থ হয়েছে');
+        }
+    }
+
+    async function offlineDeleteMessage(id, cardEl) {
+        try {
+            var res = await fetch('/api/chat/admin/offline/' + id + '/delete', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+            });
+            var result = await res.json();
+            if (result.status === 'success') {
+                cardEl.style.transition = 'opacity 0.3s, transform 0.3s';
+                cardEl.style.opacity = '0';
+                cardEl.style.transform = 'translateX(20px)';
+                setTimeout(function() {
+                    cardEl.remove();
+                    if (offlineListEl.children.length === 0) {
+                        offlineListEl.innerHTML = '<div class="offline-empty-state"><div class="offline-empty-icon"><i class="fas fa-inbox"></i></div><div class="offline-empty-text">কোনো অফলাইন বার্তা নেই</div><div class="offline-empty-sub">দর্শকরা অফলাইন ইনকোয়ারি পাঠালে এটি এখানে দেখাবে</div></div>';
+                        offlineLoadMoreEl.style.display = 'none';
+                    }
+                    updateOfflineStats();
+                }, 300);
+            } else {
+                alert(result.message || 'ব্যর্থ হয়েছে');
+            }
+        } catch (e) {
+            alert('মুছে ফেলতে ব্যর্থ হয়েছে');
+        }
+    }
+
+    // ========================================
+    // INIT — Check URL param for initial tab
+    // ========================================
+    var urlParams = new URLSearchParams(window.location.search);
+    var initialTab = urlParams.get('tab');
+    if (initialTab === 'offline') {
+        switchTab('offline');
+    }
+
 })();
 </script>
 {% endblock %}

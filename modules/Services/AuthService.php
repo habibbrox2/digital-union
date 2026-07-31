@@ -23,8 +23,13 @@ class AuthService
     {
         // Check session timeout (30 min)
         if (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity']) > 1800) {
+            // Save the intended URL so the user can be redirected back after re-login
+            $currentUrl = $_SERVER['REQUEST_URI'];
+            $redirectBackTo = $currentUrl;
             session_unset();
             session_destroy();
+            session_start();
+            $_SESSION['redirect_after_login'] = $redirectBackTo;
             return null;
         }
 
@@ -36,14 +41,29 @@ class AuthService
 
     /**
      * Ensure the current user has the given permission (with optional module scope).
-     * Exits with 403 if not allowed.
+     * Redirects to login if not authenticated, exits with 403 if permission denied.
      */
     public function ensureCan(string $permission, ?string $module = null): void
     {
         $userId = $_SESSION['user_id'] ?? null;
         if (!$userId) {
-            http_response_code(401);
-            if (function_exists('renderError')) renderError(401, 'আপনি লগইন করেননি।');
+            $currentUrl = $_SERVER['REQUEST_URI'];
+            $isAjax = (
+                !empty($_SERVER['HTTP_X_REQUESTED_WITH']) &&
+                strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest'
+            );
+            if ($isAjax) {
+                http_response_code(401);
+                header('Content-Type: application/json; charset=utf-8');
+                echo json_encode([
+                    'status' => 'error',
+                    'message' => 'আপনি লগইন করেননি। দয়া করে লগইন করুন।',
+                    'redirect' => '/login?redirect=' . urlencode($currentUrl),
+                ], JSON_UNESCAPED_UNICODE);
+            } else {
+                $_SESSION['redirect_after_login'] = $currentUrl;
+                header('Location: /login?redirect=' . urlencode($currentUrl));
+            }
             exit;
         }
 

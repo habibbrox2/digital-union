@@ -13,10 +13,9 @@
         <li><a href="/#" title="হোম"><i class="fas fa-home-lg-alt"></i><span class="nav-text">হোম</span></a></li>
         <li><a href="/dashboard" title="ড্যাশবোর্ড"><i class="fas fa-chart-line"></i><span class="nav-text">ড্যাশবোর্ড</span></a></li>
 
-        {# Live Chat #}
+        {# Live Chat — merged with offline messages #}
         {% if is_superadmin or can('manage_chat') %}
-        <li><a href="/chat/admin" title="লাইভ চ্যাট"><i class="fas fa-comment-dots"></i><span class="nav-text">লাইভ চ্যাট</span></a></li>
-        <li><a href="/chat/admin/offline" title="অফলাইন বার্তা"><i class="fas fa-inbox"></i><span class="nav-text">অফলাইন বার্তা</span></a></li>
+        <li><a href="/chat/admin" title="লাইভ চ্যাট ও অফলাইন বার্তা"><i class="fas fa-comment-dots"></i><span class="nav-text">লাইভ চ্যাট</span></a></li>
         {% endif %}
 
         {# Applications / Certificates #}

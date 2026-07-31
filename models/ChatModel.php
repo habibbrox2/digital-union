@@ -554,15 +554,22 @@ class ChatModel
         $types = 's';
 
         if ($afterId > 0 && $after) {
-            $sql .= " AND (created_at > ? OR (created_at = ? AND id > ?))";
+            // When polling for new messages, also include messages whose
+            // delivery/read status was updated after the last poll. This allows
+            // the visitor to see real-time delivery and read receipts.
+            $sql .= " AND (created_at > ? OR (created_at = ? AND id > ?) OR ? < delivered_at OR ? < read_at)";
             $params[] = $after;
             $params[] = $after;
             $params[] = $afterId;
-            $types .= 'ssi';
-        } elseif ($after) {
-            $sql .= " AND created_at > ?";
             $params[] = $after;
-            $types .= 's';
+            $params[] = $after;
+            $types .= 'ssiss';
+        } elseif ($after) {
+            $sql .= " AND (created_at > ? OR ? < delivered_at OR ? < read_at)";
+            $params[] = $after;
+            $params[] = $after;
+            $params[] = $after;
+            $types .= 'sss';
         }
 
         $sql .= " ORDER BY created_at DESC LIMIT ? OFFSET ?";
@@ -919,6 +926,25 @@ class ChatModel
     // ================================================================
 
     /**
+     * Get the latest unread offline message.
+     * Used by admin notification system.
+     */
+    public function getLatestOfflineMessage(): ?array
+    {
+        $result = $this->mysqli->query("
+            SELECT id, visitor_name, visitor_phone, visitor_email, message, is_read, created_at
+            FROM chat_offline_messages
+            WHERE is_read = 0
+            ORDER BY created_at DESC
+            LIMIT 1
+        ");
+        if (!$result) return null;
+        $row = $result->fetch_assoc();
+        $result->free();
+        return $row ?: null;
+    }
+
+    /**
      * Save an offline inquiry message.
      */
     public function insertOfflineMessage(string $name, ?string $phone, ?string $email, string $message): int
@@ -979,6 +1005,74 @@ class ChatModel
         $stmt->bind_param("i", $id);
         $stmt->execute();
         $stmt->close();
+    }
+
+    /**
+     * Mark all offline messages as read. Returns the number of updated rows.
+     */
+    public function markAllOfflineRead(): int
+    {
+        $stmt = $this->mysqli->prepare("UPDATE chat_offline_messages SET is_read = 1 WHERE is_read = 0");
+        $stmt->execute();
+        $count = $stmt->affected_rows;
+        $stmt->close();
+        return $count;
+    }
+
+    /**
+     * Mark all offline messages as unread (undo). Returns the number of updated rows.
+     */
+    public function markAllOfflineUnread(): int
+    {
+        $stmt = $this->mysqli->prepare("UPDATE chat_offline_messages SET is_read = 0 WHERE is_read = 1");
+        $stmt->execute();
+        $count = $stmt->affected_rows;
+        $stmt->close();
+        return $count;
+    }
+
+    /**
+     * Delete all read offline messages. Returns the number of deleted rows.
+     */
+    public function deleteAllReadOfflineMessages(): int
+    {
+        $stmt = $this->mysqli->prepare("DELETE FROM chat_offline_messages WHERE is_read = 1");
+        $stmt->execute();
+        $count = $stmt->affected_rows;
+        $stmt->close();
+        return $count;
+    }
+
+    /**
+     * Mark multiple offline messages as read. Returns the number of updated rows.
+     */
+    public function batchMarkOfflineRead(array $ids): int
+    {
+        if (empty($ids)) return 0;
+        $placeholders = implode(',', array_fill(0, count($ids), '?'));
+        $types = str_repeat('i', count($ids));
+        $stmt = $this->mysqli->prepare("UPDATE chat_offline_messages SET is_read = 1 WHERE id IN ($placeholders)");
+        $stmt->bind_param($types, ...$ids);
+        $stmt->execute();
+        $count = $stmt->affected_rows;
+        $stmt->close();
+        return $count;
+    }
+
+    /**
+     * Delete multiple offline messages. Returns the number of deleted rows.
+     */
+    public function batchDeleteOfflineMessages(array $ids): int
+    {
+        if (empty($ids)) return 0;
+        $placeholders = implode(',', array_fill(0, count($ids), '?'));
+        $types = str_repeat('i', count($ids));
+        $stmt = $this->mysqli->prepare("DELETE FROM chat_offline_messages WHERE id IN ($placeholders)");
+        $stmt->bind_param($types, ...$ids);
+        $stmt->execute();
+        $count = $stmt->affected_rows;
+        $stmt->close();
+        return $count;
     }
 
     /**

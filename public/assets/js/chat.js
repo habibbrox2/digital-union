@@ -253,7 +253,7 @@
 
     const closeBtn = document.createElement('button');
     closeBtn.className = 'chat-preview-close';
-    closeBtn.innerHTML = '&times;';
+    closeBtn.textContent = '×';
     closeBtn.setAttribute('aria-label', 'Close preview');
     closeBtn.addEventListener('click', function () { overlay.remove(); });
     header.appendChild(closeBtn);
@@ -268,7 +268,7 @@
       // Fetch and display plain text
       const pre = document.createElement('pre');
       pre.className = 'chat-preview-text';
-      pre.textContent = '\u09b2\u09cb\u09a1 \u09b9\u099a\u09cd\u099b\u09c7...';
+      pre.textContent = 'লোড হচ্ছে...';
       body.appendChild(pre);
       container.appendChild(body);
       overlay.appendChild(container);
@@ -277,7 +277,7 @@
       fetch(msg.file_url)
         .then(function (r) { return r.text(); })
         .then(function (txt) { pre.textContent = txt; })
-        .catch(function () { pre.textContent = '\u09ab\u09be\u0987\u09b2 \u09b2\u09cb\u09a1 \u0995\u09b0\u09be \u09af\u09be\u09df\u09a8\u09bf\u0964'; });
+        .catch(function () { pre.textContent = 'ফাইল লোড করা যায়নি।'; });
       return;
     }
 
@@ -297,7 +297,7 @@
       iframe.setAttribute('allowfullscreen', 'true');
       body.appendChild(iframe);
     } else {
-      body.appendChild(createTextEl('p', 'chat-preview-error', '\u09aa\u09cd\u09b0\u09bf\u09ad\u09bf\u0989 \u09b8\u09ae\u09b0\u09cd\u09a5\u09bf\u09a4 \u09a8\u09df\u0964'));
+      body.appendChild(createTextEl('p', 'chat-preview-error', 'প্রিভিউ সমর্থিত নয়।'));
     }
 
     container.appendChild(body);
@@ -555,11 +555,18 @@
     if (result.last_visitor_activity_at) state.lastVisitorActivityAt = result.last_visitor_activity_at;
     if (result.timeout_seconds) CONFIG.sessionTimeoutSeconds = parseInt(result.timeout_seconds, 10) || CONFIG.sessionTimeoutSeconds;
     if (result.data && result.data.length > 0) {
-      state.lastMessageTime = result.data[result.data.length - 1].created_at || null;
-      state.lastMessageId = result.data.reduce(function (maxId, msg) {
-        const id = parseInt(msg.id, 10);
-        return Number.isFinite(id) && id > maxId ? id : maxId;
+      // Only advance the cursor when there are truly new messages (IDs
+      // higher than what we've already seen). Status-only updates to
+      // existing messages (delivered_at/read_at changes) should not
+      // regress the cursor or skip real new messages on the next poll.
+      var newMaxId = result.data.reduce(function (maxId, msg) {
+        var msgId = parseInt(msg.id, 10);
+        return Number.isFinite(msgId) && msgId > maxId ? msgId : maxId;
       }, state.lastMessageId);
+      if (newMaxId > state.lastMessageId) {
+        state.lastMessageId = newMaxId;
+        state.lastMessageTime = result.data[result.data.length - 1].created_at || null;
+      }
     }
     return {
       messages: result.data || [],
@@ -2438,7 +2445,9 @@
     try {
       let path = '/messages?session_id=' + encodeURIComponent(state.sessionId);
       if (state.sessionSig) path += '&session_sig=' + encodeURIComponent(state.sessionSig);
-      path += '&limit=5';
+      // This is a background probe, not active rendering — do NOT let the
+      // server mark admin messages as read (would wipe the unread badge).
+      path += '&mark_read=0&limit=5';
       const res = await fetch(CONFIG.apiBase + path);
       const data = await res.json();
       if (data.data && data.data.length > 0) {

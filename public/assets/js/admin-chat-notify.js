@@ -22,14 +22,10 @@
   var state = {
     previousCount: -1,
     previousSessionId: '',
+    previousOfflineCount: -1,
     pollTimer: null,
     notificationPermission: false,
-    sidebarChatLink: null,
-    sidebarBadge: null,
-    fab: null,
-    fabBadge: null,
     latestSessionId: '',
-    lastNotifyTime: 0,
     // Admin notification preferences (fetched from API)
     notifySettings: null,
   };
@@ -66,10 +62,22 @@
   }
 
   function openAdminConversation(sessionId) {
+    // The FAB shows the combined (live + offline) unread count. When only
+    // offline messages are unread, the sentinel 'offline' is stored as the
+    // latest session id — route to the offline tab instead of a live chat.
+    if (sessionId === 'offline') {
+      openOfflinePage();
+      return;
+    }
     var target = CONFIG.chatAdminUrl;
     if (sessionId) target += '?session_id=' + encodeURIComponent(sessionId);
     window.focus();
     window.location.href = target;
+  }
+
+  function openOfflinePage() {
+    window.focus();
+    window.location.href = '/chat/admin?tab=offline';
   }
 
   function ensureAdminFab() {
@@ -191,6 +199,88 @@
   }
 
   // ========================
+  // Offline Desktop Notification
+  // ========================
+  function showOfflineDesktopNotification(title, body, offlineId) {
+    if (!('Notification' in window)) return;
+    if (!state.notificationPermission && Notification.permission !== 'granted') return;
+    state.notificationPermission = Notification.permission === 'granted';
+    if (!state.notificationPermission) return;
+
+    try {
+      var notif = new Notification(title || 'অফলাইন বার্তা', {
+        body: body || '',
+        icon: (document.querySelector('link[rel="shortcut icon"]') || {}).href || undefined,
+        silent: true,
+        tag: 'chat-offline-' + offlineId,
+      });
+
+      notif.addEventListener('click', function () {
+        window.focus();
+        window.location.href = '/chat/admin?tab=offline';
+        this.close();
+      });
+
+      setTimeout(function () { notif.close(); }, 8000);
+    } catch (e) {
+      // Silently fail
+    }
+  }
+
+  // ========================
+  // Offline In-page Toast Notification
+  // ========================
+  function showOfflineToastNotification(title, message, offlineId) {
+    var existing = document.getElementById('chatAdminToast');
+    if (existing) existing.remove();
+
+    var toast = document.createElement('div');
+    toast.id = 'chatAdminToast';
+    toast.className = 'chat-admin-toast chat-admin-toast-offline';
+
+    toast.innerHTML =
+      '<div class="chat-admin-toast-inner">' +
+        '<div class="chat-admin-toast-avatar" style="background:#e53935;">' +
+          '<i class="fas fa-inbox"></i>' +
+        '</div>' +
+        '<div class="chat-admin-toast-content">' +
+          '<div class="chat-admin-toast-title">' + escapeAttr('অফলাইন বার্তা: ' + title) + '</div>' +
+          '<div class="chat-admin-toast-message">' + escapeAttr(message) + '</div>' +
+        '</div>' +
+        '<button class="chat-admin-toast-close" aria-label="Close">&times;</button>' +
+      '</div>';
+
+    toast.addEventListener('click', function (e) {
+      if (e.target.closest('.chat-admin-toast-close')) {
+        toast.remove();
+        return;
+      }
+      window.focus();
+      window.location.href = '/chat/admin?tab=offline';
+    });
+
+    document.body.appendChild(toast);
+
+    requestAnimationFrame(function () {
+      toast.classList.add('open');
+    });
+
+    var autoRemoveTimer = setTimeout(function () {
+      if (toast && toast.parentNode) {
+        toast.classList.remove('open');
+        setTimeout(function () { if (toast.parentNode) toast.remove(); }, 300);
+      }
+    }, 6000);
+
+    toast.querySelector('.chat-admin-toast-close').addEventListener('click', function (e) {
+      e.stopPropagation();
+      clearTimeout(autoRemoveTimer);
+      toast.classList.remove('open');
+      setTimeout(function () { if (toast.parentNode) toast.remove(); }, 300);
+    });
+  }
+
+  // ========================
   // In-page Toast Notification (Facebook-style)
   // ========================
   function showToastNotification(title, message, sessionId) {
@@ -250,11 +340,10 @@
   }
 
   // ========================
-  // Sidebar Badge Update
+  // Sidebar Badge Updates
   // ========================
   function updateSidebarBadge(count) {
     if (!els.sidebarChatLink) {
-      // Re-cache in case sidebar was dynamically loaded
       els.sidebarChatLink = document.querySelector('.sidebar a[href="/chat/admin"]');
       els.sidebarNavText = els.sidebarChatLink
         ? els.sidebarChatLink.querySelector('.nav-text')
@@ -263,7 +352,6 @@
 
     if (!els.sidebarChatLink) return;
 
-    // Remove existing badge
     var existing = els.sidebarChatLink.querySelector('.chat-sidebar-badge');
     if (existing) existing.remove();
 
@@ -271,7 +359,6 @@
       var badge = document.createElement('span');
       badge.className = 'chat-sidebar-badge';
       badge.textContent = count > 99 ? '99+' : count;
-      // Insert after the nav text
       if (els.sidebarNavText) {
         els.sidebarNavText.parentNode.insertBefore(badge, els.sidebarNavText.nextSibling);
       } else {
@@ -279,6 +366,8 @@
       }
     }
   }
+
+
 
   // ========================
   // Favicon Badge
@@ -460,42 +549,54 @@
         if (data.status !== 'success') return;
 
         var total = parseInt(data.data.total) || 0;
+        var liveUnread = parseInt(data.data.live_unread) || 0;
+        var offlineUnread = parseInt(data.data.offline_unread) || 0;
         var latest = data.data.latest;
+        var offlineLatest = data.data.offline_latest;
         var latestSessionId = latest && latest.session_id ? latest.session_id : '';
+        var previousTotal = state.previousCount;
+        var previousOffline = state.previousOfflineCount;
 
         // Store admin notification preferences from API response
         if (data.data.notify_settings) {
           state.notifySettings = data.data.notify_settings;
         }
 
-        // Update sidebar badge
-        updateSidebarBadge(total);
-        updateAdminFab(total, latestSessionId);
+        // Update sidebar badges — live chat and offline separately
+        updateSidebarBadge(liveUnread);
+        updateAdminFab(total, latestSessionId || (offlineLatest ? 'offline' : ''));
 
-        // Update favicon badge
+        // Update favicon badge (combined total)
         updateFaviconBadge(total);
 
-        // Update tab title
+        // Update tab title (combined total)
         if (document.hidden) {
           startTitleNotification(total);
         } else {
           stopTitleNotification();
         }
 
-        // Check if there's a NEW message (count increased OR new session)
-        var isNewMessage = false;
-        if (state.previousCount >= 0 && total > state.previousCount) {
-          isNewMessage = true;
-        } else if (state.previousCount === -1) {
-          // First check — just store the count, no notification
+        // First check — just store the counts, no notification
+        if (state.previousCount === -1) {
           state.previousCount = total;
+          state.previousOfflineCount = offlineUnread;
           if (latest) state.previousSessionId = latest.session_id || '';
           return;
         }
 
-        state.previousCount = total;
+        // Compute old live unread count for proper change detection
+        var previousLiveUnread = previousTotal - previousOfflineCount;
 
-        if (isNewMessage && latest) {
+        // Check if there's a NEW live chat message
+        var isNewLiveMessage = (previousLiveUnread >= 0 && liveUnread > previousLiveUnread);
+
+        // Check if there's a NEW offline message
+        var isNewOfflineMessage = (previousOffline >= 0 && offlineUnread > previousOffline);
+
+        state.previousCount = total;
+        state.previousOfflineCount = offlineUnread;
+
+        if (isNewLiveMessage && latest) {
           var visitorName = latest.visitor_name || 'অজ্ঞাত দর্শক';
           var preview = formatMessagePreview(latest);
           var sessId = latest.session_id || '';
@@ -516,6 +617,31 @@
               visitorName + ' (' + total + ' টি আনরিড)',
               preview,
               sessId
+            );
+          }
+        }
+
+        if (isNewOfflineMessage && offlineLatest) {
+          var offlineName = offlineLatest.visitor_name || 'অজ্ঞাত দর্শক';
+          var offlinePreview = truncate(offlineLatest.message, 80);
+          var offlineId = offlineLatest.id || 0;
+
+          // Play notification sound (respect admin preference)
+          if (isNotifySoundEnabled()) {
+            playNotificationSound();
+          }
+
+          // Show in-page toast (respect admin preference) — clicking opens offline page
+          if (isNotifyToastEnabled()) {
+            showOfflineToastNotification(offlineName, offlinePreview, offlineId);
+          }
+
+          // Show desktop notification (only when tab is hidden, respect admin preference)
+          if (document.hidden && isNotifyDesktopEnabled()) {
+            showOfflineDesktopNotification(
+              'অফলাইন বার্তা: ' + offlineName + ' (' + total + ' টি আনরিড)',
+              offlinePreview,
+              offlineId
             );
           }
         }
@@ -552,6 +678,7 @@
   // ========================
   function resetUnreadState() {
     state.previousCount = 0;
+    state.previousOfflineCount = 0;
     state.previousSessionId = '';
     updateSidebarBadge(0);
     updateAdminFab(0, '');

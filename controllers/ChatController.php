@@ -250,6 +250,10 @@ $router->get('/api/chat/messages', function () use ($chatService, $chatModel) {
     $afterId = max(0, (int)($_GET['after_id'] ?? 0));
     $offset = max(0, (int)($_GET['offset'] ?? 0));
     $limit = max(1, min((int)($_GET['limit'] ?? 50), 100));
+    // Background notification probes request mark_read=0 so that checking for
+    // a human reply does not wipe the visitor's unread badge while the widget
+    // is closed. Active rendering (loadHistory / polling) defaults to true.
+    $markRead = ($_GET['mark_read'] ?? '1') !== '0';
 
     if (empty($sessionId)) {
         ChatService::jsonResponse(['status' => 'error', 'message' => 'Session ID is required'], 400);
@@ -270,9 +274,13 @@ $router->get('/api/chat/messages', function () use ($chatService, $chatModel) {
         ChatService::jsonResponse(['status' => 'error', 'message' => 'Invalid session signature'], 403);
     }
 
-    // A fetch means messages reached the receiving client. Seen/read is
-    // handled separately by POST /read after the visitor renders them.
-    $chatModel->markMessagesDelivered($sessionId, 'admin');
+    // A fetch means messages reached the receiving client. Mark admin
+    // messages as delivered AND read, since the visitor is actively
+    // rendering the conversation via polling. Background probes opt out.
+    if ($markRead) {
+        $chatModel->markMessagesDelivered($sessionId, 'admin');
+        $chatModel->markAdminMessagesRead($sessionId);
+    }
     $messages = $chatService->getMessagesQuery($sessionId, $after ?: null, $offset, $limit + 1, $afterId);
     $hasMore = count($messages) > $limit;
     if ($hasMore) {
@@ -685,13 +693,23 @@ $router->get('/api/chat/admin/typing', function () use ($chatModel, $authService
  * Get total count of unread visitor messages across all sessions.
  * Lightweight endpoint for global notification polling.
  */
-$router->get('/api/chat/admin/unread/total', function () use ($chatModel, $authService) {
+$router->get('/api/chat/admin/unread/total', function () use ($chatModel, $authService, $chatService) {
     $authService->ensureCan('manage_chat');
 
-    $count = $chatModel->countAllUnreadVisitorMessages();
+    // Live chat unread count
+    $liveCount = $chatModel->countAllUnreadVisitorMessages();
 
-    // Get latest unread message info for the notification preview
+    // Offline message unread count
+    $offlineCount = $chatService->countOfflineMessages(true);
+
+    // Combined total
+    $total = $liveCount + $offlineCount;
+
+    // Get latest unread live chat message info for the notification preview
     $latestMsg = $chatModel->getLatestUnreadVisitorMessage();
+
+    // Get latest unread offline message info for the notification preview
+    $latestOfflineMsg = $chatService->getLatestOfflineMessage();
 
     // Get admin notification preference settings
     $allSettings = $chatModel->getChatSettings();
@@ -706,13 +724,25 @@ $router->get('/api/chat/admin/unread/total', function () use ($chatModel, $authS
     echo json_encode([
         'status' => 'success',
         'data' => [
-            'total' => $count,
+            'total' => $total,
+            'live_unread' => $liveCount,
+            'offline_unread' => $offlineCount,
             'latest' => $latestMsg ? [
+                'type' => 'live',
                 'visitor_name' => $latestMsg['visitor_name'] ?? 'অজ্ঞাত',
                 'message' => $latestMsg['message'] ?? '',
                 'message_type' => $latestMsg['message_type'] ?? 'text',
                 'session_id' => $latestMsg['session_id'] ?? '',
                 'created_at' => $latestMsg['created_at'] ?? '',
+            ] : null,
+            'offline_latest' => $latestOfflineMsg ? [
+                'type' => 'offline',
+                'visitor_name' => $latestOfflineMsg['visitor_name'] ?? 'অজ্ঞাত',
+                'visitor_phone' => $latestOfflineMsg['visitor_phone'] ?? '',
+                'visitor_email' => $latestOfflineMsg['visitor_email'] ?? '',
+                'message' => $latestOfflineMsg['message'] ?? '',
+                'id' => $latestOfflineMsg['id'] ?? 0,
+                'created_at' => $latestOfflineMsg['created_at'] ?? '',
             ] : null,
             'notify_settings' => $adminNotifySettings,
         ]
@@ -1021,6 +1051,85 @@ $router->get('/api/chat/admin/offline/count', function () use ($chatService, $au
 });
 
 /**
+ * POST /api/chat/admin/offline/read-all
+ * Mark all offline messages as read
+ * Placed BEFORE the {id} parameter routes to avoid greedy match.
+ */
+$router->post('/api/chat/admin/offline/read-all', function () use ($chatService, $authService) {
+    $authService->ensureCan('manage_chat');
+
+    $count = $chatService->markAllOfflineRead();
+
+    ChatService::jsonResponse(['status' => 'success', 'message' => 'সব অফলাইন বার্তা পঠিত হিসাবে চিহ্নিত করা হয়েছে', 'data' => ['marked_read' => $count]]);
+});
+
+/**
+ * POST /api/chat/admin/offline/unread-all
+ * Mark all offline messages as unread (undo for mark-all-read)
+ * Placed before {id} routes to avoid greedy match.
+ */
+$router->post('/api/chat/admin/offline/unread-all', function () use ($chatService, $authService) {
+    $authService->ensureCan('manage_chat');
+
+    $count = $chatService->markAllOfflineUnread();
+
+    ChatService::jsonResponse(['status' => 'success', 'message' => 'সব অফলাইন বার্তা অপঠিত হিসাবে ফিরিয়ে আনা হয়েছে', 'data' => ['marked_unread' => $count]]);
+});
+
+/**
+ * POST /api/chat/admin/offline/delete-all-read
+ * Delete all read offline messages
+ * Placed before {id} routes to avoid greedy match.
+ */
+$router->post('/api/chat/admin/offline/delete-all-read', function () use ($chatService, $authService) {
+    $authService->ensureCan('manage_chat');
+
+    $count = $chatService->deleteAllReadOfflineMessages();
+
+    ChatService::jsonResponse(['status' => 'success', 'message' => 'সব পঠিত অফলাইন বার্তা মুছে ফেলা হয়েছে', 'data' => ['deleted' => $count]]);
+});
+
+/**
+ * POST /api/chat/admin/offline/batch-read
+ * Mark multiple offline messages as read by IDs
+ */
+$router->post('/api/chat/admin/offline/batch-read', function () use ($chatService, $authService) {
+    $authService->ensureCan('manage_chat');
+
+    $input = json_decode(file_get_contents('php://input'), true);
+    $ids = $input['ids'] ?? [];
+
+    if (empty($ids) || !is_array($ids)) {
+        ChatService::jsonResponse(['status' => 'error', 'message' => 'বার্তা আইডি প্রয়োজন'], 400);
+    }
+
+    $ids = array_map('intval', $ids);
+    $count = $chatService->batchMarkOfflineRead($ids);
+
+    ChatService::jsonResponse(['status' => 'success', 'message' => 'নির্বাচিত বার্তা পঠিত হিসাবে চিহ্নিত করা হয়েছে', 'data' => ['marked_read' => $count]]);
+});
+
+/**
+ * POST /api/chat/admin/offline/batch-delete
+ * Delete multiple offline messages by IDs
+ */
+$router->post('/api/chat/admin/offline/batch-delete', function () use ($chatService, $authService) {
+    $authService->ensureCan('manage_chat');
+
+    $input = json_decode(file_get_contents('php://input'), true);
+    $ids = $input['ids'] ?? [];
+
+    if (empty($ids) || !is_array($ids)) {
+        ChatService::jsonResponse(['status' => 'error', 'message' => 'বার্তা আইডি প্রয়োজন'], 400);
+    }
+
+    $ids = array_map('intval', $ids);
+    $count = $chatService->batchDeleteOfflineMessages($ids);
+
+    ChatService::jsonResponse(['status' => 'success', 'message' => 'নির্বাচিত বার্তা মুছে ফেলা হয়েছে', 'data' => ['deleted' => $count]]);
+});
+
+/**
  * POST /api/chat/admin/offline/{id}/read
  * Mark an offline message as read
  */
@@ -1056,17 +1165,11 @@ $router->post('/api/chat/admin/offline/{id}/delete', function ($id) use ($chatSe
 
 /**
  * GET /chat/admin/offline
- * Admin page to view offline inquiry messages
+ * Redirect to the merged /chat/admin page with offline tab active
  */
-$router->get('/chat/admin/offline', function () use ($chatService, $twig, $authService) {
-    $authService->ensureCan('manage_chat');
-
-    header('Content-Type: text/html; charset=utf-8');
-
-    echo $twig->render('chat/offline.twig', [
-        'title' => 'অফলাইন বার্তা',
-        'header_title' => '📩 অফলাইন ইনকোয়ারি বার্তা',
-    ]);
+$router->get('/chat/admin/offline', function () {
+    header('Location: /chat/admin?tab=offline', true, 301);
+    exit;
 });
 
 // ================================================================

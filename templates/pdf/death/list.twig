@@ -96,9 +96,9 @@
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
             <i class="bi bi-x-circle me-1"></i> বাতিল
         </button>
-        <a id="confirmDeleteBtn" href="#" class="btn btn-danger shadow-sm">
+         <button type="button" id="confirmDeleteBtn" class="btn btn-danger shadow-sm">
             <i class="bi bi-trash-fill me-1"></i> ডিলিট করুন
-        </a>
+        </button>
       </div>
     </div>
   </div>
@@ -250,10 +250,35 @@ document.addEventListener('DOMContentLoaded', () => {
     tableSearch.addEventListener('input', () => { currentPage=1; renderTable(); });
 
     // Delete Modal
-    const deleteModal = document.getElementById('deleteModal');
+    let deleteId = null;
+    const deleteModalEl = document.getElementById('deleteModal');
     const confirmBtn = document.getElementById('confirmDeleteBtn');
-    deleteModal.addEventListener('show.bs.modal', e => {
-        confirmBtn.href = '/death/delete/' + e.relatedTarget.getAttribute('data-id');
+    const deleteModal = new bootstrap.Modal(deleteModalEl);
+
+    deleteModalEl.addEventListener('show.bs.modal', e => {
+        deleteId = e.relatedTarget.getAttribute('data-id');
+    });
+
+    confirmBtn.addEventListener('click', async () => {
+        if (!deleteId) return;
+        confirmBtn.disabled = true;
+        confirmBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> ডিলিট করছি...';
+        try {
+            const res = await fetch(`/death/delete/${deleteId}`, { method: 'POST' });
+            const json = await res.json();
+            if (json.alert) {
+                Swal.fire({ icon: json.alert.type, title: json.alert.type === 'success' ? '✅ সফল!' : '⚠️ ভুল!', text: json.alert.message });
+            }
+            if (json.alert && json.alert.type === 'success') {
+                deleteModal.hide();
+                loadData();
+            }
+        } catch (err) {
+            Swal.fire({ icon: 'error', title: '⚠️ ভুল!', text: 'নেটওয়ার্ক ত্রুটি ঘটেছে।' });
+        } finally {
+            confirmBtn.disabled = false;
+            confirmBtn.innerHTML = '<i class="bi bi-trash-fill me-1"></i> ডিলিট করুন';
+        }
     });
 
     loadData();
