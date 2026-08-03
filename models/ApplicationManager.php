@@ -185,7 +185,7 @@ class ApplicationManager
      * Fetch all applications with pagination and search
      */
 
-    public function fetchAllApplications($union_id, $page = 1, $search = '', $records_per_page = 10, $sort_by = 'apply_date', $sort_order = 'DESC', $certificate_type = null)
+    public function fetchAllApplications($union_id, $page = 1, $search = '', $records_per_page = 10, $sort_by = 'apply_date', $sort_order = 'DESC', $certificate_type = null, $status = null)
     {
         $offset = ($page - 1) * $records_per_page;
         $search_pattern = "%$search%";
@@ -214,17 +214,33 @@ class ApplicationManager
         $types = '';
         // If search is numeric, match any of the key numbers with LIKE (partial match)
         if (is_numeric($search) && $search !== '') {
-            $where[] = "(a.application_id LIKE ? OR a.nid LIKE ? OR a.birth_id LIKE ? OR a.passport_no LIKE ?)";
-            for ($i = 0; $i < 4; $i++) {
+            $search_where = "(a.application_id LIKE ? OR a.nid LIKE ? OR a.birth_id LIKE ? OR a.passport_no LIKE ? OR a.sonod_number LIKE ?)";
+            for ($i = 0; $i < 5; $i++) {
                 $params[] = $search_pattern;
                 $types .= 's';
             }
         } else {
-            $where[] = "(a.name_bn LIKE ? OR a.name_en LIKE ? OR a.father_name_bn LIKE ? OR a.father_name_en LIKE ? OR a.mother_name_bn LIKE ? OR a.mother_name_en LIKE ? OR a.spouse_name_bn LIKE ? OR a.spouse_name_en LIKE ? OR a.applicant_name LIKE ? OR a.nid LIKE ? OR a.birth_id LIKE ? OR a.passport_no LIKE ? OR a.sonod_number LIKE ?)";
+            $search_where = "(a.name_bn LIKE ? OR a.name_en LIKE ? OR a.father_name_bn LIKE ? OR a.father_name_en LIKE ? OR a.mother_name_bn LIKE ? OR a.mother_name_en LIKE ? OR a.spouse_name_bn LIKE ? OR a.spouse_name_en LIKE ? OR a.applicant_name LIKE ? OR a.nid LIKE ? OR a.birth_id LIKE ? OR a.passport_no LIKE ? OR a.sonod_number LIKE ?)";
             for ($i = 0; $i < 13; $i++) {
                 $params[] = $search_pattern;
                 $types .= 's';
             }
+        }
+        // Trade license list: also match business/entity name & type
+        // (business_meta bm is already LEFT JOINed; business_type bt is joined below)
+        if ($certificate_type === 'trade') {
+            $search_where .= " OR bm.business_name_bn LIKE ? OR bm.business_name_en LIKE ? OR bt.business_name_bn LIKE ? OR bt.business_name_en LIKE ?";
+            for ($i = 0; $i < 4; $i++) {
+                $params[] = $search_pattern;
+                $types .= 's';
+            }
+        }
+        $where[] = $search_where;
+        // Status filter (Pending / Approved / Rejected / On Hold / Active)
+        if (!empty($status)) {
+            $where[] = "a.status = ?";
+            $params[] = $status;
+            $types .= 's';
         }
         if ($union_id !== null) {
             $where[] = "a.union_id = ?";
@@ -245,6 +261,10 @@ class ApplicationManager
         $where_sql = implode(' AND ', $where);
         $selectFields = self::getSelectFields();
         $joins = self::getJoinStatements();
+        // Trade list search references bt (business_type) for business type name matches
+        if ($certificate_type === 'trade') {
+            $joins .= " LEFT JOIN business_type bt ON bm.business_type_id = bt.id";
+        }
 
         $sql = "SELECT $selectFields
                         FROM applications a
@@ -265,7 +285,7 @@ class ApplicationManager
         $data = $result->fetch_all(MYSQLI_ASSOC);
         $stmt->close();
         // Count query
-        $count_sql = "SELECT COUNT(*) AS total FROM applications a " . self::getJoinStatements() . " WHERE $where_sql";
+        $count_sql = "SELECT COUNT(*) AS total FROM applications a " . $joins . " WHERE $where_sql";
         $count_stmt = $this->conn->prepare($count_sql);
         if (!$count_stmt) {
             return ['status' => 'error', 'message' => 'Prepare failed: ' . $this->conn->error];

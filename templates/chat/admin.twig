@@ -1956,7 +1956,7 @@ bulkReadAllBtn.addEventListener('click', async function() {
         actions.className = 'offline-message-actions';
 
         var readBtn = document.createElement('button');
-        readBtn.className = 'btn btn-sm';
+        readBtn.className = 'btn btn-sm offline-read-btn';
         readBtn.style.cssText = 'background:rgba(0,139,139,0.1);color:#008B8B;border:none;';
         readBtn.innerHTML = '<i class="fas fa-check"></i> ' + (msg.is_read == 1 ? 'পঠিত' : 'পঠিত হিসেবে চিহ্নিত');
         readBtn.disabled = msg.is_read == 1;
@@ -2121,7 +2121,7 @@ bulkReadAllBtn.addEventListener('click', async function() {
                 offlineListEl.querySelectorAll('.offline-message-card').forEach(function(card) {
                     card.classList.remove('unread');
                     card.classList.add('read');
-                    var readBtn = card.querySelector('button');
+                    var readBtn = card.querySelector('.offline-read-btn');
                     if (readBtn && readBtn.disabled === false) {
                         readBtn.disabled = true;
                         readBtn.innerHTML = '<i class="fas fa-check"></i> পঠিত';
@@ -2157,7 +2157,7 @@ bulkReadAllBtn.addEventListener('click', async function() {
                                         offlineListEl.querySelectorAll('.offline-message-card').forEach(function(card) {
                                             card.classList.remove('read');
                                             card.classList.add('unread');
-                                            var readBtn = card.querySelector('button');
+                                            var readBtn = card.querySelector('.offline-read-btn');
                                             if (readBtn) {
                                                 readBtn.disabled = false;
                                                 readBtn.innerHTML = '<i class="fas fa-check"></i> পঠিত হিসেবে চিহ্নিত';

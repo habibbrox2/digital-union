@@ -1,0 +1,43 @@
+{
+  "name": "স্মার্ট ইউপি, ঢাকা - ক্যাশলেস ডিজিটাল ইউনিয়ন পরিষদ",
+  "short_name": "স্মার্ট ইউপি",
+  "description": "ক্যাশলেস ইউপি অ্যাপ - স্মার্ট ইউনিয়ন পরিষদ, ঢাকা। অনলাইনে আবেদন ও সনদ যাচাই, হোল্ডিং ট্যাক্স ও ইউনিয়ন ডিজিটাল সেবা।",
+  "start_url": "/?source=pwa",
+  "display": "standalone",
+  "display_override": ["window-controls-overlay"],
+  "background_color": "#ffffff",
+  "theme_color": "#008B8B",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "icons": [
+    {
+      "src": "/assets/images/icon/favicon.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/assets/images/icon/favicon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable any"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/assets/images/apps/app1.png",
+      "sizes": "1080x1920",
+      "type": "image/png"
+    },
+    {
+      "src": "/assets/images/apps/app2.png",
+      "sizes": "1080x1920",
+      "type": "image/png"
+    },
+    {
+      "src": "/assets/images/apps/app3.png",
+      "sizes": "1080x1920",
+      "type": "image/png"
+    }
+  ]
+}

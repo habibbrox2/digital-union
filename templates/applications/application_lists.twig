@@ -66,13 +66,29 @@
         </h6>
 
         <div class="row g-3">
-            <div class="col-md-6">
+            <div class="col-md-5">
                 <div class="input-group">
                     <span class="input-group-text bg-light"><i class="bi bi-search text-secondary"></i></span>
-                    <input type="text" id="liveSearch" class="form-control input-enhanced" placeholder="নাম বা সনদ/পরিচয়পত্র নং দিন...">
+                    <input type="text" id="liveSearch" class="form-control input-enhanced" placeholder="{% if url_path == 'trade' %}ব্যবসার নাম/ধরন, মালিকের নাম বা সনদ নং দিন...{% else %}নাম বা সনদ/পরিচয়পত্র নং দিন...{% endif %}">
+                    <button type="button" id="clearSearch" class="btn btn-outline-secondary" style="display:none;" title="সার্চ মুছুন" aria-label="সার্চ মুছুন">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
                 </div>
             </div>
-            <div class="col-md-3 offset-md-3">
+            <div class="col-md-3">
+                <div class="input-group">
+                    <label class="input-group-text bg-white" for="statusFilter">অবস্থা</label>
+                    <select class="form-select" id="statusFilter">
+                        <option value="">সব</option>
+                        <option value="Pending">অপেক্ষমান</option>
+                        <option value="Approved">অনুমোদিত</option>
+                        <option value="Rejected">বাতিল</option>
+                        <option value="On Hold">স্থগিত</option>
+                        <option value="Active">সক্রিয়</option>
+                    </select>
+                </div>
+            </div>
+            <div class="col-md-4">
                 <div class="input-group">
                     <label class="input-group-text bg-white" for="recordsPerPage">রেকর্ড</label>
                     <select class="form-select" id="recordsPerPage">
@@ -95,7 +111,7 @@
             <i class="bi bi-list-ul"></i> আবেদনের তালিকা
         </h6>
 
-        <div class="table-responsive rounded-3">
+        <div class="table-responsive rounded-3" style="position:relative;">
             <table class="table table-hover align-middle mb-0 table-enhanced">
                 <thead class="table-primary text-center">
                     <tr>
@@ -126,11 +142,24 @@
                     </tr>
                 </tbody>
             </table>
+
+            <!-- Loading overlay shown during search/fetch -->
+            <div id="searchLoading" role="status" aria-live="polite" style="display:none;position:absolute;top:0;left:0;right:0;bottom:0;background:rgba(255,255,255,0.85);z-index:10;border-radius:0.5rem;">
+                <div class="d-flex flex-column align-items-center justify-content-center gap-2 h-100">
+                    <div class="spinner-border text-primary" role="status" style="width:2.5rem;height:2.5rem;">
+                        <span class="visually-hidden">লোড হচ্ছে...</span>
+                    </div>
+                    <span class="text-muted fw-semibold">অনুসন্ধান করা হচ্ছে...</span>
+                </div>
+            </div>
         </div>
 
-        <nav class="mt-4" aria-label="Pagination">
-            <ul class="pagination justify-content-center" id="pagination"></ul>
-        </nav>
+        <div class="d-flex justify-content-between align-items-center mt-4 flex-wrap gap-2">
+            <span id="rangeSummary" class="text-muted small" aria-live="polite"></span>
+            <nav aria-label="Pagination">
+                <ul class="pagination justify-content-center mb-0" id="pagination"></ul>
+            </nav>
+        </div>
     </div>
 </div>
 
@@ -245,6 +274,7 @@ $(document).ready(function () {
     let currentSortOrder = 'desc'; // Default sort order
     let recordsPerPage = $('#recordsPerPage').val(); 
     let currentUnion = '';
+    let currentStatus = '';
     /* ===============================
        Bangla Helpers
     =============================== */
@@ -264,9 +294,23 @@ $(document).ready(function () {
         return `${toBanglaNumber(date.getDate())} ${months[date.getMonth()]}, ${toBanglaNumber(date.getFullYear())}`;
     }
 
-    function fetchApplications(page = 1, search = '', sortBy = 'application_id', sortOrder = 'desc', limit = 10, union = '') {
+    // Loading overlay (counter handles overlapping requests)
+    let tableLoadingCount = 0;
+    function showTableLoading() {
+        tableLoadingCount++;
+        $('#searchLoading').fadeIn(150);
+    }
+    function hideTableLoading() {
+        tableLoadingCount = Math.max(0, tableLoadingCount - 1);
+        if (tableLoadingCount === 0) {
+            $('#searchLoading').fadeOut(120);
+        }
+    }
+
+    function fetchApplications(page = 1, search = '', sortBy = 'application_id', sortOrder = 'desc', limit = 10, union = '', status = '') {
         var type = '{{ url_path |e('js') }}'; // সার্টিফিকেট টাইপ URL থেকে নেওয়া
         var url = "/applications/" + type + "/fetch_all";
+        showTableLoading();
 
         $.ajax({
             type: "POST",
@@ -277,16 +321,19 @@ $(document).ready(function () {
                 sort_by: sortBy,
                 sort_order: sortOrder,
                 records_per_page: limit,
-                union_id: union
+                union_id: union,
+                status: status
             },
             dataType: "json",
             success: function (response) {
+                hideTableLoading();
                 let tbody = $("#sonodTableBody");
                 tbody.empty();
 
                 // যদি কোনো ডেটা না থাকে
                 if (!response.data || response.data.length === 0) {
                     tbody.append('<tr><td colspan="7" class="text-center">কোনো আবেদন পাওয়া যায়নি।</td></tr>');
+                    updateRangeSummary(page, limit, response.total_records, 0);
                     return;
                 }
 
@@ -387,6 +434,8 @@ $(document).ready(function () {
                 } else {
                     $('#totalCount').text('(মোট: 0)');
                 }
+                // দৃশ্যমান পরিসর সারসংক্ষেপ (যেমন: মোট ২৪০টির মধ্যে ১–১০ দেখানো হচ্ছে)
+                updateRangeSummary(page, limit, response.total_records, response.data ? response.data.length : 0);
 
                 // Address expand/collapse with jQuery
                 $('.address-block').each(function(){
@@ -435,6 +484,7 @@ $(document).ready(function () {
 
             },
             error: function (xhr, status, error) {
+                hideTableLoading();
                 displayMessage('error', `আবেদন আনতে ব্যর্থ হয়েছে। ত্রুটি: ${xhr.responseText}`);
             }
         });
@@ -442,7 +492,13 @@ $(document).ready(function () {
     $("#unionFilter").on("change", function () {
         currentUnion = $(this).val();
         currentPage = 1;
-        fetchApplications(currentPage, currentSearch, currentSortBy, currentSortOrder, recordsPerPage, currentUnion);
+        fetchApplications(currentPage, currentSearch, currentSortBy, currentSortOrder, recordsPerPage, currentUnion, currentStatus);
+    });
+
+    $("#statusFilter").on("change", function () {
+        currentStatus = $(this).val();
+        currentPage = 1;
+        fetchApplications(currentPage, currentSearch, currentSortBy, currentSortOrder, recordsPerPage, currentUnion, currentStatus);
     });
 
     function shortenNumber(num) {
@@ -479,6 +535,7 @@ $(document).ready(function () {
                 badgeClass = 'bg-danger';
                 statusText = 'বাতিল';
                 break;
+            case 'on hold':
             case 'on_hold':
                 badgeClass = 'bg-secondary';
                 statusText = 'স্থগিত';
@@ -507,7 +564,7 @@ $(document).ready(function () {
                 <i class="fas fa-check-circle"></i></a>
             <a href="/applications/${type}/reject/${application.application_id}" class="btn btn-danger btn-sm ms-1" title="বাতিল করুন">
                 <i class="fas fa-times-circle"></i></a>`;
-        } else if (application.status === "On_Hold" || application.status === "on_hold") {
+        } else if (application.status === "On Hold" || application.status === "On_Hold" || application.status === "on_hold") {
             buttons += `<button class="btn btn-primary btn-sm reactivateButton ms-1" data-id="${application.application_id}" title="পুনরায় সক্রিয় করুন">
                 <i class="fas fa-play-circle"></i></button>`;
         }
@@ -545,7 +602,7 @@ $(document).ready(function () {
             dataType: "json",
             success: function (response) {
                 displayMessage(response.status, response.message);
-                if (response.status === "success") fetchApplications(currentPage, currentSearch, currentSortBy, currentSortOrder, recordsPerPage);
+                if (response.status === "success") fetchApplications(currentPage, currentSearch, currentSortBy, currentSortOrder, recordsPerPage, currentUnion, currentStatus);
             },
             error: function (xhr, status, error) {
                 displayMessage('error', `একটি ত্রুটি হয়েছে: ${xhr.responseText}`);
@@ -576,7 +633,7 @@ $(document).ready(function () {
             dataType: "json",
             success: function (response) {
                 displayMessage(response.status, response.message);
-                if (response.status === "success") fetchApplications(currentPage, currentSearch, currentSortBy, currentSortOrder, recordsPerPage);
+                if (response.status === "success") fetchApplications(currentPage, currentSearch, currentSortBy, currentSortOrder, recordsPerPage, currentUnion, currentStatus);
             },
             error: function (xhr, status, error) {
                 displayMessage('error', `একটি ত্রুটি হয়েছে: ${xhr.responseText}`);
@@ -659,10 +716,25 @@ $(document).ready(function () {
         }
     }
 
+    // Update "showing X–Y of Z" summary under the table
+    function updateRangeSummary(page, limit, totalRecords, rowCount) {
+        totalRecords = totalRecords || 0;
+        rowCount = rowCount || 0;
+        if (totalRecords === 0 || rowCount === 0) {
+            $('#rangeSummary').empty();
+            return;
+        }
+        const from = (page - 1) * limit + 1;
+        const to = (page - 1) * limit + rowCount;
+        $('#rangeSummary').text(
+            `মোট ${toBanglaNumber(totalRecords)}টির মধ্যে ${toBanglaNumber(from)}–${toBanglaNumber(to)} দেখানো হচ্ছে`
+        );
+    }
+
     $(document).on("click", ".page-link", function () {
         let page = $(this).data("page");
         currentPage = page;
-        fetchApplications(currentPage, currentSearch, currentSortBy, currentSortOrder, recordsPerPage);
+        fetchApplications(currentPage, currentSearch, currentSortBy, currentSortOrder, recordsPerPage, currentUnion, currentStatus);
     });
 
     $(document).on("click", ".deleteButton", async function () {
@@ -688,7 +760,7 @@ $(document).ready(function () {
             success: function (response) {
                 displayMessage(response.status, response.message);
                 if (response.status === "success") {
-                    fetchApplications(currentPage, currentSearch, currentSortBy, currentSortOrder, recordsPerPage);
+                    fetchApplications(currentPage, currentSearch, currentSortBy, currentSortOrder, recordsPerPage, currentUnion, currentStatus);
                 }
             },
             error: function (xhr, status, error) {
@@ -707,10 +779,43 @@ $(document).ready(function () {
         setTimeout(() => messageDiv.empty(), 5000);
     }
 
-    $("#liveSearch").on("keyup", function () {
+    // Debounce utility for the live search input (with cancel support)
+    function debounce(fn, delay) {
+        let timer;
+        function debounced(...args) {
+            clearTimeout(timer);
+            timer = setTimeout(() => fn.apply(this, args), delay);
+        }
+        debounced.cancel = function () {
+            clearTimeout(timer);
+        };
+        return debounced;
+    }
+
+    function runSearch() {
         currentPage = 1;
-        currentSearch = $(this).val();
-        fetchApplications(currentPage, currentSearch, currentSortBy, currentSortOrder, recordsPerPage);
+        currentSearch = $('#liveSearch').val();
+        fetchApplications(currentPage, currentSearch, currentSortBy, currentSortOrder, recordsPerPage, currentUnion, currentStatus);
+    }
+
+    // Show/hide the clear (×) button based on input content
+    $("#liveSearch").on("input", function () {
+        $("#clearSearch").toggle($(this).val().length > 0);
+    });
+    // Debounced live search — fires 300ms after the user pauses typing.
+    // Skips keys that don't change the value (arrows, Shift, etc.).
+    const debouncedSearch = debounce(function () {
+        if ($('#liveSearch').val() === currentSearch) return;
+        runSearch();
+    }, 300);
+    $("#liveSearch").on("keyup", debouncedSearch);
+
+    // Clear button resets the search immediately (and cancels any pending timer)
+    $("#clearSearch").on("click", function () {
+        $("#liveSearch").val("").trigger("focus");
+        $("#clearSearch").hide();
+        debouncedSearch.cancel();
+        runSearch();
     });
 
     // Handle sortable header clicks
@@ -739,14 +844,14 @@ $(document).ready(function () {
         $(this).find("i").removeClass("fa-sort").addClass(sortOrder === 'asc' ? 'fa-sort-up' : 'fa-sort-down');
 
         currentPage = 1;
-        fetchApplications(currentPage, currentSearch, currentSortBy, currentSortOrder, recordsPerPage);
+        fetchApplications(currentPage, currentSearch, currentSortBy, currentSortOrder, recordsPerPage, currentUnion, currentStatus);
     });
 
     // Handle records per page change
     $("#recordsPerPage").on("change", function() {
         recordsPerPage = $(this).val();
         currentPage = 1;
-        fetchApplications(currentPage, currentSearch, currentSortBy, currentSortOrder, recordsPerPage);
+        fetchApplications(currentPage, currentSearch, currentSortBy, currentSortOrder, recordsPerPage, currentUnion, currentStatus);
     });
 
     fetchApplications(currentPage, currentSearch, currentSortBy, currentSortOrder, recordsPerPage); // Initial fetch

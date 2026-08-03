@@ -1,10 +1,10 @@
 <?php
 /**
- * Scrape employee data from lgdhaka.com and save to storage/data/employee_data.php
+ * Scrape employee data from lgdhaka.co and save to storage/data/employee_data.php
  * Run: php scripts/scrape_employees.php
  */
 
-$baseUrl = 'https://lgdhaka.com';
+$baseUrl = 'https://lgdhaka.co';
 $slugs = [
     'chairman',
     'secretary',

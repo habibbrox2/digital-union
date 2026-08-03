@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android",
+      "package_name": "com.dhaka.smartUnion",
+      "sha256_cert_fingerprints": [
+        "REPLACE_WITH_YOUR_APP_SIGNING_KEY_FINGERPRINT"
+      ]
+    }
+  }
+]

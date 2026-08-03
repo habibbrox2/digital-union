@@ -7,6 +7,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf_token" content="{{ csrf_token }}">
 
+    <!-- PWA Support -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#008B8B">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="স্মার্ট ইউপি">
+    <link rel="apple-touch-icon" href="/assets/images/icon/favicon.png">
+
     <title>ক্যাশলেস স্মার্ট ইউপি, ঢাকা</title>
 
     <link rel="shortcut icon" href="{{ url }}/assets/images/icon/favicon.png" type="image/png">
@@ -312,11 +320,11 @@
                         {'name': 'ভূমিহীন সনদ', 'icon': url ~ '/assets/images/icon/landscape.png', 'slug': 'vumihin-sonod', 'cert_type': 'vumihin'},
                         {'name': 'মৃত্যু প্রত্যয়ন', 'icon': url ~ '/assets/images/icon/death.png', 'slug': 'mrityu-sonod', 'cert_type': 'death'},
                         {'name': 'বার্ষিক আয়', 'icon': url ~ '/assets/images/icon/yearly income.png', 'slug': 'barshik-aye-sonod', 'cert_type': 'yearlyincome'},
-                        {'name': 'অবিবাহিত সনদ', 'icon': 'https://lgdhaka.com/assets/images/icon/unmarrage.png', 'slug': 'obibahito-sonod', 'cert_type': 'obibahito'},
-                        {'name': 'বিবাহিত সনদ', 'icon': 'https://lgdhaka.com/assets/images/icon/bibahito.png', 'slug': 'bibahito-sonod', 'cert_type': 'bibahito'},
-                        {'name': 'একই নামের প্রত্যয়ন', 'icon': 'https://lgdhaka.com/assets/images/icon/akenamercertificate.png', 'slug': 'eko-namiyo-sonod', 'cert_type': 'ekoinam'},
-                        {'name': 'পুনঃ বিবাহ না হওয়া সনদ', 'icon': 'https://lgdhaka.com/assets/images/icon/punno_bibaho.png', 'slug': 'punobibaho-sonod', 'cert_type': 'punobibaho'},
-                        {'name': 'প্রকৃত বাকঁ ও শ্রবন প্রতিবন্ধী', 'icon': 'https://lgdhaka.com/assets/images/icon/potibondi.png', 'slug': 'protibondhi-sonod', 'cert_type': 'protibondi'},
+                        {'name': 'অবিবাহিত সনদ', 'icon': url ~ '/assets/images/icon/unmarrage.png', 'slug': 'obibahito-sonod', 'cert_type': 'obibahito'},
+                        {'name': 'বিবাহিত সনদ', 'icon': url ~ '/assets/images/icon/bibahito.png', 'slug': 'bibahito-sonod', 'cert_type': 'bibahito'},
+                        {'name': 'একই নামের প্রত্যয়ন', 'icon': url ~ '/assets/images/icon/akenamercertificate.png', 'slug': 'eko-namiyo-sonod', 'cert_type': 'ekoinam'},
+                        {'name': 'পুনঃ বিবাহ না হওয়া সনদ', 'icon': url ~ '/assets/images/icon/punno_bibaho.png', 'slug': 'punobibaho-sonod', 'cert_type': 'punobibaho'},
+                        {'name': 'প্রকৃত বাকঁ ও শ্রবন প্রতিবন্ধী', 'icon': url ~ '/assets/images/icon/potibondi.png', 'slug': 'protibondhi-sonod', 'cert_type': 'protibondi'},
                         {'name': 'পারিবারিক সনদ', 'icon': url ~ '/assets/images/icon/family.png', 'slug': 'poribar-sodosso-sonod', 'cert_type': 'family'},
                         {'name': 'প্রত্যয়নপত্র', 'icon': url ~ '/assets/images/icon/pottoyon.png', 'slug': 'prottyon-potro', 'cert_type': 'prottyon'},
                         {'name': 'অনুমতি পত্র', 'icon': url ~ '/assets/images/icon/permission.png', 'slug': 'onumoti-potro', 'cert_type': 'onumoti'},
@@ -566,8 +574,8 @@
 // ===============================
 // Global Base URL
 // ===============================
-var BASE_URL     = 'https://lgdhaka.co';
-var BASE_API_URL = 'https://lgdhaka.com';
+    var BASE_URL     = 'https://lgdhaka.co';
+    var BASE_API_URL = 'https://lgdhaka.co';
 
 jQuery(document).ready(function ($) {
 
@@ -795,8 +803,16 @@ jQuery(document).ready(function ($) {
 });
 </script>
 
-
-
+<!-- PWA Service Worker Registration -->
+<script>
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function() {
+        navigator.serviceWorker.register('/sw.js')
+            .then(function(reg) { console.log('SW registered:', reg.scope); })
+            .catch(function(err) { console.log('SW registration failed:', err); });
+    });
+}
+</script>
 
 </body>
 </html>

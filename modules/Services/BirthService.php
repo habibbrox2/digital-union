@@ -243,7 +243,7 @@ class BirthService
         $qrPath = $tmpDir . "qr-{$id}.png";
         $barcodePath = $tmpDir . "barcode-{$id}.png";
 
-        $verifyLink = $app['verify_link'] ?? "https://lgdhaka.gov.bd/verify/birth/{$app['id']}";
+        $verifyLink = $app['verify_link'] ?? "https://lgdhaka.co/verify/birth/{$app['id']}";
         generate_qr($verifyLink, $qrPath);
 
         $registrationNumber = $app['registration_number'] ?? 'UNKNOWN';

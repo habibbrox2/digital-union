@@ -1454,6 +1454,7 @@ class ApplicationService
         $sort_by = isset($post['sort_by']) ? sanitize_input($post['sort_by']) : 'application_id';
         $sort_order = isset($post['sort_order']) && strtolower($post['sort_order']) === 'asc' ? 'ASC' : 'DESC';
         $records_per_page = isset($post['records_per_page']) ? (int)$post['records_per_page'] : 10;
+        $status = isset($post['status']) ? sanitize_input($post['status']) : '';
 
         // Allow superadmin to filter by union
         $union_id = $userUnionId;
@@ -1469,7 +1470,8 @@ class ApplicationService
             $records_per_page,
             $sort_by,
             $sort_order,
-            $certificateType
+            $certificateType,
+            $status
         );
     }
 

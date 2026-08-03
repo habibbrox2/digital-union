@@ -81,7 +81,7 @@
 
 /* Intro Text */
 .intro-text {
-    font-size: 14pt;
+    font-size: 10.5pt;
     line-height: 1.2;   /* আগে 1.4 ছিল, কমিয়ে compact করা হলো */
     margin: 4pt 0;      /* আগে 10px ছিল, কমিয়ে 4px করা হলো */
     font-weight: normal;
@@ -111,7 +111,7 @@
 
 /* Warish Statement */
 .warish-statement {
-    font-size: 14pt;
+    font-size: 10.5pt;
     line-height: 1.4;   /* আগে 1.8 ছিল, কমিয়ে compact করা হলো */
     margin: 4pt 0;      /* আগে 10px ছিল, কমানো হলো */
     color: #000;
@@ -309,13 +309,13 @@
             <!-- Warish List -->
             <table class="warish-table">
                 <tr>
-                    <th>ক্রমিক নং</th>
-                    <th>নাম</th>
-                    <th>সম্পর্ক</th>
-                    <th>বয়স/জন্ম তারিখ</th>
-                    <th>জাতীয় পরিচয়পত্র/নিবন্ধন নং</th>
-                    <th>বৈবাহিক অবস্থা</th>
-                    <th>জীবিত/মৃত</th>
+                    <th style="width: 5%;">ক্রমিক নং</th>
+                    <th style="width: 26%;">নাম</th>
+                    <th style="width: 8%;">সম্পর্ক</th>
+                    <th style="width: 15%;">বয়স/জন্ম তারিখ</th>
+                    <th style="width: 26%;">জাতীয় পরিচয়পত্র/নিবন্ধন নং</th>
+                    <th style="width: 10%;">বৈবাহিক অবস্থা</th>
+                    <th style="width: 10%;">জীবিত/মৃত</th>
                 </tr>
                 {% for member in data.warish_members %}
                     <tr>

@@ -76,7 +76,7 @@
 
 /* Warish Table - mPDF Ready */
 table.warish-table {
-    width: 95%;
+    width: 100%;
     border-collapse: collapse;
     font-size: 10.5pt;
     margin-bottom: 7.5pt;
@@ -257,9 +257,9 @@ table.warish-table td {
                 <tr style="{% if compact_scale < 1 %}font-size: {{ (10.5 * compact_scale)|round(1) }}pt;{% endif %}">
                     <th style="width: 5%;">ক্রমিক নং</th>
                     <th style="width: 24%;">নাম</th>
-                    <th style="width: 16%;">সম্পর্ক</th>
-                    <th style="width: 15%;">বয়স/জন্ম তারিখ</th>
-                    <th style="width: 18%;">জাতীয় পরিচয়পত্র নং</th>
+                    <th style="width: 10%;">সম্পর্ক</th>
+                    <th style="width: 15%;">বয়স/জন্ম তারিখ/মৃত্য তারিখ</th>
+                    <th style="width: 24%;">জাতীয় পরিচয়পত্র/নিবন্ধন নং</th>
                     <th style="width: 10%;">বৈবাহিক অবস্থা</th>
                     <th style="width: 10%;">জীবিত/মৃত</th>
                 </tr>
@@ -297,35 +297,52 @@ table.warish-table td {
                 <td class="no-border" colspan="2" style="{% if compact_scale < 1 %}font-size: {{ (10.5 * compact_scale)|round(1) }}pt;{% endif %}">আবেদনকারী: {{ data.applicant_name }}</td>
                 <td class="no-border" colspan="3" style="text-align: left;{% if compact_scale < 1 %} font-size: {{ (10.5 * compact_scale)|round(1) }}pt;{% endif %}">পিতা/স্বামী: {{ data.extra.applicant_name_father_bn }}</td>
             </tr>
-            </table>
-            
-            
-
+</table>
 
 <!-- Footer -->
 <htmlpagefooter name="MyFooter">
-    <table class="instructions" style="width: 94%; border-collapse: collapse;">
+    <table class="instructions" style="width: 94%; border-collapse: collapse; margin-left: 40px;">
+                <tr>
+                    <td colspan="2" style="text-align: center; padding-top: 8pt; padding-bottom: 35pt;">
+                        <table style="width:100%; border-collapse:collapse;">
+                            <tr>
+                                {% if approval.verifier_name_bn %}
+                                <td style="text-align: center; padding-left: 55pt; width: 50%;">
+                                    <div style="border-top: 1px solid #000; display: inline-block; padding-top: 5px;">
+                                        ইউপি সদস্য
+                                    </div>
+                                </td>
+                                {% endif %}
+                                <td style="text-align: right; padding-right: 120px; width: 50%;">
+                                    <div style="border-top: 1px solid #000; display: inline-block; padding-top: 5px;">
+                                        চেয়ারম্যান স্বাক্ষর
+                                    </div>
+                                </td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
                 <tr>
                     <td style="border-right:1px solid black; border-top:1px solid black; text-align:center; width: 25%;">
-                        <img src="https://quickchart.io/qr?text={{ url }}/verify/warish_bn/{{ data.sonod_number }}/{{ union.union_code }}/1&margin=1&size=300" height="110" width="110">
+                        <img src="https://quickchart.io/qr?text={{ url }}/verify/warish_bn/{{ data.sonod_number }}/{{ union.union_code }}/1&margin=1&size=300" height="100" width="100">
                     </td>
                     <td style="padding-left:30px; border-bottom:1px solid black; width: 75%;">
                         <b>নির্দেশাবলীঃ</b><br>
-                        ১] সার্টিফিকেট টি ১৭ ডিজিটের সনদ নাম্বার দিয়ে ওয়েবসাইট ({{ union.website }}) থেকে যাচাই করুন অথবা Play Store থেকে ”স্মার্ট ইউপি, ঢাকা” Apps টি install করে QR code টি Scan করুন।<br>
-                        ২) যে কোন ধরনের তথ্য নেয়ার জন্য ফোন করুন অথবা ইমেইল করুন।
+                        ১] সার্টিফিকেট টি ১৭ ডিজিটের সনদ নাম্বার দিয়ে ওয়েবসাইট ({{ union.website }}) থেকে যাচাই করুন অথবা Play Store থেকে ”স্মার্ট ইউপি, ঢাকা” Apps টি install করে QR code টি Scan করুন।<br>
+                        ২) যে কোন ধরনের তথ্য নেয়ার জন্য ফোন করুন অথবা ইমেইল করুন।
                     </td>
                 </tr>
                 <tr>
                     <td style="text-align:center;">
-                        <font style="font-size:8px;">Developed by Innovation IT</font><br>
-                        <font style="font-size:8px;">www.innovationit.com.bd</font>
+                        <font style="font-size:10px;">Developed by Innovation IT</font><br>
+                        <font style="font-size:10px;">www.innovationit.com.bd</font>
                     </td>
                     <td style="text-align:center;">
-                     <font style="font-size:8px;">অল্প সময়ে, কম খরচে সঠিক বিচার পেতে চলো যাই গ্রাম আদালতে। </font><br>
-                        <font style="font-size:8px;">{{ union.website }} - {{ union.email }}</font>
+                     <font style="font-size:10px;">অল্প সময়ে, কম খরচে সঠিক বিচার পেতে চলো যাই গ্রাম আদালতে। </font><br>
+                        <font style="font-size:10px;">{{ union.website }} - {{ union.email }}</font>
                     </td>
                 </tr>
-    </table>
+     </table>
 </htmlpagefooter>
 
 <!-- Enable Footer -->
