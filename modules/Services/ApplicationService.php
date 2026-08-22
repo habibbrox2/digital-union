@@ -983,6 +983,11 @@ class ApplicationService
      */
     private function updateTradeBusinessMeta(string $applicationId, array $post): void
     {
+        // Fetch existing meta so approval-set fields (fiscal_year, expiry_date,
+        // fees, ownership_type_id, business_type_id) are preserved when the
+        // applicant edit form does not carry them.
+        $existingMeta = $this->appManager->getBusinessMetaByApplicationId($applicationId) ?: [];
+
         $businessAddressId = sonod_address(
             'business',
             sanitize_input($post['business_village_en'] ?? ''),
@@ -1008,19 +1013,21 @@ class ApplicationService
         $businessMetaData = [
             'business_name_en'    => sanitize_input($post['business_name_en'] ?? ''),
             'business_name_bn'    => sanitize_input($post['business_name_bn'] ?? ''),
-            'ownership_type_id'   => (int)($post['business_ownership_type'] ?? 0),
+            'ownership_type_id'   => !empty($post['business_ownership_type']) ? (int)$post['business_ownership_type'] : ($existingMeta['ownership_type_id'] ?? null),
             'vat_id'              => sanitize_input($post['vat_id'] ?? ''),
             'tax_id'              => sanitize_input($post['tax_id'] ?? ''),
-            'business_type_id'    => $business_type_id,
+            'business_type_id'    => $business_type_id ?: ($existingMeta['business_type_id'] ?? null),
             'paid_up_capital'     => (float)($post['paid_up_capital'] ?? 0),
-            'license_fee'         => $fees['license_fee'] ?? 0,
-            'vat_amount'          => $fees['vat_amount'] ?? 0,
-            'occupation_tax'      => $fees['occupation_tax'] ?? 0,
-            'income_tax'          => $fees['income_tax'] ?? 0,
-            'signboard_tax'       => $fees['signboard_tax'] ?? 0,
-            'surcharge'           => $fees['surcharge'] ?? 0,
-            'total_fee'           => $total_fee,
+            'license_fee'         => $fees ? ($fees['license_fee'] ?? 0) : ($existingMeta['license_fee'] ?? 0),
+            'vat_amount'          => $fees ? ($fees['vat_amount'] ?? 0) : ($existingMeta['vat_amount'] ?? 0),
+            'occupation_tax'      => $fees ? ($fees['occupation_tax'] ?? 0) : ($existingMeta['occupation_tax'] ?? 0),
+            'income_tax'          => $fees ? ($fees['income_tax'] ?? 0) : ($existingMeta['income_tax'] ?? 0),
+            'signboard_tax'       => $fees ? ($fees['signboard_tax'] ?? 0) : ($existingMeta['signboard_tax'] ?? 0),
+            'surcharge'           => $fees ? ($fees['surcharge'] ?? 0) : ($existingMeta['surcharge'] ?? 0),
+            'total_fee'           => $total_fee ?: ($existingMeta['total_fee'] ?? 0),
             'business_address_id' => $businessAddressId,
+            'fiscal_year'         => $existingMeta['fiscal_year'] ?? null,
+            'expiry_date'         => $existingMeta['expiry_date'] ?? null,
         ];
 
         if (!$this->appManager->updateBusinessMeta($applicationId, $businessMetaData)) {

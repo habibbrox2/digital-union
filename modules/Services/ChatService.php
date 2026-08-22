@@ -12,6 +12,14 @@ class ChatService
     private const RATE_LIMIT_SALT_PREFIX = 'lgdhaka_chat_';
     private const SESSION_SECRET_PREFIX = 'chat_sesh_';
 
+    // Bump this whenever chat tables/columns change so the one-time
+    // migration (autoMigrate) re-runs on the next request after deploy.
+    private const SCHEMA_VERSION = '3';
+
+    // In-process guard: migration must run at most once per PHP process,
+    // and only once per deployment (tracked via a system_settings flag).
+    private static bool $migrationChecked = false;
+
     // Visitor session inactivity timeout: 5 minutes (in seconds)
     public const SESSION_TIMEOUT = 300;
 
@@ -37,26 +45,53 @@ class ChatService
 
     /**
      * Auto-migration: create chat tables if they don't exist.
+     *
+     * Gated so the heavy CREATE TABLE / SHOW COLUMNS / ALTER work runs once
+     * per deployment (tracked with a system_settings flag) instead of on
+     * every request. Safe for concurrent first-run: all statements are
+     * idempotent (IF NOT EXISTS / column-exists checks).
      */
     public function autoMigrate(): void
     {
-        $this->chatModel->createTables();
+        if (self::$migrationChecked) {
+            return;
+        }
+        self::$migrationChecked = true;
+
+        try {
+            $storedVersion = (string)($this->chatModel->getChatSetting('chat_schema_version') ?? '');
+            if ($storedVersion === self::SCHEMA_VERSION) {
+                return;
+            }
+
+            $this->chatModel->createTables();
+            $this->chatModel->addMissingColumns();
+            $this->chatModel->seedCannedResponses();
+
+            $this->chatModel->saveChatSetting('chat_schema_version', self::SCHEMA_VERSION);
+        } catch (\Throwable $e) {
+            // Never block the application because a migration failed; the
+            // idempotent statements will simply run again next request.
+            error_log('[Chat] auto-migration failed: ' . $e->getMessage());
+        }
     }
 
     /**
      * Run incremental column migration (add new columns to existing tables).
+     * Kept for backward compatibility — gated by autoMigrate().
      */
     public function incrementalMigrate(): void
     {
-        $this->chatModel->addMissingColumns();
+        $this->autoMigrate();
     }
 
     /**
      * Seed default canned responses if table is empty (first run only).
+     * Kept for backward compatibility — gated by autoMigrate().
      */
     public function seedCannedResponses(): void
     {
-        $this->chatModel->seedCannedResponses();
+        $this->autoMigrate();
     }
 
     // ================================================================
@@ -138,12 +173,33 @@ class ChatService
     // ================================================================
 
     /**
+     * Resolve the effective client IP.
+     *
+     * The site is served behind a reverse proxy / Cloudflare, so REMOTE_ADDR
+     * is the proxy and would lump every visitor into one bucket. Use the
+     * first X-Forwarded-For entry when present (set by the proxy) and fall
+     * back to REMOTE_ADDR. This is the same trade-off the rest of the app
+     * makes when reading HTTP_CF_IPCOUNTRY for visitor metadata.
+     */
+    private function clientIp(): string
+    {
+        $xff = trim((string)($_SERVER['HTTP_X_FORWARDED_FOR'] ?? ''));
+        if ($xff !== '') {
+            $first = trim(explode(',', $xff)[0]);
+            if ($first !== '' && filter_var($first, FILTER_VALIDATE_IP)) {
+                return $first;
+            }
+        }
+        return (string)($_SERVER['REMOTE_ADDR'] ?? '127.0.0.1');
+    }
+
+    /**
      * Simple IP-based rate limiter.
      * Returns array with 'allowed' boolean and optional 'retry_after' seconds.
      */
     public function checkRateLimit(string $endpoint, int $maxRequests = 30, int $windowSeconds = 60): array
     {
-        $ip = $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
+        $ip = $this->clientIp();
         $windowSeconds = max(1, $windowSeconds);
         $windowStart = intdiv(time(), $windowSeconds) * $windowSeconds;
         $window = (string)$windowStart;

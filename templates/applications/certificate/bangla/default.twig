@@ -182,6 +182,13 @@
                     <td>নাম</td>
                     <td>: {{ data.name_bn }}</td>
                 </tr>
+                 {% if data.extra is defined and data.extra.nickname_bn %}
+                <tr class="person-info">
+                    <td>প্রকাশে নাম</td>
+                    <td>: {{ data.extra.nickname_bn }}</td>
+                </tr>
+                 {% endif %}
+
                 <tr class="person-info">
                     <td>পিতার নাম</td>
                     <td>: {{ data.father_name_bn }}</td>
@@ -190,7 +197,7 @@
                     <td>মাতার নাম</td>
                     <td>: {{ data.mother_name_bn }}</td>
                 </tr>
-                {% if citizen.marital_status == 'Married' %}
+                {% if citizen.marital_status == 'Married' and data.spouse_name_bn %}
                 <tr class="person-info">
                     <td>স্বামী/স্ত্রীর নাম</td>
                     <td>: {{ data.spouse_name_bn }}</td>
@@ -199,18 +206,22 @@
                 <tr class="person-info">
                     <td>বর্তমান ঠিকানা</td>
                     <td>
-                        : গ্রাম/মহল্লা : {{ data.present_village_bn }},
-                        রাস্তা/ব্লক/সেক্টর : {{ data.present_rbs_bn }},
-                        ডাকঘর : {{ data.present_postoffice_bn }}, <br>
-                        &nbsp; উপজেলা : {{ data.present_upazila_bn }}, জেলা : {{ data.present_district_bn }}
+                        : {% if data.present_village_bn %}গ্রাম/মহল্লাঃ {{ data.present_village_bn }}, {% endif %}
+                        {% if data.present_rbs_bn %}রাস্তা/ব্লক/সেক্টরঃ {{ data.present_rbs_bn }}, {% endif %}<br>
+                        &nbsp; {% if data.present_postoffice_bn %}পোস্ট অফিসঃ {{ data.present_postoffice_bn }}, {% endif %} 
+                         {% if data.present_upazila_bn %}উপজেলাঃ {{ data.present_upazila_bn }}, {% endif %}
+                        {% if data.present_district_bn %}জেলাঃ {{ data.present_district_bn }}{% endif %} ।
                     </td>
                 </tr>
+
                 <tr class="person-info">
                     <td>স্থায়ী ঠিকানা</td>
                     <td>
-                        : গ্রাম/মহল্লা : {{ data.permanent_village_bn }}, রাস্তা/ব্লক/সেক্টর : {{ data.permanent_rbs_bn }},
-                        ডাকঘর : {{ data.permanent_postoffice_bn }}, <br>
-                        &nbsp; উপজেলা : {{ data.permanent_upazila_bn }}, জেলা : {{ data.permanent_district_bn }}
+                        : {% if data.permanent_village_bn %}গ্রাম/মহল্লাঃ {{ data.permanent_village_bn }}, {% endif %}
+                        {% if data.permanent_rbs_bn %}রাস্তা/ব্লক/সেক্টরঃ {{ data.permanent_rbs_bn }}, {% endif %} <br>
+                        &nbsp; {% if data.permanent_postoffice_bn %}পোস্ট অফিসঃ {{ data.permanent_postoffice_bn }}, {% endif %} 
+                         {% if data.permanent_upazila_bn %}উপজেলাঃ {{ data.permanent_upazila_bn }}, {% endif %}
+                        {% if data.permanent_district_bn %}জেলাঃ {{ data.permanent_district_bn }}{% endif %} ।
                     </td>
                 </tr>
                 {% if data.birth_id or data.nid or data.passport_no %}
@@ -240,10 +251,7 @@
                         {{ translations[data.religion] | default(data.religion) }}
                     </td>
                 </tr>
-                <tr class="person-info">
-                    <td>ওয়ার্ড নং</td>
-                    <td>: {{ data.present_ward_no|bn }}</td>
-                </tr>
+
                 <tr class="person-info">
                     <td>জন্ম তারিখ</td>
                     <td>: {{ data.birth_date | date('d-m-Y') | bn_number }}</td>
@@ -252,9 +260,9 @@
 
             <!-- Paragraph (partials/certificate_paragraph.twig include) -->
             {% include 'partials/certificate_paragraph.twig' with { certificate_type: certificate_type, data: data } %}
-
+ 
             <!-- Signature -->
-            <table style="width:100%; border-collapse:collapse; margin-top: 25pt; margin-bottom: 8pt;">
+            <table style="width:100%; border-collapse:collapse; margin-top: 35pt; margin-bottom: 8pt;">
                 <tr>
                     {% if approval.verifier_name_bn %}
                     <td style="text-align: center; padding-right: 15pt; width: 50%;">

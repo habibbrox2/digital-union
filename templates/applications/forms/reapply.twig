@@ -5,6 +5,7 @@
 
 {% block content %}
 {% include 'components/sweetAlert.twig' %}
+{% include 'components/preview_modal.twig' %}
 <link rel="stylesheet" href="/assets/css/forms.css?t={{ "now"|date("Hiss") }}">
 
 {% set _data = reuse_data|default(data)|default({}) %}
@@ -41,7 +42,7 @@
             <!-- ================= Personal Info ================= -->
             <fieldset class="form-section">
                 <legend>ব্যক্তিগত তথ্য</legend>
-                {% include 'partials/forms/personal_info.twig' with { data: _data } %}
+                {% include 'partials/forms/personal_info.twig' with { data: _data, certificate_type: certificate_type } %}
             </fieldset>
 
             <!-- ================= Warish/Family Members ================= -->
@@ -226,9 +227,9 @@
                     if (url.match(/\.(jpg|jpeg|png|gif)$/i)) {
                         previewHTML = '<img src="' + url + '" class="img-fluid rounded shadow-sm" style="max-width:100px">';
                     } else if (url.match(/\.pdf$/i)) {
-                        previewHTML = '<a href="' + url + '" target="_blank">PDF দেখুন</a>';
+                        previewHTML = '<button type="button" class="btn btn-link p-0" data-preview="' + url + '" data-preview-title="PDF">PDF দেখুন</button>';
                     } else {
-                        previewHTML = '<a href="' + url + '" target="_blank">' + url.split('/').pop() + '</a>';
+                        previewHTML = '<button type="button" class="btn btn-link p-0" data-preview="' + url + '" data-preview-title="' + url.split('/').pop() + '">' + url.split('/').pop() + '</button>';
                     }
                 }
                 row.innerHTML = '\

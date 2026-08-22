@@ -5,6 +5,8 @@
 
 {% block content %}
 {% include 'components/sweetAlert.twig' %}
+{% include 'components/application_details_modal.twig' %}
+{% include 'components/preview_modal.twig' %}
 
 <!-- Libraries -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -346,24 +348,27 @@ function renderResults(res) {
         /* Action buttons */
         let buttons = `
             <div class="d-flex flex-wrap gap-2">
-                <a href="/applications/${certificate.certificate_type}/view/${certificate.application_id}"
-                   class="btn btn-outline-info btn-sm" target="_blank" title="আবেদন দেখুন">
+                <button type="button"
+                   class="btn btn-outline-info btn-sm" title="আবেদন দেখুন"
+                   onclick="openApplicationDetails('${certificate.certificate_type}', '${certificate.application_id}')">
                     <i class="fas fa-eye"></i>
-                </a>
+                </button>
 
                 <a href="/applications/${certificate.certificate_type}/edit/${certificate.application_id}"
-                   class="btn btn-outline-warning btn-sm" target="_blank" title="সম্পাদনা করুন">
+                   class="btn btn-outline-warning btn-sm" title="সম্পাদনা করুন">
                     <i class="fas fa-pencil-alt"></i>
                 </a>
         `;
 
         if (certificate.approval_status === 'Approved') {
             buttons += `
-                <a href="/application/${certificate.certificate_type}/bangla/${certificate.sonod_number}"
-                   class="btn btn-outline-success btn-sm" target="_blank">বাংলা</a>
+                <button type="button"
+                   class="btn btn-outline-success btn-sm" title="বাংলা সনদ দেখুন"
+                   onclick="openPreview('/application/${certificate.certificate_type}/bangla/${certificate.sonod_number}', 'বাংলা সনদ')">বাংলা</button>
 
-                <a href="/application/${certificate.certificate_type}/english/${certificate.sonod_number}"
-                   class="btn btn-outline-primary btn-sm" target="_blank">ইংরেজি</a>
+                <button type="button"
+                   class="btn btn-outline-primary btn-sm" title="English সনদ দেখুন"
+                   onclick="openPreview('/application/${certificate.certificate_type}/english/${certificate.sonod_number}', 'English সনদ')">ইংরেজি</button>
             `;
         }
 

@@ -259,8 +259,26 @@ class DashboardService
             FROM applications a
             LEFT JOIN term_translations t ON t.slug = a.certificate_type
             LEFT JOIN application_approvals aa ON a.application_id = aa.application_id
-            LEFT JOIN application_members am ON a.application_id = am.application_id
-            LEFT JOIN business_meta bm ON a.application_id = bm.application_id
+            -- Fan-out guard: an application with many family members (e.g.
+            -- পারিবারিক সনদ) would otherwise produce one result row per member,
+            -- so the dashboard shows the same application multiple times and
+            -- LIMIT 50 fills up with repeats. Joining each 1:1 table through a
+            -- derived table that keeps a single representative row (MIN(id))
+            -- restores exactly one result row per application. The search OR
+            -- chain still matches when any member/business record contains the
+            -- term — only the displayed member/business is the representative.
+            LEFT JOIN (
+                SELECT application_id, MIN(id) AS keep_id
+                FROM application_members
+                GROUP BY application_id
+            ) amk ON amk.application_id = a.application_id
+            LEFT JOIN application_members am ON am.id = amk.keep_id
+            LEFT JOIN (
+                SELECT application_id, MIN(id) AS keep_id
+                FROM business_meta
+                GROUP BY application_id
+            ) bmk ON bmk.application_id = a.application_id
+            LEFT JOIN business_meta bm ON bm.id = bmk.keep_id
             WHERE
                 a.application_id LIKE CONCAT('%', ?, '%')
                 OR a.sonod_number LIKE CONCAT('%', ?, '%')

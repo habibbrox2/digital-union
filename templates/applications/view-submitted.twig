@@ -7,8 +7,17 @@
 
 {% block content %}
 {% include 'components/sweetAlert.twig' %}
+{% include 'components/preview_modal.twig' %}
 
 <style>
+    /* Document icon button — restyled anchor replacement for in-page preview */
+    .document-icon-btn {
+        background: transparent;
+        border: none;
+        padding: 0;
+        cursor: pointer;
+        color: inherit;
+    }
     .approve-page-header .header-icon-wrapper {
         display: inline-flex;
         align-items: center;
@@ -686,19 +695,22 @@
                                             <span>পূর্ণ আকার</span>
                                         </div>
                                     {% else %}
-                                        <a href="{{ doc_path }}" target="_blank" rel="noopener noreferrer" class="d-flex align-items-center justify-content-center w-100 h-100 text-decoration-none">
+                                        <button type="button"
+                                                class="d-flex align-items-center justify-content-center w-100 h-100 text-decoration-none document-icon-btn"
+                                                onclick="openPreview('{{ doc_path|e('js') }}', '{{ doc_path|split('/')|last|e('js') }}')">
                                             <div class="document-icon-big">
                                                 <i class="bi bi-file-earmark-text"></i>
                                             </div>
-                                        </a>
+                                        </button>
                                     {% endif %}
                                 </div>
                                 <div class="document-info">
                                     <span class="document-name" title="{{ doc_path|split('/')|last }}">{{ doc_path|split('/')|last }}</span>
                                     <div class="document-actions">
-                                        <a href="{{ doc_path }}" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-outline-primary document-view-btn">
+                                        <button type="button" class="btn btn-sm btn-outline-primary document-view-btn"
+                                                onclick="openPreview('{{ doc_path|e('js') }}', '{{ doc_path|split('/')|last|e('js') }}')">
                                             <i class="bi bi-eye me-1"></i> View
-                                        </a>
+                                        </button>
                                     </div>
                                 </div>
                             </div>

@@ -212,7 +212,7 @@
                 {% if data.birth_id %}
                     {{ data.birth_id | bn }}
                 {% elseif data.nid %}
-                    {{ data.nid | bn }}
+                    পরিচয় পত্র-{{ data.nid | bn }}
                 {% elseif data.passport_no %}
                     {{ data.passport_no | bn }}
                 {% endif %}
@@ -228,7 +228,7 @@
             <td>মোবাইল</td>
             <td>: {{ data.applicant_phone | bn }}</td>
             <td>ই-মেইল</td>
-            <td>: {{ business_meta.email }}</td>
+            <td>: {{ data.extra.email }}</td>
         </tr>
         <tr>
             <td>অর্থবছর</td>
@@ -410,7 +410,13 @@
     <!-- প্রথম টেবিল: ট্রেড লাইসেন্সের মেয়াদ -->
     <table style="">
         <tr>
-            <td style="font-size: 9pt;">অত্র ট্রেড লাইসেন্সের মেয়াদ (Validity of this trade License):------------{{ business_meta.expiry_date | date('d-m-Y') | bn }}------------পর্যন্ত (Up to)</td>
+            <td style="font-size: 9pt;">অত্র ট্রেড লাইসেন্সের মেয়াদ (Validity of this trade License):------------{{ business_meta.expiry_date | date('d-m-Y') | bn }}------------পর্যন্ত (Up to)
+             </td>
+            
+        </tr>
+        <tr>
+        <td style="font-size: 9pt;">
+            উল্লেখিত প্রতিষ্ঠানের অনুকূলে প্রদত্ত লাইসেন্স ফি গ্রহণ করিয়া ({{ business_meta.fiscal_year | bn }}) ইং অর্থ বছরের জন্য। </td>
         </tr>
     </table>
 

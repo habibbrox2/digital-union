@@ -18,6 +18,7 @@ global $router, $twig, $mysqli;
 $chatModel = new ChatModel($mysqli);
 $authService = new AuthService($mysqli);
 $chatService = new ChatService($chatModel);
+$pushService = new PushService($chatModel);
 
 // ================================================================
 // AUTO DATABASE MIGRATION — creates tables if they don't exist
@@ -237,7 +238,9 @@ $router->post('/api/chat/upload', function () use ($chatService, $chatModel) {
  * Get messages for a session (polling + history)
  */
 $router->get('/api/chat/messages', function () use ($chatService, $chatModel) {
-    $rateCheck = $chatService->checkRateLimit( 'messages', 60, 60);
+    // Generous limits: the widget polls messages + typing + unread in parallel
+    // and many visitors share one proxy IP (X-Forwarded-For is used by the limiter).
+    $rateCheck = $chatService->checkRateLimit( 'messages', 180, 60);
     if (!$rateCheck['allowed']) {
         http_response_code(429);
         header('Content-Type: application/json; charset=utf-8');
@@ -308,7 +311,7 @@ $router->get('/api/chat/messages', function () use ($chatService, $chatModel) {
  * GET /api/chat/unread?session_id=xxx
  */
 $router->get('/api/chat/unread', function () use ($chatService, $chatModel) {
-    $rateCheck = $chatService->checkRateLimit( 'unread', 60, 60);
+    $rateCheck = $chatService->checkRateLimit( 'unread', 120, 60);
     if (!$rateCheck['allowed']) {
         http_response_code(429);
         echo '0';
@@ -340,7 +343,7 @@ $router->get('/api/chat/unread', function () use ($chatService, $chatModel) {
  * Lightweight endpoint: returns just the raw count number (no JSON wrapper)
  */
 $router->get('/api/chat/unread/count', function () use ($chatService, $chatModel) {
-    $rateCheck = $chatService->checkRateLimit( 'unread_count', 30, 60);
+    $rateCheck = $chatService->checkRateLimit( 'unread_count', 120, 60);
     if (!$rateCheck['allowed']) {
         http_response_code(429);
         echo '0';
@@ -381,7 +384,7 @@ $router->get('/api/chat/unread/count', function () use ($chatService, $chatModel
  * Mark messages as read
  */
 $router->post('/api/chat/read', function () use ($chatService, $chatModel) {
-    $rateCheck = $chatService->checkRateLimit( 'read', 20, 60);
+    $rateCheck = $chatService->checkRateLimit( 'read', 60, 60);
     if (!$rateCheck['allowed']) {
         ChatService::jsonResponse(['status' => 'error', 'message' => 'অনুরোধের সীমা অতিক্রম করেছে।'], 429);
     }
@@ -419,6 +422,129 @@ $router->get('/api/chat/faq', function () use ($chatModel) {
 });
 
 // ================================================================
+// WEB PUSH (PUSH API) ENDPOINTS
+// ================================================================
+
+/**
+ * GET /api/chat/push/vapid-key
+ * Public VAPID public key used by the visitor widget to subscribe.
+ * Never cache: if the admin rotates keys, stale clients must pick the new
+ * key immediately instead of subscribing with a dead key.
+ */
+$router->get('/api/chat/push/vapid-key', function () use ($chatService, $pushService) {
+    $rateCheck = $chatService->checkRateLimit('push_vapid', 60, 60);
+    if (!$rateCheck['allowed']) {
+        ChatService::jsonResponse(['status' => 'error', 'message' => 'অনুরোধের সীমা অতিক্রম করেছে।'], 429);
+    }
+
+    // Only auto-generate keys when the feature is actually enabled, so a
+    // disabled feature never writes rows into system_settings.
+    $enabled = $pushService->isEnabled();
+    $configured = $enabled && $pushService->isConfigured();
+    if ($enabled && !$configured) {
+        $configured = $pushService->ensureKeys();
+    }
+
+    ChatService::jsonResponse([
+        'status' => 'success',
+        'data' => [
+            'public_key' => $configured ? $pushService->getVapidPublicKey() : '',
+            'enabled' => $enabled,
+            'configured' => $configured,
+        ],
+    ], 200, 'no-cache');
+});
+
+/**
+ * POST /api/chat/push/subscribe
+ * Visitor stores a browser push subscription for their session.
+ */
+$router->post('/api/chat/push/subscribe', function () use ($chatService, $chatModel, $pushService) {
+    $rateCheck = $chatService->checkRateLimit('push_subscribe', 10, 60);
+    if (!$rateCheck['allowed']) {
+        ChatService::jsonResponse(['status' => 'error', 'message' => 'অনুরোধের সীমা অতিক্রম করেছে।'], 429);
+    }
+    $input = json_decode(file_get_contents('php://input'), true);
+    $sessionId = $input['session_id'] ?? '';
+    $providedSig = $input['session_sig'] ?? '';
+    $subscription = is_array($input['subscription'] ?? null) ? $input['subscription'] : [];
+
+    if (empty($sessionId) || !preg_match('/^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i', $sessionId)) {
+        ChatService::jsonResponse(['status' => 'error', 'message' => 'Session ID is required'], 400);
+    }
+    if (!$chatModel->sessionExists($sessionId)) {
+        ChatService::jsonResponse(['status' => 'success', 'message' => 'No active session']);
+    }
+    if (!$chatService->verifySessionSig($sessionId, $providedSig)) {
+        ChatService::jsonResponse(['status' => 'error', 'message' => 'Invalid session signature'], 403);
+    }
+
+    $endpoint = $subscription['endpoint'] ?? '';
+    $keys = is_array($subscription['keys'] ?? null) ? $subscription['keys'] : [];
+    $p256dh = $keys['p256dh'] ?? '';
+    $auth = $keys['auth'] ?? '';
+
+    $saved = $pushService->subscribe($sessionId, (string)$endpoint, (string)$p256dh, (string)$auth);
+    if (!$saved) {
+        ChatService::jsonResponse(['status' => 'error', 'message' => 'Invalid subscription'], 400);
+    }
+    ChatService::jsonResponse(['status' => 'success', 'message' => 'Subscribed']);
+});
+
+/**
+ * POST /api/chat/push/unsubscribe
+ * Visitor removes their push subscription.
+ */
+$router->post('/api/chat/push/unsubscribe', function () use ($chatService, $chatModel, $pushService) {
+    $rateCheck = $chatService->checkRateLimit('push_unsubscribe', 10, 60);
+    if (!$rateCheck['allowed']) {
+        ChatService::jsonResponse(['status' => 'error', 'message' => 'অনুরোধের সীমা অতিক্রম করেছে।'], 429);
+    }
+    $input = json_decode(file_get_contents('php://input'), true);
+    $sessionId = $input['session_id'] ?? '';
+    $providedSig = $input['session_sig'] ?? '';
+    $endpoint = trim((string)($input['endpoint'] ?? ''));
+
+    if (empty($sessionId) || empty($endpoint)) {
+        ChatService::jsonResponse(['status' => 'error', 'message' => 'Session ID and endpoint are required'], 400);
+    }
+    if ($chatModel->sessionExists($sessionId) && !$chatService->verifySessionSig($sessionId, $providedSig)) {
+        ChatService::jsonResponse(['status' => 'error', 'message' => 'Invalid session signature'], 403);
+    }
+
+    $pushService->unsubscribe($endpoint);
+    ChatService::jsonResponse(['status' => 'success', 'message' => 'Unsubscribed']);
+});
+
+/**
+ * POST /api/chat/settings/vapid
+ * Generate VAPID keys (admin only).
+ * The private key is never sent back to the browser — only the public key
+ * and a boolean so the admin knows the key pair is set.
+ */
+$router->post('/api/chat/settings/vapid', function () use ($chatModel, $authService, $pushService) {
+    $authService->ensureCan('manage_settings');
+
+    $input = json_decode(file_get_contents('php://input'), true);
+    $action = $input['action'] ?? '';
+
+    if ($action !== 'generate') {
+        ChatService::jsonResponse(['status' => 'error', 'message' => 'Invalid action'], 400);
+    }
+    if ($pushService->ensureKeys()) {
+        ChatService::jsonResponse([
+            'status' => 'success',
+            'data' => [
+                'public_key' => $pushService->getVapidPublicKey(),
+                'private_key_set' => (string)($chatModel->getChatSetting('chat_push_vapid_private_key') ?? '') !== '',
+                'subject' => $pushService->getSubject(),
+            ],
+        ]);
+    }
+    ChatService::jsonResponse(['status' => 'error', 'message' => 'VAPID কী তৈরি করা যায়নি। অনুগ্রহ করে উপরের ফিল্ডে নিজের কী পেস্ট করুন।'], 500);
+});
+
+// ================================================================
 // ADMIN API ENDPOINTS
 // ================================================================
 
@@ -453,7 +579,7 @@ $router->get('/api/chat/admin/conversations/{session_id}', function ($sessionId)
 /**
  * POST /api/chat/admin/reply
  */
-$router->post('/api/chat/admin/reply', function () use ($chatService, $mysqli, $authService, $chatModel) {
+$router->post('/api/chat/admin/reply', function () use ($chatService, $mysqli, $authService, $chatModel, $pushService) {
     $authService->ensureCan('manage_chat');
 
     $input = json_decode(file_get_contents('php://input'), true);
@@ -488,6 +614,9 @@ $router->post('/api/chat/admin/reply', function () use ($chatService, $mysqli, $
     $messageId = $chatModel->insertMessage($sessionId, $message, 'admin', $adminId);
     $chatModel->touchSession($sessionId);
 
+    // Send a Web Push notification to the visitor's subscribed browser(s).
+    $pushService->sendToSession($sessionId, 'লাইভ চ্যাট উত্তর', $message);
+
     ChatService::jsonResponse([
         'status' => 'success', 
         'message' => 'Reply sent',
@@ -499,7 +628,7 @@ $router->post('/api/chat/admin/reply', function () use ($chatService, $mysqli, $
  * POST /api/chat/admin/upload
  * Admin uploads a file
  */
-$router->post('/api/chat/admin/upload', function () use ($chatService, $authService, $chatModel) {
+$router->post('/api/chat/admin/upload', function () use ($chatService, $authService, $chatModel, $pushService) {
     $authService->ensureCan('manage_chat');
 
     $sessionId = $_POST['session_id'] ?? '';
@@ -543,6 +672,10 @@ $router->post('/api/chat/admin/upload', function () use ($chatService, $authServ
     );
 
     $chatModel->touchSession($sessionId);
+
+    // Notify the visitor's subscribed browser(s) about the new attachment.
+    $pushBody = $message !== '' ? $message : 'একটি ফাইল পাঠানো হয়েছে';
+    $pushService->sendToSession($sessionId, 'লাইভ চ্যাট উত্তর', $pushBody);
 
     ChatService::jsonResponse([
         'status' => 'success', 
@@ -595,7 +728,7 @@ $router->post('/api/chat/admin/close-all', function () use ($chatModel, $authSer
  * Visitor is typing notification
  */
 $router->post('/api/chat/typing', function () use ($chatService, $chatModel) {
-    $rateCheck = $chatService->checkRateLimit( 'typing_send', 30, 60);
+    $rateCheck = $chatService->checkRateLimit( 'typing_send', 60, 60);
     if (!$rateCheck['allowed']) {
         ChatService::jsonResponse(['status' => 'error', 'message' => 'অনুরোধের সীমা অতিক্রম করেছে।'], 429);
     }
@@ -626,7 +759,7 @@ $router->post('/api/chat/typing', function () use ($chatService, $chatModel) {
  * Check if admin is typing (for visitor widget)
  */
 $router->get('/api/chat/typing', function () use ($chatService, $chatModel) {
-    $rateCheck = $chatService->checkRateLimit( 'typing_check', 60, 60);
+    $rateCheck = $chatService->checkRateLimit( 'typing_check', 120, 60);
     if (!$rateCheck['allowed']) {
         ChatService::jsonResponse(['status' => 'error', 'message' => 'অনুরোধের সীমা অতিক্রম করেছে।'], 429);
     }
@@ -729,6 +862,7 @@ $router->get('/api/chat/admin/unread/total', function () use ($chatModel, $authS
             'offline_unread' => $offlineCount,
             'latest' => $latestMsg ? [
                 'type' => 'live',
+                'id' => (int)($latestMsg['id'] ?? 0),
                 'visitor_name' => $latestMsg['visitor_name'] ?? 'অজ্ঞাত',
                 'message' => $latestMsg['message'] ?? '',
                 'message_type' => $latestMsg['message_type'] ?? 'text',
@@ -787,29 +921,49 @@ $router->post('/api/chat/settings/save', function () use ($chatModel, $authServi
         'chat_admin_notify_sound',
         'chat_admin_notify_desktop',
         'chat_admin_notify_toast',
-        'chat_typing_sound_enabled'
+        'chat_typing_sound_enabled',
+        'chat_visitor_push_enabled',
+        'chat_push_vapid_public_key',
+        'chat_push_vapid_private_key',
+        'chat_push_subject'
     ];
 
     try {
         $chatModel->beginTransaction();
 
-        if (!isset($settings['chat_enabled'])) $settings['chat_enabled'] = '0';
-        if (!isset($settings['chat_offline_enabled'])) $settings['chat_offline_enabled'] = '0';
+        // Master switches (chat_enabled / chat_offline_enabled) are only
+        // updated when explicitly provided — a partial save (e.g. an API
+        // caller changing a single field) must never silently ENABLE or
+        // DISABLE the whole widget. The settings form always sends them
+        // ('0' or '1'), so UI toggles still work exactly as before.
+        //
+        // Notification toggles default to ENABLED so that saving unrelated
+        // settings can never silently disable admin/visitor notifications.
         if (!isset($settings['chat_sound_enabled'])) $settings['chat_sound_enabled'] = '0';
-        if (!isset($settings['chat_admin_notify_sound'])) $settings['chat_admin_notify_sound'] = '0';
-        if (!isset($settings['chat_admin_notify_desktop'])) $settings['chat_admin_notify_desktop'] = '0';
-        if (!isset($settings['chat_admin_notify_toast'])) $settings['chat_admin_notify_toast'] = '0';
+        if (!isset($settings['chat_admin_notify_sound'])) $settings['chat_admin_notify_sound'] = '1';
+        if (!isset($settings['chat_admin_notify_desktop'])) $settings['chat_admin_notify_desktop'] = '1';
+        if (!isset($settings['chat_admin_notify_toast'])) $settings['chat_admin_notify_toast'] = '1';
         if (!isset($settings['chat_typing_sound_enabled'])) $settings['chat_typing_sound_enabled'] = '0';
+        if (!isset($settings['chat_visitor_push_enabled'])) $settings['chat_visitor_push_enabled'] = '1';
 
         foreach ($allowedKeys as $key) {
             if (!isset($settings[$key])) continue;
             $value = trim((string)$settings[$key]);
-            if (in_array($key, ['chat_enabled', 'chat_offline_enabled', 'chat_sound_enabled', 'chat_admin_notify_sound', 'chat_admin_notify_desktop', 'chat_admin_notify_toast', 'chat_typing_sound_enabled'], true)) {
+            if (in_array($key, ['chat_enabled', 'chat_offline_enabled', 'chat_sound_enabled', 'chat_admin_notify_sound', 'chat_admin_notify_desktop', 'chat_admin_notify_toast', 'chat_typing_sound_enabled', 'chat_visitor_push_enabled'], true)) {
                 $value = $value === '1' ? '1' : '0';
             } elseif ($key === 'chat_primary_color') {
                 if (!preg_match('/^#[0-9a-fA-F]{6}$/', $value)) $value = '#008B8B';
             } elseif (in_array($key, ['chat_offline_start', 'chat_offline_end'], true)) {
                 if (!preg_match('/^(?:[01]\d|2[0-3]):[0-5]\d$/', $value)) $value = $key === 'chat_offline_start' ? '17:00' : '09:00';
+            } elseif (in_array($key, ['chat_push_vapid_public_key', 'chat_push_vapid_private_key'], true)) {
+                // Never wipe an existing key with a blank field, and only
+                // accept plausible base64url key material.
+                if ($value === '') continue;
+                if (!preg_match('/^[A-Za-z0-9_\-]{20,}$/', $value)) continue;
+                $value = sanitize_input($value);
+            } elseif ($key === 'chat_push_subject') {
+                $value = sanitize_input($value);
+                if ($value !== '' && !preg_match('/^(mailto:|https?:\/\/)/i', $value)) continue;
             } else {
                 $value = sanitize_input($value);
             }
@@ -900,10 +1054,12 @@ $router->post('/api/chat/offline', function () use ($chatService) {
 
 /**
  * GET /api/chat/admin/canned
- * List all canned responses grouped by category
+ * List all canned responses grouped by category.
+ * Reading quick replies must work for any chat admin (the page itself only
+ * requires manage_chat); only create/update/delete need manage_settings.
  */
 $router->get('/api/chat/admin/canned', function () use ($chatService, $chatModel, $authService) {
-    $authService->ensureCan('manage_settings');
+    $authService->ensureCan('manage_chat');
 
     $responses = $chatModel->getAllCannedResponses();
 
@@ -1182,7 +1338,7 @@ $router->get('/chat/admin/offline', function () {
  * Public endpoint — no auth required
  */
 $router->get('/api/chat/admin/status', function () use ($chatService, $chatModel) {
-    $rateCheck = $chatService->checkRateLimit('admin_status', 30, 60);
+    $rateCheck = $chatService->checkRateLimit('admin_status', 120, 60);
     if (!$rateCheck['allowed']) {
         ChatService::jsonResponse(['status' => 'error', 'message' => 'Rate limit exceeded'], 429);
     }

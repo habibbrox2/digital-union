@@ -1,0 +1,85 @@
+{#
+    components/preview_modal.twig
+
+    Reusable fullscreen modal that previews documents, certificate PDFs or
+    HTML pages inside an in-page iframe — no new browser tab is opened.
+    X-Frame-Options on this app is SAMEORIGIN, so same-origin content
+    (uploaded documents, generated certificates, verify pages) renders fine.
+
+    Usage from any page script:
+        openPreview(url, title);
+
+    The header keeps an explicit "নতুন ট্যাব" button so a tab is still
+    available — but only when the user deliberately asks for it.
+#}
+<div class="modal fade preview-modal" id="previewModal" tabindex="-1" aria-labelledby="previewModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-fullscreen modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header py-2">
+                <h6 class="modal-title text-truncate me-2" id="previewModalLabel">
+                    <i class="bi bi-eye me-1"></i> প্রিভিউ
+                </h6>
+                <div class="d-flex align-items-center gap-2">
+                    <a href="#" id="previewOpenNewTab" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-outline-secondary">
+                        <i class="bi bi-box-arrow-up-right me-1"></i> নতুন ট্যাব
+                    </a>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+            </div>
+            <div class="modal-body p-0">
+                <iframe id="previewFrame" src="about:blank" title="প্রিভিউ" class="border-0"></iframe>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .preview-modal .modal-body {
+        height: calc(100vh - 110px);
+        background: #e9ecef;
+    }
+    .preview-modal .modal-body iframe {
+        display: block;
+        width: 100%;
+        height: 100%;
+    }
+</style>
+
+<script>
+(function () {
+    'use strict';
+    if (window.__previewModalInit) return;
+    window.__previewModalInit = true;
+
+    window.openPreview = function (url, title) {
+        var modalEl = document.getElementById('previewModal');
+        var frame = document.getElementById('previewFrame');
+        var label = document.getElementById('previewModalLabel');
+        var newTab = document.getElementById('previewOpenNewTab');
+
+        // Fallback: if Bootstrap isn't available, open in a new tab as before.
+        if (!modalEl || !frame || typeof bootstrap === 'undefined') {
+            window.open(url, '_blank');
+            return;
+        }
+
+        if (label) label.textContent = title || 'প্রিভিউ';
+        if (newTab) newTab.href = url;
+        frame.src = url;
+        bootstrap.Modal.getOrCreateInstance(modalEl).show();
+    };
+
+    // Delegated handler: any element with [data-preview] opens the preview
+    // modal on normal click (Ctrl/Cmd+click or middle-click still opens a
+    // real tab for power users).
+    document.addEventListener('click', function (e) {
+        if (e.ctrlKey || e.metaKey || e.button === 1) return;
+        var el = e.target.closest('[data-preview]');
+        if (!el) return;
+        var url = el.getAttribute('data-preview');
+        if (!url) return; // empty — let the element behave normally
+        e.preventDefault();
+        openPreview(url, el.getAttribute('data-preview-title') || 'প্রিভিউ');
+    });
+})();
+</script>

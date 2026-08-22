@@ -515,9 +515,10 @@
 
         if (msg.file_url) {
             if (msg.message_type === 'image') {
-                html += '<a href="javascript:void(0)" class="chat-msg-image-link chat-msg-image-zoom-trigger" data-img-src="' + msg.file_url + '" data-img-name="' + escapeAttr(msg.file_name || 'Image') + '" role="button"><img src="' + msg.file_url + '" class="chat-msg-image" alt="' + escapeHtml(msg.file_name || 'Image') + '" loading="lazy"></a>';
+                const imgUrl = escapeAttr(msg.file_url);
+                html += '<a href="javascript:void(0)" class="chat-msg-image-link chat-msg-image-zoom-trigger" data-img-src="' + imgUrl + '" data-img-name="' + escapeAttr(msg.file_name || 'Image') + '" role="button"><img src="' + imgUrl + '" class="chat-msg-image" alt="' + escapeHtml(msg.file_name || 'Image') + '" loading="lazy"></a>';
             } else {
-                html += '<a href="' + msg.file_url + '" target="_blank" class="chat-msg-file" download="' + escapeHtml(msg.file_name || 'file') + '">';
+                html += '<a href="' + escapeAttr(msg.file_url) + '" target="_blank" class="chat-msg-file" download="' + escapeHtml(msg.file_name || 'file') + '">';
                 html += '<span class="chat-msg-file-icon"><i class="fas ' + getFileIcon(msg.file_type) + '"></i></span>';
                 html += '<span class="chat-msg-file-info"><span class="chat-msg-file-name">' + escapeHtml(msg.file_name || 'File') + '</span>';
                 if (msg.file_size) {
@@ -1624,9 +1625,11 @@ bulkReadAllBtn.addEventListener('click', async function() {
                 }
             });
 
-            // Update offset and has_more
+            // Update offset and has_more (only trust the server's pagination
+            // signal — otherwise the "load more" button never disappears
+            // once 50+ conversations exist).
             conversationsOffset = allConversations.length;
-            hasMoreConversations = newHasMore || allConversations.length >= CONV_PAGE_SIZE;
+            hasMoreConversations = newHasMore;
 
             renderConversations(filterConversations());
             renderLoadMoreButton();

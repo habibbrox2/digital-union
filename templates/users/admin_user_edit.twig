@@ -90,12 +90,17 @@
                         </div>
                         <div class="col-md-6 mb-3" id="wardField" style="display:{% if profileData.role_id == 4 %}block{% else %}none{% endif %};">
                             <label class="form-label fw-semibold small text-secondary">ওয়ার্ড নং <span class="text-danger" id="wardRequired" {% if profileData.role_id != 4 %}style="display:none"{% endif %}>*</span></label>
-                            <select class="form-select input-enhanced" name="ward_no" id="wardSelect">
-                                <option value="">ওয়ার্ড নির্বাচন করুন</option>
+                            <small class="text-muted d-block mb-2">একাধিক ওয়ার্ড নির্বাচন করতে ক্লিক করুন (মহিলা মেম্বার ৩টি ওয়ার্ডে কাজ করেন)</small>
+                            {% set existing_wards = profileData.ward_no|default('')|split(',') %}
+                            <div class="d-flex flex-wrap gap-2" id="wardCheckboxes">
                                 {% for i in 1..9 %}
-                                <option value="{{ i }}" {% if (profileData.ward_no ?: 0) == i %}selected{% endif %}>{{ i }}</option>
+                                <div class="form-check">
+                                    <input class="form-check-input ward-checkbox" type="checkbox" value="{{ i }}" id="ward_{{ i }}" {% if i in existing_wards %}checked{% endif %}>
+                                    <label class="form-check-label" for="ward_{{ i }}">{{ i }}</label>
+                                </div>
                                 {% endfor %}
-                            </select>
+                            </div>
+                            <input type="hidden" name="ward_no" id="wardSelect" value="{{ profileData.ward_no|default('') }}">
                         </div>
                         <div class="col-md-6 mb-3">
                             <label class="form-label fw-semibold small text-secondary">নতুন পাসওয়ার্ড</label>
@@ -204,9 +209,25 @@ document.addEventListener('DOMContentLoaded',function(){
             else{input.type='password';icon.classList.replace('bi-eye-slash','bi-eye');}
         });
     });
+    // Sync ward checkboxes into hidden input
+    function syncWardCheckboxes(){
+        var checked=[];
+        document.querySelectorAll('.ward-checkbox:checked').forEach(function(cb){checked.push(cb.value);});
+        wardSelect.value=checked.join(',');
+    }
+    document.querySelectorAll('.ward-checkbox').forEach(function(cb){
+        cb.addEventListener('change',syncWardCheckboxes);
+    });
+    // Initial sync for edit form (pre-selected values)
+    syncWardCheckboxes();
     function toggleWardField(){
-        if(roleSelect.value=='4'){wardField.style.display='block';wardSelect.required=true;wardRequired.style.display='inline';}
-        else{wardField.style.display='none';wardSelect.required=false;wardSelect.value='';wardRequired.style.display='none';}
+        if(roleSelect.value=='4'){wardField.style.display='block';wardRequired.style.display='inline';}
+        else{
+            wardField.style.display='none';
+            wardRequired.style.display='none';
+            document.querySelectorAll('.ward-checkbox').forEach(function(cb){cb.checked=false;});
+            wardSelect.value='';
+        }
     }
     roleSelect.addEventListener('change',toggleWardField);
     var reactivateBtn=document.getElementById('reactivateBtn');

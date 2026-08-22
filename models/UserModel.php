@@ -605,12 +605,14 @@ class UserModel {
             
             if (isset($filters['search'])) {
                 $search = '%' . $filters['search'] . '%';
-                $sql .= " AND (u.username LIKE ? OR u.email LIKE ? OR u.name_en LIKE ? OR u.name_bn LIKE ?)";
+                $sql .= " AND (u.username LIKE ? OR u.email LIKE ? OR u.name_en LIKE ? OR u.name_bn LIKE ? OR un.union_name_bn LIKE ? OR un.union_name_en LIKE ?)";
                 $params[] = $search;
                 $params[] = $search;
                 $params[] = $search;
                 $params[] = $search;
-                $types .= 'ssss';
+                $params[] = $search;
+                $params[] = $search;
+                $types .= 'ssssss';
             }
             
             if (isset($filters['exclude_superadmin']) && $filters['exclude_superadmin'] === true) {
@@ -855,25 +857,48 @@ class UserModel {
      * Get user count
      */
     public function countUsers($filters = []) {
-        $sql = "SELECT COUNT(*) as total FROM {$this->table} WHERE is_deleted = 0";
+        $sql = "SELECT COUNT(*) as total FROM {$this->table} u LEFT JOIN unions un ON u.union_id = un.union_id WHERE u.is_deleted = 0";
+        $params = [];
+        $types = '';
         
         if (isset($filters['role_id'])) {
-            $sql .= " AND role_id = " . (int)$filters['role_id'];
+            $sql .= " AND u.role_id = ?";
+            $params[] = (int)$filters['role_id'];
+            $types .= 'i';
         }
         
         if (isset($filters['union_id'])) {
-            $sql .= " AND union_id = " . (int)$filters['union_id'];
+            $sql .= " AND u.union_id = ?";
+            $params[] = (int)$filters['union_id'];
+            $types .= 'i';
         }
         
         if (isset($filters['status'])) {
-            $sql .= " AND status = '" . $this->mysqli->real_escape_string($filters['status']) . "'";
+            $sql .= " AND u.status = ?";
+            $params[] = $filters['status'];
+            $types .= 's';
+        }
+        
+        if (isset($filters['search'])) {
+            $search = '%' . $filters['search'] . '%';
+            $sql .= " AND (u.username LIKE ? OR u.email LIKE ? OR u.name_en LIKE ? OR u.name_bn LIKE ? OR un.union_name_bn LIKE ? OR un.union_name_en LIKE ?)";
+            for ($i = 0; $i < 6; $i++) { $params[] = $search; }
+            $types .= 'ssssss';
         }
         
         if (isset($filters['exclude_superadmin']) && $filters['exclude_superadmin'] === true) {
-            $sql .= " AND role_id > 1";
+            $sql .= " AND u.role_id > 1";
         }
         
-        $result = $this->mysqli->query($sql);
+        if (!empty($params)) {
+            $stmt = $this->mysqli->prepare($sql);
+            $stmt->bind_param($types, ...$params);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            $stmt->close();
+        } else {
+            $result = $this->mysqli->query($sql);
+        }
         
         if ($result) {
             $row = $result->fetch_assoc();

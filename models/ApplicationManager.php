@@ -69,6 +69,10 @@ class ApplicationManager
                 ba.postoffice_en AS business_postoffice_en, ba.postoffice_bn AS business_postoffice_bn,
                 ba.rbs_en AS business_rbs_en, ba.rbs_bn AS business_rbs_bn,
 
+                -- Full Union Name (from unions table)
+                un.union_name_bn AS union_name_bn,
+                un.union_name_en AS union_name_en,
+
                 -- Documents
                 a.documents AS existing_documents,
                 a.extra_data AS extra_data,
@@ -93,6 +97,7 @@ class ApplicationManager
                 AND tt.is_certificate_type = 1
                 LEFT JOIN business_meta bm ON a.application_id = bm.application_id
                 LEFT JOIN address ba ON bm.business_address_id = ba.id AND ba.type = 'business'
+                LEFT JOIN unions un ON a.union_id = un.union_id
             ";
     }
 
@@ -228,6 +233,11 @@ class ApplicationManager
         }
         // Trade license list: also match business/entity name & type
         // (business_meta bm is already LEFT JOINed; business_type bt is joined below)
+        // NOTE: wrap the whole expression in parentheses. Without the outer
+        // group, the appended trade ORs fall outside the search group and,
+        // because AND binds tighter than OR, they let rows bypass the
+        // certificate-type / status filters (e.g. an empty search then matches
+        // every application, not just this certificate type).
         if ($certificate_type === 'trade') {
             $search_where .= " OR bm.business_name_bn LIKE ? OR bm.business_name_en LIKE ? OR bt.business_name_bn LIKE ? OR bt.business_name_en LIKE ?";
             for ($i = 0; $i < 4; $i++) {
@@ -235,7 +245,7 @@ class ApplicationManager
                 $types .= 's';
             }
         }
-        $where[] = $search_where;
+        $where[] = "($search_where)";
         // Status filter (Pending / Approved / Rejected / On Hold / Active)
         if (!empty($status)) {
             $where[] = "a.status = ?";

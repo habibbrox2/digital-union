@@ -9,6 +9,8 @@
 {% block content %}
 
 {% include 'components/sweetAlert.twig' %}
+{% include 'components/application_details_modal.twig' %}
+{% include 'components/preview_modal.twig' %}
 <div class="container my-5 px-4">
     <div id="message"></div>
 
@@ -136,7 +138,7 @@
                 </thead>
                 <tbody id="sonodTableBody" class="text-center">
                     <tr>
-                        <td colspan="7" class="text-muted py-4" id="noDataRow" style="display: none;">
+                            <td colspan="7" class="text-muted py-4" id="noDataRow" style="display: none;">
                             <i class="bi bi-info-circle me-2 text-secondary fs-5"></i> কোনো তথ্য পাওয়া যায়নি।
                         </td>
                     </tr>
@@ -550,9 +552,9 @@ $(document).ready(function () {
     function getActionButtons(application) {
         let buttons = "<div class='d-flex flex-wrap justify-content-center gap-1'>";
         let type = '{{ go_url |e('js') }}'; 
-        buttons += `<a href="/applications/${type}/approve/${application.application_id}" class="btn btn-info btn-sm me-1" title="আবেদন দেখুন" target="_blank" rel="noopener noreferrer">
-                <i class="fas fa-eye"></i></a>
-            <a href="/applications/${type}/edit/${application.application_id}" class="btn btn-warning btn-sm me-1" title="সম্পাদনা করুন" target="_blank" rel="noopener noreferrer">
+        buttons += `<button type="button" class="btn btn-info btn-sm me-1" title="বিস্তারিত দেখুন" onclick="openApplicationDetails('${type}', '${application.application_id}')">
+                <i class="fas fa-eye"></i></button>
+            <a href="/applications/${type}/edit/${application.application_id}" class="btn btn-warning btn-sm me-1" title="সম্পাদনা করুন">
                 <i class="fas fa-pencil-alt"></i></a>`;
         if (application.status === "Approved") {
             buttons += `<a href="/application/${type}/bangla/${application.sonod_number}" class="btn btn-success btn-sm ms-1" target="_blank" rel="noopener noreferrer" title="বাংলা সনদ ডাউনলোড">বাংলা</a>

@@ -1,0 +1,281 @@
+{#
+    components/application_details_modal.twig
+
+    Reusable in-page modal that shows a compact summary of an application
+    without opening a new browser tab. Data is fetched from the existing
+    JSON endpoint: GET /applications/{certificate_type}/api/{application_id}
+
+    Usage from any page script:
+        openApplicationDetails('nagorik', '26071326114710006');
+
+    The modal footer offers full-page actions (view / edit / certificates)
+    that still open a new tab, but only when the user explicitly clicks them,
+    so browsing the list no longer spawns a tab per row.
+#}
+<div class="modal fade" id="applicationDetailsModal" tabindex="-1" aria-labelledby="applicationDetailsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="applicationDetailsModalLabel" style="font-size:1rem;">
+                    <i class="fas fa-file-alt me-2"></i>আবেদনের বিবরণ
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="applicationDetailsModalBody">
+                <div id="appDetailsLoading" class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status"><span class="visually-hidden">লোড হচ্ছে...</span></div>
+                    <div class="mt-2 text-muted">লোড হচ্ছে...</div>
+                </div>
+                <div id="appDetailsContent" style="display:none;"></div>
+                <div id="appDetailsApproveBtn" class="text-center my-2" style="display:none;"></div>
+                <div id="appDetailsError" style="display:none;"></div>
+            </div>
+            <div class="modal-footer" id="applicationDetailsModalFooter" style="display:none;"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+(function () {
+    'use strict';
+    if (window.__applicationDetailsModalInit) return;
+    window.__applicationDetailsModalInit = true;
+
+    function escHtml(v) {
+        return String(v == null ? '' : v)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+
+    function statusBadge(status) {
+        status = (status || '').toLowerCase();
+        var cls = 'bg-secondary', txt = escHtml(status);
+        if (status === 'approved')      { cls = 'bg-success'; txt = 'অনুমোদিত'; }
+        else if (status === 'pending')  { cls = 'bg-warning text-dark'; txt = 'অপেক্ষমান'; }
+        else if (status === 'rejected') { cls = 'bg-danger'; txt = 'বাতিল'; }
+        else if (status === 'on_hold' || status === 'on hold') { cls = 'bg-secondary'; txt = 'স্থগিত'; }
+        return '<span class="badge ' + cls + '">' + txt + '</span>';
+    }
+
+    function addressText(a, prefix) {
+        var parts = [
+            a[prefix + 'village_bn'],
+            a[prefix + 'ward_no'] ? 'ওয়ার্ড: ' + a[prefix + 'ward_no'] : '',
+            a[prefix + 'postoffice_bn'] ? 'পোস্ট: ' + a[prefix + 'postoffice_bn'] : '',
+            a[prefix + 'union_bn'] ? 'ইউনিয়ন: ' + a[prefix + 'union_bn'] : '',
+            a[prefix + 'upazila_bn'] ? 'উপজেলা: ' + a[prefix + 'upazila_bn'] : '',
+            a[prefix + 'district_bn'] ? 'জেলা: ' + a[prefix + 'district_bn'] : ''
+        ].filter(Boolean);
+        return parts.length ? escHtml(parts.join(', ')) : '<span class="text-muted">—</span>';
+    }
+
+    function renderDetails(a) {
+        var rows = [];
+        function add(label, value) {
+            if (value === null || value === undefined || value === '') return;
+            rows.push(
+                '<div class="col-12 col-md-6">' +
+                '<div class="app-detail-item">' +
+                '<span class="app-detail-label">' + escHtml(label) + '</span>' +
+                '<span class="app-detail-value">' + (typeof value === 'string' ? value : escHtml(String(value))) + '</span>' +
+                '</div></div>'
+            );
+        }
+
+        var isTrade = (a.certificate_type === 'trade');
+
+        // Identity
+        if (isTrade) {
+            add('ব্যবসার নাম (বাংলা)', escHtml(a.business_name_bn));
+            add('ব্যবসার নাম (ইংরেজি)', escHtml(a.business_name_en));
+        }
+        add('আবেদনকারীর নাম', escHtml(a.name_bn || a.name_en));
+        add('পিতা', escHtml(a.father_name_bn || a.father_name_en));
+        add('মাতা', escHtml(a.mother_name_bn || a.mother_name_en));
+        if (!isTrade) add('স্বামী/স্ত্রী', escHtml(a.spouse_name_bn || a.spouse_name_en));
+        add('জন্ম তারিখ', escHtml(a.birth_date));
+        add('লিঙ্গ', escHtml(a.gender));
+
+        // Numbers
+        add('সনদ নম্বর', escHtml(a.sonod_number));
+        add('আবেদন আইডি', escHtml(a.application_id));
+        add('আবেদনকারী আইডি', escHtml(a.applicant_id));
+        add('জাতীয় পরিচয়পত্র (NID)', escHtml(a.nid));
+        add('জন্ম নিবন্ধন', escHtml(a.birth_id));
+        add('পাসপোর্ট', escHtml(a.passport_no));
+        add('মোবাইল', escHtml(a.applicant_phone));
+
+        // Dates & status
+        add('আবেদনের তারিখ', escHtml(a.apply_date));
+        add('ইস্যুর তারিখ', escHtml(a.issue_date));
+        add('অবস্থা', statusBadge(a.status));
+
+        // Addresses
+        add('বর্তমান ঠিকানা', addressText(a, 'present_'));
+        add('স্থায়ী ঠিকানা', addressText(a, 'permanent_'));
+
+        var html = '<div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">' +
+            '<div class="d-flex align-items-center gap-2 flex-wrap">' +
+            '<span class="fw-semibold fs-5">' + escHtml(a.name_bn || a.name_en) + '</span>' +
+            statusBadge(a.status) +
+            '</div>' +
+            (isTrade && a.business_name_bn
+                ? '<span class="badge bg-info text-dark">' + escHtml(a.business_name_bn) + '</span>'
+                : '') +
+            '</div>' +
+            '<div class="row g-2">' + rows.join('') + '</div>';
+ 
+        // Documents
+        var docs = [];
+        try { docs = JSON.parse(a.existing_documents || '[]'); } catch (e) { docs = []; }
+        if (Array.isArray(docs) && docs.length) {
+            html += '<hr><h6 class="fw-semibold text-primary mb-2"><i class="fas fa-paperclip me-1"></i> ডকুমেন্টসমূহ</h6><div class="d-flex flex-wrap gap-2">';
+            docs.forEach(function (doc) {
+                var name = String(doc).split('/').pop();
+                html += '<a href="' + escHtml(doc) + '" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-outline-secondary">' +
+                        '<i class="fas fa-file me-1"></i>' + escHtml(name) + '</a>';
+            });
+            html += '</div>';
+        }
+
+        return html;
+    }
+
+    function renderFooter(a) {
+        var type = encodeURIComponent(a.certificate_type || 'application');
+        var id = encodeURIComponent(a.application_id);
+        var links = [];
+
+        // Approve button (first in footer for all statuses)
+        if (a.status === 'Approved') {
+            links.push('<a href="/applications/' + type + '/approve/' + id + '" target="_blank" rel="noopener noreferrer" class="btn btn-success btn-sm">' +
+                '<i class="fas fa-check-circle me-1"></i> অনুমোদন পৃষ্ঠা</a>');
+        } else if (a.status === 'Pending') {
+            links.push('<a href="/applications/' + type + '/approve/' + id + '" target="_blank" rel="noopener noreferrer" class="btn btn-success btn-sm">' +
+                '<i class="fas fa-check-circle me-1"></i> অনুমোদন করুন</a>');
+        } else if (a.status === 'On Hold' || a.status === 'On_Hold' || a.status === 'on_hold') {
+            links.push('<a href="/applications/' + type + '/approve/' + id + '" target="_blank" rel="noopener noreferrer" class="btn btn-success btn-sm">' +
+                '<i class="fas fa-check-circle me-1"></i> পুনরায় অনুমোদন করুন</a>');
+        } else {
+            links.push('<a href="/applications/' + type + '/approve/' + id + '" target="_blank" rel="noopener noreferrer" class="btn btn-success btn-sm">' +
+                '<i class="fas fa-check-circle me-1"></i> অনুমোদন পৃষ্ঠা</a>');
+        }
+
+        links.push('<a href="/applications/' + type + '/view/' + id + '" target="_blank" rel="noopener noreferrer" class="btn btn-outline-info btn-sm">' +
+            '<i class="fas fa-eye me-1"></i> পূর্ণ বিবরণ</a>');
+
+        links.push('<a href="/applications/' + type + '/edit/' + id + '" target="_blank" rel="noopener noreferrer" class="btn btn-warning btn-sm">' +
+            '<i class="fas fa-pencil-alt me-1"></i> সম্পাদনা</a>');
+
+        if (a.status === 'Approved' && a.sonod_number) {
+            links.push('<a href="/application/' + type + '/bangla/' + encodeURIComponent(a.sonod_number) + '" target="_blank" rel="noopener noreferrer" class="btn btn-success btn-sm">' +
+                '<i class="fas fa-download me-1"></i> বাংলা সনদ</a>');
+            links.push('<a href="/application/' + type + '/english/' + encodeURIComponent(a.sonod_number) + '" target="_blank" rel="noopener noreferrer" class="btn btn-warning btn-sm">' +
+                '<i class="fas fa-download me-1"></i> English সনদ</a>');
+        }
+
+        return links.join('');
+    }
+
+    window.openApplicationDetails = function (type, applicationId) {
+        var modalEl = document.getElementById('applicationDetailsModal');
+        if (!modalEl || typeof bootstrap === 'undefined') return;
+
+        var loading = document.getElementById('appDetailsLoading');
+        var content = document.getElementById('appDetailsContent');
+        var errorEl = document.getElementById('appDetailsError');
+        var footer = document.getElementById('applicationDetailsModalFooter');
+        var title = document.getElementById('applicationDetailsModalLabel');        loading.style.display = '';
+                content.style.display = 'none';
+                errorEl.style.display = 'none';
+                footer.style.display = 'none';
+                var approveBtnEl = document.getElementById('appDetailsApproveBtn');
+                if (approveBtnEl) { approveBtnEl.style.display = 'none'; approveBtnEl.innerHTML = ''; }
+                title.innerHTML = '<i class="fas fa-file-alt me-2"></i>আবেদনের বিবরণ';
+
+        var modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+        modal.show();
+
+        fetch('/applications/' + encodeURIComponent(type) + '/api/' + encodeURIComponent(applicationId))
+            .then(function (res) { return res.json().catch(function () { return { error: 'Invalid server response' }; }); })
+            .then(function (data) {
+                loading.style.display = 'none';
+                if (!data || data.error || !data.application_id) {
+                    errorEl.className = 'alert alert-danger mb-0';
+                    errorEl.innerHTML = '<i class="fas fa-exclamation-triangle me-1"></i> ' +
+                        escHtml((data && data.error) || 'আবেদনের তথ্য পাওয়া যায়নি।');
+                    errorEl.style.display = '';
+                    return;
+                }
+                var unionLabel = data.union_name_bn || data.present_union_bn || data.permanent_union_bn || '';
+                var titleHtml = '<i class="fas fa-file-alt me-2"></i>' +
+                    escHtml(data.certificate_type_bn || data.certificate_type || 'আবেদনের বিবরণ') +
+                    (unionLabel ? '<span class="badge bg-info text-dark ms-2" style="font-size:0.7rem;"><i class="fas fa-map-marker-alt me-1"></i>' + escHtml(unionLabel) + '</span>' : '');
+
+                // Show approve page route link for actionable statuses
+                if (data.status === 'Pending' || data.status === 'On Hold' || data.status === 'On_Hold' || data.status === 'on_hold') {
+                    var approveType = encodeURIComponent(data.certificate_type || 'application');
+                    var approveId = encodeURIComponent(data.application_id);
+                    titleHtml += ' <a href="/applications/' + approveType + '/approve/' + approveId + '" target="_blank" rel="noopener noreferrer" class="btn btn-success btn-sm ms-2" style="font-size:0.7rem;">' +
+                        '<i class="fas fa-check-circle me-1"></i>অনুমোদন পৃষ্ঠа</a>';
+                }
+
+                // Approve button in modal body
+                var approveBtn = document.getElementById('appDetailsApproveBtn');
+                if (data.status === 'Pending' || data.status === 'On Hold' || data.status === 'On_Hold' || data.status === 'on_hold') {
+                    var abt = encodeURIComponent(data.certificate_type || 'application');
+                    var abi = encodeURIComponent(data.application_id);
+                    approveBtn.innerHTML = '<a href="/applications/' + abt + '/approve/' + abi + '" target="_blank" rel="noopener noreferrer" class="btn btn-success btn-sm"><i class="fas fa-check-circle me-1"></i> অনুমোদন পৃষ্ঠায় যান</a>';
+                    approveBtn.style.display = '';
+                } else {
+                    approveBtn.innerHTML = '';
+                    approveBtn.style.display = 'none';
+                }
+
+                title.innerHTML = titleHtml;
+                content.innerHTML = renderDetails(data);
+                content.style.display = '';
+                footer.innerHTML = renderFooter(data);
+                footer.style.display = '';
+            })
+            .catch(function (err) {
+                loading.style.display = 'none';
+                errorEl.className = 'alert alert-danger mb-0';
+                errorEl.innerHTML = '<i class="fas fa-exclamation-triangle me-1"></i> আবেদনের তথ্য আনার সময় সমস্যা হয়েছে।';
+                errorEl.style.display = '';
+                console.error('Application details error:', err);
+            });
+    };
+})();
+</script>
+
+<style>
+    .app-detail-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        gap: 8px;
+        padding: 6px 10px;
+        background: #f8f9fa;
+        border-radius: 6px;
+        min-height: 36px;
+    }
+    .app-detail-label {
+        font-weight: 600;
+        color: #34495e;
+        font-size: 0.82rem;
+        white-space: nowrap;
+    }
+    .app-detail-value {
+        text-align: right;
+        font-size: 0.9rem;
+        word-break: break-word;
+    }
+    @media (max-width: 576px) {
+        .app-detail-item { flex-direction: column; align-items: flex-start; gap: 2px; }
+        .app-detail-value { text-align: left; }
+    }
+</style>

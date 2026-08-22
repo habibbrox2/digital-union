@@ -156,12 +156,12 @@ section#page-body { margin-top: 90px; }
     align-items: center;
     justify-content: center;
     text-align: center;
-    margin: 10px auto;
+    margin: 0 auto;
     padding: 20px 15px;
-    height: 160px;
-
-    width: 220px; /* desktop */
-    max-width: 100%;
+    min-height: 160px;
+    height: 100%;
+    width: 100%;
+    max-width: 220px;
     background: #FFF;
     border-radius: 12px;
     border: 1px solid #eee;

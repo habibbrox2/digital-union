@@ -18,7 +18,7 @@
                 </ul>
             </div>
             <div class="custom-modal-footer d-flex justify-content-end gap-2 flex-wrap">
-                <a href="#" id="approveApplication" class="btn btn-warning btn-sm" style="display:none;" target="_blank"><i class="fa fa-check-circle me-1"></i> অনুমোদন দিন</a>
+                <a href="#" id="approveApplication" class="btn btn-warning btn-sm" style="display:none;"><i class="fa fa-check-circle me-1"></i> অনুমোদন দিন</a>
                 <button class="btn btn-success btn-sm" id="downloadCopy"><i class="fa fa-download me-1"></i> আবেদন কপি ডাউনলোড</button>
                 <button class="btn btn-primary btn-sm" id="newApplication"><i class="fa fa-plus me-1"></i> নতুন আবেদন করুন</button>
             </div>
@@ -39,7 +39,7 @@
                 <p class="mb-2">আপনার আবেদনটি সফলভাবে আপডেট হয়েছে।</p>
                 <ul id="updateChangeList" class="list-group list-group-flush mb-3"></ul>
                 <div id="updateLinks" class="d-flex gap-2 flex-wrap">
-                    <a href="#" id="downloadCertificate" class="btn btn-info btn-sm" target="_blank"><i class="fa fa-download me-1"></i> সার্টিফিকেট ডাউনলোড করুন</a>
+                    <a href="#" id="downloadCertificate" class="btn btn-info btn-sm" data-preview="" data-preview-title="সার্টিফিকেট"><i class="fa fa-download me-1"></i> সার্টিফিকেট ডাউনলোড করুন</a>
                     <a href="/applications/{{ certificate_type|default('application') }}" class="btn btn-secondary btn-sm"><i class="fa fa-list me-1"></i> সকল আবেদন দেখুন</a>
                 </div>
             </div>
@@ -243,10 +243,10 @@ let restoreBtn;
                         const existingSonod = response.sonod_number || $("#sonod_number").val();
                         if (isLoggedIn && existingSonod) {
                             const certUrl = `/application/${certificateType}/bangla/${existingSonod}`;
-                            certLink.attr("href", certUrl).text('সার্টিফিকেট ডাউনলোড করুন').show();
+                            certLink.attr("data-preview", certUrl).text('সার্টিফিকেট ডাউনলোড করুন').show();
                         } else if (response.sonod_number) {
                             const certUrl = `/application/${certificateType}/bangla/${response.sonod_number}`;
-                            certLink.attr("href", certUrl).text('সার্টিফিকেট ডাউনলোড করুন').show();
+                            certLink.attr("data-preview", certUrl).text('সার্টিফিকেট ডাউনলোড করুন').show();
                         } else if (response.application_id) {
                             const approveUrl = `/applications/${certificateType}/approve/${response.application_id}`;
                             certLink.attr("href", approveUrl).text('অনুমোদন দিন / দেখুন').show();
@@ -353,9 +353,9 @@ let restoreBtn;
         const union_code = $("#union_code").text().trim() || '0';
         const rmo_code = $("#rmo_code").text().trim() || '0';
 
-        window.open(
+        openPreview(
             `/${certificateType}_verify/application/${applicantId}`,
-            "_blank"
+            'আবেদন কপি'
         );
     });
 });

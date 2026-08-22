@@ -7,6 +7,66 @@ class BusinessOwnershipType {
 
     public function __construct($mysqli) {
         $this->conn = $mysqli;
+        $this->ensureTables();
+    }
+
+    /**
+     * Create ownership_type and business_type tables if they don't exist,
+     * and seed default ownership types on first run.
+     */
+    private function ensureTables(): void
+    {
+        // ownership_type
+        $this->conn->query("
+            CREATE TABLE IF NOT EXISTS `ownership_type` (
+                `id` int(11) NOT NULL AUTO_INCREMENT,
+                `ownership_name_bn` varchar(255) NOT NULL,
+                `ownership_name_en` varchar(255) DEFAULT NULL,
+                `union_id` int(11) NOT NULL DEFAULT 0,
+                `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+                `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+                PRIMARY KEY (`id`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        ");
+
+        // business_type
+        $this->conn->query("
+            CREATE TABLE IF NOT EXISTS `business_type` (
+                `id` int(11) NOT NULL AUTO_INCREMENT,
+                `union_id` int(11) DEFAULT NULL,
+                `business_name_bn` varchar(255) DEFAULT NULL,
+                `business_name_en` varchar(255) DEFAULT NULL,
+                `license_fee` decimal(10,2) DEFAULT NULL,
+                `vat_amount` decimal(10,2) DEFAULT NULL,
+                `occupation_tax` decimal(10,2) DEFAULT NULL,
+                `income_tax` decimal(10,2) DEFAULT NULL,
+                `signboard_tax` decimal(10,2) DEFAULT NULL,
+                `surcharge` decimal(10,2) DEFAULT NULL,
+                `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+                `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+                PRIMARY KEY (`id`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        ");
+
+        // Seed default ownership types if the table is empty
+        $result = $this->conn->query("SELECT COUNT(*) AS cnt FROM ownership_type");
+        if ($result && (int)$result->fetch_assoc()['cnt'] === 0) {
+            $defaults = [
+                ['ব্যক্তি মালিকানাধীন', 'Sole Proprietorship'],
+                ['অংশীদারিত্ব', 'Partnership'],
+                ['সীমিত দায় সংস্থা', 'Limited Liability Company'],
+            ];
+            $stmt = $this->conn->prepare(
+                "INSERT INTO ownership_type (ownership_name_bn, ownership_name_en, union_id) VALUES (?, ?, 0)"
+            );
+            if ($stmt) {
+                foreach ($defaults as [$bn, $en]) {
+                    $stmt->bind_param('ss', $bn, $en);
+                    $stmt->execute();
+                }
+                $stmt->close();
+            }
+        }
     }
 
     public function fetchBusinessTypes($page = 1, $limit = 10, $search = '', $sort = 'id', $order = 'ASC', $unionId = null) {
@@ -194,6 +254,9 @@ class BusinessOwnershipType {
     public function fetchOwnershipTypes() {
         $query = "SELECT * FROM ownership_type ORDER BY id DESC";
         $result = $this->conn->query($query);
+        if (!$result) {
+            return [];
+        }
         $ownershipTypes = [];
         while ($row = $result->fetch_assoc()) {
             $ownershipTypes[] = $row;
@@ -202,8 +265,11 @@ class BusinessOwnershipType {
     }
 
     public function addOwnershipType($data) {
-        $query = "INSERT INTO ownership_type (ownership_name_bn, ownership_name_en) VALUES (?, ?)";
+        $query = "INSERT INTO ownership_type (ownership_name_bn, ownership_name_en, union_id) VALUES (?, ?, 0)";
         $stmt = $this->conn->prepare($query);
+        if (!$stmt) {
+            return ['status' => 'error', 'message' => 'Database prepare failed: ' . $this->conn->error];
+        }
         $ownershipBn = $data['ownership_name_bn'];
         $ownershipEn = $data['ownership_name_en'];
         $stmt->bind_param("ss", $ownershipBn, $ownershipEn);
@@ -213,6 +279,9 @@ class BusinessOwnershipType {
 
     public function getOwnershipTypeById($id) {
         $stmt = $this->conn->prepare("SELECT * FROM ownership_type WHERE id = ?");
+        if (!$stmt) {
+            return null;
+        }
         $stmt->bind_param("i", $id);
         $stmt->execute();
         return $stmt->get_result()->fetch_assoc();
@@ -221,6 +290,9 @@ class BusinessOwnershipType {
     public function updateOwnershipType($id, $data) {
         $query = "UPDATE ownership_type SET ownership_name_bn = ?, ownership_name_en = ? WHERE id = ?";
         $stmt = $this->conn->prepare($query);
+        if (!$stmt) {
+            return ['status' => 'error', 'message' => 'Database prepare failed: ' . $this->conn->error];
+        }
         $ownershipBn = $data['ownership_name_bn'];
         $ownershipEn = $data['ownership_name_en'];
         $stmt->bind_param("ssi", $ownershipBn, $ownershipEn, $id);
@@ -230,6 +302,9 @@ class BusinessOwnershipType {
 
     public function deleteOwnershipType($id) {
         $stmt = $this->conn->prepare("DELETE FROM ownership_type WHERE id = ?");
+        if (!$stmt) {
+            return ['status' => 'error', 'message' => 'Database prepare failed: ' . $this->conn->error];
+        }
         $stmt->bind_param("i", $id);
         return $stmt->execute() ? [ 'status' => 'success', 'message' => 'Ownership type deleted successfully.' ] :
             [ 'status' => 'error', 'message' => $stmt->error ];

@@ -56,7 +56,7 @@ class NumberGeneratorService
         string $prefix,
         int $seqLength = 6,
         ?string $unionCode = null,
-        int $maxAttempts = 1000000
+        int $maxAttempts = 1025040
     ): string {
         if (!preg_match('/^[a-zA-Z0-9_]+$/', $tablename)) {
             throw new InvalidArgumentException("Invalid table name.");

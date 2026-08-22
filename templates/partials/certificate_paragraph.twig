@@ -34,11 +34,17 @@
             {% elseif certificate_type == 'bibahito' %}
                 &nbsp; &nbsp;&nbsp; &nbsp; অত্র প্রত্যয়ন করা যাচ্ছে যে, উক্ত ব্যক্তি বিবাহিত এবং তাহার বিবাহ {{ data.marriage_date | date('d-m-Y') | bn_number }} তারিখে সম্পন্ন হয়।
             {% elseif certificate_type == 'ekoinam' %}
-                &nbsp; &nbsp;&nbsp; &nbsp; তিনি অত্র ইউনিয়নের অন্তর্গত {{ data.present_ward_no|bn }} নং ওয়ার্ডের স্{% if (data.resident|default("permanent")) == "temporary" %}অস্থায়ী বাসিন্দা{% else %}স্থায়ী বাসিন্দা{% endif %}, আমার জানামতে "{{ data.name_bn }}" প্রকাশে "{{ data.extra.nickname_bn }}" একই ব্যক্তি এবং এলাকায় উভয় নামে পরিচিত।
-                <br>
+                &nbsp; &nbsp;&nbsp; &nbsp; তিনি অত্র ইউনিয়নের অন্তর্গত {{ data.present_ward_no|bn }} নং ওয়ার্ডের {% if (data.resident|default("permanent")) == "temporary" %}অস্থায়ী বাসিন্দা{% else %}স্থায়ী বাসিন্দা{% endif %}, আমার জানামতে "{{ data.name_bn }}" প্রকাশে "{{ data.extra.nickname_bn }}" একই ব্যক্তি এবং এলাকায় উভয় নামে পরিচিত।
+                <br><br>
                 &nbsp; &nbsp;&nbsp; &nbsp; আমি তাহার সর্বাঙ্গীন মঙ্গল ও উন্নতি কামনা করি।
                 <br>
-                <strong>উল্লেখ্য যে,</strong> আবেদন পত্রে আবেদন কারী বা যাচাইকারী কর্তৃক কোন তথ্য ভুল প্রদান করা হলে উভয়ে ব্যক্তিগত ভাবে দায়ী থাকবে এবং সনদটি বাতিল বলে গণ্য হবে।
+                <strong>
+                &nbsp; &nbsp;&nbsp; &nbsp;
+                {% if approval.verifier_name_bn %}
+                অত্র ইউনিয়নের ওয়ার্ড সদস্য ({{ approval.verifier_name_bn }}) এর প্রদত্ত তথ্যের যাচাই বাছাই এর ভিত্তিতে এই সনদটি প্রদান করা হলো।
+                {% endif %}
+                
+                উল্লেখ্য যে,</strong> আবেদন পত্রে আবেদন কারী বা যাচাইকারী কর্তৃক কোন তথ্য ভুল প্রদান করা হলে উভয়ে ব্যক্তিগত ভাবে দায়ী থাকবে এবং সনদটি বাতিল বলে গণ্য হবে।
                         {% elseif certificate_type == 'punobibaho' %}
                 &nbsp; &nbsp;&nbsp; &nbsp; উক্ত ব্যক্তি পুনঃবিবাহ করেননি বলিয়া অত্র প্রত্যয়ন প্রদান করা হলো।
             {% elseif certificate_type == 'protibondi' %}

@@ -7,6 +7,7 @@
 
 {% block content %}
 {% include 'components/sweetAlert.twig' %}
+{% include 'components/preview_modal.twig' %}
 <link rel="stylesheet" href="/assets/css/forms.css?t={{ "now"|date("Hiss") }}">
 
 <div class="container form-page px-3 approve-page">
@@ -21,6 +22,15 @@
             <i class="bi bi-{{ data.status == 'approved' ? 'check-circle' : (data.status == 'rejected' ? 'x-circle' : 'hourglass-split') }} me-2"></i>
             {{ data.status_bn|default(data.status) }}
         </span>
+
+        {% set unionFullName = data.union_name_bn ?? data.present_union_bn ?? data.permanent_union_bn ?? '' %}
+        {% if unionFullName is not empty %}
+            <div class="mt-2">
+                <span class="badge bg-info text-dark rounded-pill px-3 py-1 fs-6">
+                    <i class="bi bi-geo-alt me-1"></i>{{ unionFullName }}
+                </span>
+            </div>
+        {% endif %}
         
         {% if data.status == 'approved' and license_number is not empty %}
             <div class="mt-3 d-flex align-items-center justify-content-center gap-2">
@@ -303,9 +313,10 @@
                                 <div class="document-info">
                                     <span class="document-name" title="{{ doc_path | split('/') | last }}">{{ doc_path | split('/') | last }}</span>
                                     <div class="document-actions">
-                                        <a href="{{ url }}/{{ doc_path }}" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-outline-primary document-view-btn">
+                                        <button type="button" class="btn btn-sm btn-outline-primary document-view-btn"
+                                                onclick="openPreview('{{ url }}/{{ doc_path|e('js') }}', '{{ doc_path|split('/')|last|e('js') }}')">
                                             <i class="bi bi-eye me-1"></i> দেখুন
-                                        </a>
+                                        </button>
                                     </div>
                                 </div>
                             </div>
@@ -354,6 +365,7 @@
                                                         data-phone="{{ member.phone }}"
                                                         data-email="{{ member.email }}"
                                                         data-ward-no="{{ member.ward_no|default('') }}"
+                                                        data-wards="{{ member.ward_no|default('') }}"
                                                         {% if member.user_id == approval.verifier_id %}selected{% endif %}>
                                                     {{ member.name_bn }}{% if member.name_en %} ({{ member.name_en }}){% endif %} - 📱 {{ member.phone }}{% if member.ward_no %} | ওয়ার্ড: {{ member.ward_no }}{% endif %}
                                                 </option>
@@ -404,13 +416,14 @@
                             </div>
 
                             <div class="col-lg-6 col-md-6 col-sm-12" id="verifier_ward_section" style="display:none;">
-                                <label for="verifier_ward_no_display" class="form-label fw-semibold small mb-1">
+                                <label for="verifier_ward_select" class="form-label fw-semibold small mb-1">
                                     ওয়ার্ড নম্বর:
                                 </label>
-                                <input type="text" 
-                                       id="verifier_ward_no_display" 
-                                       class="form-control form-control-sm shadow-sm bg-light"
-                                       readonly>
+                                <select id="verifier_ward_select"
+                                        class="form-select form-select-sm shadow-sm"
+                                        onchange="document.getElementById('verifier_ward_no').value = this.value; document.getElementById('verifier_ward_no_display').value = this.value;">
+                                </select>
+                                <input type="hidden" id="verifier_ward_no_display" value="">
                             </div>
                         </div>
 
@@ -475,6 +488,7 @@
                                                             data-phone="{{ member.phone }}"
                                                             data-email="{{ member.email }}"
                                                             data-ward-no="{{ member.ward_no|default('') }}"
+                                                            data-wards="{{ member.ward_no|default('') }}"
                                                             {% if member.user_id == approval.approver_id %}selected{% endif %}>
                                                         {{ member.name_bn }}{% if member.name_en %} ({{ member.name_en }}){% endif %} - 📱 {{ member.phone }}{% if member.ward_no %} | ওয়ার্ড: {{ member.ward_no }}{% endif %}
                                                     </option>
@@ -526,13 +540,14 @@
                             </div>
 
                             <div class="col-lg-6 col-md-6 col-sm-12" id="approver_ward_section" style="display:none;">
-                                <label for="approver_ward_no_display" class="form-label fw-semibold small mb-1">
+                                <label for="approver_ward_select" class="form-label fw-semibold small mb-1">
                                     ওয়ার্ড নম্বর:
                                 </label>
-                                <input type="text" 
-                                       id="approver_ward_no_display" 
-                                       class="form-control form-control-sm shadow-sm bg-light"
-                                       readonly>
+                                <select id="approver_ward_select"
+                                        class="form-select form-select-sm shadow-sm"
+                                        onchange="document.getElementById('approver_ward_no').value = this.value;">
+                                </select>
+                                <input type="hidden" id="approver_ward_no_display" value="">
                             </div>
                         </div>
 
@@ -680,18 +695,18 @@
 
                         {% if data.status == 'approved' %}
                             <div class="btn-group" role="group">
-                                <a href="/application/{{ data.certificate_type }}/bangla/{{ data.sonod_number }}" 
-                                   class="btn btn-outline-success action-btn" 
-                                   target="_blank"
-                                   title="সার্টিফিকেট ডাউনলোড (বাংলা)">
+                                <button type="button"
+                                   class="btn btn-outline-success action-btn"
+                                   title="সার্টিফিকেট দেখুন (বাংলা)"
+                                   onclick="openPreview('/application/{{ data.certificate_type }}/bangla/{{ data.sonod_number }}', 'সার্টিফিকেট (বাংলা)')">
                                     <i class="bi bi-file-earmark-pdf me-1"></i> সার্টিফিকেট (বাংলা)
-                                </a>
-                                <a href="/application/{{ data.certificate_type }}/english/{{ data.sonod_number }}" 
-                                   class="btn btn-outline-success action-btn" 
-                                   target="_blank"
-                                   title="Certificate Download (English)">
+                                </button>
+                                <button type="button"
+                                   class="btn btn-outline-success action-btn"
+                                   title="Certificate Preview (English)"
+                                   onclick="openPreview('/application/{{ data.certificate_type }}/english/{{ data.sonod_number }}', 'Certificate (English)')">
                                     <i class="bi bi-file-earmark-pdf me-1"></i> Certificate (English)
-                                </a>
+                                </button>
                             </div>
                         {% endif %}
 
@@ -816,19 +831,19 @@
                 <hr class="my-3">
 
                 <div class="modal-actions-grid">
-                    <a id="approved_download_link" class="modal-action-btn btn-download" target="_blank" href="#">
+                    <a id="approved_download_link" class="modal-action-btn btn-download" href="#">
                         <i class="bi bi-download"></i>
                         <span>আবেদন কপি</span>
                     </a>
-                    <a id="approved_certificate_link" class="modal-action-btn btn-certificate" target="_blank" href="#">
+                    <a id="approved_certificate_link" class="modal-action-btn btn-certificate" href="#">
                         <i class="bi bi-file-earmark-pdf"></i>
                         <span>সার্টিফিকেট (বাংলা)</span>
                     </a>
-                    <a id="approved_certificate_en_link" class="modal-action-btn btn-certificate-en" target="_blank" href="#">
+                    <a id="approved_certificate_en_link" class="modal-action-btn btn-certificate-en" href="#">
                         <i class="bi bi-file-earmark-pdf"></i>
                         <span>Certificate (English)</span>
                     </a>
-                    <a id="approved_view_link" class="modal-action-btn btn-view" target="_blank" href="#">
+                    <a id="approved_view_link" class="modal-action-btn btn-view" href="#">
                         <i class="bi bi-eye"></i>
                         <span>আবেদন দেখুন</span>
                     </a>
@@ -2582,6 +2597,22 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     /* ===============================
+       Preview modal for approved-modal action links (no new tabs)
+       Normal click → in-page preview. Ctrl/Cmd+click or middle-click →
+       still opens a real tab, for power users.
+    =============================== */
+    document.addEventListener('click', function (e) {
+        if (e.ctrlKey || e.metaKey || e.button === 1) return;
+        const link = e.target.closest('#approvedModal a.modal-action-btn');
+        if (!link) return;
+        const href = link.getAttribute('href');
+        if (!href || href === '#') return;
+        e.preventDefault();
+        const span = link.querySelector('span');
+        openPreview(link.href, (span && span.textContent.trim()) || 'প্রিভিউ');
+    });
+
+    /* ===============================
        Reject
     =============================== */
 
@@ -2857,38 +2888,65 @@ document.addEventListener('DOMContentLoaded', () => {
        Dropdown Functions
     =============================== */
 
-    window.selectVerifierFromDropdown = function() {
-        const select = document.getElementById('verifier_select');
-        const selectedOption = select.options[select.selectedIndex];
+    /* Helper: build ward dropdown options from comma-separated ward string */
+    function buildWardOptions(wardsCsv, selectedWard) {
+        var wards = wardsCsv.split(',').map(function(w) { return w.trim(); }).filter(Boolean);
+        var wardSelect = document.getElementById('verifier_ward_select');
+        wardSelect.innerHTML = '';
+        wards.forEach(function(w) {
+            var opt = document.createElement('option');
+            opt.value = w;
+            opt.textContent = 'ওয়ার্ড ' + w;
+            if (w === selectedWard) opt.selected = true;
+            wardSelect.appendChild(opt);
+        });
+    }
+
+    window.selectVerifierFromDropdown = function(preselectedWard) {
+        var select = document.getElementById('verifier_select');
+        var selectedOption = select.options[select.selectedIndex];
         
         if (!selectedOption.value) {
             return;
         }
         
         // Get user data and store in fields
-        const userId = selectedOption.value;
-        const nameBn = selectedOption.dataset['nameBn'] || '';
-        const nameEn = selectedOption.dataset['nameEn'] || '';
-        const wardNo = selectedOption.dataset['wardNo'] || '';
-        const roleId = selectedOption.dataset['roleId'] || '';
+        var userId = selectedOption.value;
+        var nameBn = selectedOption.dataset['nameBn'] || '';
+        var nameEn = selectedOption.dataset['nameEn'] || '';
+        var wardsCsv = selectedOption.dataset['wards'] || selectedOption.dataset['wardNo'] || '';
+        var roleId = selectedOption.dataset['roleId'] || '';
         
         document.getElementById('verifier_id').value = userId || '';
         document.getElementById('verifier_name_bn').value = nameBn;
         document.getElementById('verifier_name_en').value = nameEn;
         
-        // Show/hide ward_no section only if role_id = 4 or ward_no exists
-        const wardSection = document.getElementById('verifier_ward_section');
-        const wardDisplay = document.getElementById('verifier_ward_no_display');
+        // Show/hide ward section for role_id = 4 (মেম্বার) when ward(s) exist
+        var wardSection = document.getElementById('verifier_ward_section');
+        var wardHidden = document.getElementById('verifier_ward_no');
         
-        if ((roleId == 4 || roleId == '4') && wardNo) {
-            document.getElementById('verifier_ward_no').value = wardNo;
-            wardDisplay.value = wardNo;
-            wardSection.style.display = 'block';
+        if ((roleId == 4 || roleId == '4') && wardsCsv) {
+            var wards = wardsCsv.split(',').map(function(w) { return w.trim(); }).filter(Boolean);
+            if (wards.length > 1) {
+                // Multi-ward female member: show ward selector dropdown
+                var matchWard = (preselectedWard && wards.indexOf(preselectedWard) !== -1) ? preselectedWard : wards[0];
+                buildWardOptions(wardsCsv, matchWard);
+                wardHidden.value = matchWard;
+                wardSection.style.display = 'block';
+            } else {
+                // Single-ward member: show as readonly text
+                var wardVal = wards[0] || '';
+                wardHidden.value = wardVal;
+                // Replace the select with a simple display
+                var wardSelect = document.getElementById('verifier_ward_select');
+                wardSelect.innerHTML = '<option value="' + wardVal + '" selected>ওয়ার্ড ' + wardVal + '</option>';
+                wardSection.style.display = 'block';
+            }
         } else {
             wardSection.style.display = 'none';
         }
         
-        console.log('Verifier selected:', { userId, nameBn, nameEn, wardNo, roleId });
+        console.log('Verifier selected:', { userId, nameBn, nameEn, wardsCsv, roleId });
     };
 
     document.addEventListener('DOMContentLoaded', function() {
@@ -2897,6 +2955,21 @@ document.addEventListener('DOMContentLoaded', () => {
             clearVerifierBtn.addEventListener('click', clearVerifierSelection);
         }
 
+        // Auto-select verifier based on application's present_ward_no
+        var appWard = '{{ data.present_ward_no|default('') }}'.trim();
+        if (appWard) {
+            var verifierSelect = document.getElementById('verifier_select');
+            for (var i = 1; i < verifierSelect.options.length; i++) {
+                var opt = verifierSelect.options[i];
+                var wards = (opt.dataset['wards'] || opt.dataset['wardNo'] || '').split(',').map(function(w) { return w.trim(); });
+                if (wards.indexOf(appWard) !== -1) {
+                    verifierSelect.selectedIndex = i;
+                    selectVerifierFromDropdown(appWard);
+                    console.log('Auto-selected verifier for ward:', appWard, '→', opt.textContent);
+                    break;
+                }
+            }
+        }
     });
 
     window.clearVerifierSelection = function() {
@@ -2905,44 +2978,70 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('verifier_name_bn').value = '';
         document.getElementById('verifier_name_en').value = '';
         document.getElementById('verifier_ward_no').value = '';
+        var ws = document.getElementById('verifier_ward_select');
+        if (ws) ws.innerHTML = '';
         document.getElementById('verifier_ward_section').style.display = 'none';
         
         console.log('Verifier selection cleared');
     };
 
     window.selectApproverFromDropdown = function() {
-        const select = document.getElementById('approver_select');
-        const selectedOption = select.options[select.selectedIndex];
+        var select = document.getElementById('approver_select');
+        var selectedOption = select.options[select.selectedIndex];
         
         if (!selectedOption.value) {
             return;
         }
         
         // Get user data and store in fields
-        const userId = selectedOption.value;
-        const nameBn = selectedOption.dataset['nameBn'] || '';
-        const nameEn = selectedOption.dataset['nameEn'] || '';
-        const wardNo = selectedOption.dataset['wardNo'] || '';
-        const roleId = selectedOption.dataset['roleId'] || '';
+        var userId = selectedOption.value;
+        var nameBn = selectedOption.dataset['nameBn'] || '';
+        var nameEn = selectedOption.dataset['nameEn'] || '';
+        var wardsCsv = selectedOption.dataset['wards'] || selectedOption.dataset['wardNo'] || '';
+        var roleId = selectedOption.dataset['roleId'] || '';
         
         document.getElementById('approver_id').value = userId || '';
         document.getElementById('approver_name_bn').value = nameBn;
         document.getElementById('approver_name_en').value = nameEn;
         
-        // Show/hide ward_no section only if role_id = 4 or ward_no exists
-        const wardSection = document.getElementById('approver_ward_section');
-        const wardDisplay = document.getElementById('approver_ward_no_display');
+        // Show/hide ward section for role_id = 4 (মেম্বার) when ward(s) exist
+        var wardSection = document.getElementById('approver_ward_section');
+        var wardHidden = document.getElementById('approver_ward_no');
         
-        if ((roleId == 4 || roleId == '4') && wardNo) {
-            document.getElementById('approver_ward_no').value = wardNo;
-            wardDisplay.value = wardNo;
-            wardSection.style.display = 'block';
+        if ((roleId == 4 || roleId == '4') && wardsCsv) {
+            var wards = wardsCsv.split(',').map(function(w) { return w.trim(); }).filter(Boolean);
+            if (wards.length > 1) {
+                var appWard = document.getElementById('verifier_ward_no') ? document.getElementById('verifier_ward_no').value : '';
+                var matchWard = (appWard && wards.indexOf(appWard) !== -1) ? appWard : wards[0];
+                buildApproverWardOptions(wardsCsv, matchWard);
+                wardHidden.value = matchWard;
+                wardSection.style.display = 'block';
+            } else {
+                var wardVal = wards[0] || '';
+                wardHidden.value = wardVal;
+                var wardSelect = document.getElementById('approver_ward_select');
+                wardSelect.innerHTML = '<option value="' + wardVal + '" selected>ওয়ার্ড ' + wardVal + '</option>';
+                wardSection.style.display = 'block';
+            }
         } else {
             wardSection.style.display = 'none';
         }
         
-        console.log('Approver selected:', { userId, nameBn, nameEn, wardNo, roleId });
+        console.log('Approver selected:', { userId, nameBn, nameEn, wardsCsv, roleId });
     };
+
+    function buildApproverWardOptions(wardsCsv, selectedWard) {
+        var wards = wardsCsv.split(',').map(function(w) { return w.trim(); }).filter(Boolean);
+        var wardSelect = document.getElementById('approver_ward_select');
+        wardSelect.innerHTML = '';
+        wards.forEach(function(w) {
+            var opt = document.createElement('option');
+            opt.value = w;
+            opt.textContent = 'ওয়ার্ড ' + w;
+            if (w === selectedWard) opt.selected = true;
+            wardSelect.appendChild(opt);
+        });
+    }
 
     document.addEventListener('DOMContentLoaded', function() {
         var clearApproverBtn = document.getElementById('clearApproverBtn');
@@ -2958,6 +3057,8 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('approver_name_bn').value = '';
         document.getElementById('approver_name_en').value = '';
         document.getElementById('approver_ward_no').value = '';
+        var aws = document.getElementById('approver_ward_select');
+        if (aws) aws.innerHTML = '';
         document.getElementById('approver_ward_section').style.display = 'none';
         
         console.log('Approver selection cleared');

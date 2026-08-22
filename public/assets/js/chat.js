@@ -388,6 +388,10 @@
   // Session Management
   // ========================
   function resetSession() {
+    // Detach push bindings for the old session before its signature is wiped,
+    // so the server-side unsubscribe can still authenticate.
+    unsubscribePush(state.sessionId, state.sessionSig);
+
     // Clear old session data
     state.sessionId = generateId();
     state.sessionSig = '';
@@ -500,6 +504,11 @@
       const data = await res.json();
       if (res.status === 403 && data.message === 'Invalid session signature') {
         handleSessionExpired();
+      }
+      // CSRF middleware (config/csrf.php) replies with {success:false, code:403};
+      // treat that and any error envelope as a failure, not a silent no-op.
+      if (data && (data.success === false || data.code === 403)) {
+        throw new Error(data.error || data.message || 'Request failed');
       }
       // Auto-recover session signature from any API response
       if (data.session_sig) {
@@ -811,6 +820,7 @@
     showWelcome();
     await loadMessages();
     startPolling();
+    maybeSubscribePush();
 
     // After fade-out completes, show normal chat input with fade-in
     setTimeout(function () {
@@ -852,9 +862,14 @@
       welcome.appendChild(greeting);
 
       if (state.visitorUnion) {
+        // Never inject visitor-controlled text via innerHTML — build the
+        // node with textContent so a stored union name cannot carry markup.
         const unionInfo = document.createElement('div');
         unionInfo.className = 'chat-welcome-union';
-        unionInfo.innerHTML = '<i class="fas fa-map-marker-alt"></i> ' + state.visitorUnion;
+        const unionIcon = document.createElement('i');
+        unionIcon.className = 'fas fa-map-marker-alt';
+        unionInfo.appendChild(unionIcon);
+        unionInfo.appendChild(document.createTextNode(' ' + state.visitorUnion));
         welcome.appendChild(unionInfo);
       }
     }
@@ -1129,6 +1144,7 @@
           const tempEl = els.messages.querySelector('[data-msg-id="' + tempMsg.id + '"]');
           if (tempEl) tempEl.setAttribute('data-msg-id', result.data.id);
         }
+        maybeSubscribePush();
       } else {
         alert('\u09ab\u09be\u0987\u09b2 \u0986\u09aa\u09b2\u09cb\u09a1 \u09ac\u09cd\u09af\u09b0\u09cd\u09a5 \u09b9\u09df\u09c7\u099b\u09c7: ' + (result.message || '\u0985\u099c\u09be\u09a8\u09be \u09a4\u09cd\u09b0\u09c1\u099f\u09bf'));
       }
@@ -1806,6 +1822,7 @@
       }
       state.sessionEstablished = true;
       startPolling();
+      maybeSubscribePush();
     } catch (e) {
       if (state.sessionExpired) {
         const expiredTemp = els.messages.querySelector('[data-msg-id="' + tempMsg.id + '"]');
@@ -2578,6 +2595,161 @@
 
   // Clean up admin status timer on page unload
   window.addEventListener('beforeunload', stopAdminStatusCheck);
+
+  // ========================
+  // Web Push (Push API + VAPID) — visitor browser notifications
+  // ========================
+  // The admin reply is delivered by the server (PushService) to every
+  // subscribed browser, even when the chat tab is closed. This widget:
+  //   1. Subscribes the browser once a session is established.
+  //   2. Stores the {sessionId, sessionSig} binding in the same IndexedDB
+  //      store the service worker reads on pushsubscriptionchange.
+  //   3. Unsubscribes (browser + server) when the session is reset/expired.
+  let _pushInited = false;
+  let _pushBlocked = false;
+
+  function openPushDb() {
+    return new Promise(function (resolve, reject) {
+      if (!('indexedDB' in window)) {
+        reject(new Error('IndexedDB unavailable'));
+        return;
+      }
+      const req = indexedDB.open('chat-push-db', 1);
+      req.onupgradeneeded = function () {
+        const db = req.result;
+        if (!db.objectStoreNames.contains('sessions')) {
+          db.createObjectStore('sessions', { keyPath: 'key' });
+        }
+      };
+      req.onsuccess = function () { resolve(req.result); };
+      req.onerror = function () { reject(req.error); };
+    });
+  }
+
+  function pushDbSetSession(sessionId, sessionSig) {
+    return openPushDb().then(function (db) {
+      return new Promise(function (resolve) {
+        const tx = db.transaction('sessions', 'readwrite');
+        // Store the CSRF token too — the service worker cannot read cookies
+        // and needs it to re-subscribe after key rotation.
+        tx.objectStore('sessions').put({
+          key: 'current',
+          sessionId: sessionId,
+          sessionSig: sessionSig || '',
+          csrfToken: getCsrfToken() || '',
+          updatedAt: Date.now(),
+        });
+        tx.oncomplete = function () { resolve(); };
+        tx.onerror = function () { resolve(); };
+      });
+    }).catch(function () {});
+  }
+
+  function pushDbClearSession() {
+    return openPushDb().then(function (db) {
+      return new Promise(function (resolve) {
+        const tx = db.transaction('sessions', 'readwrite');
+        tx.objectStore('sessions').delete('current');
+        tx.oncomplete = function () { resolve(); };
+        tx.onerror = function () { resolve(); };
+      });
+    }).catch(function () {});
+  }
+
+  function urlBase64ToUint8Array(base64String) {
+    const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+    const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+    const rawData = atob(base64);
+    const outputArray = new Uint8Array(rawData.length);
+    for (let i = 0; i < rawData.length; ++i) {
+      outputArray[i] = rawData.charCodeAt(i);
+    }
+    return outputArray;
+  }
+
+  async function getPushSubscription() {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) return null;
+    try {
+      const reg = await navigator.serviceWorker.ready;
+      return reg.pushManager.getSubscription();
+    } catch (e) {
+      return null;
+    }
+  }
+
+  async function maybeSubscribePush() {
+    if (!state.sessionId || !state.sessionSig || _pushInited || _pushBlocked) return;
+    if (!widgetSettings.chat_visitor_push_enabled || widgetSettings.chat_visitor_push_enabled !== '1') return;
+
+    try {
+      const res = await fetch(CONFIG.apiBase + '/push/vapid-key', { cache: 'no-store' });
+      const data = await res.json();
+      if (!data || data.status !== 'success' || !data.data ||
+          !data.data.enabled || !data.data.configured || !data.data.public_key) {
+        return;
+      }
+
+      if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+
+      const reg = await navigator.serviceWorker.register('/sw.js');
+      await navigator.serviceWorker.ready;
+
+      let sub = await reg.pushManager.getSubscription();
+      if (!sub) {
+        sub = await reg.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(data.data.public_key),
+        });
+      }
+
+      // Persist the session binding so the service worker can re-subscribe
+      // automatically when the browser rotates the subscription.
+      await pushDbSetSession(state.sessionId, state.sessionSig);
+
+      const subJson = sub.toJSON();
+      await apiCall('POST', '/push/subscribe', {
+        session_id: state.sessionId,
+        session_sig: state.sessionSig,
+        subscription: {
+          endpoint: subJson.endpoint,
+          keys: { p256dh: subJson.keys.p256dh, auth: subJson.keys.auth },
+        },
+      });
+      _pushInited = true;
+    } catch (e) {
+      // A hard denial (permission denied / insecure context) will never
+      // succeed — stop retrying to avoid repeated prompts/wasted calls.
+      if (e && (e.name === 'NotAllowedError' || e.name === 'PermissionDeniedError' ||
+                e.name === 'SecurityError' || e.name === 'AbortError')) {
+        _pushBlocked = true;
+      }
+      // Push is best-effort — never surface errors to the chat UI.
+    }
+  }
+
+  function unsubscribePush(sessionId, sessionSig) {
+    const oldSessionId = sessionId || state.sessionId;
+    const oldSessionSig = (sessionSig !== undefined && sessionSig !== null) ? sessionSig : state.sessionSig;
+
+    getPushSubscription().then(function (sub) {
+      const tasks = [];
+      if (sub) {
+        const endpoint = sub.endpoint || '';
+        if (oldSessionId && endpoint) {
+          tasks.push(apiCall('POST', '/push/unsubscribe', {
+            session_id: oldSessionId,
+            session_sig: oldSessionSig || '',
+            endpoint: endpoint,
+          }).catch(function () {}));
+        }
+        tasks.push(sub.unsubscribe().catch(function () {}));
+      }
+      tasks.push(pushDbClearSession());
+      return Promise.all(tasks);
+    }).catch(function () {});
+
+    _pushInited = false;
+  }
 
   // ========================
   // Initialize

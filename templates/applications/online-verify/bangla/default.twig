@@ -100,7 +100,7 @@
                         <td align="left" style="font-size:16px; text-indent:55px; width:180px; padding-left:50px">মাতার নাম</td>
                         <td><font style="font-size:16px;">: {{ citizen.mother_name_bn }}</font></td>
                     </tr>
-                    {% if citizen.marital_status == 'Married' %}
+                    {% if citizen.marital_status == 'Married' and data.spouse_name_bn %}
                     <tr>
                         <td align="left" style="font-size:16px; text-indent:55px; width:180px; padding-left:50px">স্বামী/স্ত্রীর নাম</td>
                         <td><font style="font-size:16px;">: {{ citizen.spouse_name_bn | default('N/A') }}</font></td>

@@ -5,6 +5,7 @@
 
 {% block content %}
 {% include 'components/sweetAlert.twig' %}
+{% include 'components/preview_modal.twig' %}
 <link rel="stylesheet" href="{{ url }}/assets/css/forms.css?t={{ "now"|date("Hiss") }}">
 
 <div class="container form-page px-3">
@@ -36,7 +37,7 @@
             {# Personal Info #}
             <fieldset class="form-section">
                 <legend>ব্যক্তিগত তথ্য</legend>
-                {% include 'partials/forms/personal_info.twig' with { data: data } %}
+                {% include 'partials/forms/personal_info.twig' with { data: data, certificate_type: certificate_type } %}
             </fieldset>
 
             {# Warish/Waris Section (conditional) #}
@@ -342,7 +343,7 @@ $(document).ready(function () {
                             if(['jpg','jpeg','png','gif','bmp','webp'].includes(ext)) {
                                 row.find('.preview-area').html(`<img src="${doc}" alt="ডকুমেন্ট" style="max-width:100px;max-height:100px;">`);
                             } else {
-                                row.find('.preview-area').html(`<a href="${doc}" target="_blank">ডকুমেন্ট দেখুন</a>`);
+                                row.find('.preview-area').html(`<button type="button" class="btn btn-link p-0" data-preview="${doc}" data-preview-title="ডকুমেন্ট">ডকুমেন্ট দেখুন</button>`);
                             }
                         }
                     });

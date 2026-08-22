@@ -142,6 +142,19 @@ class ChatModel
                 KEY `idx_created` (`created_at`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
         ");
+        $this->mysqli->query("
+            CREATE TABLE IF NOT EXISTS `chat_push_subscriptions` (
+                `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                `session_id` VARCHAR(64) NOT NULL,
+                `endpoint` VARCHAR(500) NOT NULL,
+                `p256dh` VARCHAR(200) NOT NULL DEFAULT '',
+                `auth` VARCHAR(200) NOT NULL DEFAULT '',
+                `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                UNIQUE KEY `uk_endpoint` (`endpoint`),
+                KEY `idx_session` (`session_id`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        ");
     }
 
     /**
@@ -353,6 +366,10 @@ class ChatModel
                 throw new \RuntimeException('Unable to expire chat session');
             }
             $update->close();
+
+            // Remove the visitor's browser push bindings so stale
+            // subscriptions never linger after the conversation is gone.
+            $this->deletePushSubscriptionsBySession($sessionId);
 
             $this->mysqli->commit();
         } catch (\Throwable $e) {
@@ -724,6 +741,16 @@ class ChatModel
             'chat_offline_success_message' => 'আপনার বার্তা পাঠানো হয়েছে। আমরা অফিস সময়ে আপনার সাথে যোগাযোগ করব।',
             'chat_placeholder' => 'বার্তা লিখুন...',
             'chat_name_placeholder' => 'আপনার নাম (ঐচ্ছিক)',
+            // Admin & visitor notification preferences. Default to enabled so
+            // notifications work out of the box.
+            'chat_admin_notify_sound' => '1',
+            'chat_admin_notify_desktop' => '1',
+            'chat_admin_notify_toast' => '1',
+            // Visitor Web Push (Push API + VAPID)
+            'chat_visitor_push_enabled' => '1',
+            'chat_push_vapid_public_key' => '',
+            'chat_push_vapid_private_key' => '',
+            'chat_push_subject' => '',
         ];
 
         foreach ($defaults as $key => $value) {
@@ -748,6 +775,19 @@ class ChatModel
         $stmt->bind_param("ss", $key, $value);
         $stmt->execute();
         $stmt->close();
+    }
+
+    /**
+     * Get a single chat setting value (raw, no defaults).
+     */
+    public function getChatSetting(string $key): ?string
+    {
+        $stmt = $this->mysqli->prepare("SELECT setting_value FROM system_settings WHERE setting_name = ?");
+        $stmt->bind_param("s", $key);
+        $stmt->execute();
+        $row = $stmt->get_result()->fetch_assoc();
+        $stmt->close();
+        return isset($row['setting_value']) ? (string)$row['setting_value'] : null;
     }
 
     /**
@@ -1109,14 +1149,14 @@ class ChatModel
     public function getLatestUnreadVisitorMessage(): ?array
     {
         $result = $this->mysqli->query("
-            SELECT cm.message, cm.message_type, cm.session_id, cm.created_at, cs.visitor_name
+            SELECT cm.id, cm.message, cm.message_type, cm.session_id, cm.created_at, cs.visitor_name
             FROM chat_messages cm
             LEFT JOIN chat_sessions cs ON cm.session_id = cs.session_id
             WHERE cm.sender_type = 'visitor'
               AND cm.admin_id IS NULL
               AND cm.auto_reply = 0
               AND cm.is_read = 0
-            ORDER BY cm.created_at DESC
+            ORDER BY cm.created_at DESC, cm.id DESC
             LIMIT 1
         ");
         if (!$result) return null;
@@ -1190,6 +1230,68 @@ class ChatModel
         $row = $stmt->get_result()->fetch_assoc();
         $stmt->close();
         return (int)($row['cnt'] ?? 0);
+    }
+
+    // ================================================================
+    // PUSH SUBSCRIPTIONS (Web Push)
+    // ================================================================
+
+    /**
+     * Upsert a push subscription for a chat session (keyed by endpoint).
+     */
+    public function savePushSubscription(string $sessionId, string $endpoint, string $p256dh, string $auth): void
+    {
+        $stmt = $this->mysqli->prepare("
+            INSERT INTO chat_push_subscriptions (session_id, endpoint, p256dh, auth, created_at, updated_at)
+            VALUES (?, ?, ?, ?, NOW(), NOW())
+            ON DUPLICATE KEY UPDATE
+                session_id = VALUES(session_id),
+                p256dh = VALUES(p256dh),
+                auth = VALUES(auth),
+                updated_at = NOW()
+        ");
+        $stmt->bind_param("ssss", $sessionId, $endpoint, $p256dh, $auth);
+        $stmt->execute();
+        $stmt->close();
+    }
+
+    /**
+     * Get all push subscriptions for a chat session.
+     */
+    public function getPushSubscriptions(string $sessionId): array
+    {
+        $stmt = $this->mysqli->prepare("SELECT id, session_id, endpoint, p256dh, auth FROM chat_push_subscriptions WHERE session_id = ?");
+        $stmt->bind_param("s", $sessionId);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $rows = [];
+        while ($row = $result->fetch_assoc()) {
+            $rows[] = $row;
+        }
+        $stmt->close();
+        return $rows;
+    }
+
+    /**
+     * Delete a push subscription by endpoint.
+     */
+    public function deletePushSubscription(string $endpoint): void
+    {
+        $stmt = $this->mysqli->prepare("DELETE FROM chat_push_subscriptions WHERE endpoint = ?");
+        $stmt->bind_param("s", $endpoint);
+        $stmt->execute();
+        $stmt->close();
+    }
+
+    /**
+     * Delete all push subscriptions for a chat session.
+     */
+    public function deletePushSubscriptionsBySession(string $sessionId): void
+    {
+        $stmt = $this->mysqli->prepare("DELETE FROM chat_push_subscriptions WHERE session_id = ?");
+        $stmt->bind_param("s", $sessionId);
+        $stmt->execute();
+        $stmt->close();
     }
 
     /**
