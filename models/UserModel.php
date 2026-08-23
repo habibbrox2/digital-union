@@ -620,14 +620,20 @@ class UserModel {
             }
         }
         
-        $validSortColumns = ['user_id', 'username', 'email', 'name_en', 'name_bn', 
-                            'role_id', 'union_id', 'status', 'created_at', 'last_login'];
-        if (!in_array($sortBy, $validSortColumns)) {
-            $sortBy = 'user_id';
+        // Support custom sort expressions (e.g. 'role_priority' for FIELD-based ordering)
+        if ($sortBy === 'role_priority') {
+            // Secretary (2), Chairman (3) first, then Administrator (1), then role_id ASC
+            $sql .= " ORDER BY FIELD(u.role_id, 2, 3, 1, 4, 5, 6, 7) ASC";
+        } else {
+            $validSortColumns = ['user_id', 'username', 'email', 'name_en', 'name_bn', 
+                                'role_id', 'union_id', 'status', 'created_at', 'last_login'];
+            if (!in_array($sortBy, $validSortColumns)) {
+                $sortBy = 'user_id';
+            }
+            
+            $sortDir = strtoupper($sortDir) === 'DESC' ? 'DESC' : 'ASC';
+            $sql .= " ORDER BY u.{$sortBy} {$sortDir}";
         }
-        
-        $sortDir = strtoupper($sortDir) === 'DESC' ? 'DESC' : 'ASC';
-        $sql .= " ORDER BY u.{$sortBy} {$sortDir}";
         
         // Add LIMIT and OFFSET if provided
         if (isset($filters['limit']) && isset($filters['offset'])) {

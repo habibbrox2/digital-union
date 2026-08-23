@@ -87,6 +87,19 @@
 
         var isTrade = (a.certificate_type === 'trade');
 
+        // Applicant Photo
+        var photoHtml = '';
+        if (a.applicant_photo) {
+            var photoSrc = a.applicant_photo.startsWith('http')
+                ? a.applicant_photo
+                : (a.applicant_photo.startsWith('/') ? a.applicant_photo : '/' + a.applicant_photo);
+            photoHtml = '<div class="text-center mb-3">' +
+                '<img src="' + escHtml(photoSrc) + '" alt="Applicant Photo" ' +
+                'style="width:100px;height:100px;object-fit:cover;border-radius:8px;border:2px solid #dee2e6;" ' +
+                'onerror="this.style.display=\'none\'">' +
+                '</div>';
+        }
+
         // Identity
         if (isTrade) {
             add('ব্যবসার নাম (বাংলা)', escHtml(a.business_name_bn));
@@ -117,7 +130,8 @@
         add('বর্তমান ঠিকানা', addressText(a, 'present_'));
         add('স্থায়ী ঠিকানা', addressText(a, 'permanent_'));
 
-        var html = '<div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">' +
+        var html = photoHtml +
+            '<div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">' +
             '<div class="d-flex align-items-center gap-2 flex-wrap">' +
             '<span class="fw-semibold fs-5">' + escHtml(a.name_bn || a.name_en) + '</span>' +
             statusBadge(a.status) +

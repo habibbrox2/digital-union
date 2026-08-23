@@ -311,7 +311,7 @@ $router->get('/users', function () use ($twig, $auth, $authService, $mysqli) {
 
     $filters['limit'] = $perPage;
     $filters['offset'] = $offset;
-    $users = $userModel->getAll($filters, 'created_at', 'DESC');
+    $users = $userModel->getAll($filters, 'role_priority', 'ASC');
 
     $roles = $rolesManager->getAllRoles();
     foreach ($roles as &$r) {

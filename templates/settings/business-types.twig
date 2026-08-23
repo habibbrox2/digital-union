@@ -185,17 +185,40 @@
         </div>
     </div>
 
+    <!-- Bulk Actions Toolbar -->
+    <div class="section-card mb-3 p-3" id="bulkActionsBar" style="display: none;">
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+            <div class="d-flex align-items-center gap-2">
+                <span class="badge bg-primary rounded-pill px-3 py-2" id="selectedCountBadge">
+                    <i class="bi bi-check2-square me-1"></i> <span id="selectedCount">0</span> টি নির্বাচিত
+                </span>
+                <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3" id="clearSelectionBtn">
+                    <i class="bi bi-x-circle me-1"></i> নির্বাচন মুছুন
+                </button>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <button type="button" class="btn btn-sm btn-outline-success rounded-pill px-3" id="exportCsvBtn">
+                    <i class="bi bi-filetype-csv me-1"></i> CSV ডাউনলোড
+                </button>
+                <button type="button" class="btn btn-sm btn-danger rounded-pill px-3" id="bulkDeleteBtn">
+                    <i class="bi bi-trash3 me-1"></i> মুছুন
+                </button>
+            </div>
+        </div>
+    </div>
+
 <!-- Table -->
     <div class="section-card p-0 overflow-hidden">
         <div class="table-responsive" style="max-height: 65vh;">
             <table class="table table-enhanced table-hover align-middle mb-0" id="businessTable">
                 <thead class="table-light" style="position: sticky; top: 0; z-index: 2;">
                     <tr>
-                        <th data-sort="number" class="ps-4" style="width: 60px; min-width: 60px;">
-                            <div class="d-flex align-items-center gap-1">
-                                আইডি <i class="bi bi-arrow-down-up ms-1" style="font-size: 0.7rem; opacity: 0.5;"></i>
+                        <th style="width: 40px; min-width: 40px;" class="text-center ps-2">
+                            <div class="form-check mb-0">
+                                <input class="form-check-input" type="checkbox" id="selectAll" title="সব নির্বাচন করুন">
                             </div>
                         </th>
+
                         <th data-sort="string">ইউনিয়ন <i class="bi bi-arrow-down-up ms-1" style="font-size: 0.7rem; opacity: 0.5;"></i></th>
                         <th data-sort="string">ব্যবসার নাম (বাংলা) <i class="bi bi-arrow-down-up ms-1" style="font-size: 0.7rem; opacity: 0.5;"></i></th>
                         <th data-sort="string">ব্যবসার নাম (ইংরেজি) <i class="bi bi-arrow-down-up ms-1" style="font-size: 0.7rem; opacity: 0.5;"></i></th>
@@ -210,8 +233,13 @@
                 </thead>
                 <tbody id="businessTableBody">
                     {% for business in businessTypes %}
-                    <tr class="table-row-appear">
-                        <td class="ps-4 fw-semibold text-muted"><small>#{{ business.id }}</small></td>
+                    <tr class="table-row-appear" data-id="{{ business.id }}" data-name-bn="{{ business.business_name_bn }}" data-name-en="{{ business.business_name_en }}" data-license-fee="{{ business.license_fee }}" data-vat="{{ business.vat_amount }}" data-occupation-tax="{{ business.occupation_tax }}">
+                        <td class="text-center ps-2">
+                            <div class="form-check mb-0">
+                                <input class="form-check-input row-checkbox" type="checkbox" value="{{ business.id }}">
+                            </div>
+                        </td>
+
                         <td>
                             {% if business.union_id > 0 and business.union_name_bn %}
                                 <span class="badge bg-primary bg-opacity-10 text-primary px-3 py-1 rounded-pill">
@@ -450,6 +478,19 @@ th[data-sort] { cursor: pointer; }
 .page-num-btn.active:hover { background: #007A7A; }
 .page-num-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
+/* ─── Bulk Actions ─── */
+#bulkActionsBar {
+    animation: slideDown 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    border-left: 4px solid #0d6efd;
+}
+.form-check-input:checked {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+}
+.form-check-input:focus {
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+}
+
 /* ─── Responsive ─── */
 @media (max-width: 768px) {
     .table-responsive { max-height: none !important; }
@@ -491,6 +532,150 @@ document.addEventListener("DOMContentLoaded", () => {
     let filteredRows = [...allDataRows];
     let sortDir = {};
     let sortIndex = -1;
+
+    // ─── Bulk Selection ───
+    const selectAll = document.getElementById("selectAll");
+    const bulkActionsBar = document.getElementById("bulkActionsBar");
+    const selectedCount = document.getElementById("selectedCount");
+    const clearSelectionBtn = document.getElementById("clearSelectionBtn");
+    const bulkDeleteBtn = document.getElementById("bulkDeleteBtn");
+    const exportCsvBtn = document.getElementById("exportCsvBtn");
+    const csrf = document.querySelector('input[name="csrf_token"]')?.value || '';
+
+    function getSelectedIds() {
+        return Array.from(tbody.querySelectorAll(".row-checkbox:checked")).map(cb => cb.value);
+    }
+
+    function updateBulkBar() {
+        const count = getSelectedIds().length;
+        selectedCount.textContent = count;
+        bulkActionsBar.style.display = count > 0 ? "" : "none";
+        const totalVisible = tbody.querySelectorAll(".row-checkbox").length;
+        const totalChecked = tbody.querySelectorAll(".row-checkbox:checked").length;
+        if (selectAll) selectAll.checked = totalVisible > 0 && totalChecked === totalVisible;
+        if (selectAll) selectAll.indeterminate = totalChecked > 0 && totalChecked < totalVisible;
+    }
+
+    if (selectAll) {
+        selectAll.addEventListener("change", () => {
+            tbody.querySelectorAll(".row-checkbox").forEach(cb => {
+                const row = cb.closest("tr");
+                if (row && row.style.display !== "none") cb.checked = selectAll.checked;
+            });
+            updateBulkBar();
+        });
+    }
+
+    tbody.addEventListener("change", (e) => {
+        if (e.target.classList.contains("row-checkbox")) updateBulkBar();
+    });
+
+    if (clearSelectionBtn) {
+        clearSelectionBtn.addEventListener("click", () => {
+            tbody.querySelectorAll(".row-checkbox").forEach(cb => cb.checked = false);
+            if (selectAll) { selectAll.checked = false; selectAll.indeterminate = false; }
+            updateBulkBar();
+        });
+    }
+
+    // ─── Bulk Delete ───
+    if (bulkDeleteBtn) {
+        bulkDeleteBtn.addEventListener("click", () => {
+            const ids = getSelectedIds();
+            if (!ids.length) return;
+            Swal.fire({
+                title: 'নিশ্চিত করুন',
+                html: `আপনি কি <strong>${ids.length}</strong> টি ব্যবসার ধরণ মুছে ফেলতে চান?<br><small class="text-muted">এই ধরণটি পুনরুদ্ধার করা যাবে না।</small>`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#dc3545',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: '<i class="bi bi-trash3 me-1"></i> হ্যাঁ, মুছুন',
+                cancelButtonText: '<i class="bi bi-x-circle me-1"></i> বাতিল',
+                reverseButtons: true,
+                customClass: {
+                    confirmButton: 'btn btn-danger rounded-pill px-4',
+                    cancelButton: 'btn btn-outline-secondary rounded-pill px-4'
+                },
+                buttonsStyling: false,
+                showLoaderOnConfirm: true,
+                preConfirm: () => {
+                    return Promise.all(ids.map(id =>
+                        fetch(`/settings/business-types/delete/${id}`, {
+                            method: 'POST',
+                            body: (() => { const f = new FormData(); f.append('csrf_token', csrf); return f; })()
+                        }).then(r => r.json())
+                    )).then(results => {
+                        const failed = results.filter(r => r.status !== 'success');
+                        if (failed.length) throw new Error(`${failed.length} টি মুছতে ব্যর্থ হয়েছে`);
+                        return results;
+                    }).catch(e => { throw new Error(e.message || 'Network error'); });
+                }
+            }).then(result => {
+                if (result.isConfirmed) {
+                    ids.forEach(id => {
+                        const row = tbody.querySelector(`tr[data-id="${id}"]`);
+                        if (row) {
+                            row.classList.add("row-deleting");
+                            setTimeout(() => {
+                                row.remove();
+                                const idx = allDataRows.indexOf(row);
+                                if (idx > -1) allDataRows.splice(idx, 1);
+                                filteredRows = [...allDataRows];
+                            }, 350);
+                        }
+                    });
+                    setTimeout(() => {
+                        currentPage = 1;
+                        renderTable();
+                        updateStats();
+                        updateBulkBar();
+                    }, 400);
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'মুছে ফেলা হয়েছে',
+                        text: `${ids.length} টি ব্যবসার ধরণ সফলভাবে মুছে ফেলা হয়েছে।`,
+                        timer: 2000, showConfirmButton: false, toast: true, position: 'top-end'
+                    });
+                }
+            });
+        });
+    }
+
+    // ─── CSV Export ───
+    if (exportCsvBtn) {
+        exportCsvBtn.addEventListener("click", () => {
+            const ids = getSelectedIds();
+            const rows = ids.length
+                ? allDataRows.filter(row => ids.includes(row.dataset.id))
+                : filteredRows;
+            if (!rows.length) {
+                Swal.fire({ icon: 'info', title: 'তথ্য নেই', text: 'এক্সপোর্ট করার জন্য কোনও ডাটা নেই।', timer: 2000, showConfirmButton: false });
+                return;
+            }
+            const headers = ['ইউনিয়ন', 'ব্যবসার নাম (বাংলা)', 'ব্যবসার নাম (ইংরেজি)', 'লাইসেন্স ফি', 'ভ্যাট', 'পেশা কর', 'আয়কর', 'সাইনবোর্ড', 'সারচার্জ'];
+            const csvRows = [headers.join(',')];
+            rows.forEach(row => {
+                const cells = Array.from(row.children).slice(1, -1).map(td => {
+                    let val = td.textContent.trim().replace(/[\/-]/g, '').replace(/,/g, '');
+                    return '"' + val.replace(/"/g, '""') + '"';
+                });
+                csvRows.push(cells.join(','));
+            });
+            const blob = new Blob(['\uFEFF' + csvRows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = 'ব্যবসার_ধরণ_' + new Date().toISOString().slice(0, 10) + '.csv';
+            link.click();
+            URL.revokeObjectURL(link.href);
+            Swal.fire({
+                icon: 'success',
+                title: 'ডাউনলোড সম্পন্ন',
+                text: `${rows.length} টি রেকর্ড CSV ফাইলে ডাউনলোড করা হয়েছে।`,
+                timer: 2000, showConfirmButton: false, toast: true, position: 'top-end'
+            });
+        });
+    }
 
     // ─── Animate initial rows ───
     allDataRows.forEach((row, i) => { row.style.animationDelay = `${i * 25}ms`; });
@@ -654,7 +839,9 @@ document.addEventListener("DOMContentLoaded", () => {
             row.textContent.toLowerCase().includes(filter)
         );
         currentPage = 1;
+        if (selectAll) { selectAll.checked = false; selectAll.indeterminate = false; }
         renderTable();
+        updateBulkBar();
         animateVisibleRows();
     });
 
@@ -747,6 +934,7 @@ document.addEventListener("DOMContentLoaded", () => {
             });
         }
         updateVisibleCount();
+        if (typeof updateBulkBar === 'function') updateBulkBar();
         paginationInfo.textContent = `\u09aa\u09c3\u09b7\u09cd\u09a0\u09be ${currentPage} / ${totalPages} (\u09ae\u09cb\u099f ${filteredRows.length})`;
         prevBtn.disabled = currentPage <= 1;
         nextBtn.disabled = currentPage >= totalPages;

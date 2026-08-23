@@ -104,6 +104,20 @@
         </div>
     </div>
 
+    <!-- Bulk Actions Toolbar -->
+    <div class="section-card section-appear mb-3" id="bulkActionsBar" style="display:none;">
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+            <div class="d-flex align-items-center gap-2">
+                <span class="badge bg-primary rounded-pill px-3 py-2"><i class="bi bi-check2-square me-1"></i> <span id="selectedCount">0</span> টি নির্বাচিত</span>
+                <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3" id="clearSelectionBtn"><i class="bi bi-x-circle me-1"></i> নির্বাচন মুছুন</button>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <button type="button" class="btn btn-sm btn-outline-success rounded-pill px-3" id="exportCsvBtn"><i class="bi bi-filetype-csv me-1"></i> CSV ডাউনলোড</button>
+                <button type="button" class="btn btn-sm btn-danger rounded-pill px-3" id="bulkDeleteBtn"><i class="bi bi-trash3 me-1"></i> মুছুন</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Table Section -->
     <div class="section-card section-appear">
         <div class="section-header-icon text-info">
@@ -117,6 +131,9 @@
             <table class="table table-hover align-middle mb-0 table-enhanced">
                 <thead class="table-primary text-center">
                     <tr>
+                        <th style="width:40px;min-width:40px;" class="text-center">
+                            <div class="form-check mb-0"><input class="form-check-input" type="checkbox" id="selectAllApps" title="সব নির্বাচন করুন"></div>
+                        </th>
                         <th class="sortable" data-sort-by="application_id" data-sort-order="desc" aria-sort="none">
                             সনদ/আবেদন নং <i class="fas fa-sort float-end"></i>
                         </th>
@@ -138,7 +155,7 @@
                 </thead>
                 <tbody id="sonodTableBody" class="text-center">
                     <tr>
-                            <td colspan="7" class="text-muted py-4" id="noDataRow" style="display: none;">
+                            <td colspan="8" class="text-muted py-4" id="noDataRow" style="display: none;">
                             <i class="bi bi-info-circle me-2 text-secondary fs-5"></i> কোনো তথ্য পাওয়া যায়নি।
                         </td>
                     </tr>
@@ -165,6 +182,12 @@
     </div>
 </div>
 
+<style>
+#bulkActionsBar { border-left: 4px solid #0d6efd; animation: fadeIn 0.25s ease; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+.form-check-input:checked { background-color: #0d6efd; border-color: #0d6efd; }
+.form-check-input:focus { box-shadow: 0 0 0 0.2rem rgba(13,110,253,0.25); }
+</style>
 {% block scripts %}
 <script>
 // IntersectionObserver for section animations
@@ -334,7 +357,7 @@ $(document).ready(function () {
 
                 // যদি কোনো ডেটা না থাকে
                 if (!response.data || response.data.length === 0) {
-                    tbody.append('<tr><td colspan="7" class="text-center">কোনো আবেদন পাওয়া যায়নি।</td></tr>');
+                    tbody.append('<tr><td colspan="8" class="text-center">কোনো আবেদন পাওয়া যায়নি।</td></tr>');
                     updateRangeSummary(page, limit, response.total_records, 0);
                     return;
                 }
@@ -410,7 +433,8 @@ $(document).ready(function () {
                     let statusBadge = getStatusBadge(application.status);
 
                     tbody.append(`
-                        <tr>
+                        <tr data-app-id="${application.application_id}" data-sonod="${application.sonod_number || ''}" data-name="${(application.name_bn || '').replace(/"/g, '&quot;')}" data-status="${application.status}">
+                            <td class="text-center"><div class="form-check mb-0"><input class="form-check-input row-checkbox" type="checkbox" value="${application.application_id}"></div></td>
                             <td>${applicationSonodNo}</td>
                             <td>${formattedDate}</td>
                             <td>${applicantFullName}</td>
@@ -438,6 +462,9 @@ $(document).ready(function () {
                 }
                 // দৃশ্যমান পরিসর সারসংক্ষেপ (যেমন: মোট ২৪০টির মধ্যে ১–১০ দেখানো হচ্ছে)
                 updateRangeSummary(page, limit, response.total_records, response.data ? response.data.length : 0);
+
+                // Reset bulk selection after fetch
+                if (typeof updateBulkBar === 'function') updateBulkBar();
 
                 // Address expand/collapse with jQuery
                 $('.address-block').each(function(){
@@ -855,6 +882,109 @@ $(document).ready(function () {
         currentPage = 1;
         fetchApplications(currentPage, currentSearch, currentSortBy, currentSortOrder, recordsPerPage, currentUnion, currentStatus);
     });
+
+    // ─── Bulk Selection ───
+    const selectAllApps = document.getElementById('selectAllApps');
+    const bulkActionsBar = document.getElementById('bulkActionsBar');
+    const selectedCountEl = document.getElementById('selectedCount');
+    const clearSelectionBtn = document.getElementById('clearSelectionBtn');
+    const bulkDeleteBtn = document.getElementById('bulkDeleteBtn');
+    const exportCsvBtn = document.getElementById('exportCsvBtn');
+
+    function getSelectedAppIds() {
+        return Array.from(document.querySelectorAll('#sonodTableBody .row-checkbox:checked')).map(cb => cb.value);
+    }
+
+    function updateBulkBar() {
+        const count = getSelectedAppIds().length;
+        if (selectedCountEl) selectedCountEl.textContent = count;
+        if (bulkActionsBar) bulkActionsBar.style.display = count > 0 ? '' : 'none';
+        if (selectAllApps) {
+            const allCbs = document.querySelectorAll('#sonodTableBody .row-checkbox');
+            const checked = document.querySelectorAll('#sonodTableBody .row-checkbox:checked');
+            selectAllApps.checked = allCbs.length > 0 && checked.length === allCbs.length;
+            selectAllApps.indeterminate = checked.length > 0 && checked.length < allCbs.length;
+        }
+    }
+
+    if (selectAllApps) {
+        selectAllApps.addEventListener('change', function() {
+            document.querySelectorAll('#sonodTableBody .row-checkbox').forEach(cb => { cb.checked = selectAllApps.checked; });
+            updateBulkBar();
+        });
+    }
+
+    $('#sonodTableBody').on('change', '.row-checkbox', function() { updateBulkBar(); });
+
+    if (clearSelectionBtn) {
+        clearSelectionBtn.addEventListener('click', function() {
+            document.querySelectorAll('#sonodTableBody .row-checkbox').forEach(cb => { cb.checked = false; });
+            if (selectAllApps) { selectAllApps.checked = false; selectAllApps.indeterminate = false; }
+            updateBulkBar();
+        });
+    }
+
+    // ─── Bulk Delete ───
+    if (bulkDeleteBtn) {
+        bulkDeleteBtn.addEventListener('click', async function() {
+            const ids = getSelectedAppIds();
+            if (!ids.length) return;
+            const type = '{{ url_path |e("js") }}';
+            const result = await Swal.fire({
+                title: 'নিশ্চিত করুন',
+                html: `আপনি কি <strong>${ids.length}</strong> টি আবেদন মুছে ফেলতে চান?<br><small class="text-muted">এই ধরণটি পুনরুদ্ধার করা যাবে না।</small>`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#dc3545',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: '<i class="bi bi-trash3 me-1"></i> হ্যাঁ, মুছুন',
+                cancelButtonText: '<i class="bi bi-x-circle me-1"></i> বাতিল',
+                reverseButtons: true,
+                customClass: { confirmButton: 'btn btn-danger rounded-pill px-4', cancelButton: 'btn btn-outline-secondary rounded-pill px-4' },
+                buttonsStyling: false,
+                showLoaderOnConfirm: true,
+                preConfirm: async () => {
+                    const results = await Promise.all(ids.map(id =>
+                        $.ajax({ type: 'POST', url: `/applications/${type}/delete`, data: { applicationId: id }, dataType: 'json' })
+                    ));
+                    const failed = results.filter(r => r.status !== 'success');
+                    if (failed.length) throw new Error(`${failed.length} টি মুছতে ব্যর্থ হয়েছে`);
+                    return results;
+                }
+            });
+            if (result.isConfirmed) {
+                Swal.fire({ icon: 'success', title: 'মুছে ফেলা হয়েছে', text: `${ids.length} টি আবেদন সফলভাবে মুছে ফেলা হয়েছে।`, timer: 2000, showConfirmButton: false, toast: true, position: 'top-end' });
+                fetchApplications(currentPage, currentSearch, currentSortBy, currentSortOrder, recordsPerPage, currentUnion, currentStatus);
+                updateBulkBar();
+            }
+        });
+    }
+
+    // ─── CSV Export ───
+    if (exportCsvBtn) {
+        exportCsvBtn.addEventListener('click', function() {
+            const rows = document.querySelectorAll('#sonodTableBody tr[data-app-id]');
+            if (!rows.length) { Swal.fire({ icon: 'info', title: 'তথ্য নেই', text: 'এক্সপোর্ট করার জন্য কোনও ডাটা নেই।', timer: 2000, showConfirmButton: false }); return; }
+            const ids = getSelectedAppIds();
+            const exportRows = ids.length ? Array.from(rows).filter(r => ids.includes(r.dataset.appId)) : Array.from(rows);
+            const headers = ['সনদ নং', 'আবেদন তারিখ', 'নাম', 'পরিচয়পত্র নং', 'অবস্থা', 'ঠিকানা'];
+            const csvRows = [headers.join(',')];
+            exportRows.forEach(row => {
+                const cells = Array.from(row.children).slice(2, -1).map(td => {
+                    let val = td.textContent.trim().replace(/[\n\r]+/g, ' ').replace(/,/g, ';').replace(/"/g, '""');
+                    return '"' + val + '"';
+                });
+                csvRows.push(cells.join(','));
+            });
+            const blob = new Blob(['\uFEFF' + csvRows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = 'আবেদন_তালিকা_' + new Date().toISOString().slice(0, 10) + '.csv';
+            link.click();
+            URL.revokeObjectURL(link.href);
+            Swal.fire({ icon: 'success', title: 'ডাউনলোড সম্পন্ন', text: `${exportRows.length} টি রেকর্ড CSV ফাইলে ডাউনলোড করা হয়েছে।`, timer: 2000, showConfirmButton: false, toast: true, position: 'top-end' });
+        });
+    }
 
     fetchApplications(currentPage, currentSearch, currentSortBy, currentSortOrder, recordsPerPage); // Initial fetch
 });

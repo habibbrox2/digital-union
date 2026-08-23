@@ -177,38 +177,30 @@ function rewriteAssetUrls(string $html): string
 
     // Build the site URL prefix that Twig {{ url }} resolves to.
     // This can be "http://localhost", "https://domain.com", etc.
-    // We match any URL that ends with /assets/ and rewrite it.
     $siteUrl = '';
     if (defined('SITE_URL')) {
         $siteUrl = rtrim(SITE_URL, '/');
     }
 
     if ($siteUrl) {
-        // Escape for regex (e.g. https://example.com → https:\/\/example\.com)
-        $escaped = preg_quote($siteUrl, '/');
+        // Use # as regex delimiter to avoid conflicts with / in URLs
+        $escaped = preg_quote($siteUrl, '#');
 
-        // Rewrite src=".../assets/..." in <img> tags
+        // Rewrite src="SITE_URL/path/file.ext" in <img> tags → file:///public/path/file.ext
+        // Handles any path: /assets/, /uploads/, etc.
         $html = preg_replace(
-            '/(src=["\'])' . $escaped . '\/assets\//',
-            "\$1file://{$publicPathFs}/assets/",
+            '#(src=["\'])' . $escaped . '(\/[^"]*)(["\'])#',
+            "\$1file://{$publicPathFs}$2\$3",
             $html
         );
 
-        // Rewrite url('.../assets/...') in inline <style> blocks
+        // Rewrite url('SITE_URL/path/file.ext') in inline <style> blocks
         $html = preg_replace(
-            '/url\(["\']?' . $escaped . '\/assets\//',
-            "url('file://{$publicPathFs}/assets/",
+            '#url\(["\']?' . $escaped . '(\/[^)"\']*)["\']?\)#',
+            "url('file://{$publicPathFs}$1')",
             $html
         );
     }
-
-    // Also rewrite root-relative paths like "/assets/..." to file:// paths
-    // (used by sonod.css and other hardcoded paths)
-    $html = preg_replace(
-        '/(src=["\'])\/assets\//',
-        "\$1file://{$publicPathFs}/assets/",
-        $html
-    );
 
     return $html;
 }
