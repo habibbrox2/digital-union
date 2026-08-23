@@ -112,6 +112,108 @@ function outputPdf(\Mpdf\Mpdf $mpdf, string $filename): void
 }
 
 
+/**
+ * Load certificate CSS from disk instead of HTTP.
+ * 
+ * mPDF cannot reliably fetch <link> CSS files via HTTP on web hosts
+ * (due to allow_url_fopen, SSL, or firewall restrictions). This function
+ * reads the CSS from the local filesystem and returns it as an inline
+ * <style> block, including fixing any hardcoded web-root URLs to use
+ * absolute filesystem paths that mPDF can resolve.
+ *
+ * @return string CSS content wrapped in a <style> tag, or empty string
+ */
+function loadCertificateCss(): string
+{
+    $css = '';
+    $publicPath = __DIR__ . '/../public';
+    $publicPathFs = str_replace('\\', '/', $publicPath);
+
+    // 1. Load sonod.css from disk and wrap in <style> tags
+    $sonodPath = $publicPath . '/assets/css/sonod.css';
+    if (file_exists($sonodPath)) {
+        $sonod = file_get_contents($sonodPath);
+
+        // Fix hardcoded root-relative URLs so mPDF can resolve them.
+        // sonod.css uses url('/assets/bg.png') — convert to absolute file:// path.
+        $sonod = preg_replace(
+            "/url\(['\"]?\/assets\/([^'\"]+)['\"]?\)/",
+            "url('file://{$publicPathFs}/assets/\$1')",
+            $sonod
+        );
+        $css .= "<style>\n{$sonod}\n</style>";
+    }
+
+    // 2. Add SolaimanLipi @font-face declaration (replaces external link to fonts.maateen.me)
+    //    mPDF already has the font registered via fontdata config, but the @font-face
+    //    ensures any CSS font-family references resolve correctly.
+    $fontPath = $publicPathFs . '/assets/fonts';
+    $css .= "<style>\n"
+         .  "@font-face {\n"
+         .  "    font-family: 'SolaimanLipi';\n"
+         .  "    src: url('file://{$fontPath}/SolaimanLipi.ttf') format('truetype');\n"
+         .  "    font-weight: normal;\n"
+         .  "    font-style: normal;\n"
+         .  "}\n"
+         .  "</style>";
+
+    return $css;
+}
+
+
+/**
+ * Rewrite asset URLs in rendered HTML so mPDF can resolve them locally.
+ *
+ * mPDF cannot fetch external HTTP/HTTPS image URLs on web hosts.
+ * This converts src="{{ url }}/assets/..." and url('{{ url }}/assets/...')
+ * references to file:// absolute paths that mPDF reads from disk.
+ *
+ * @param string $html  The rendered HTML (after Twig processing)
+ * @return string HTML with asset URLs converted to file:// paths
+ */
+function rewriteAssetUrls(string $html): string
+{
+    $publicPathFs = str_replace('\\', '/', __DIR__ . '/../public');
+
+    // Build the site URL prefix that Twig {{ url }} resolves to.
+    // This can be "http://localhost", "https://domain.com", etc.
+    // We match any URL that ends with /assets/ and rewrite it.
+    $siteUrl = '';
+    if (defined('SITE_URL')) {
+        $siteUrl = rtrim(SITE_URL, '/');
+    }
+
+    if ($siteUrl) {
+        // Escape for regex (e.g. https://example.com → https:\/\/example\.com)
+        $escaped = preg_quote($siteUrl, '/');
+
+        // Rewrite src=".../assets/..." in <img> tags
+        $html = preg_replace(
+            '/(src=["\'])' . $escaped . '\/assets\//',
+            "\$1file://{$publicPathFs}/assets/",
+            $html
+        );
+
+        // Rewrite url('.../assets/...') in inline <style> blocks
+        $html = preg_replace(
+            '/url\(["\']?' . $escaped . '\/assets\//',
+            "url('file://{$publicPathFs}/assets/",
+            $html
+        );
+    }
+
+    // Also rewrite root-relative paths like "/assets/..." to file:// paths
+    // (used by sonod.css and other hardcoded paths)
+    $html = preg_replace(
+        '/(src=["\'])\/assets\//',
+        "\$1file://{$publicPathFs}/assets/",
+        $html
+    );
+
+    return $html;
+}
+
+
 // ═══════════════════════════════════════════════════════════════
 // PUBLIC FUNCTIONS — kept backward-compatible signatures
 // ═══════════════════════════════════════════════════════════════
@@ -151,7 +253,11 @@ function generatePdf($htmlContent, $Filename = null)
         $finalFilename = getSafeFilename($Filename);
 
         $mpdf->AddPage();
-        $mpdf->WriteHTML($htmlContent);
+
+        // Load sonod.css from disk + rewrite asset URLs for mPDF
+        $sonodCss = loadCertificateCss();
+        $htmlContent = rewriteAssetUrls($htmlContent);
+        $mpdf->WriteHTML($sonodCss . $htmlContent, 0);
 
         ob_end_clean();
         outputPdf($mpdf, $finalFilename);
@@ -215,7 +321,11 @@ function makePdf($htmlContent, $Filename = null, $footerHTML = '', $backgroundIm
                 font-family: "solaimanlipi", "nikosh", sans-serif;
             }
         </style>';
-        $mpdf->WriteHTML($css . $htmlContent);
+
+        // Load sonod.css from disk + rewrite asset URLs for mPDF
+        $sonodCss = loadCertificateCss();
+        $htmlContent = rewriteAssetUrls($htmlContent);
+        $mpdf->WriteHTML($sonodCss . $css . $htmlContent, 0);
 
         ob_end_clean();
         outputPdf($mpdf, $finalFilename);
@@ -294,7 +404,11 @@ function birthPdf($htmlContent, $Filename = null, $footerHTML = '', $backgroundI
                 font-family: "solaimanlipi", "helvetica", "nikosh", sans-serif;
             }
         </style>';
-        $mpdf->WriteHTML($css . $htmlContent);
+
+        // Load sonod.css from disk + rewrite asset URLs for mPDF
+        $sonodCss = loadCertificateCss();
+        $htmlContent = rewriteAssetUrls($htmlContent);
+        $mpdf->WriteHTML($sonodCss . $css . $htmlContent, 0);
 
         ob_end_clean();
         outputPdf($mpdf, $finalFilename);
