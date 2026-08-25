@@ -107,7 +107,15 @@ $(document).ready(function () {
                 $('#nid').val(data.nid);
                 $('#birth_id').val(data.birth_id);
                 $('#passport_no').val(data.passport_no);
-                $('#birth_date').val(data.birth_date);
+                // Convert YYYY-MM-DD from DB to DD-MM-YYYY for display
+                if (data.birth_date && data.birth_date !== '0000-00-00') {
+                    const parts = data.birth_date.split('-');
+                    if (parts.length === 3) {
+                        $('#birth_date').val(`${parts[2]}-${parts[1]}-${parts[0]}`);
+                    } else {
+                        $('#birth_date').val(data.birth_date);
+                    }
+                }
                 $('#father_name_en').val(data.father_name_en);
                 $('#father_name_bn').val(data.father_name_bn);
                 $('#mother_name_en').val(data.mother_name_en);

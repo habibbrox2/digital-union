@@ -321,7 +321,7 @@
                         <td>{{ loop.index|bn }}</td>
                         <td>{{ member.name_bn }}</td>
                         <td>{{ member.relation_bn }}</td>
-                        <td>{{ member.birth_date|bn }}</td>
+                        <td>{{ member.birth_date and member.birth_date != '0000-00-00' ? member.birth_date|date('d-m-Y')|bn : 'N/A' }}</td>
                         <td>{{ member.nid|bn }}</td>
                         <td>{{ member.marital_status }}</td>
                         <td> {% if member.is_dead == "1" %}

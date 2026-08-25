@@ -244,7 +244,7 @@ table.warish-table td {
             </table>
 
             <!-- Warish Statement -->
-            <table><tr><td class="warish-statement" style="{% if compact_scale < 1 %}font-size: {{ (10.5 * compact_scale)|round(1) }}pt; margin: {{ (4 * compact_scale)|round(1) }}pt 0; line-height: {{ (1.8 * compact_scale + 0.3)|round(1) }};{% endif %}"> &nbsp; &nbsp;&nbsp; &nbsp; অত্র ইউনিয়নের স্থায়ী অধিবাসী ছিলেন। তিনি {{ data.extra.death_year ? (data.extra.death_year|bn ~ ' সালে') : (data.birth_date|bn ~ ' তারিখে') }}
+            <table><tr><td class="warish-statement" style="{% if compact_scale < 1 %}font-size: {{ (10.5 * compact_scale)|round(1) }}pt; margin: {{ (4 * compact_scale)|round(1) }}pt 0; line-height: {{ (1.8 * compact_scale + 0.3)|round(1) }};{% endif %}"> &nbsp; &nbsp;&nbsp; &nbsp; অত্র ইউনিয়নের স্থায়ী অধিবাসী ছিলেন। তিনি {{ data.extra.death_year ? (data.extra.death_year|bn ~ ' সালে') : (data.birth_date|date('d-m-Y')|bn ~ ' তারিখে') }}
 
 
             মৃত্যুবরণ করেন। মৃত্যুকালে তিনি নিম্নলিখিত ওয়ারিশগণকে রাখিয়া মৃত্যুবরণ করেন।</td></tr></table>
@@ -266,7 +266,7 @@ table.warish-table td {
                         <td>{{ loop.index|bn }}</td>
                         <td>{{ member.name_bn }}</td>
                         <td>{{ member.relation_bn }}</td>
-                        <td>{{ member.birth_date|bn }}</td>
+                        <td>{{ member.birth_date and member.birth_date != '0000-00-00' ? member.birth_date|date('d-m-Y')|bn : 'N/A' }}</td>
                         <td>{{ member.nid|bn }}</td>
                         <td>{{ member.marital_status }}</td>
                         <td> {% if member.is_dead == "1" %}
@@ -311,7 +311,7 @@ table.warish-table td {
                                     </div>
                                 </td>
                                 {% endif %}
-                                <td style="text-align: right; padding-right: 120px; width: 50%;">
+                                <td style="text-align: right; padding-right: 90px; width: 50%;">
                                     <div style="border-top: 1px solid #000; display: inline-block; padding-top: 5px;">
                                         চেয়ারম্যান স্বাক্ষর
                                     </div>

@@ -254,7 +254,7 @@ table.warish-table td {
                         <td>{{ loop.index }}</td>
                         <td>{{ member.name_en|title }}</td>
                         <td>{{ member.relation_en|title }}</td>
-                        <td>{{ member.birth_date }}</td>
+                        <td>{{ member.birth_date and member.birth_date != '0000-00-00' ? member.birth_date|date('d-m-Y') : 'N/A' }}</td>
                         <td>{{ member.nid }}</td>
                         <td>{{ member.marital_status }}</td>
                         <td> {% if member.is_dead == "1" %} Deceased {% else %} Alive {% endif %}</td>

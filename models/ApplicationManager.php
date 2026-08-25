@@ -1416,6 +1416,13 @@ class ApplicationManager
 
     public function updateSonodStatus($application_id, $union_id, $sonod_number, $status)
     {
+        // 🔒 Validate sonod_number is exactly 17 digits
+        $digitsOnly = preg_replace('/\D/', '', (string)$sonod_number);
+        if (strlen($digitsOnly) !== 17) {
+            throw new \InvalidArgumentException("Sonod number must be exactly 17 digits. Got: {$digitsOnly} (" . strlen($digitsOnly) . " digits)");
+        }
+        $sonod_number = $digitsOnly;
+
         $stmt = $this->conn->prepare("UPDATE applications SET sonod_number = ?, status = ? WHERE application_id = ? AND union_id = ?");
         $stmt->bind_param("sssi", $sonod_number, $status, $application_id, $union_id);
         $success = $stmt->execute();
