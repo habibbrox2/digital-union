@@ -597,7 +597,7 @@ class ApplicationService
         $nid         = convertBanglaToEnglishNumber(sanitize_input($post['nid'] ?? ''));
         $birth_id    = convertBanglaToEnglishNumber(sanitize_input($post['birth_id'] ?? ''));
         $passport_no = convertBanglaToEnglishNumber(sanitize_input($post['passport_no'] ?? ''));
-        $birth_date  = sanitize_input($post['birth_date'] ?? '');
+        $birth_date  = normalizeDateToMysql(convertBanglaToEnglishNumber(sanitize_input($post['birth_date'] ?? '')));
 
         // --- Generate IDs ---
         $applicant_id    = generateApplicantId($nid, $birth_id, $passport_no, $union_code, $birth_date);
@@ -788,7 +788,7 @@ class ApplicationService
             'nid'                  => sanitize_input($post['nid'] ?? ''),
             'birth_id'             => sanitize_input($post['birth_id'] ?? ''),
             'passport_no'          => sanitize_input($post['passport_no'] ?? ''),
-            'birth_date'           => sanitize_input($post['birth_date'] ?? ''),
+            'birth_date'           => normalizeDateToMysql(convertBanglaToEnglishNumber(sanitize_input($post['birth_date'] ?? ''))),
             'gender'               => sanitize_input($post['gender'] ?? ''),
             'father_name_en'       => sanitize_input($post['father_name_en'] ?? ''),
             'father_name_bn'       => sanitize_input($post['father_name_bn'] ?? ''),
@@ -893,8 +893,8 @@ class ApplicationService
                 'name_bn'          => sanitize_input($member_name_bns[$i] ?? ''),
                 'relation_en'      => $relation_en,
                 'relation_bn'      => $relation_bn,
-                'birth_date'       => sanitize_input($member_birth_dates[$i] ?? ''),
-                'nid'              => sanitize_input($relation_nids[$i] ?? ''),
+                'birth_date'       => normalizeDateToMysql(convertBanglaToEnglishNumber(sanitize_input($member_birth_dates[$i] ?? ''))),
+                'nid'              => convertBanglaToEnglishNumber(sanitize_input($relation_nids[$i] ?? '')),
                 'gender'           => '',
                 'occupation'       => '',
                 'mobile'           => '',
@@ -1104,7 +1104,13 @@ class ApplicationService
         $posted_license_number = trim((string)($post['license_number'] ?? ''));
         try {
             if ($posted_license_number !== '') {
-                $sonod_number = sanitize_input($posted_license_number);
+                $sonod_number = convertBanglaToEnglishNumber(sanitize_input($posted_license_number));
+                if (!preg_match('/^\d{17}$/', $sonod_number)) {
+                    return [
+                        'status' => 'error',
+                        'message' => 'License number must contain exactly 17 digits.',
+                    ];
+                }
             } elseif (!empty($application['sonod_number'])) {
                 $sonod_number = sanitize_input($application['sonod_number']);
             } elseif (!empty($union_code)) {

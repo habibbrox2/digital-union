@@ -14,7 +14,7 @@
             <div id="formTitle">{{ certificate_type_bn ?? 'তথ্য সংশোধন ফরম' }}</div>
         </div>
 
-        <form id="applicationForm" method="POST" action="/application/update" enctype="multipart/form-data">
+        <form id="applicationForm" method="POST" action="/application/update" enctype="multipart/form-data" novalidate>
             <input type="hidden" id="application_id" name="application_id" value="{{ data.application_id }}">
             <input type="hidden" id="sonod_number" name="sonod_number" value="{{ data.sonod_number }}">
             <input type="hidden" id="certificate_type" name="certificate_type" value="{{ certificate_type }}">

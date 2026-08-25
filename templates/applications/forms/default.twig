@@ -20,7 +20,7 @@
         <!-- ================= Application Form ================= -->
         <form id="applicationForm" method="POST"
         action="{% if reuse_mode %}/applications/{{ certificate_type }}/apply{% elseif data is defined and data.application_id is defined %}/applications/{{ certificate_type }}/edit/{{ data.application_id }}{% else %}/applications/{{ certificate_type }}/apply{% endif %}"
-        enctype="multipart/form-data">
+        enctype="multipart/form-data" novalidate>
 
         <!-- Hidden Inputs -->
         {# certificate_type hidden input — always present so JS initExtraFields() can find it #}

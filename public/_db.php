@@ -1,5 +1,4 @@
-<?php
-/* ===================== AUTHENTICATION CHECK ===================== */
+<?php/* ===================== AUTHENTICATION CHECK ===================== */
 // Skip browser-only auth guards when running from CLI cron/smoke scripts.
 $isCli = PHP_SAPI === 'cli' || PHP_SAPI === 'phpdbg';
 if (!$isCli) {
@@ -7,20 +6,51 @@ if (!$isCli) {
     if (session_status() === PHP_SESSION_NONE) {
         session_start();
     }
+
+    // 🔒 ENFORCED: Admin-only access required for database management tools
+    $isSuperAdmin = isset($_SESSION['logged_in']) && $_SESSION['logged_in'] === true
+        && isset($_SESSION['role_id']) && (int)$_SESSION['role_id'] <= 1;
+
+    if (!$isSuperAdmin) {
+        http_response_code(403);
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode([
+            'success' => false,
+            'message' => 'Access Denied: Superadmin privileges required.',
+            'error' => 'Forbidden'
+        ]);
+        exit;
+    }
+}/* ===================== কনফিগারেশন / CONFIG ===================== */
+
+// 🔒 Load .env for database credentials (never hardcode)
+if (file_exists(__DIR__ . '/../.env')) {
+    $envLines = file(__DIR__ . '/../.env', FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    foreach ($envLines as $line) {
+        $line = trim($line);
+        if ($line === '' || $line[0] === '#') continue;
+        if (strpos($line, '=') !== false) {
+            list($key, $value) = explode('=', $line, 2);
+            $key = trim($key);
+            $value = trim($value, " \t\n\r\x00\x0B\"");
+            if (!isset($_ENV[$key])) {
+                $_ENV[$key] = $value;
+            }
+        }
+    }
 }
 
-// Optional: Check for admin role if your system has roles
-// if (($_SESSION['role'] ?? '') !== 'admin') {
-//     http_response_code(403);
-//     die('Access Denied: Admin privileges required.');
-// }
+define('DB_HOST', $_ENV['DB_HOST'] ?? 'localhost');
+define('DB_PORT', $_ENV['DB_PORT'] ?? 3306);
+define('DB_USER', $_ENV['DB_USER'] ?? '');
+define('DB_PASS', $_ENV['DB_PASS'] ?? '');
+define('DB_NAME', $_ENV['DB_NAME'] ?? '');
 
-/* ===================== কনফিগারেশন / CONFIG ===================== */
-
-define('DB_HOST', 'localhost');
-define('DB_USER', 'tdhuedhn_lgdhaka');
-define('DB_PASS', 'F4o*PbcT~lkB');
-define('DB_NAME', 'tdhuedhn_lgdhaka');
+if (empty(DB_USER) || empty(DB_PASS) || empty(DB_NAME)) {
+    http_response_code(500);
+    echo json_encode(['success' => false, 'message' => 'Database credentials not configured in .env']);
+    exit;
+}
 
 // ব্যাকআপ ডিরেক্টরি
 define('BACKUP_DIR', dirname(__DIR__, 1) . '/Database/');
@@ -110,31 +140,53 @@ function viewTableData($table, $page = 1, $limit = VIEW_ROWS_PER_PAGE, $search =
     $limit = max(1, min(1000, (int)$limit));
     $offset = ($page - 1) * $limit;
 
-    // Search Logic
+    // 🔒 Search Logic — use prepared statements to prevent SQL injection
     $where = "";
+    $searchParams = [];
+    $searchTypes = '';
     if (!empty($search)) {
-        $searchEscaped = $db->real_escape_string($search);
         $cols = [];
         $res = $db->query("SHOW COLUMNS FROM `$table`");
         while ($row = $res->fetch_assoc()) {
-            $cols[] = "`" . $row['Field'] . "` LIKE '%$searchEscaped%'";
+            $cols[] = "`" . $row['Field'] . "` LIKE ?";
+            $searchParams[] = '%' . $search . '%';
+            $searchTypes .= 's';
         }
         if (!empty($cols)) {
             $where = "WHERE " . implode(" OR ", $cols);
         }
     }
 
-    // Sort Logic
+    // 🔒 Sort Logic — validate column name against actual table columns
     $orderBy = "";
     if (!empty($sort)) {
-        $res = $db->query("SHOW COLUMNS FROM `$table` LIKE '" . $db->real_escape_string($sort) . "'");
-        if ($res->num_rows > 0) {
+        $sort = preg_replace('/[^a-zA-Z0-9_]/', '', $sort);
+        $res = $db->query("SHOW COLUMNS FROM `$table`");
+        $validColumns = [];
+        while ($row = $res->fetch_assoc()) {
+            $validColumns[] = $row['Field'];
+        }
+        if (in_array($sort, $validColumns, true)) {
             $order = strtoupper($order) === 'DESC' ? 'DESC' : 'ASC';
             $orderBy = "ORDER BY `$sort` $order";
         }
     }
 
-    $totalRows = $db->query("SELECT COUNT(*) c FROM `$table` $where")->fetch_assoc()['c'];
+    // 🔒 Use prepared statement for COUNT query
+    $countSql = "SELECT COUNT(*) c FROM `$table` $where";
+    if (!empty($searchParams)) {
+        $stmt = $db->prepare($countSql);
+        if ($stmt) {
+            $stmt->bind_param($searchTypes, ...$searchParams);
+            $stmt->execute();
+            $totalRows = $stmt->get_result()->fetch_assoc()['c'];
+            $stmt->close();
+        } else {
+            $totalRows = 0;
+        }
+    } else {
+        $totalRows = $db->query($countSql)->fetch_assoc()['c'];
+    }
 
     $columns = [];
     $columnsResult = $db->query("SHOW COLUMNS FROM `$table`");
@@ -142,10 +194,25 @@ function viewTableData($table, $page = 1, $limit = VIEW_ROWS_PER_PAGE, $search =
         $columns[] = $col;
     }
 
+    // 🔒 Use prepared statement for data query
     $data = [];
-    $dataResult = $db->query("SELECT * FROM `$table` $where $orderBy LIMIT $limit OFFSET $offset");
-    while ($row = $dataResult->fetch_assoc()) {
-        $data[] = $row;
+    $dataSql = "SELECT * FROM `$table` $where $orderBy LIMIT $limit OFFSET $offset";
+    if (!empty($searchParams)) {
+        $stmt = $db->prepare($dataSql);
+        if ($stmt) {
+            $stmt->bind_param($searchTypes, ...$searchParams);
+            $stmt->execute();
+            $dataResult = $stmt->get_result();
+            while ($row = $dataResult->fetch_assoc()) {
+                $data[] = $row;
+            }
+            $stmt->close();
+        }
+    } else {
+        $dataResult = $db->query($dataSql);
+        while ($row = $dataResult->fetch_assoc()) {
+            $data[] = $row;
+        }
     }
 
     return [
@@ -404,7 +471,17 @@ function createTable($data)
         throw new Exception('No columns provided for the table.');
     }
 
-    $sql = "CREATE TABLE `" . $db->real_escape_string($tableName) . "` (\n";
+    // 🔒 Whitelist allowed SQL types to prevent injection via column type
+    $allowedTypes = ['VARCHAR', 'TEXT', 'TINYTEXT', 'MEDIUMTEXT', 'LONGTEXT',
+        'INT', 'TINYINT', 'SMALLINT', 'MEDIUMINT', 'BIGINT',
+        'DECIMAL', 'FLOAT', 'DOUBLE',
+        'DATE', 'DATETIME', 'TIMESTAMP', 'TIME', 'YEAR',
+        'BOOLEAN', 'BOOL', 'BLOB', 'LONGBLOB', 'JSON', 'ENUM', 'SET'];
+
+    // 🔒 Whitelist allowed DEFAULT values
+    $allowedDefaults = ['NULL', 'CURRENT_TIMESTAMP'];
+
+    $sql = "CREATE TABLE `$tableName` (\n";
     $columnDefs = [];
     $primaryKeys = [];
     $uniqueKeys = [];
@@ -416,25 +493,39 @@ function createTable($data)
             continue; // Skip invalid column names
         }
 
-        $def = "  `" . $db->real_escape_string($colName) . "` ";
+        $def = "  `$colName` ";
         $type = strtoupper($col['type'] ?? 'VARCHAR');
-        $length = $col['length'] ?? '';
 
+        // Validate column type against whitelist
+        if (!in_array($type, $allowedTypes, true)) {
+            throw new Exception("Invalid column type: {$type}");
+        }
+
+        $length = $col['length'] ?? '';
         $def .= $type;
-        if (!empty($length) && in_array($type, ['VARCHAR', 'INT', 'DECIMAL'])) {
+        if (!empty($length) && in_array($type, ['VARCHAR', 'INT', 'DECIMAL', 'TINYINT', 'SMALLINT', 'MEDIUMINT', 'BIGINT', 'FLOAT', 'DOUBLE'])) {
+            // Validate length is numeric
+            if (!preg_match('/^[0-9]+$/', (string)$length)) {
+                throw new Exception("Invalid length for column {$colName}: {$length}");
+            }
             $def .= "($length)";
         }
 
         $def .= " NOT NULL";
 
         if (isset($col['default'])) {
-            if (strtoupper($col['default']) === 'NULL') {
+            $defaultVal = $col['default'];
+            if (strtoupper($defaultVal) === 'NULL') {
                 $def = str_replace('NOT NULL', 'NULL', $def);
                 $def .= " DEFAULT NULL";
-            } elseif (strtoupper($col['default']) === 'CURRENT_TIMESTAMP') {
+            } elseif (strtoupper($defaultVal) === 'CURRENT_TIMESTAMP') {
                 $def .= " DEFAULT CURRENT_TIMESTAMP";
-            } elseif ($col['default'] !== '') {
-                $def .= " DEFAULT '" . $db->real_escape_string($col['default']) . "'";
+            } elseif ($defaultVal !== '') {
+                // 🔒 Validate default value — only allow safe characters
+                if (!preg_match('/^[a-zA-Z0-9_\-\.\s]+$/', $defaultVal)) {
+                    throw new Exception("Invalid default value for column {$colName}");
+                }
+                $def .= " DEFAULT '$defaultVal'";
             }
         }
 
@@ -446,11 +537,11 @@ function createTable($data)
 
         $index = $col['index'] ?? '';
         if ($index === 'PRIMARY') {
-            $primaryKeys[] = "`" . $db->real_escape_string($colName) . "`";
+            $primaryKeys[] = "`$colName`";
         } elseif ($index === 'UNIQUE') {
-            $uniqueKeys[] = "UNIQUE KEY `unique_" . $db->real_escape_string($colName) . "` (`" . $db->real_escape_string($colName) . "`)";
+            $uniqueKeys[] = "UNIQUE KEY `unique_$colName` (`$colName`)";
         } elseif ($index === 'INDEX') {
-            $indexKeys[] = "KEY `idx_" . $db->real_escape_string($colName) . "` (`" . $db->real_escape_string($colName) . "`)";
+            $indexKeys[] = "KEY `idx_$colName` (`$colName`)";
         }
     }
 
@@ -476,16 +567,15 @@ function createTable($data)
             'sql' => $sql // For debugging
         ];
     } catch (Exception $e) {
-        throw new Exception("Failed to create table: " . $e->getMessage() . " (Query: $sql)");
+        throw new Exception("Failed to create table: " . $e->getMessage());
     }
 }
 
 
-/* ===================== SERVER INFO ===================== */
-
-function getServerInfo()
+/* ===================== SERVER INFO ===================== */function getServerInfo()
 {
     $db = db();
+
 
     return [
         'success' => true,
@@ -495,9 +585,6 @@ function getServerInfo()
         'memory_usage' => round(memory_get_usage() / 1024 / 1024, 2) . ' MB',
         'max_upload_size' => ini_get('upload_max_filesize'),
         'post_max_size' => ini_get('post_max_size'),
-        'db_host' => DB_HOST,
-        'db_name' => DB_NAME,
-        'db_user' => DB_USER,
         'db_stat' => $db->stat()
     ];
 }
@@ -776,6 +863,21 @@ function importSQLFile($file, $allowDrop = false, $enableFK = false)
     $current_query = '';
     $count = 0;
     $errors = [];
+    $skipped = 0;
+
+    // 🔒 Destructive statement patterns that require explicit allowDrop flag
+    $destructivePatterns = [
+        '/^\s*DROP\s+TABLE/i',
+        '/^\s*TRUNCATE\s+TABLE/i',
+        '/^\s*DELETE\s+FROM/i',
+        '/^\s*ALTER\s+TABLE/i',
+        '/^\s*DROP\s+DATABASE/i',
+        '/^\s*GRANT\s+/i',
+        '/^\s*REVOKE\s+/i',
+        '/^\s*CREATE\s+USER/i',
+        '/^\s*DROP\s+USER/i',
+        '/^\s*ALTER\s+USER/i',
+    ];
 
     $db->query('SET autocommit=0');
     $db->query('SET FOREIGN_KEY_CHECKS=' . ($enableFK ? 1 : 0));
@@ -796,7 +898,20 @@ function importSQLFile($file, $allowDrop = false, $enableFK = false)
 
                 if (empty($q)) continue;
 
-                if (!$allowDrop && stripos($q, 'DROP TABLE') === 0) continue;
+                // 🔒 Block destructive statements unless explicitly allowed
+                if (!$allowDrop) {
+                    $isDestructive = false;
+                    foreach ($destructivePatterns as $pattern) {
+                        if (preg_match($pattern, $q)) {
+                            $isDestructive = true;
+                            break;
+                        }
+                    }
+                    if ($isDestructive) {
+                        $skipped++;
+                        continue;
+                    }
+                }
 
                 $db->query($q);
                 $count++;
@@ -814,12 +929,16 @@ function importSQLFile($file, $allowDrop = false, $enableFK = false)
 
     $is_success = empty($errors);
     $message = $is_success ? "$count টি স্টেটমেন্ট সফলভাবে চালানো হয়েছে" : "ইমপোর্ট অসম্পূর্ণ বা ব্যর্থ হয়েছে";
+    if ($skipped > 0) {
+        $message .= " ($skipped টি বিপজ্জনক স্টেটমেন্ট বাদ দেওয়া হয়েছে)";
+    }
     if ($errors) {
         $message .= " (" . count($errors) . " টি ত্রুটি)";
     }
     return [
         'success' => $is_success,
         'count'   => $count,
+        'skipped' => $skipped,
         'errors'  => $errors,
         'message' => $message
     ];
@@ -897,10 +1016,19 @@ function getBackupFiles()
 
 function deleteBackupFile($filename)
 {
-    if (strpos($filename, '..') !== false) {
+    // 🔒 Secure filename validation — block path traversal and absolute paths
+    $filename = basename($filename);
+    if (!preg_match('/^[a-zA-Z0-9_\-\.\/]+$/', $filename)) {
         throw new Exception('Invalid filename');
     }
     $file = BACKUP_DIR . $filename;
+
+    // Ensure resolved path stays within BACKUP_DIR
+    $realPath = realpath($file);
+    $realBackup = realpath(BACKUP_DIR);
+    if ($realPath === false || $realBackup === false || strpos($realPath, $realBackup) !== 0) {
+        throw new Exception('Invalid file path');
+    }
 
     if (!file_exists($file)) {
         throw new Exception('ফাইল পাওয়া যায়নি');
@@ -1000,8 +1128,17 @@ if (!$isCli && ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
                 $allowDrop = ($_POST['allowDrop'] ?? 'false') === 'true';
                 $enableFK = ($_POST['enableFK'] ?? 'false') === 'true';
                 $filename = $_POST['filename'];
-                if (strpos($filename, '..') !== false) throw new Exception('Invalid filename');
-                echo json_encode(importSQLFile(BACKUP_DIR . $filename, $allowDrop, $enableFK));
+                $filename = basename($filename);
+                if (!preg_match('/^[a-zA-Z0-9_\-\.\/]+$/', $filename)) throw new Exception('Invalid filename');
+                $file = BACKUP_DIR . $filename;
+
+                // Ensure resolved path stays within BACKUP_DIR
+                $realPath = realpath($file);
+                $realBackup = realpath(BACKUP_DIR);
+                if ($realPath === false || $realBackup === false || strpos($realPath, $realBackup) !== 0) {
+                    throw new Exception('Invalid file path');
+                }
+                echo json_encode(importSQLFile($file, $allowDrop, $enableFK));
                 break;
 
             case 'get_schema':
@@ -1018,8 +1155,16 @@ if (!$isCli && ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
                     $file_to_preview = $_FILES['sql_file']['tmp_name'];
                 } elseif (isset($_POST['filename'])) {
                     $filename = $_POST['filename'];
-                    if (strpos($filename, '..') !== false) throw new Exception('Invalid filename');
+                    $filename = basename($filename);
+                    if (!preg_match('/^[a-zA-Z0-9_\-\.\/]+$/', $filename)) throw new Exception('Invalid filename');
                     $file_to_preview = BACKUP_DIR . $filename;
+
+                    // Ensure resolved path stays within BACKUP_DIR
+                    $realPath = realpath($file_to_preview);
+                    $realBackup = realpath(BACKUP_DIR);
+                    if ($realPath === false || $realBackup === false || strpos($realPath, $realBackup) !== 0) {
+                        throw new Exception('Invalid file path');
+                    }
                 } else {
                     throw new Exception('কোন ফাইল নির্বাচন করা হয়নি');
                 }
@@ -1036,8 +1181,16 @@ if (!$isCli && ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
 
             case 'download':
                 $filename = $_POST['filename'] ?? '';
-                if (strpos($filename, '..') !== false) throw new Exception('Invalid filename');
+                $filename = basename($filename);
+                if (!preg_match('/^[a-zA-Z0-9_\-\.\/]+$/', $filename)) throw new Exception('Invalid filename');
                 $file = BACKUP_DIR . $filename;
+
+                // Ensure resolved path stays within BACKUP_DIR
+                $realPath = realpath($file);
+                $realBackup = realpath(BACKUP_DIR);
+                if ($realPath === false || $realBackup === false || strpos($realPath, $realBackup) !== 0) {
+                    throw new Exception('Invalid file path');
+                }
 
                 if (!file_exists($file)) {
                     throw new Exception('ফাইল পাওয়া যায়নি');
@@ -1050,9 +1203,9 @@ if (!$isCli && ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
                 exit;
 
             case 'execute_query':
-                $disableFK = ($_POST['disable_fk'] ?? 'false') === 'true';
-                echo json_encode(executeQuery($_POST['sql'], $disableFK));
-                break;
+                // 🔒 BLOCKED: Raw SQL execution is disabled for security.
+                // Use specific actions (view_table, search_replace, etc.) instead.
+                throw new Exception('execute_query has been disabled for security. Use specific actions instead.');
 
             case 'search_replace':
                 echo json_encode(searchAndReplace($_POST['table'], $_POST['column'], $_POST['search'], $_POST['replace']));

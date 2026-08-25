@@ -96,13 +96,13 @@ class LoginService
         $confirmPassword = $input['confirm_password'] ?? '';
 
         if (empty($token)) {
-            return ['success' => false, 'message' => 'টোকেন অনুপস্থিত。'];
+            return ['success' => false, 'message' => 'টোকেন অনুপস্থিত।'];
         }
         if (empty($newPassword)) {
-            return ['success' => false, 'message' => 'পাসওয়ার্ড প্রদান করুন。'];
+            return ['success' => false, 'message' => 'পাসওয়ার্ড প্রদান করুন।'];
         }
         if (strlen($newPassword) < 6) {
-            return ['success' => false, 'message' => 'পাসওয়ার্ড কমপক্ষে ৬ অক্ষরের হতে হবে。'];
+            return ['success' => false, 'message' => 'পাসওয়ার্ড কমপক্ষে ৬ অক্ষরের হতে হবে।'];
         }
         if ($newPassword !== $confirmPassword) {
             return ['success' => false, 'message' => 'পাসওয়ার্ড মিলছে না।'];
@@ -123,14 +123,34 @@ class LoginService
         $union_id = !empty($input['union_id']) ? (int)$input['union_id'] : null;
 
         if (empty($username) || empty($email) || empty($password)) {
-            return ['success' => false, 'message' => 'সকল ফিল্ড পূরণ করুন。'];
+            return ['success' => false, 'message' => 'সকল ফিল্ড পূরণ করুন।'];
         }
         if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            return ['success' => false, 'message' => 'বৈধ ইমেইল প্রদান করুন。'];
+            return ['success' => false, 'message' => 'বৈধ ইমেইল প্রদান করুন।'];
         }
-        if (strlen($password) < 6) {
-            return ['success' => false, 'message' => 'পাসওয়ার্ড কমপক্ষে ৬ অক্ষরের হতে হবে。'];
+
+        // 🔒 Username format validation
+        if (strlen($username) < 3 || !preg_match('/^[a-zA-Z0-9_]+$/', $username)) {
+            return ['success' => false, 'message' => 'ইউজারনেম কমপক্ষে ৩ অক্ষর হতে হবে এবং শুধু অক্ষর, সংখ্যা ও আন্ডারস্কোর থাকতে পারে।'];
         }
+
+        // 🔒 Password complexity validation (matches AuthManager::register rules)
+        if (function_exists('validatePassword')) {
+            $passwordResult = validatePassword($password);
+            if (!$passwordResult['valid']) {
+                // Translate common English errors to Bengali
+                $errors = [
+                    'Password must be at least 8 characters' => 'পাসওয়ার্ড কমপক্ষে ৮ অক্ষরের হতে হবে।',
+                    'Password must contain uppercase letter' => 'পাসওয়ার্ডে অন্তত একটি বড় হাতের অক্ষর থাকতে হবে।',
+                    'Password must contain lowercase letter' => 'পাসওয়ার্ডে অন্তত একটি ছোট হাতের অক্ষর থাকতে হবে।',
+                    'Password must contain number' => 'পাসওয়ার্ডে অন্তত একটি সংখ্যা থাকতে হবে।',
+                    'Password is required' => 'পাসওয়ার্ড প্রয়োজন।',
+                ];
+                $message = $errors[$passwordResult['error']] ?? $passwordResult['error'];
+                return ['success' => false, 'message' => $message];
+            }
+        }
+
         if ($password !== $confirmPassword) {
             return ['success' => false, 'message' => 'পাসওয়ার্ড মিলছে না।'];
         }

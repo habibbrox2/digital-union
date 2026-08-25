@@ -354,7 +354,7 @@
                         <td>{{ member.name_bn|default('—') }}</td>
                         <td>{{ member.name_en|default('—') }}</td>
                         <td>{{ member.relation_bn|default('—') }}</td>
-                        <td>{{ member.birth_date ? member.birth_date|date('d-m-Y') : '—' }}</td>
+                        <td>{{ member.birth_date|default('—') }}</td>
                         <td>{{ member.nid ?: member.birth_id ?: member.passport_no ?: '—' }}</td>
                     </tr>
                     {% endfor %}

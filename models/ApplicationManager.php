@@ -425,6 +425,9 @@ class ApplicationManager
 
     public function createApplication($data)
     {
+        // Normalize birth_date to MySQL DATE format (accepts DD-MM-YYYY, YYYY-MM-DD, etc.)
+        $data['birth_date'] = normalizeDateToMysql($data['birth_date'] ?? '');
+
         $stmt = $this->conn->prepare("INSERT INTO applications (
             application_id, applicant_id, certificate_type, union_id, sonod_number, name_en, name_bn, nid, birth_id, passport_no, birth_date,
             gender, father_name_en, father_name_bn, mother_name_en, mother_name_bn, occupation, resident, educational_qualification,
@@ -485,13 +488,11 @@ class ApplicationManager
             'status' => 'success',
             'application_id' => $data['application_id'] // OR: $this->conn->insert_id
         ];
-    }
+    }    public function addMember($data)
+    {
+        // Normalize birth_date to MySQL DATE format (accepts DD-MM-YYYY, YYYY-MM-DD, etc.)
+        $data['birth_date'] = normalizeDateToMysql($data['birth_date'] ?? '');
 
-
-
-
-    public function addMember($data)
-    {
         $stmt = $this->conn->prepare("INSERT INTO application_members (
             application_id, certificate_type, name_en, name_bn, relation_en, relation_bn, birth_date,
             nid, gender, occupation, mobile, serial_no, address, marital_status, is_dead
@@ -792,8 +793,9 @@ class ApplicationManager
         $name_bn    = $data['name_bn'] ?? '';
         $nid        = $data['nid'] ?? '';
         $birth_id   = $data['birth_id'] ?? '';
-        $passport_no = $data['passport_no'] ?? '';
-        $birth_date = $data['birth_date'] ?? '';
+        $passport_no = $data['passport_no'] ?? '';        $birth_date = $data['birth_date'] ?? '';
+        // Normalize birth_date to MySQL DATE format (accepts DD-MM-YYYY, YYYY-MM-DD, etc.)
+        $birth_date = normalizeDateToMysql($birth_date);
         $gender     = $data['gender'] ?? '';
         $father_name_en = $data['father_name_en'] ?? '';
         $father_name_bn = $data['father_name_bn'] ?? '';

@@ -229,7 +229,7 @@ table.warish-table td {
             </table>
 
             <!-- Warish Statement -->
-            <table><tr><td class="warish-statement" style="{% if compact_scale < 1 %}font-size: {{ (10.5 * compact_scale)|round(1) }}pt; margin: {{ (4 * compact_scale)|round(1) }}pt 0; line-height: {{ (1.4 * compact_scale + 0.4)|round(1) }};{% endif %}"> &nbsp; &nbsp;&nbsp; &nbsp; was {% if (data.resident|default('permanent')) == 'temporary' %}a temporary resident{% else %}a permanent resident{% endif %} of this union. He/She died in {{ (data.extra.death_date ?? (data.birth_date ?? '')) | date('Y') }}. At the time of death, he/she left behind the following heirs.</td></tr></table>
+            <table><tr><td class="warish-statement" style="{% if compact_scale < 1 %}font-size: {{ (10.5 * compact_scale)|round(1) }}pt; margin: {{ (4 * compact_scale)|round(1) }}pt 0; line-height: {{ (1.4 * compact_scale + 0.4)|round(1) }};{% endif %}"> &nbsp; &nbsp;&nbsp; &nbsp; was {% if (data.resident|default('permanent')) == 'temporary' %}a temporary resident{% else %}a permanent resident{% endif %} of this union. He/She died in {{ (data.extra.death_date ?? (data.birth_date ?? '')) | split('-') | last }}. At the time of death, he/she left behind the following heirs.</td></tr></table>
 
             <!-- Warish List -->
             <table class="warish-table" autosize="1-7" style="{% if compact_scale < 1 %}font-size: {{ (10.5 * compact_scale)|round(1) }}pt; margin-bottom: {{ (7.5 * compact_scale)|round(1) }}pt;{% endif %}">

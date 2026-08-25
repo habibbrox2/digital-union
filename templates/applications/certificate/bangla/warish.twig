@@ -244,7 +244,7 @@ table.warish-table td {
             </table>
 
             <!-- Warish Statement -->
-            <table><tr><td class="warish-statement" style="{% if compact_scale < 1 %}font-size: {{ (10.5 * compact_scale)|round(1) }}pt; margin: {{ (4 * compact_scale)|round(1) }}pt 0; line-height: {{ (1.8 * compact_scale + 0.3)|round(1) }};{% endif %}"> &nbsp; &nbsp;&nbsp; &nbsp; অত্র ইউনিয়নের স্থায়ী অধিবাসী ছিলেন। তিনি {{ data.extra.death_year ? (data.extra.death_year|bn ~ ' সালে') : (data.birth_date|date("d-m-Y")|bn ~ ' তারিখে') }}
+            <table><tr><td class="warish-statement" style="{% if compact_scale < 1 %}font-size: {{ (10.5 * compact_scale)|round(1) }}pt; margin: {{ (4 * compact_scale)|round(1) }}pt 0; line-height: {{ (1.8 * compact_scale + 0.3)|round(1) }};{% endif %}"> &nbsp; &nbsp;&nbsp; &nbsp; অত্র ইউনিয়নের স্থায়ী অধিবাসী ছিলেন। তিনি {{ data.extra.death_year ? (data.extra.death_year|bn ~ ' সালে') : (data.birth_date|bn ~ ' তারিখে') }}
 
 
             মৃত্যুবরণ করেন। মৃত্যুকালে তিনি নিম্নলিখিত ওয়ারিশগণকে রাখিয়া মৃত্যুবরণ করেন।</td></tr></table>
@@ -301,7 +301,7 @@ table.warish-table td {
 <htmlpagefooter name="MyFooter">
     <table class="instructions" style="width: 94%; border-collapse: collapse; margin-left: 40px;">
                 <tr>
-                    <td colspan="2" style="text-align: center; padding-top: 8pt; padding-bottom: 35pt;">
+                    <td colspan="2" style="text-align: center; padding-top: 12pt; padding-bottom: 35pt;">
                         <table style="width:100%; border-collapse:collapse;">
                             <tr>
                                 {% if approval.verifier_name_bn %}
