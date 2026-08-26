@@ -5,98 +5,132 @@
 
 {% block content %}
 {% include 'components/sweetAlert.twig' %}
-<div class="container">
-    <h2>{{ header_title }}</h2>
+
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold text-primary mb-0">{{ header_title }}</h2>
+        <a href="/unions" class="btn btn-outline-secondary btn-md shadow-sm">
+            <i class="bi bi-arrow-left me-1"></i> Back
+        </a>
+    </div>
 
     {% if message %}
-        <div class="alert alert-{{ status }}">{{ message }}</div>
+        <div class="alert alert-{{ status }} rounded-3 shadow-sm d-flex align-items-center">
+            <i class="bi bi-info-circle-fill me-2"></i> {{ message }}
+        </div>
     {% endif %}
 
-    <form method="post">
+    <form method="post" id="unionForm">
         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <input type="hidden" name="division_id" id="division_id" value="{{ union.division_id }}">
+        <input type="hidden" name="district_id" id="district_id" value="{{ union.district_id }}">
+        <input type="hidden" name="upazila_id" id="upazila_id" value="{{ union.upazila_id }}">
 
-        <div class="form-group">
-            <label>ইউনিয়নের নাম (ইংরেজি)</label>
-            <input type="text" name="union_name_en" class="form-control" value="{{ union.union_name_en }}" required>
-        </div>
-        <div class="form-group">
-            <label>ইউনিয়নের নাম (বাংলা)</label>
-            <input type="text" name="union_name_bn" class="form-control" value="{{ union.union_name_bn }}" required>
-        </div>
-
-        <div class="form-group">
-            <label>বিভাগ (ইংরেজি)</label>
-            <select id="division_en" name="division_name_en" class="form-control" required>
-                <option value="">Select</option>
-            </select>
-        </div>
-        <div class="form-group">
-            <label>বিভাগ (বাংলা)</label>
-            <input type="text" id="division_name_bn" name="division_name_bn" class="form-control" value="{{ union.division_name_bn }}" readonly>
-        </div>
-
-        <div class="form-group">
-            <label>জেলা (ইংরেজি)</label>
-            <select id="district_en" name="district_name_en" class="form-control" required>
-                <option value="">Select</option>
-            </select>
-        </div>
-        <div class="form-group">
-            <label>জেলা (বাংলা)</label>
-            <input type="text" id="district_name_bn" name="district_name_bn" class="form-control" value="{{ union.district_name_bn }}" readonly>
-        </div>
-
-        <div class="form-group">
-            <label>উপজেলা (ইংরেজি)</label>
-            <select id="upazila_en" name="upazila_name_en" class="form-control" required>
-                <option value="">Select</option>
-            </select>
-        </div>
-        <div class="form-group">
-            <label>উপজেলা (বাংলা)</label>
-            <input type="text" id="upazila_name_bn" name="upazila_name_bn" class="form-control" value="{{ union.upazila_name_bn }}" readonly>
-        </div>
-
-        <div class="form-group">
-            <label>ওয়ার্ড সংখ্যা</label>
-            <input type="number" name="ward_count" class="form-control" value="{{ union.ward_count }}" required>
-        </div>
-
-        <div class="form-group">
-            <label>ইউনিয়ন কোড</label>
-            <input type="text" name="union_code" class="form-control" value="{{ union.union_code }}">
-        </div>
-
-        <div class="form-group">
-            <label>ইমেইল</label>
-            <input type="email" name="email" class="form-control" value="{{ union.email }}">
-        </div>
-
-        <div class="form-group">
-            <label>মোবাইল</label>
-            <input type="text" name="phone" class="form-control" value="{{ union.phone }}">
+        <div class="card shadow-sm border mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-geo-alt me-2"></i>ইউনিয়নের তথ্য</h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">ইউনিয়নের নাম (ইংরেজি) <span class="text-danger">*</span></label>
+                        <input type="text" name="union_name_en" class="form-control" value="{{ union.union_name_en }}" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">ইউনিয়নের নাম (বাংলা) <span class="text-danger">*</span></label>
+                        <input type="text" name="union_name_bn" class="form-control" value="{{ union.union_name_bn }}" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold">বিভাগ (ইংরেজি) <span class="text-danger">*</span></label>
+                        <select id="division_en" name="division_name_en" class="form-select" required>
+                            <option value="">Select</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold">বিভাগ (বাংলা)</label>
+                        <input type="text" id="division_name_bn" name="division_name_bn" class="form-control" value="{{ union.division_name_bn }}" readonly>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold">ওয়ার্ড সংখ্যা</label>
+                        <input type="number" name="ward_count" class="form-control" value="{{ union.ward_count }}" min="1">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold">জেলা (ইংরেজি) <span class="text-danger">*</span></label>
+                        <select id="district_en" name="district_name_en" class="form-select" required>
+                            <option value="">Select</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold">জেলা (বাংলা)</label>
+                        <input type="text" id="district_name_bn" name="district_name_bn" class="form-control" value="{{ union.district_name_bn }}" readonly>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold">ইউনিয়ন কোড</label>
+                        <input type="text" name="union_code" class="form-control" value="{{ union.union_code }}" maxlength="7">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold">উপজেলা (ইংরেজি) <span class="text-danger">*</span></label>
+                        <select id="upazila_en" name="upazila_name_en" class="form-select" required>
+                            <option value="">Select</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold">উপজেলা (বাংলা)</label>
+                        <input type="text" id="upazila_name_bn" name="upazila_name_bn" class="form-control" value="{{ union.upazila_name_bn }}" readonly>
+                    </div>
+                </div>
+            </div>
         </div>
 
-        <div class="form-group">
-            <label>ওয়েবসাইট</label>
-            <input type="url" name="website" class="form-control" value="{{ union.website }}">
+        <div class="card shadow-sm border mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-telephone me-2"></i>যোগাযোগের তথ্য</h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold">ইমেইল</label>
+                        <input type="email" name="email" class="form-control" value="{{ union.email }}">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold">মোবাইল</label>
+                        <input type="text" name="phone" class="form-control" value="{{ union.phone }}">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold">ওয়েবসাইট</label>
+                        <input type="url" name="website" class="form-control" value="{{ union.website }}">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold">পোস্ট কোড</label>
+                        <input type="text" name="postcode" class="form-control" value="{{ union.postcode }}">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold">অবস্থা</label>
+                        <select name="is_active" class="form-select">
+                            <option value="1" {% if union.is_active %}selected{% endif %}>Active</option>
+                            <option value="0" {% if not union.is_active %}selected{% endif %}>Inactive</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
         </div>
 
-        <div class="form-group">
-            <label>পোস্ট কোড</label>
-            <input type="text" name="postcode" class="form-control" value="{{ union.postcode }}">
+        <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary btn-md px-4 shadow-sm">
+                <i class="bi bi-check-circle me-1"></i> আপডেট করুন
+            </button>
+            <a href="/unions" class="btn btn-outline-secondary btn-md px-4">বাতিল</a>
         </div>
-
-        <button type="submit" class="btn btn-primary">আপডেট করুন</button>
-        <a href="/unions" class="btn btn-secondary">বাতিল</a>
     </form>
 </div>
 
+{% endblock %}
 
+{% block scripts %}
 <script>
 $(document).ready(function () {
     // AJAX form submission with spinner
-    $('form').on('submit', function (e) {
+    $('#unionForm').on('submit', function (e) {
         e.preventDefault();
 
         const $form = $(this);
@@ -104,7 +138,7 @@ $(document).ready(function () {
         const restoreBtn = btn ? btnLoading(btn, 'আপডেট করা হচ্ছে...') : function(){};
 
         $.ajax({
-            url: $form.attr('action') || window.location.href,
+            url: window.location.href,
             method: 'POST',
             data: $form.serialize(),
             dataType: 'json',
@@ -115,6 +149,17 @@ $(document).ready(function () {
                 }
                 if (res.success && res.redirect) {
                     window.location.href = res.redirect;
+                }
+                if (res.status === 'success') {
+                    Swal.fire({
+                        icon: 'success',
+                        title: res.alert?.title || 'সফল',
+                        text: res.alert?.message || 'সফলভাবে আপডেট হয়েছে',
+                        timer: 2000,
+                        showConfirmButton: false
+                    });
+                } else if (res.status === 'error') {
+                    Swal.fire(res.alert?.title || 'ত্রুটি', res.alert?.message || 'আপডেট ব্যর্থ', 'error');
                 }
             },
             error: function (xhr) {
@@ -128,7 +173,6 @@ $(document).ready(function () {
             }
         });
     });
-
 
     const selectedDivision = "{{ union.division_name_en|e('js') }}";
     const selectedDistrict = "{{ union.district_name_en|e('js') }}";
@@ -177,6 +221,7 @@ $(document).ready(function () {
         const divisionId = $(this).find('option:selected').data('geo-id');
         const bnName = $(this).find('option:selected').data('name-bn');
         $('#division_name_bn').val(bnName);
+        $('#division_id').val(divisionId || '');
 
         if (!divisionId) return;
 
@@ -189,7 +234,9 @@ $(document).ready(function () {
                 populateDropdown('#district_en', districts, '');
                 resetDropdown('#upazila_en');
                 $('#district_name_bn').val('');
+                $('#district_id').val('');
                 $('#upazila_name_bn').val('');
+                $('#upazila_id').val('');
             }
         });
     });
@@ -198,6 +245,7 @@ $(document).ready(function () {
         const districtId = $(this).find('option:selected').data('geo-id');
         const bnName = $(this).find('option:selected').data('name-bn');
         $('#district_name_bn').val(bnName);
+        $('#district_id').val(districtId || '');
 
         if (!districtId) return;
 
@@ -209,13 +257,16 @@ $(document).ready(function () {
             success: function (upazilas) {
                 populateDropdown('#upazila_en', upazilas, '');
                 $('#upazila_name_bn').val('');
+                $('#upazila_id').val('');
             }
         });
     });
 
     $('#upazila_en').on('change', function () {
+        const upazilaId = $(this).find('option:selected').data('geo-id');
         const bnName = $(this).find('option:selected').data('name-bn');
         $('#upazila_name_bn').val(bnName);
+        $('#upazila_id').val(upazilaId || '');
     });
 
     function populateDropdown(selector, data, selectedValue) {
@@ -236,9 +287,17 @@ $(document).ready(function () {
         if (selectedValue) {
             $(selector).val(selectedValue);
             const bnName = data.find(d => d.name_en === selectedValue)?.name_bn || '';
-            if (selector === '#division_en') $('#division_name_bn').val(bnName);
-            else if (selector === '#district_en') $('#district_name_bn').val(bnName);
-            else if (selector === '#upazila_en') $('#upazila_name_bn').val(bnName);
+            const geoId = data.find(d => d.name_en === selectedValue)?.id || '';
+            if (selector === '#division_en') {
+                $('#division_name_bn').val(bnName);
+                if (!$('#division_id').val()) $('#division_id').val(geoId);
+            } else if (selector === '#district_en') {
+                $('#district_name_bn').val(bnName);
+                if (!$('#district_id').val()) $('#district_id').val(geoId);
+            } else if (selector === '#upazila_en') {
+                $('#upazila_name_bn').val(bnName);
+                if (!$('#upazila_id').val()) $('#upazila_id').val(geoId);
+            }
         }
     }
 

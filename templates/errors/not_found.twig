@@ -1,0 +1,307 @@
+{% block title %} {{ title }} {% endblock %}
+{% block header_title %}{{ header_title }}{% endblock %}
+
+{% block content %}
+<style>
+.error-wrapper {
+    min-height: 70vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    background: linear-gradient(135deg, #f8fafc 0%, #eef2f7 100%);
+}
+
+.error-card {
+    background: #fff;
+    border-radius: 28px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.08), 0 2px 8px rgba(0,0,0,0.04);
+    border: 1px solid rgba(0,0,0,0.05);
+    padding: 3.2rem 2.5rem;
+    max-width: 480px;
+    width: 100%;
+    text-align: center;
+    animation: cardEntrance 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    opacity: 0;
+    transform: translateY(20px);
+}
+
+@keyframes cardEntrance {
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.error-icon-box {
+    width: 96px;
+    height: 96px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1.6rem;
+    font-size: 2.6rem;
+    background: linear-gradient(135deg, rgba(13,202,240,0.15), rgba(13,202,240,0.05));
+    color: #0dcaf0;
+    animation: iconPulse 2.2s ease-in-out infinite;
+    transition: transform 0.3s ease;
+}
+.error-icon-box:hover { transform: scale(1.1) rotate(-4deg); }
+
+@keyframes iconPulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(13,202,240,0.15); }
+    50% { box-shadow: 0 0 0 14px rgba(13,202,240,0.03); }
+}
+
+.error-code {
+    font-size: 3.8rem;
+    font-weight: 800;
+    background: linear-gradient(135deg, #1e293b, #475569);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    line-height: 1;
+    margin-bottom: 0.3rem;
+    letter-spacing: -1.5px;
+}
+
+.error-title {
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: #334155;
+    margin-bottom: 0.85rem;
+}
+
+.error-desc {
+    font-size: 0.95rem;
+    color: #64748b;
+    line-height: 1.65;
+    margin-bottom: 1rem;
+    max-width: 360px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.error-actions {
+    display: flex;
+    gap: 0.75rem;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-top: 1.7rem;
+}
+
+.btn-action {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.65rem 1.6rem;
+    border-radius: 50px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    cursor: pointer;
+    border: none;
+}
+.btn-action.home {
+    background: linear-gradient(135deg, #008B8B, #00A5A5);
+    color: #fff;
+    box-shadow: 0 4px 14px rgba(0,139,139,0.3);
+}
+.btn-action.home:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 24px rgba(0,139,139,0.35);
+    color: #fff;
+}
+.btn-action.back {
+    background: #f1f5f9;
+    color: #475569;
+}
+.btn-action.back:hover {
+    background: #e2e8f0;
+    transform: translateY(-3px);
+    color: #1e293b;
+}
+
+@media (max-width: 480px) {
+    .error-card { padding: 2.2rem 1.5rem; }
+    .error-code { font-size: 3rem; }
+    .error-icon-box { width: 80px; height: 80px; font-size: 2.2rem; }
+}
+</style>
+<div class="error-wrapper">
+    <div class="error-card">
+
+        <div class="error-icon-box info">
+            <i class="bi bi-search"></i>
+        </div>
+
+        {% if language == 'bn' %}
+            <h2 class="error-code">৪০৪</h2>
+            <h3 class="error-title">সনদ পাওয়া যায়নি</h3>
+            <p class="error-desc">
+                আপনার অনুসন্ধান করা সনদ নম্বর (<strong>{{ sonod_number }}</strong>) আমাদের সিস্টেমে পাওয়া যায়নি।
+            </p>
+            <p class="error-desc" style="font-size: 0.85rem; color: #94a3b8;">
+                অনুগ্রহ করে সনদ নম্বরটি সঠিক আছে কিনা যাচাই করুন। সমস্যা হলে ইউনিয়ন অফিসে যোগাযোগ করুন।
+            </p>
+        {% else %}
+            <h2 class="error-code">404</h2>
+            <h3 class="error-title">Certificate Not Found</h3>
+            <p class="error-desc">
+                The certificate number (<strong>{{ sonod_number }}</strong>) you searched for was not found in our system.
+            </p>
+            <p class="error-desc" style="font-size: 0.85rem; color: #94a3b8;">
+                Please verify that the certificate number is correct. If you need help, contact your Union Office.
+            </p>
+        {% endif %}
+
+        <div class="error-actions">
+            {% if language == 'bn' %}
+                <a href="/" class="btn-action home">
+                    <i class="bi bi-house-door-fill me-1"></i> হোম পেইজে ফিরে যান
+                </a>
+            {% else %}
+                <a href="/" class="btn-action home">
+                    <i class="bi bi-house-door-fill me-1"></i> Back to Home
+                </a>
+            {% endif %}
+            <button id="backButton" class="btn-action back">
+                <i class="bi bi-arrow-left me-1"></i>
+                {% if language == 'bn' %} পূর্ববর্তী পৃষ্ঠা {% else %} Go Back {% endif %}
+            </button>
+            <script>
+                document.addEventListener('DOMContentLoaded', function() {
+                    var backBtn = document.getElementById('backButton');
+                    if (backBtn) {
+                        backBtn.addEventListener('click', function() {
+                            history.back();
+                        });
+                    }
+                });
+            </script>
+        </div>
+
+    </div>
+</div>
+
+<style>
+.error-wrapper {
+    min-height: 70vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+}
+
+.error-card {
+    background: #fff;
+    border-radius: 24px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.06);
+    border: 1px solid rgba(0,0,0,0.06);
+    padding: 3rem 2.5rem;
+    max-width: 480px;
+    width: 100%;
+    text-align: center;
+    animation: cardEntrance 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    opacity: 0;
+    transform: translateY(20px);
+}
+
+@keyframes cardEntrance {
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.error-icon-box {
+    width: 88px;
+    height: 88px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1.5rem;
+    font-size: 2.4rem;
+    animation: iconPulse 2s ease-in-out infinite;
+    transition: transform 0.3s ease;
+}
+.error-icon-box:hover { transform: scale(1.08); }
+
+@keyframes iconPulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(0,0,0,0.08); }
+    50% { box-shadow: 0 0 0 12px rgba(0,0,0,0.02); }
+}
+
+.error-icon-box.info { background: rgba(13,202,240,0.1); color: #0dcaf0; }
+
+.error-code {
+    font-size: 3.5rem;
+    font-weight: 800;
+    color: #1e293b;
+    line-height: 1;
+    margin-bottom: 0.25rem;
+    letter-spacing: -1px;
+}
+
+.error-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #334155;
+    margin-bottom: 0.75rem;
+}
+
+.error-desc {
+    font-size: 0.95rem;
+    color: #64748b;
+    line-height: 1.6;
+    margin-bottom: 1rem;
+    max-width: 360px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.error-actions {
+    display: flex;
+    gap: 0.75rem;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-top: 1.5rem;
+}
+
+.btn-action {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.6rem 1.5rem;
+    border-radius: 50px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.25s ease;
+    cursor: pointer;
+    border: none;
+}
+.btn-action.home {
+    background: #008B8B;
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(0,139,139,0.25);
+}
+.btn-action.home:hover {
+    background: #007A7A;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0,139,139,0.3);
+    color: #fff;
+}
+.btn-action.back {
+    background: #f1f5f9;
+    color: #475569;
+}
+.btn-action.back:hover {
+    background: #e2e8f0;
+    transform: translateY(-2px);
+    color: #1e293b;
+}
+
+@media (max-width: 480px) {
+    .error-card { padding: 2rem 1.5rem; }
+    .error-code { font-size: 2.8rem; }
+    .error-icon-box { width: 72px; height: 72px; font-size: 2rem; }
+}
+</style>
+
+{% endblock %}

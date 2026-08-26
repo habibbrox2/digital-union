@@ -70,6 +70,91 @@ body {
     /* Remove old gradient */
     background-image: none !important;
     transition: width 0.3s ease;
+}/* Sidebar Section Labels */
+.sidebar .sidebar-section-label {
+    display: block;
+    padding: 12px 25px 4px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: rgba(255,255,255,0.4);
+    user-select: none;
+}
+
+body.sidebar-collapsed .sidebar .sidebar-section-label {
+    display: none;
+}
+
+.sidebar .sidebar-section-label.sidebar-section-label-bottom {
+    border-top: 1px solid rgba(255,255,255,0.1);
+    margin-top: 8px;
+    padding-top: 12px;
+}
+
+/* Sidebar Search Box */
+.sidebar .sidebar-search {
+    padding: 8px 12px;
+    flex-shrink: 0;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+
+.sidebar .sidebar-search-inner {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.sidebar .sidebar-search-icon {
+    position: absolute;
+    left: 10px;
+    color: rgba(255,255,255,0.4);
+    font-size: 12px;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+}
+
+.sidebar .sidebar-search-input {
+    width: 100%;
+    padding: 7px 30px 7px 30px;
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 6px;
+    background: rgba(255,255,255,0.08);
+    color: var(--white);
+    font-size: 13px;
+    outline: none;
+    transition: all 0.2s ease;
+}
+
+.sidebar .sidebar-search-input::placeholder {
+    color: rgba(255,255,255,0.35);
+}
+
+.sidebar .sidebar-search-input:focus {
+    background: rgba(255,255,255,0.12);
+    border-color: rgba(255,255,255,0.3);
+    box-shadow: 0 0 0 2px rgba(255,255,255,0.05);
+}
+
+.sidebar .sidebar-search-clear {
+    position: absolute;
+    right: 6px;
+    background: none;
+    border: none;
+    color: rgba(255,255,255,0.4);
+    cursor: pointer;
+    padding: 2px 4px;
+    font-size: 11px;
+    line-height: 1;
+    transition: color 0.15s ease;
+}
+
+.sidebar .sidebar-search-clear:hover {
+    color: var(--white);
+}
+
+body.sidebar-collapsed .sidebar .sidebar-search {
+    display: none;
 }
 
 /* Sidebar Header - Logo Area */
@@ -177,6 +262,8 @@ body {
     display: none;
     background: rgba(0,0,0,0.08);
     padding-left: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
 }
 
 .sidebar ul li .submenu.open {
@@ -186,12 +273,63 @@ body {
 .sidebar ul li .submenu li a {
     height: 40px;
     padding-left: 50px;
-    font-size: 16px;
+    font-size: 15px;
 }
 
 .sidebar ul li .submenu .submenu li a {
     padding-left: 70px;
-    font-size: 15px;
+    font-size: 14px;
+}
+
+/* Sidebar hidden items (search filter) */
+.sidebar-nav > li.sidebar-hidden {
+    display: none !important;
+}
+
+/* Logout link */
+.sidebar .sidebar-logout-link:hover {
+    background: rgba(220, 53, 69, 0.15) !important;
+    border-left-color: #dc3545 !important;
+}
+
+.sidebar .sidebar-logout-link:hover i {
+    color: #dc3545 !important;
+}
+
+/* Tooltip for collapsed mode */
+body.sidebar-collapsed .sidebar ul li a[title] {
+    position: relative;
+}
+
+body.sidebar-collapsed .sidebar ul li a[title]:hover::after {
+    content: attr(title);
+    position: absolute;
+    left: 100%;
+    top: 50%;
+    transform: translateY(-50%);
+    background: #333;
+    color: #fff;
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: 13px;
+    white-space: nowrap;
+    z-index: 10001;
+    pointer-events: none;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    margin-left: 8px;
+}
+
+body.sidebar-collapsed .sidebar ul li a[title]:hover::before {
+    content: '';
+    position: absolute;
+    left: 100%;
+    top: 50%;
+    transform: translateY(-50%);
+    border: 5px solid transparent;
+    border-right-color: #333;
+    margin-left: 3px;
+    z-index: 10001;
+    pointer-events: none;
 }
 
 .sidebar .sidebar-count-badge {

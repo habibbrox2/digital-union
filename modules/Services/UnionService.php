@@ -30,16 +30,16 @@ class UnionService
                 ward_count,
                 email, phone, website, postcode,
                 logo_url, stamp_logo_url, latitude, longitude,
-                is_active, remarks
-            ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                is_active, remarks            ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         ");
 
+
         $stmt->bind_param(
-            "siiisssssssssisssssddiis",
+            "siiisssssssssisssssddis",
             sanitize_input($data['union_code']),
-            (int)$data['division_id'],
-            (int)$data['district_id'],
-            (int)$data['upazila_id'],
+            (int)($data['division_id'] ?? 0),
+            (int)($data['district_id'] ?? 0),
+            (int)($data['upazila_id'] ?? 0),
             sanitize_input($data['union_name_en']),
             sanitize_input($data['union_name_bn']),
             sanitize_input($data['upazila_name_en']),
@@ -49,16 +49,16 @@ class UnionService
             sanitize_input($data['division_name_en']),
             sanitize_input($data['division_name_bn']),
             (int)($data['ward_count'] ?? 9),
-            sanitize_input($data['email']),
-            sanitize_input($data['phone']),
-            sanitize_input($data['website']),
-            sanitize_input($data['postcode']),
+            sanitize_input($data['email'] ?? ''),
+            sanitize_input($data['phone'] ?? ''),
+            sanitize_input($data['website'] ?? ''),
+            sanitize_input($data['postcode'] ?? ''),
             sanitize_input($data['logo_url'] ?? ''),
             sanitize_input($data['stamp_logo_url'] ?? ''),
-            $data['latitude'] !== '' ? (float)$data['latitude'] : null,
-            $data['longitude'] !== '' ? (float)$data['longitude'] : null,
+            isset($data['latitude']) && $data['latitude'] !== '' ? (float)$data['latitude'] : null,
+            isset($data['longitude']) && $data['longitude'] !== '' ? (float)$data['longitude'] : null,
             isset($data['is_active']) ? 1 : 0,
-            sanitize_input($data['remarks'])
+            sanitize_input($data['remarks'] ?? '')
         );
 
         $success = $stmt->execute();
@@ -90,30 +90,30 @@ class UnionService
         ");
 
         $stmt->bind_param(
-            "siiisssssssssisssssddiis",
-            sanitize_input($data['union_code']),
-            (int)$data['division_id'],
-            (int)$data['district_id'],
-            (int)$data['upazila_id'],
-            sanitize_input($data['union_name_en']),
-            sanitize_input($data['union_name_bn']),
-            sanitize_input($data['upazila_name_en']),
-            sanitize_input($data['upazila_name_bn']),
-            sanitize_input($data['district_name_en']),
-            sanitize_input($data['district_name_bn']),
-            sanitize_input($data['division_name_en']),
-            sanitize_input($data['division_name_bn']),
+            "siiisssssssssisssssddisi",
+            sanitize_input($data['union_code'] ?? ''),
+            (int)($data['division_id'] ?? 0),
+            (int)($data['district_id'] ?? 0),
+            (int)($data['upazila_id'] ?? 0),
+            sanitize_input($data['union_name_en'] ?? ''),
+            sanitize_input($data['union_name_bn'] ?? ''),
+            sanitize_input($data['upazila_name_en'] ?? ''),
+            sanitize_input($data['upazila_name_bn'] ?? ''),
+            sanitize_input($data['district_name_en'] ?? ''),
+            sanitize_input($data['district_name_bn'] ?? ''),
+            sanitize_input($data['division_name_en'] ?? ''),
+            sanitize_input($data['division_name_bn'] ?? ''),
             (int)($data['ward_count'] ?? 9),
-            sanitize_input($data['email']),
-            sanitize_input($data['phone']),
-            sanitize_input($data['website']),
-            sanitize_input($data['postcode']),
-            sanitize_input($data['logo_url']),
+            sanitize_input($data['email'] ?? ''),
+            sanitize_input($data['phone'] ?? ''),
+            sanitize_input($data['website'] ?? ''),
+            sanitize_input($data['postcode'] ?? ''),
+            sanitize_input($data['logo_url'] ?? ''),
             sanitize_input($data['stamp_logo_url'] ?? ''),
-            $data['latitude'] !== '' ? (float)$data['latitude'] : null,
-            $data['longitude'] !== '' ? (float)$data['longitude'] : null,
+            isset($data['latitude']) && $data['latitude'] !== '' ? (float)$data['latitude'] : null,
+            isset($data['longitude']) && $data['longitude'] !== '' ? (float)$data['longitude'] : null,
             isset($data['is_active']) ? 1 : 0,
-            sanitize_input($data['remarks']),
+            sanitize_input($data['remarks'] ?? ''),
             (int)$id
         );
 

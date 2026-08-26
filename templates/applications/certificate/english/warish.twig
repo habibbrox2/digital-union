@@ -229,7 +229,7 @@ table.warish-table td {
             </table>
 
             <!-- Warish Statement -->
-            <table><tr><td class="warish-statement" style="{% if compact_scale < 1 %}font-size: {{ (10.5 * compact_scale)|round(1) }}pt; margin: {{ (4 * compact_scale)|round(1) }}pt 0; line-height: {{ (1.4 * compact_scale + 0.4)|round(1) }};{% endif %}"> &nbsp; &nbsp;&nbsp; &nbsp; was {% if (data.resident|default('permanent')) == 'temporary' %}a temporary resident{% else %}a permanent resident{% endif %} of this union. He/She died in {{ (data.extra.death_date ?? (data.birth_date ?? '')) | date('Y') }}. At the time of death, he/she left behind the following heirs.</td></tr></table>
+            <table><tr><td class="warish-statement" style="{% if compact_scale < 1 %}font-size: {{ (10.5 * compact_scale)|round(1) }}pt; margin: {{ (4 * compact_scale)|round(1) }}pt 0; line-height: {{ (1.4 * compact_scale + 0.4)|round(1) }};{% endif %}"> &nbsp; &nbsp;&nbsp; &nbsp; was {% if (data.resident|default('permanent')) == 'temporary' %}a temporary resident{% else %}a permanent resident{% endif %} of this union. He/She died in {{ (data.extra.death_date ?? (data.birth_date ?? '')) | split('-') | last }}. At the time of death, he/she left behind the following heirs.</td></tr></table>
 
             <!-- Warish List -->
             <table class="warish-table" autosize="1-7" style="{% if compact_scale < 1 %}font-size: {{ (10.5 * compact_scale)|round(1) }}pt; margin-bottom: {{ (7.5 * compact_scale)|round(1) }}pt;{% endif %}">
@@ -254,7 +254,7 @@ table.warish-table td {
                         <td>{{ loop.index }}</td>
                         <td>{{ member.name_en|title }}</td>
                         <td>{{ member.relation_en|title }}</td>
-                        <td>{{ member.birth_date }}</td>
+                        <td>{{ member.birth_date and member.birth_date != '0000-00-00' ? member.birth_date|date('d-m-Y') : 'N/A' }}</td>
                         <td>{{ member.nid }}</td>
                         <td>{{ member.marital_status }}</td>
                         <td> {% if member.is_dead == "1" %} Deceased {% else %} Alive {% endif %}</td>

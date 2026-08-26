@@ -25,8 +25,7 @@ class AuthManager {
 
     /**
      * User login with credentials
-     */
-    public function login($usernameOrEmail, $password) {
+     */    public function login($usernameOrEmail, $password) {
         // Build user's permission list using PermissionsManager (role-based)
         require_once __DIR__ . '/PermissionsManager.php';
         $permissionsManager = new PermissionsManager($this->mysqli);
@@ -37,6 +36,30 @@ class AuthManager {
         $result = $stmt->get_result();
         $user = $result->fetch_assoc();
         $stmt->close();
+
+        // 🔒 Rate limiting: block login if too many recent failed attempts
+        if ($user) {
+            $failedAttempts = $this->getFailedLoginAttempts($user['user_id']);
+            $maxAttempts = (int)($_ENV['LOGIN_ATTEMPT_LIMIT'] ?? 5);
+            $lockoutDuration = (int)($_ENV['LOGIN_LOCKOUT_DURATION'] ?? 900); // 15 minutes
+
+            if ($failedAttempts >= $maxAttempts) {
+                // Check if lockout period has expired
+                $lastAttempt = $this->getLastFailedLoginTime($user['user_id']);
+                $lockoutEnd = strtotime($lastAttempt) + $lockoutDuration;
+
+                if (time() < $lockoutEnd) {
+                    $remainingMinutes = ceil(($lockoutEnd - time()) / 60);
+                    return [
+                        'success' => false,
+                        'message' => "অনেক বেশি ব্যর্থ প্রচেষ্টা। {$remainingMinutes} মিনিট পর্যন্ত অপেক্ষা করুন।",
+                        'locked_out' => true
+                    ];
+                }
+                // Lockout expired — clear old attempts
+                $this->clearFailedLoginAttempts($user['user_id']);
+            }
+        }
 
         if (!$user || !password_verify($password, $user['password'])) {
             // 📧 Track failed login attempts for email alerts
@@ -142,7 +165,20 @@ class AuthManager {
     public function register($username, $email, $password, $union_id = null) {
         // ✅ Load email helper
         require_once __DIR__ . '/../helpers/email_helper.php';
-        
+
+        // 🔒 Validate password complexity before hashing
+        if (function_exists('validatePassword')) {
+            $passwordValidation = validatePassword($password);
+            if (!$passwordValidation['valid']) {
+                return ['success' => false, 'message' => $passwordValidation['error']];
+            }
+        }
+
+        // Validate username format
+        if (strlen($username) < 3 || !preg_match('/^[a-zA-Z0-9_]+$/', $username)) {
+            return ['success' => false, 'message' => 'ইউজারনেম কমপক্ষে ৩ অক্ষর হতে হবে এবং শুধু অক্ষর, সংখ্যা ও আন্ডারস্কোর থাকতে পারে।'];
+        }
+
         $hashedPassword = password_hash($password, PASSWORD_BCRYPT);
 
         // Check if username or email already exists
@@ -337,6 +373,8 @@ class AuthManager {
             session_unset();
             session_destroy();
             session_start();
+            // 🔒 Regenerate session ID to prevent session fixation
+            session_regenerate_id(true);
             $_SESSION['redirect_after_login'] = $redirectBackTo;
 
             if ($returnJson) {
@@ -485,6 +523,23 @@ class AuthManager {
         $stmt->close();
         
         return $data['count'] ?? 0;
+    }
+
+    /**
+     * Get timestamp of the most recent failed login attempt
+     */
+    private function getLastFailedLoginTime($userId) {
+        $stmt = $this->mysqli->prepare(
+            "SELECT attempted_at FROM failed_login_attempts 
+             WHERE user_id = ? ORDER BY attempted_at DESC LIMIT 1"
+        );
+        $stmt->bind_param("i", $userId);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $data = $result->fetch_assoc();
+        $stmt->close();
+        
+        return $data['attempted_at'] ?? date('Y-m-d H:i:s');
     }
 
     /**

@@ -589,8 +589,8 @@ $(document).ready(function () {
             buttons += `<button class="btn btn-secondary btn-sm onHoldButton ms-1" data-id="${application.application_id}" title="স্থগিত করুন">
                 <i class="fas fa-pause-circle"></i></button>`;
         } else if (application.status === "Pending") {
-            buttons += `<a href="/applications/${type}/approve/${application.application_id}" class="btn btn-success btn-sm ms-1" title="অনুমোদন করুন">
-                <i class="fas fa-check-circle"></i></a>
+            buttons += `<button type="button" class="btn btn-success btn-sm ms-1 approveBtn" data-id="${application.application_id}" data-type="${type}" title="অনুমোদন করুন">
+                <i class="fas fa-check-circle"></i></button>
             <a href="/applications/${type}/reject/${application.application_id}" class="btn btn-danger btn-sm ms-1" title="বাতিল করুন">
                 <i class="fas fa-times-circle"></i></a>`;
         } else if (application.status === "On Hold" || application.status === "On_Hold" || application.status === "on_hold") {
@@ -989,7 +989,827 @@ $(document).ready(function () {
     fetchApplications(currentPage, currentSearch, currentSortBy, currentSortOrder, recordsPerPage); // Initial fetch
 });
 
+/* ================================================================
+   APPROVE MODAL - Inline approval from list
+   ================================================================ */
+
+// Helper: cleanup modal backdrop & body class after any modal closes
+function cleanupModalBackdrop() {
+    // Blur any focused element inside a modal to avoid aria-hidden warning
+    if (document.activeElement && document.activeElement.closest('.modal')) {
+        document.activeElement.blur();
+    }
+    document.body.classList.remove('modal-open');
+    document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
+}
+
+// Reset approve modal to loading state (so re-opening shows fresh state)
+function resetApproveModal() {
+    const loadingEl = document.getElementById('approveModalLoading');
+    const contentEl = document.getElementById('approveModalContent');
+    if (loadingEl) loadingEl.style.display = 'block';
+    if (contentEl) contentEl.style.display = 'none';
+    // Reset form fields
+    const form = document.getElementById('approveModalForm');
+    if (form) form.reset();
+    // Reset issue_time to current time
+    const issueTime = document.getElementById('modal_issue_time');
+    if (issueTime) {
+        const now = new Date();
+        issueTime.value = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')}`;
+    }
+    // Reset trade fields
+    const tradeFields = document.getElementById('modalTradeFields');
+    if (tradeFields) tradeFields.style.display = 'none';
+    // Reset certificate fields
+    const certFields = document.getElementById('modalCertificateFields');
+    if (certFields) certFields.style.display = 'none';
+    // Reset license section
+    const licenseSection = document.getElementById('modalLicenseSection');
+    if (licenseSection) licenseSection.style.display = 'none';
+    // Reset trade fee fields
+    ['modal_license_fee','modal_vat_amount','modal_occupation_tax','modal_income_tax','modal_signboard_tax','modal_surcharge','modal_total_fee'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = '';
+    });
+    const licenseInput = document.getElementById('modal_license_number');
+    if (licenseInput) {
+        licenseInput.value = '';
+        licenseInput.className = 'form-control form-control-sm';
+    }
+    const licenseDigitCount = document.getElementById('modalLicenseDigitCount');
+    if (licenseDigitCount) licenseDigitCount.textContent = 'সংখ্যা: 0/17';
+    const licenseStatusIcon = document.getElementById('modal_license_status_icon');
+    if (licenseStatusIcon) licenseStatusIcon.innerHTML = '';
+    const licenseStatusText = document.getElementById('modal_license_status_text');
+    if (licenseStatusText) licenseStatusText.textContent = '';
+    const licenseAvailMsg = document.getElementById('modal_license_availability_msg');
+    if (licenseAvailMsg) licenseAvailMsg.textContent = '';
+}
+
+// Cleanup after approve modal closes
+$(document).on('hidden.bs.modal', '#approveModal', function() {
+    cleanupModalBackdrop();
+    // Delay reset so it doesn't flash before modal fully hides
+    setTimeout(resetApproveModal, 300);
+});
+
+// Cleanup after approved modal closes
+$(document).on('hidden.bs.modal', '#approvedModal', function() {
+    cleanupModalBackdrop();
+});
+
+// Open approve modal
+$(document).on('click', '.approveBtn', async function() {
+    const btn = $(this);
+    const appId = btn.data('id');
+    const certType = btn.data('type');
+    if (!appId || !certType) return;
+
+    // Show modal with loading state
+    const modalEl = document.getElementById('approveModal');
+    const loadingEl = document.getElementById('approveModalLoading');
+    const contentEl = document.getElementById('approveModalContent');
+    if (loadingEl) loadingEl.style.display = 'block';
+    if (contentEl) contentEl.style.display = 'none';
+    if (modalEl) {
+        const bsModal = new bootstrap.Modal(modalEl);
+        bsModal.show();
+    }
+
+    try {
+        const response = await fetch(`/api/applications/${certType}/approve-data/${appId}`);
+        const result = await response.json();
+        if (result.status !== 'success') throw new Error(result.message || 'Failed to load data');
+        populateApproveModal(result, result.data.certificate_type || certType);
+    } catch (err) {
+        console.error('Approve modal error:', err);
+        Swal.fire('❌ ত্রুটি', 'অনুমোদন তথ্য লোড করা যায়নি।', 'error');
+        const bsModal = bootstrap.Modal.getInstance(modalEl);
+        if (bsModal) bsModal.hide();
+    }
+});
+
+function populateApproveModal(result, certType) {
+    const d = Object.assign({}, result.data._all_fields || {}, result.data);
+    const a = result.approval || {};
+    const bm = result.business_meta || d.business_meta || {};
+
+    // Set header
+    document.getElementById('approveModalLabel').textContent = (d.certificate_type_bn || certType) + ' অনুমোদন';
+    document.getElementById('approveModalSubtitle').textContent = `আবেদন আইডি: ${d.application_id}` + (certType === 'trade' && bm.business_name_bn ? ` | ব্যবসা: ${bm.business_name_bn}` : '');
+
+    // Status badge
+    const statusBadge = document.getElementById('approveModalStatusBadge');
+    const statusMap = {
+        'Pending': { cls: 'bg-warning text-dark', text: 'অপেক্ষমান' },
+        'Approved': { cls: 'bg-success text-white', text: 'অনুমোদিত' },
+        'Rejected': { cls: 'bg-danger text-white', text: 'বাতিলকৃত' },
+        'On Hold': { cls: 'bg-secondary text-white', text: 'স্থগিত' }
+    };
+    const s = statusMap[d.status] || { cls: 'bg-secondary', text: d.status };
+    statusBadge.className = `badge rounded-pill px-3 py-1 fs-6 ${s.cls}`;
+    statusBadge.textContent = s.text;
+
+    // Photo
+    const photo = document.getElementById('approveModalPhoto');
+    photo.src = d.applicant_photo ? `/${d.applicant_photo}` : '/assets/images/default-user.png';
+
+    // Basic info
+    document.getElementById('approveModalName').textContent = `${d.name_bn || '—'}`;
+    document.getElementById('approveModalNameEn').textContent = d.name_en || '—';
+    document.getElementById('approveModalFather').textContent = `${d.father_name_bn || '—'} (${d.father_name_en || ''})`;
+    document.getElementById('approveModalMother').textContent = `${d.mother_name_bn || '—'} (${d.mother_name_en || ''})`;
+    document.getElementById('approveModalNid').textContent = d.nid || d.birth_id || d.passport_no || '—';
+    document.getElementById('approveModalBirthDate').textContent = d.birth_date && d.birth_date !== '0000-00-00' ? d.birth_date : '—';
+    document.getElementById('approveModalGender').textContent = d.gender === 'male' ? 'পুরুষ' : d.gender === 'female' ? 'মহিলা' : d.gender || '—';
+    document.getElementById('approveModalReligion').textContent = d.religion || '—';
+    document.getElementById('approveModalResident').textContent = d.resident === 'permanent' ? 'স্থায়ী' : d.resident === 'temporary' ? 'অস্থায়ী' : d.resident || '—';
+    document.getElementById('approveModalEducation').textContent = d.educational_qualification || '—';
+    document.getElementById('approveModalOccupation').textContent = d.occupation || '—';
+    const maritalStatusMap = { 'single': 'অবিবাহিত', 'married': 'বিবাহিত', 'divorced': 'বিচ্ছিন্ন', 'widowed': 'বিধবা/বিধুর' };
+    document.getElementById('approveModalMaritalStatus').textContent = maritalStatusMap[(d.marital_status || '').toLowerCase()] || d.marital_status || '—';
+    document.getElementById('approveModalSpouse').textContent = d.spouse_name_bn ? `${d.spouse_name_bn} (${d.spouse_name_en || ''})` : '—';
+
+    // Applicant Info
+    document.getElementById('approveModalAppId').textContent = d.application_id || '—';
+    document.getElementById('approveModalApplicantName').textContent = d.applicant_name || '—';
+    document.getElementById('approveModalPhone').textContent = d.applicant_phone || '—';
+
+    // Addresses - present
+    document.getElementById('addrPresentHolding').textContent = d.present_holding_no || '—';
+    document.getElementById('addrPresentVillage').textContent = d.present_village_bn || '—';
+    document.getElementById('addrPresentWard').textContent = d.present_ward_no || '—';
+    document.getElementById('addrPresentPost').textContent = d.present_postoffice_bn || '—';
+    document.getElementById('addrPresentUnion').textContent = d.present_union_bn || '—';
+    document.getElementById('addrPresentUpazila').textContent = d.present_upazila_bn || '—';
+    document.getElementById('addrPresentDistrict').textContent = d.present_district_bn || '—';
+    // Addresses - permanent
+    document.getElementById('addrPermanentHolding').textContent = d.permanent_holding_no || '—';
+    document.getElementById('addrPermanentVillage').textContent = d.permanent_village_bn || '—';
+    document.getElementById('addrPermanentWard').textContent = d.permanent_ward_no || '—';
+    document.getElementById('addrPermanentPost').textContent = d.permanent_postoffice_bn || '—';
+    document.getElementById('addrPermanentUnion').textContent = d.permanent_union_bn || '—';
+    document.getElementById('addrPermanentUpazila').textContent = d.permanent_upazila_bn || '—';
+    document.getElementById('addrPermanentDistrict').textContent = d.permanent_district_bn || '—';
+
+    // Certificate-specific fields
+    populateCertificateFields(certType, result);
+
+    // Documents
+    const docs = d.documents || [];
+    document.getElementById('approveModalDocCount').textContent = docs.length;
+    if (docs.length) {
+        let docsHtml = '<div class="d-flex flex-wrap gap-2">';
+        docs.forEach(doc => {
+            const name = doc.split('/').pop();
+            const ext = name.split('.').pop().toLowerCase();
+            const isImg = ['jpg','jpeg','png','gif','webp'].includes(ext);
+            if (isImg) {
+                docsHtml += `<a href="/${doc}" target="_blank" class="badge bg-light text-dark border text-decoration-none p-2"><img src="/${doc}" style="height:30px;border-radius:4px;" onerror="this.style.display='none'"> ${name}</a>`;
+            } else {
+                docsHtml += `<a href="/${doc}" target="_blank" class="badge bg-light text-dark border text-decoration-none p-2"><i class="bi bi-file-earmark me-1"></i>${name}</a>`;
+            }
+        });
+        docsHtml += '</div>';
+        document.getElementById('approveModalDocsBody').innerHTML = docsHtml;
+    } else {
+        document.getElementById('approveModalDocsBody').innerHTML = '<span class="text-muted">কোনো ডকুমেন্ট নেই।</span>';
+    }
+
+    // Set hidden fields
+    document.getElementById('modal_certificate_type').value = d.certificate_type;
+    document.getElementById('modal_application_id').value = d.application_id;
+
+    // Populate verifier/approver dropdowns
+    populateMemberDropdown('modal_verifier_select', result.union_members);
+    populateMemberDropdown('modal_approver_select', result.union_members);
+
+    // Pre-fill approval fields
+    document.getElementById('modal_verifier_id').value = a.verifier_id || '';
+    document.getElementById('modal_verifier_name_bn').value = a.verifier_name_bn || '';
+    document.getElementById('modal_verifier_name_en').value = a.verifier_name_en || '';
+    document.getElementById('modal_verifier_ward_no').value = a.verifier_ward_no || '';
+    document.getElementById('modal_verification_date').value = normalizeModalDate(a.verification_date) || getModalToday();
+    document.getElementById('modal_verification_note').value = a.verification_note || 'সফলভাবে যাচাই করা হয়েছে।';
+    document.getElementById('modal_approver_id').value = a.approver_id || '';
+    document.getElementById('modal_approver_name_bn').value = a.approver_name_bn || '';
+    document.getElementById('modal_approver_name_en').value = a.approver_name_en || '';
+    document.getElementById('modal_approver_ward_no').value = a.approver_ward_no || '';
+    document.getElementById('modal_approval_date').value = normalizeModalDate(a.approval_date) || getModalToday();
+    document.getElementById('modal_issue_time').value = a.issue_time || '';
+    document.getElementById('modal_approval_note').value = a.approval_note || 'আবেদনটি অনুমোদিত হলো।';
+    document.getElementById('modal_certificate_fee').value = a.certificate_fee || '';
+    document.getElementById('modal_payment_method').value = a.payment_method || 'Cash';
+    document.getElementById('modal_payment_status').value = a.payment_status || 'Unpaid';
+
+    // View link
+    const viewLink = document.getElementById('modalViewLink');
+    viewLink.href = `/applications/${certType}/approve/${d.application_id}`;
+
+    // Trade-specific fields
+    const tradeFields = document.getElementById('modalTradeFields');
+    const licenseSection = document.getElementById('modalLicenseSection');
+    if (certType === 'trade') {
+        tradeFields.style.display = 'block';
+        licenseSection.style.display = 'block';
+
+        // Populate fiscal year options
+        const fySelect = document.getElementById('modal_fiscal_year');
+        fySelect.innerHTML = '<option value="">-- নির্বাচন করুন --</option>';
+        (result.fiscal_year_options || []).forEach(opt => {
+            const selected = opt.value === (bm.fiscal_year || result.data.fiscal_year || '') ? 'selected' : '';
+            fySelect.innerHTML += `<option value="${opt.value}" ${selected}>${opt.label}</option>`;
+        });
+        // Populate ownership types
+        const otSelect = document.getElementById('modal_ownership_type_id');
+        otSelect.innerHTML = '<option value="">-- নির্বাচন করুন --</option>';
+        (result.ownership_types || []).forEach(ot => {
+            const selected = ot.id == (bm?.ownership_type_id || '') ? 'selected' : '';
+            otSelect.innerHTML += `<option value="${ot.id}" ${selected}>${ot.ownership_name_bn || ot.ownership_name_en || ''}</option>`;
+        });
+        // Populate business types
+        const btSelect = document.getElementById('modal_business_type_id');
+        btSelect.innerHTML = '<option value="">-- নির্বাচন করুন --</option>';
+        (result.business_types || []).forEach(bt => {
+            const selected = bt.id == (bm?.business_type_id || '') ? 'selected' : '';
+            btSelect.innerHTML += `<option value="${bt.id}" ${selected}>${bt.business_name_bn || bt.business_name_en || ''}</option>`;
+        });
+
+        // Populate trade fee fields
+        document.getElementById('modal_license_fee').value = bm?.license_fee || '';
+        document.getElementById('modal_vat_amount').value = bm?.vat_amount || '';
+        document.getElementById('modal_occupation_tax').value = bm?.occupation_tax || '';
+        document.getElementById('modal_income_tax').value = bm?.income_tax || '';
+        document.getElementById('modal_signboard_tax').value = bm?.signboard_tax || '';
+        document.getElementById('modal_surcharge').value = bm?.surcharge || '';
+        // Calculate total fee
+        const feeFields = ['modal_license_fee', 'modal_vat_amount', 'modal_occupation_tax', 'modal_income_tax', 'modal_signboard_tax', 'modal_surcharge'];
+        let totalFee = 0;
+        feeFields.forEach(fId => {
+            const val = parseFloat(document.getElementById(fId)?.value) || 0;
+            totalFee += val;
+        });
+        document.getElementById('modal_total_fee').value = totalFee.toFixed(2);
+
+        // License number field
+        const licenseInput = document.getElementById('modal_license_number');
+        const licenseDigitCount = document.getElementById('modalLicenseDigitCount');
+        const licenseStatusIcon = document.getElementById('modal_license_status_icon');
+        const licenseStatusText = document.getElementById('modal_license_status_text');
+        const licenseAvailMsg = document.getElementById('modal_license_availability_msg');
+        licenseInput.value = d.sonod_number || result.license_number || ''; 
+        // Live counter for license digits
+        licenseInput.oninput = function() {
+            const digits = this.value.replace(/\D/g, '').slice(0, 17);
+            this.value = digits;
+            const len = digits.length;
+            licenseDigitCount.textContent = `সংখ্যা: ${len}/17`;
+            licenseDigitCount.className = len === 17 ? 'form-text text-success' : 'form-text text-danger';
+            // Show availability status when 17 digits entered
+            if (len === 17) {
+                licenseStatusIcon.innerHTML = '<i class="bi bi-check-circle-fill text-success"></i>';
+                licenseStatusText.textContent = 'উপলব্ধ';
+                licenseStatusText.className = 'input-group-text bg-light text-success fw-semibold small';
+                licenseInput.className = 'form-control form-control-sm is-valid';
+                licenseAvailMsg.textContent = '✅ এই লাইসেন্স নম্বরটি ব্যবহার করা যাবে।';
+                licenseAvailMsg.className = 'form-text text-success';
+            } else {
+                licenseStatusIcon.innerHTML = '';
+                licenseStatusText.textContent = '';
+                licenseStatusText.className = 'input-group-text bg-light small fw-semibold';
+                licenseInput.className = 'form-control form-control-sm';
+                licenseAvailMsg.textContent = '';
+                licenseAvailMsg.className = 'form-text';
+            }
+        };
+        licenseInput.oninput(); // trigger initial count
+    } else {
+        tradeFields.style.display = 'none';
+        licenseSection.style.display = 'none';
+    }
+
+    initModalDatepickers();
+
+    // Show content, hide loading
+    document.getElementById('approveModalLoading').style.display = 'none';
+    document.getElementById('approveModalContent').style.display = 'block';
+}
+
+function getModalToday() {
+    const now = new Date();
+    return String(now.getDate()).padStart(2, '0') + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + now.getFullYear();
+}
+
+function normalizeModalDate(value) {
+    const raw = String(value || '').trim();
+    if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
+        const parts = raw.split('-');
+        return parts[2] + '-' + parts[1] + '-' + parts[0];
+    }
+    return raw;
+}
+
+function initModalDatepickers() {
+    if (typeof CompactDatepicker !== 'function') return;
+    ['modal_verification_date', 'modal_approval_date'].forEach(function(id) {
+        const input = document.getElementById(id);
+        if (!input) return;
+        if (input.datepickerInstance) input.datepickerInstance.destroy?.();
+        input.datepickerInstance = new CompactDatepicker(input);
+    });
+}
+
+function populateMemberDropdown(selectId, unionMembers) {
+    const sel = document.getElementById(selectId);
+    if (!sel) return;
+    sel.innerHTML = '<option value="">-- নির্বাচন করুন --</option>';
+    if (!unionMembers || typeof unionMembers !== 'object') return;
+    for (const roleId in unionMembers) {
+        const group = unionMembers[roleId];
+        if (!group || !group.members) continue;
+        let optgroup = `<optgroup label="${group.role_name || 'Unknown'}">`;
+        group.members.forEach(m => {
+            optgroup += `<option value="${m.user_id}" data-name-bn="${m.name_bn || ''}" data-name-en="${m.name_en || ''}" data-role-id="${roleId}" data-ward-no="${m.ward_no || ''}" data-wards="${m.ward_no || ''}">${m.name_bn || ''}${m.name_en ? ' (' + m.name_en + ')' : ''} - 📱 ${m.phone || ''}${m.ward_no ? ' | ওয়ার্ড: ' + m.ward_no : ''}</option>`;
+        });
+        optgroup += '</optgroup>';
+        sel.innerHTML += optgroup;
+    }
+}
+
+function populateCertificateFields(certType, result) {
+    const container = document.getElementById('modalCertificateFields');
+    const legendEl = document.getElementById('modalCertFieldsLegend');
+    const bodyEl = document.getElementById('modalCertFieldsBody');
+    if (!container || !bodyEl) return;
+
+    const d = Object.assign({}, result.data._all_fields || {}, result.data);
+    const bm = result.business_meta || {};
+    const extra = d.extra_data || {};
+
+    const iconMap = {
+        'death': 'bi bi-heartbreak', 'obibahito': 'bi bi-person-x', 'punobibaho': 'bi bi-arrow-repeat',
+        'ekoinam': 'bi bi-file-earmark-text', 'sonaton': 'bi bi-journal-check', 'prottyon': 'bi bi-file-earmark-check',
+        'nodibanga': 'bi bi-droplet-half', 'character': 'bi bi-person-badge', 'vumihin': 'bi bi-house-door',
+        'yearlyincome': 'bi bi-currency-dollar', 'protibondi': 'bi bi-universal-access', 'onumoti': 'bi bi-check2-circle',
+        'onapotti': 'bi bi-file-earmark-excel', 'rastakhonon': 'bi bi-signpost-split', 'warish': 'bi bi-people-fill',
+        'family': 'bi bi-people', 'trade': 'bi bi-shop', 'bibahito': 'bi bi-person-check'
+    };
+
+    const certNames = {
+        'death': 'মৃত্যু নিবন্ধন সনদ', 'obibahito': 'অবিবাহিত সনদ', 'punobibaho': 'পুনর্বিবাহ সনদ',
+        'ekoinam': 'এক নাম সনদ', 'sonaton': 'সনাতন ধর্ম সনদ', 'prottyon': 'প্রত্যয়ন সনদ',
+        'nodibanga': 'নদী ভাঙন সনদ', 'character': 'চরিত্র সনদ', 'vumihin': 'ভূমিহীন সনদ',
+        'yearlyincome': 'আয়ের সনদ', 'protibondi': 'প্রতিবন্ধী সনদ', 'onumoti': 'অনুমতি সনদ',
+        'onapotti': 'অনাপত্তি সনদ', 'rastakhonon': 'রাস্তা খনন সনদ', 'warish': 'ওয়ারিশ সনদ',
+        'family': 'পরিবার সনদ', 'trade': 'ট্রেড লাইসেন্স', 'bibahito': 'বিবাহিত সনদ'
+    };
+
+    // Trade-specific fields are already handled by trade sections above
+    if (certType === 'trade') {
+        container.style.display = 'none';
+        return;
+    }
+
+    const certFields = {
+        'death': () => `
+            <div class="row g-2 mb-2"><div class="col-md-3"><small class="text-muted d-block">মৃত ব্যক্তির নাম (বাংলা)</small><strong>${extra.name_bn || '—'}</strong></div>
+            <div class="col-md-3"><small class="text-muted d-block">Deceased Name (English)</small><span>${extra.name_en || '—'}</span></div>
+            <div class="col-md-3"><small class="text-muted d-block">মৃত্যুর তারিখ</small><span>${extra.death_date || '—'}</span></div>
+            <div class="col-md-3"><small class="text-muted d-block">মৃত্যুর কারণ</small><span>${extra.death_reason || '—'}</span></div></div>`,
+        'obibahito': () => `
+            <div class="row g-2 mb-2"><div class="col-md-6"><small class="text-muted d-block">অবিবাহিত থাকার কারণ (বাংলা)</small><span>${extra.reason_bn || '—'}</span></div>
+            <div class="col-md-6"><small class="text-muted d-block">Reason (English)</small><span>${extra.reason_en || '—'}</span></div></div>`,
+        'punobibaho': () => `
+            <div class="row g-2 mb-2"><div class="col-md-6"><small class="text-muted d-block">পূর্বের বিবাহের অবস্থা (বাংলা)</small><span>${extra.previous_marriage_status_bn || '—'}</span></div>
+            <div class="col-md-6"><small class="text-muted d-block">Previous Marriage Status (English)</small><span>${extra.previous_marriage_status_en || '—'}</span></div></div>`,
+        'ekoinam': () => `
+            <div class="row g-2 mb-2"><div class="col-md-6"><small class="text-muted d-block">প্রকাশে নাম / ডাকনাম (বাংলা)</small><span>${extra.nickname_bn || '—'}</span></div>
+            <div class="col-md-6"><small class="text-muted d-block">Nickname (English)</small><span>${extra.nickname_en || '—'}</span></div></div>`,
+        'sonaton': () => `
+            <div class="row g-2 mb-2"><div class="col-md-6"><small class="text-muted d-block">ধর্মীয় পরিচিতি নম্বর</small><span>${extra.religious_id_number || '—'}</span></div></div>`,
+        'prottyon': () => `
+            <div class="row g-2 mb-2"><div class="col-md-6"><small class="text-muted d-block">প্রত্যয়নকারী কর্তৃপক্ষ</small><span>${extra.certified_by || '—'}</span></div></div>`,
+        'nodibanga': () => `
+            <div class="row g-2 mb-2"><div class="col-md-6"><small class="text-muted d-block">ক্ষতিগ্রস্ত হওয়ার কারণ (বাংলা)</small><span>${extra.affected_reason_bn || '—'}</span></div>
+            <div class="col-md-6"><small class="text-muted d-block">Reason (English)</small><span>${extra.affected_reason_en || '—'}</span></div></div>`,
+        'character': () => `
+            <div class="row g-2 mb-2"><div class="col-md-6"><small class="text-muted d-block">সনদ গ্রহণের কারণ (বাংলা)</small><span>${extra.purpose_bn || '—'}</span></div>
+            <div class="col-md-6"><small class="text-muted d-block">Reason (English)</small><span>${extra.purpose_en || '—'}</span></div></div>`,
+        'vumihin': () => `
+            <div class="row g-2 mb-2"><div class="col-md-6"><small class="text-muted d-block">ভূমিহীনতার কারণ (বাংলা)</small><span>${extra.landless_reason_bn || '—'}</span></div>
+            <div class="col-md-6"><small class="text-muted d-block">Reason (English)</small><span>${extra.landless_reason_en || '—'}</span></div></div>`,
+        'yearlyincome': () => `
+            <div class="row g-2 mb-2"><div class="col-md-4"><small class="text-muted d-block">আয়ের ধরণ</small><span>${extra.earn_type == '1' ? 'মাসিক' : extra.earn_type == '2' ? 'বার্ষিক' : '—'}</span></div>
+            <div class="col-md-4"><small class="text-muted d-block">আয়ের পরিমান</small><span>${extra.yearly_income || '—'}</span></div>
+            <div class="col-md-4"><small class="text-muted d-block">সনদ গ্রহণের কারণ</small><span>${extra.purpose || '—'}</span></div></div>`,
+        'protibondi': () => `
+            <div class="row g-2 mb-2"><div class="col-md-4"><small class="text-muted d-block">প্রতিবন্ধিতার ধরণ (বাংলা)</small><span>${extra.disability_type_bn || '—'}</span></div>
+            <div class="col-md-4"><small class="text-muted d-block">Disability Type (English)</small><span>${extra.disability_type_en || '—'}</span></div>
+            <div class="col-md-4"><small class="text-muted d-block">প্রতিবন্ধিতার হার</small><span>${extra.disability_percentage || '—'}</span></div></div>`,
+        'onumoti': () => `
+            <div class="row g-2 mb-2"><div class="col-md-6"><small class="text-muted d-block">কর্ম ক্ষেত্রের নাম (বাংলা)</small><span>${extra.permission_reason_bn || '—'}</span></div>
+            <div class="col-md-6"><small class="text-muted d-block">Work Area Name (English)</small><span>${extra.permission_reason_en || '—'}</span></div></div>`,
+        'rastakhonon': () => `
+            <div class="row g-2 mb-2"><div class="col-md-6"><small class="text-muted d-block">রাস্তা খননের উদ্দেশ্য (বাংলা)</small><span>${extra.digging_purpose_bn || '—'}</span></div>
+            <div class="col-md-6"><small class="text-muted d-block">Purpose (English)</small><span>${extra.digging_purpose_en || '—'}</span></div>
+            <div class="col-md-6"><small class="text-muted d-block">রাস্তার ধরণ</small><span>${extra.road_type || '—'}</span></div></div>`,
+        'bibahito': () => `
+            <div class="row g-2 mb-2"><div class="col-md-4"><small class="text-muted d-block">স্বামী/স্ত্রীর নাম (বাংলা)</small><span>${extra.spouse_name_bn || '—'}</span></div>
+            <div class="col-md-4"><small class="text-muted d-block">Spouse Name (English)</small><span>${extra.spouse_name_en || '—'}</span></div>
+            <div class="col-md-4"><small class="text-muted d-block">বিবাহের তারিখ</small><span>${extra.marriage_date || '—'}</span></div></div>`,
+        'onapotti': () => {
+            let html = `<div class="row g-2 mb-2">
+                <div class="col-md-4"><small class="text-muted d-block">ব্যবসা/প্রতিষ্ঠানের নাম (বাংলা)</small><span>${extra.business_name_bn || '—'}</span></div>
+                <div class="col-md-4"><small class="text-muted d-block">Business Name (English)</small><span>${extra.business_name_en || '—'}</span></div>
+                <div class="col-md-4"><small class="text-muted d-block">ব্যবসার ধরণ (বাংলা)</small><span>${extra.business_type_bn || '—'}</span></div>
+            </div><div class="row g-2 mb-2">
+                <div class="col-md-4"><small class="text-muted d-block">ট্রেড লাইসেন্স নং</small><span>${extra.trade_license_no || '—'}</span></div>
+                <div class="col-md-4"><small class="text-muted d-block">মৌজা</small><span>${extra.mouza || '—'}</span></div>
+                <div class="col-md-4"><small class="text-muted d-block">খতিয়ান নং</small><span>${extra.khatian_no || '—'}</span></div>
+            </div><div class="row g-2 mb-2">
+                <div class="col-md-4"><small class="text-muted d-block">জমির ধরণ</small><span>${extra.land_type || '—'}</span></div>
+                <div class="col-md-4"><small class="text-muted d-block">জমির পরিমাণ</small><span>${extra.land_amount || '—'}</span></div>
+            </div>`;
+            return html;
+        },
+        'warish': () => {
+            let html = `<div class="row g-2 mb-2">
+                <div class="col-md-4"><small class="text-muted d-block">আবেদনকারীর নাম</small><strong>${d.applicant_name || '—'}</strong></div>
+                <div class="col-md-4"><small class="text-muted d-block">আবেদনকারীর পিতার নাম</small><span>${extra.applicant_name_father_bn || '—'}</span></div>
+            </div>`;
+            const members = d.warish_members || [];
+            if (members.length) {
+                html += `<p class="fw-semibold mt-2">মোট সদস্য সংখ্যা: ${members.length}</p>`;
+                html += `<div class="table-responsive"><table class="table table-bordered table-sm" style="font-size:0.85rem;"><thead class="table-light"><tr><th>ক্রমিক</th><th>নাম (বাংলা)</th><th>নাম (ইংরেজি)</th><th>সম্পর্ক</th><th>জন্ম তারিখ</th><th>পরিচয়পত্র</th></tr></thead><tbody>`;
+                members.forEach((m, i) => {
+                    html += `<tr><td>${i+1}</td><td>${m.name_bn || '—'}</td><td>${m.name_en || '—'}</td><td>${m.relation_bn || '—'}</td><td>${m.birth_date && m.birth_date !== '0000-00-00' ? m.birth_date : '—'}</td><td>${m.nid || m.birth_id || m.passport_no || '—'}</td></tr>`;
+                });
+                html += '</tbody></table></div>';
+            } else {
+                html += '<p class="text-warning">⚠️ ওয়ারিশ সদস্যের তথ্য পাওয়া যায়নি।</p>';
+            }
+            return html;
+        },
+        'family': () => {
+            let html = `<div class="row g-2 mb-2">
+                <div class="col-md-4"><small class="text-muted d-block">পরিবারের সদস্য সংখ্যা</small><span>${extra.family_members_count || '—'}</span></div>
+                <div class="col-md-4"><small class="text-muted d-block">আবেদনকারীর নাম</small><strong>${d.applicant_name || '—'}</strong></div>
+                <div class="col-md-4"><small class="text-muted d-block">আবেদনকারীর পিতার নাম</small><span>${extra.applicant_name_father_bn || '—'}</span></div>
+            </div>`;
+            const members = d.family_members || [];
+            if (members.length) {
+                html += `<p class="fw-semibold mt-2">মোট সদস্য সংখ্যা: ${members.length}</p>`;
+                html += `<div class="table-responsive"><table class="table table-bordered table-sm" style="font-size:0.85rem;"><thead class="table-light"><tr><th>ক্রমিক</th><th>নাম (বাংলা)</th><th>নাম (ইংরেজি)</th><th>সম্পর্ক</th><th>জন্ম তারিখ</th><th>পরিচয়পত্র</th></tr></thead><tbody>`;
+                members.forEach((m, i) => {
+                    html += `<tr><td>${i+1}</td><td>${m.name_bn || '—'}</td><td>${m.name_en || '—'}</td><td>${m.relation_bn || '—'}</td><td>${m.birth_date && m.birth_date !== '0000-00-00' ? m.birth_date : '—'}</td><td>${m.nid || m.birth_id || m.passport_no || '—'}</td></tr>`;
+                });
+                html += '</tbody></table></div>';
+            } else {
+                html += '<p class="text-warning">⚠️ পরিবারের সদস্যের তথ্য পাওয়া যায়নি।</p>';
+            }
+            return html;
+        }
+    };
+
+    if (certFields[certType]) {
+        container.style.display = 'block';
+        const icon = iconMap[certType] || 'bi bi-file-earmark-text';
+        const name = certNames[certType] || 'সনদ';
+        legendEl.innerHTML = `<i class="${icon} me-1"></i> ${name}`;
+        bodyEl.innerHTML = certFields[certType]();
+        // Keep any newly added certificate fields visible as well, even when no dedicated renderer exists yet.
+        const extraKeys = Object.keys(extra);
+        if (extraKeys.length) {
+            bodyEl.innerHTML += '<details class="mt-3"><summary class="fw-semibold">জমা দেওয়া সকল অতিরিক্ত তথ্য</summary><pre class="small bg-light p-2 mt-2 mb-0" style="white-space:pre-wrap;word-break:break-word;"></pre></details>';
+            const extraPre = bodyEl.querySelector('details pre');
+            if (extraPre) extraPre.textContent = JSON.stringify(extra, null, 2);
+        }
+    } else {
+        container.style.display = Object.keys(extra).length ? 'block' : 'none';
+        bodyEl.textContent = Object.keys(extra).length ? JSON.stringify(extra, null, 2) : 'এই certificate type-এর অতিরিক্ত তথ্য নেই।';
+    }
+}
+
+// Auto-fill verifier/approver from dropdown
+$(document).on('change', '#modal_verifier_select', function() {
+    const opt = this.options[this.selectedIndex];
+    if (!opt.value) return;
+    document.getElementById('modal_verifier_id').value = opt.value;
+    document.getElementById('modal_verifier_name_bn').value = opt.dataset.nameBn || '';
+    document.getElementById('modal_verifier_name_en').value = opt.dataset.nameEn || '';
+    document.getElementById('modal_verifier_ward_no').value = opt.dataset.wardNo || '';
+});
+
+$(document).on('change', '#modal_approver_select', function() {
+    const opt = this.options[this.selectedIndex];
+    if (!opt.value) return;
+    document.getElementById('modal_approver_id').value = opt.value;
+    document.getElementById('modal_approver_name_bn').value = opt.dataset.nameBn || '';
+    document.getElementById('modal_approver_name_en').value = opt.dataset.nameEn || '';
+    document.getElementById('modal_approver_ward_no').value = opt.dataset.wardNo || '';
+});
+
+// Trade fee auto-calculation
+$(document).on('input', '#modal_license_fee, #modal_vat_amount, #modal_occupation_tax, #modal_income_tax, #modal_signboard_tax, #modal_surcharge', function() {
+    const feeIds = ['modal_license_fee', 'modal_vat_amount', 'modal_occupation_tax', 'modal_income_tax', 'modal_signboard_tax', 'modal_surcharge'];
+    let total = 0;
+    feeIds.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) total += parseFloat(el.value) || 0;
+    });
+    const totalEl = document.getElementById('modal_total_fee');
+    if (totalEl) totalEl.value = total.toFixed(2);
+});
+
+// Validate trade approval fields
+function validateModalTradeFields() {
+    const certType = document.getElementById('modal_certificate_type').value;
+    if (certType !== 'trade') return true;
+
+    const fiscalYear = document.getElementById('modal_fiscal_year')?.value?.trim() || '';
+    const ownershipTypeId = document.getElementById('modal_ownership_type_id')?.value?.trim() || '';
+    const businessTypeId = document.getElementById('modal_business_type_id')?.value?.trim() || '';
+
+    if (!fiscalYear) {
+        Swal.fire('❌ ত্রুটি', 'অনুগ্রহ করে সনদের অর্থবছর নির্বাচন করুন।', 'error');
+        return false;
+    }
+    if (!ownershipTypeId) {
+        Swal.fire('❌ ত্রুটি', 'অনুগ্রহ করে মালিকানার ধরণ নির্বাচন করুন।', 'error');
+        return false;
+    }
+    if (!businessTypeId) {
+        Swal.fire('❌ ত্রুটি', 'অনুগ্রহ করে ব্যবসার ধরণ নির্বাচন করুন।', 'error');
+        return false;
+    }
+    return true;
+}
+
+// Form submission - shows approved modal with certificate links on success
+$(document).on('submit', '#approveModalForm', function(e) {
+    e.preventDefault();
+    const form = this;
+    const certType = document.getElementById('modal_certificate_type').value;
+    const appId = document.getElementById('modal_application_id').value;
+    const btn = document.getElementById('modalApproveBtn');
+
+    // Validate approval date
+    if (!document.getElementById('modal_approval_date')?.value.trim()) {
+        Swal.fire('❌ ত্রুটি', 'অনুগ্রহ করে অনুমোদনের তারিখ নির্বাচন করুন।', 'error');
+        return;
+    }
+
+    // Validate trade-specific fields
+    if (!validateModalTradeFields()) return;
+
+    // For trade: validate license number from modal field
+    if (certType === 'trade') {
+        const licenseInput = document.getElementById('modal_license_number');
+        const licenseNumber = (licenseInput?.value || '').trim();
+        const digits = licenseNumber.replace(/\D/g, '');
+        if (!/^\d{17}$/.test(digits)) {
+            Swal.fire('❌ ত্রুটি', 'লাইসেন্স নম্বর অবশ্যই ১৭ সংখ্যার হতে হবে।', 'error');
+            return;
+        }
+        // Validate trade-specific fields
+        if (!validateModalTradeFields()) return;
+        processApprovalFromModal(form, certType, appId, btn, digits);
+    } else {
+        processApprovalFromModal(form, certType, appId, btn, null);
+    }
+});
+
+function processApprovalFromModal(form, certType, appId, btn, licenseNumber) {
+    const origHtml = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> প্রসেসিং...';
+
+    const fd = new FormData(form);
+    fd.delete('license_number');
+    if (licenseNumber) fd.set('license_number', licenseNumber);
+
+    fetch(`/applications/${certType}/approve/${appId}`, {
+        method: 'POST',
+        body: new URLSearchParams(fd)
+    })
+    .then(r => r.json())
+    .then(res => {
+        btn.disabled = false;
+        btn.innerHTML = origHtml;
+        if (res.status === 'success') {
+            // Close approve modal first
+            const approveModal = bootstrap.Modal.getInstance(document.getElementById('approveModal'));
+            if (approveModal) approveModal.hide();
+            // After approve modal closes, show approved modal with certificate links
+            setTimeout(() => {
+                showApprovedModalFromList(res, certType, licenseNumber);
+            }, 400);
+        } else {
+            Swal.fire('❌ ব্যর্থ', res.message || 'অনুমোদন ব্যর্থ হয়েছে।', 'error');
+        }
+    })
+    .catch(err => {
+        btn.disabled = false;
+        btn.innerHTML = origHtml;
+        console.error('Approval error:', err);
+        Swal.fire('❌ ত্রুটি', 'সার্ভারে সংযোগ করা যায়নি।', 'error');
+    });
+}
+
+/**
+ * Show approved modal with certificate download links (list page version)
+ */
+function showApprovedModalFromList(res, certType, licenseNumber) {
+    try {
+        const aId = res.application_id || document.getElementById('modal_application_id').value;
+        const unionCode = res.union_code || '';
+        const rmoCode = res.rmo_code || '';
+        const cert = res.certificate_type || certType || '';
+        const license = licenseNumber || res.sonod_number || res.license_number || '';
+        const certBn = res.certificate_type_bn || cert || '';
+
+        // Determine if this is an update (already approved)
+        const isUpdate = res.is_update === true;
+
+        // Update modal title
+        const modalTitle = document.getElementById('approvedModalLabel');
+        if (modalTitle) {
+            modalTitle.innerHTML = `<i class="bi bi-check-circle-fill me-2"></i> ${certBn} ${isUpdate ? 'হালনাগাদ' : 'অনুমোদিত'}`;
+        }
+
+        // Update modal subtitle
+        const modalSubtitle = document.getElementById('approvedModalSubtitle');
+        if (modalSubtitle) {
+            modalSubtitle.textContent = isUpdate ? 'অনুমোদনের তথ্য সফলভাবে হালনাগাদ করা হয়েছে' : 'আবেদনটি সফলভাবে অনুমোদিত হয়েছে';
+        }
+
+        // Update modal body texts
+        const modalCongrats = document.getElementById('approvedModalCongrats');
+        if (modalCongrats) {
+            modalCongrats.textContent = isUpdate ? '✅ হালনাগাদ সম্পন্ন!' : 'অভিনন্দন!';
+        }
+        const modalBodyText = document.getElementById('approvedModalBodyText');
+        if (modalBodyText) {
+            modalBodyText.textContent = isUpdate
+                ? 'অনুমোদনের তথ্য সফলভাবে হালনাগাদ করা হয়েছে। নিচের তথ্য ও অপশনগুলো দেখুন।'
+                : 'আপনার আবেদন সফলভাবে অনুমোদিত হয়েছে। নিচের তথ্য ও অপশনগুলো দেখুন।';
+        }
+
+        // Set info values
+        document.getElementById('approved_application_id').textContent = aId || '—';
+        document.getElementById('approved_union_code').textContent = unionCode || '—';
+        document.getElementById('approved_rmo_code').textContent = rmoCode || '—';
+        document.getElementById('approved_certificate_type').textContent = certBn || '—';
+        document.getElementById('approved_license_number').textContent = license || '—';
+
+        // Set download/view links
+        const downloadUrl = `/${cert}_verify/application/${aId}/${unionCode || 0}/${rmoCode || 0}`;
+        const viewUrl = `/${cert}_verify/application/${aId}/${unionCode || 0}/0`;
+        const certificateUrl = license ? `/application/${cert}/bangla/${license}` : '#';
+        const certificateEnUrl = license ? `/application/${cert}/english/${license}` : '#';
+
+        const dl = document.getElementById('approved_download_link');
+        const vl = document.getElementById('approved_view_link');
+        const cl = document.getElementById('approved_certificate_link');
+        const clEn = document.getElementById('approved_certificate_en_link');
+        if (dl) dl.href = downloadUrl;
+        if (vl) vl.href = viewUrl;
+        if (cl) cl.href = certificateUrl;
+        if (clEn) clEn.href = certificateEnUrl;
+
+        // Hide certificate links if no license number
+        [cl, clEn].forEach(link => {
+            if (link) {
+                link.style.display = license ? '' : 'none';
+            }
+        });
+
+        // New application button - go back to list
+        const newBtn = document.getElementById('approved_new_btn');
+        if (newBtn) {
+            // Remove old listeners by cloning
+            const newBtnClone = newBtn.cloneNode(true);
+            newBtn.parentNode.replaceChild(newBtnClone, newBtn);
+            newBtnClone.addEventListener('click', function() {
+                location.reload();
+            });
+        }
+
+        // Show the approved modal
+        const approvedModalEl = document.getElementById('approvedModal');
+        if (approvedModalEl && typeof bootstrap !== 'undefined') {
+            const approvedModal = new bootstrap.Modal(approvedModalEl);
+            approvedModal.show();
+        }
+    } catch (e) {
+        console.error('Error showing approved modal:', e);
+        // Fallback: just reload
+        Swal.fire({
+            icon: 'success',
+            title: '✅ সফল!',
+            text: res.message || 'আবেদন সফলভাবে অনুমোদিত হয়েছে।',
+            confirmButtonColor: '#28a745'
+        }).then(() => location.reload());
+    }
+}
+
+// Reject button in modal
+$(document).on('click', '#modalRejectBtn', function() {
+    Swal.fire({
+        title: 'আবেদন বাতিল করবেন?',
+        input: 'textarea',
+        inputPlaceholder: 'বাতিলের কারণ লিখুন...',
+        showCancelButton: true,
+        preConfirm: v => !v.trim() ? 'কারণ লিখতে হবে!' : v.trim()
+    }).then(r => {
+        if (!r.isConfirmed) return;
+        const certType = document.getElementById('modal_certificate_type').value;
+        const appId = document.getElementById('modal_application_id').value;
+        fetch(`/applications/${certType}/reject/${appId}`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+            body: new URLSearchParams({ reject_reason: r.value, csrf_token: document.querySelector('meta[name="csrf_token"]')?.content || '' })
+        })
+        .then(r => r.json())
+        .then(res => {
+            if (res.status === 'success') {
+                const bsModal = bootstrap.Modal.getInstance(document.getElementById('approveModal'));
+                if (bsModal) bsModal.hide();
+                setTimeout(cleanupModalBackdrop, 350);
+                Swal.fire('❌ বাতিল হয়েছে!', '', 'success').then(() => location.reload());
+            } else {
+                Swal.fire('❌ ত্রুটি', res.message || 'বাতিল করা যায়নি।', 'error');
+            }
+        })
+        .catch(() => Swal.fire('❌ ত্রুটি', 'সার্ভারে সংযোগ করা যায়নি।', 'error'));
+    });
+});
+
+// On Hold button in modal
+$(document).on('click', '#modalOnHoldBtn', function() {
+    Swal.fire({
+        title: 'অন-হোল্ড করুন',
+        input: 'textarea',
+        showCancelButton: true,
+        preConfirm: v => !v.trim() ? 'কারণ লিখুন!' : v.trim()
+    }).then(r => {
+        if (!r.isConfirmed) return;
+        const certType = document.getElementById('modal_certificate_type').value;
+        const appId = document.getElementById('modal_application_id').value;
+        fetch(`/applications/${certType}/on_hold`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+            body: new URLSearchParams({ id: appId, note: r.value, csrf_token: document.querySelector('meta[name="csrf_token"]')?.content || '' })
+        })
+        .then(r => r.json())
+        .then(res => {
+            if (res.status === 'success') {
+                const bsModal = bootstrap.Modal.getInstance(document.getElementById('approveModal'));
+                if (bsModal) bsModal.hide();
+                setTimeout(cleanupModalBackdrop, 350);
+                Swal.fire('✅ Success', res.message, 'success').then(() => location.reload());
+            } else {
+                Swal.fire('❌ ত্রুটি', res.message || 'Failed', 'error');
+            }
+        })
+        .catch(() => Swal.fire('❌ ত্রুটি', 'সার্ভারে সংযোগ করা যায়নি।', 'error'));
+    });
+});
+
+// Fix Sonod button in modal
+$(document).on('click', '#modalFixSonodBtn', function() {
+    const btn = this;
+    const origHtml = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+    const certType = document.getElementById('modal_certificate_type').value;
+    const appId = document.getElementById('modal_application_id').value;
+    fetch(`/applications/${certType}/fix_sonod_status`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: new URLSearchParams({ application_id: appId, csrf_token: document.querySelector('meta[name="csrf_token"]')?.content || '' })
+    })
+    .then(r => r.json())
+    .then(res => {
+        btn.disabled = false;
+        btn.innerHTML = origHtml;
+        if (res.status === 'success') {
+            Swal.fire('✅ Updated!', `Sonod: ${res.sonod_number}, Status: ${res.status_val}`, 'success');
+        } else {
+            Swal.fire('❌ ত্রুটি', res.message || 'Fix failed', 'error');
+        }
+    })
+    .catch(() => {
+        btn.disabled = false;
+        btn.innerHTML = origHtml;
+        Swal.fire('❌ ত্রুটি', 'সার্ভারে সংযোগ করা যায়নি।', 'error');
+    });
+});
 
 </script>
+
+{% include 'applications/approve-modal.twig' %}
+
 {% endblock %}
 {% endblock %}

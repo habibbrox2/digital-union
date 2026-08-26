@@ -1,0 +1,153 @@
+{% extends "layout.twig" %}
+
+{% block title %}{{ title|default('ইউনিয়নের বিবরণ') }}{% endblock %}
+{% block header_title %}{{ header_title|default('Union Details') }}{% endblock %}
+
+{% block content %}
+{% include 'components/sweetAlert.twig' %}
+
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold text-primary mb-0">{{ header_title }}</h2>
+        <div class="d-flex gap-2">
+            <a href="/unions/edit/{{ union.union_id }}" class="btn btn-warning btn-md shadow-sm">
+                <i class="bi bi-pencil-fill me-1"></i> Edit
+            </a>
+            <a href="/unions" class="btn btn-outline-secondary btn-md shadow-sm">
+                <i class="bi bi-arrow-left me-1"></i> Back
+            </a>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Union Info Card -->
+        <div class="col-lg-8">
+            <div class="card shadow-sm border mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="bi bi-geo-alt me-2"></i>ইউনিয়নের তথ্য</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label text-muted small">ইউনিয়নের নাম (ইংরেজি)</label>
+                            <p class="fw-semibold mb-0">{{ union.union_name_en ?: '-' }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-muted small">ইউনিয়নের নাম (বাংলা)</label>
+                            <p class="fw-semibold mb-0">{{ union.union_name_bn ?: '-' }}</p>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label text-muted small">বিভাগ</label>
+                            <p class="mb-0">{{ union.division_name_bn ?: '-' }}</p>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label text-muted small">জেলা</label>
+                            <p class="mb-0">{{ union.district_name_bn ?: '-' }}</p>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label text-muted small">উপজেলা</label>
+                            <p class="mb-0">{{ union.upazila_name_bn ?: '-' }}</p>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label text-muted small">ওয়ার্ড সংখ্যা</label>
+                            <p class="mb-0">{{ union.ward_count ?: '-' }}</p>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label text-muted small">ইউনিয়ন কোড</label>
+                            <p class="mb-0">{{ union.union_code ?: '-' }}</p>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label text-muted small">পোস্ট কোড</label>
+                            <p class="mb-0">{{ union.postcode ?: '-' }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Contact Info Card -->
+            <div class="card shadow-sm border mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="bi bi-telephone me-2"></i>যোগাযোগের তথ্য</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label text-muted small">ইমেইল</label>
+                            <p class="mb-0">
+                                {% if union.email %}
+                                    <a href="mailto:{{ union.email }}" class="text-decoration-none">{{ union.email }}</a>
+                                {% else %}-{% endif %}
+                            </p>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label text-muted small">মোবাইল</label>
+                            <p class="mb-0">
+                                {% if union.phone %}
+                                    <a href="tel:{{ union.phone }}" class="text-decoration-none">{{ union.phone }}</a>
+                                {% else %}-{% endif %}
+                            </p>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label text-muted small">ওয়েবসাইট</label>
+                            <p class="mb-0">
+                                {% if union.website %}
+                                    <a href="{{ union.website }}" target="_blank" class="text-decoration-none">
+                                        {{ union.website|replace({'https://':'','http://':''})|slice(0, 30) }}{% if union.website|length > 30 %}...{% endif %}
+                                    </a>
+                                {% else %}-{% endif %}
+                            </p>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label text-muted small">অবস্থা</label>
+                            <p class="mb-0">
+                                {% if union.is_active %}
+                                    <span class="badge bg-success">Active</span>
+                                {% else %}
+                                    <span class="badge bg-danger">Inactive</span>
+                                {% endif %}
+                            </p>
+                        </div>
+                        {% if union.created_at %}
+                        <div class="col-md-4">
+                            <label class="form-label text-muted small">তৈরি হয়েছে</label>
+                            <p class="mb-0">{{ union.created_at }}</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Logo Card -->
+        <div class="col-lg-4">
+            <div class="card shadow-sm border mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="bi bi-image me-2"></i>ইউনিয়ন লোগো</h5>
+                </div>
+                <div class="card-body text-center">
+                    {% if union.logo_url %}
+                        <img src="{{ union.logo_url }}" alt="Union Logo" class="img-fluid rounded shadow-sm mb-3" style="max-height: 200px;">
+                    {% else %}
+                        <div class="text-muted py-5">
+                            <i class="bi bi-image" style="font-size: 3rem;"></i>
+                            <p class="mt-2">কোনো লোগো নেই</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            {% if union.stamp_logo_url %}
+            <div class="card shadow-sm border mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="bi bi-stamp me-2"></i>স্ট্যাম্প লোগো</h5>
+                </div>
+                <div class="card-body text-center">
+                    <img src="{{ union.stamp_logo_url }}" alt="Stamp Logo" class="img-fluid rounded shadow-sm" style="max-height: 150px;">
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+{% endblock %}

@@ -19,7 +19,8 @@ if (!function_exists('getEmailService')) {
         if (!class_exists('EmailService')) {
             throw new Exception('EmailService class not found');
         }
-        return new EmailService();
+        global $mysqli;
+        return new EmailService($mysqli ?? null);
     }
 }
 
@@ -331,7 +332,8 @@ if (!function_exists('sendCriticalErrorAlert')) {
                 return false;
             }
 
-            $emailService = new EmailService();
+            global $mysqli;
+            $emailService = new EmailService($mysqli ?? null);
 
             // Build template data
             $siteUrl = defined('SITE_URL') ? SITE_URL : '';
@@ -410,9 +412,8 @@ if (!function_exists('verifyEmailConnection')) {
                     'success' => false,
                     'message' => 'EmailService class not found',
                 ];
-            }
-
-            $emailService = new EmailService();
+            }            global $mysqli;
+            $emailService = new EmailService($mysqli ?? null);
             return $emailService->verifyConnection();
         } catch (Exception $e) {
             return [

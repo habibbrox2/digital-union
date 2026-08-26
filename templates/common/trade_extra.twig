@@ -26,7 +26,71 @@
                        required>
                 <span class="input-group-text bg-light small fw-semibold" id="license_status_text"></span>
             </div>
+            <small id="license_digit_count" class="form-text text-danger">সংখ্যা: 0/17</small>
             <small id="license_availability_msg" class="form-text"></small>
+        </div>
+    </div>
+</div>
+
+
+
+{# === সনদের অর্থবছর, মালিকানা ও ব্যবসার ধরণ === #}
+<div class="form-section mb-3">
+    <legend class="section-title">সনদের অর্থবছর ও ধরণ</legend>
+
+    {# Row 1: Fiscal Year | Ownership Type #}
+    <div class="row align-items-center mb-3 gx-4 gy-3">
+        <div class="{{ govt_label }}">
+            <label for="fiscal_year" class="form-label mb-0">সনদের অর্থবছর <span class="text-danger">*</span></label>
+        </div>
+        <div class="{{ govt_input }}">
+            <select class="form-control" name="fiscal_year" id="fiscal_year" required>
+                <option value="" selected disabled>অর্থবছর নির্বাচন করুন</option>
+                {% if fiscal_year_options is defined and fiscal_year_options is not empty %}
+                    {% for option in fiscal_year_options %}
+                        <option value="{{ option.value }}" {% if option.selected %}selected{% endif %}>{{ option.label }}</option>
+                    {% endfor %}
+                {% else %}
+                    {# Fallback if options not provided - Starting from 2022-2023 #}
+                    <option value="2022-2023" {% if business_meta.fiscal_year == "2022-2023" %}selected{% endif %}>2022-2023</option>
+                    <option value="2023-2024" {% if business_meta.fiscal_year == "2023-2024" %}selected{% endif %}>2023-2024</option>
+                    <option value="2024-2025" {% if business_meta.fiscal_year == "2024-2025" %}selected{% endif %}>2024-2025</option>
+                    <option value="2025-2026" {% if business_meta.fiscal_year == "2025-2026" %}selected{% endif %}>2025-2026</option>
+                    <option value="2026-2027" {% if business_meta.fiscal_year == "2026-2027" %}selected{% endif %}>2026-2027</option>
+                    <option value="2027-2028" {% if business_meta.fiscal_year == "2027-2028" %}selected{% endif %}>2027-2028</option>
+                    <option value="2028-2029" {% if business_meta.fiscal_year == "2028-2029" %}selected{% endif %}>2028-2029</option>
+                {% endif %}
+            </select>
+        </div>
+        <div class="{{ govt_label }}">
+            <label for="ownership_type_id" class="form-label mb-0">মালিকানার ধরণ <span class="text-danger">*</span></label>
+        </div>
+        <div class="{{ govt_input }}">
+            <select class="form-control" name="ownership_type_id" id="ownership_type_id" required>
+                <option value="" selected>মালিকানার ধরণ নির্বাচন করুন</option>
+                {% for ownershipType in ownership_types %}
+                    <option value="{{ ownershipType.id }}" {% if ownershipType.id == business_meta.ownership_type_id %}selected{% endif %}>
+                        {{ ownershipType.ownership_name_bn }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+    </div>
+
+    {# Row 2: Business Type (single) #}
+    <div class="row align-items-center mb-3 gx-4 gy-3">
+        <div class="{{ govt_label }}">
+            <label for="business_type_id" class="form-label mb-0">ব্যবসার ধরণ <span class="text-danger">*</span></label>
+        </div>
+        <div class="col-lg-8 col-md-6 col-12">
+            <select class="form-control" name="business_type_id" id="business_type_id" required>
+                <option value="" selected>ব্যবসার ধরণ নির্বাচন করুন</option>
+                {% for businessType in business_types %}
+                    <option value="{{ businessType.id }}" {% if businessType.id == business_meta.business_type_id %}selected{% endif %}>
+                        {{ businessType.business_name_bn }}
+                    </option>
+                {% endfor %}
+            </select>
         </div>
     </div>
 </div>
@@ -134,63 +198,54 @@
 })();
 </script>
 
-{# === সনদের অর্থবছর, মালিকানা ও ব্যবসার ধরণ === #}
-<div class="form-section mb-3">
-    <legend class="section-title">সনদের অর্থবছর ও ধরণ</legend>
-
-    {# Row 1: Fiscal Year | Ownership Type #}
-    <div class="row align-items-center mb-3 gx-4 gy-3">
-        <div class="{{ govt_label }}">
-            <label for="fiscal_year" class="form-label mb-0">সনদের অর্থবছর <span class="text-danger">*</span></label>
-        </div>
-        <div class="{{ govt_input }}">
-            <select class="form-control" name="fiscal_year" id="fiscal_year" required>
-                <option value="" selected disabled>অর্থবছর নির্বাচন করুন</option>
-                {% if fiscal_year_options is defined and fiscal_year_options is not empty %}
-                    {% for option in fiscal_year_options %}
-                        <option value="{{ option.value }}" {% if option.selected %}selected{% endif %}>{{ option.label }}</option>
-                    {% endfor %}
-                {% else %}
-                    {# Fallback if options not provided - Starting from 2022-2023 #}
-                    <option value="2022-2023" {% if business_meta.fiscal_year == "2022-2023" %}selected{% endif %}>2022-2023</option>
-                    <option value="2023-2024" {% if business_meta.fiscal_year == "2023-2024" %}selected{% endif %}>2023-2024</option>
-                    <option value="2024-2025" {% if business_meta.fiscal_year == "2024-2025" %}selected{% endif %}>2024-2025</option>
-                    <option value="2025-2026" {% if business_meta.fiscal_year == "2025-2026" %}selected{% endif %}>2025-2026</option>
-                    <option value="2026-2027" {% if business_meta.fiscal_year == "2026-2027" %}selected{% endif %}>2026-2027</option>
-                    <option value="2027-2028" {% if business_meta.fiscal_year == "2027-2028" %}selected{% endif %}>2027-2028</option>
-                    <option value="2028-2029" {% if business_meta.fiscal_year == "2028-2029" %}selected{% endif %}>2028-2029</option>
-                {% endif %}
-            </select>
-        </div>
-        <div class="{{ govt_label }}">
-            <label for="ownership_type_id" class="form-label mb-0">মালিকানার ধরণ <span class="text-danger">*</span></label>
-        </div>
-        <div class="{{ govt_input }}">
-            <select class="form-control" name="ownership_type_id" id="ownership_type_id" required>
-                <option value="" selected>মালিকানার ধরণ নির্বাচন করুন</option>
-                {% for ownershipType in ownership_types %}
-                    <option value="{{ ownershipType.id }}" {% if ownershipType.id == business_meta.ownership_type_id %}selected{% endif %}>
-                        {{ ownershipType.ownership_name_bn }}
-                    </option>
-                {% endfor %}
-            </select>
-        </div>
-    </div>
-
-    {# Row 2: Business Type (single) #}
-    <div class="row align-items-center mb-3 gx-4 gy-3">
-        <div class="{{ govt_label }}">
-            <label for="business_type_id" class="form-label mb-0">ব্যবসার ধরণ <span class="text-danger">*</span></label>
-        </div>
-        <div class="col-lg-8 col-md-6 col-12">
-            <select class="form-control" name="business_type_id" id="business_type_id" required>
-                <option value="" selected>ব্যবসার ধরণ নির্বাচন করুন</option>
-                {% for businessType in business_types %}
-                    <option value="{{ businessType.id }}" {% if businessType.id == business_meta.business_type_id %}selected{% endif %}>
-                        {{ businessType.business_name_bn }}
-                    </option>
-                {% endfor %}
-            </select>
-        </div>
-    </div>
+{# === Update Fee Button === #}
+<div class="mt-3">
+    <button type="button" id="updateFeesBtn" class="btn btn-outline-primary btn-sm" onclick="updateTradeFees()">
+        <i class="bi bi-save me-1"></i> ফি তথ্য হালনাগাদ করুন
+    </button>
+    <span id="feeUpdateStatus" class="ms-2 small"></span>
 </div>
+
+<script>
+function updateTradeFees() {
+    const btn = document.getElementById('updateFeesBtn');
+    const status = document.getElementById('feeUpdateStatus');
+    if (!btn) return;
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> সংরক্ষণ হচ্ছে...';
+    status.textContent = '';
+
+    const certType = document.getElementById('certificate_type')?.value || '';
+    const appId = document.getElementById('application_id')?.value || '';
+
+    const fields = ['license_fee','vat_amount','occupation_tax','income_tax','signboard_tax','surcharge','total_fee','fiscal_year','ownership_type_id','business_type_id'];
+    const fd = new URLSearchParams();
+    fields.forEach(f => {
+        const el = document.getElementById(f);
+        if (el) fd.set(f, el.value);
+    });
+
+    fetch(`/applications/${certType}/update-fees/${appId}`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/x-www-form-urlencoded', 'X-Requested-With': 'XMLHttpRequest'},
+        body: fd.toString()
+    })
+    .then(r => r.json())
+    .then(res => {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-save me-1"></i> ফি তথ্য হালনাগাদ করুন';
+        if (res.status === 'success') {
+            status.innerHTML = '<span class="text-success">✅ ' + res.message + '</span>';
+        } else {
+            status.innerHTML = '<span class="text-danger">❌ ' + res.message + '</span>';
+        }
+        setTimeout(() => { status.textContent = ''; }, 5000);
+    })
+    .catch(err => {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-save me-1"></i> ফি তথ্য হালনাগাদ করুন';
+        status.innerHTML = '<span class="text-danger">❌ সংযোগে সমস্যা হয়েছে</span>';
+    });
+}
+</script>

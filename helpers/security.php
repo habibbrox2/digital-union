@@ -74,45 +74,61 @@ if (!function_exists('validatePassword')) {
 }
 
 // ==================== ENCRYPTION/DECRYPTION ====================
-
 if (!function_exists('encryptData')) {
     function encryptData($data, $key = null) {
-        if ($key === null) {
-            $key = defined('ENCRYPTION_KEY') ? ENCRYPTION_KEY : 'default-key-change-me';
+        // 🔒 Delegate to CryptManager for HMAC-authenticated encryption.
+        // Falls back to unauthenticated AES-256-CBC only if CryptManager is unavailable.
+        if (class_exists('CryptManager')) {
+            $crypt = new CryptManager($key ?? (defined('ENCRYPTION_KEY') ? ENCRYPTION_KEY : random_bytes(32)));
+            return $crypt->encrypt($data);
         }
-        
+
+        // Fallback: AES-256-CBC WITHOUT authentication (legacy — migrate away)
+        if ($key === null) {
+            $key = defined('ENCRYPTION_KEY') ? ENCRYPTION_KEY : random_bytes(32);
+        }
         $method = 'AES-256-CBC';
-        $iv = openssl_random_pseudo_bytes(openssl_cipher_iv_length($method));
-        $encrypted = openssl_encrypt($data, $method, $key, 0, $iv);
-        
+        $iv = random_bytes(openssl_cipher_iv_length($method));
+        $encrypted = openssl_encrypt($data, $method, $key, OPENSSL_RAW_DATA, $iv);
         return base64_encode($iv . $encrypted);
     }
 }
 
+
 if (!function_exists('decryptData')) {
     function decryptData($data, $key = null) {
-        if ($key === null) {
-            $key = defined('ENCRYPTION_KEY') ? ENCRYPTION_KEY : 'default-key-change-me';
+        // 🔒 Delegate to CryptManager for HMAC-verified decryption.
+        if (class_exists('CryptManager')) {
+            $crypt = new CryptManager($key ?? (defined('ENCRYPTION_KEY') ? ENCRYPTION_KEY : ''));
+            return $crypt->decrypt($data);
         }
-        
+
+        // Fallback: AES-256-CBC WITHOUT authentication (legacy — migrate away)
+        if ($key === null) {
+            $key = defined('ENCRYPTION_KEY') ? ENCRYPTION_KEY : '';
+        }
         $method = 'AES-256-CBC';
-        $data = base64_decode($data);
-        $iv = substr($data, 0, openssl_cipher_iv_length($method));
-        $encrypted = substr($data, openssl_cipher_iv_length($method));
-        
-        return openssl_decrypt($encrypted, $method, $key, 0, $iv);
+        $decoded = base64_decode($data, true);
+        if ($decoded === false) return false;
+        $ivLength = openssl_cipher_iv_length($method);
+        if (strlen($decoded) < $ivLength) return false;
+        $iv = substr($decoded, 0, $ivLength);
+        $encrypted = substr($decoded, $ivLength);
+        return openssl_decrypt($encrypted, $method, $key, OPENSSL_RAW_DATA, $iv);
     }
 }
 
 // ==================== SECURITY HEADERS ====================
-
 if (!function_exists('setSecurityHeaders')) {
     function setSecurityHeaders() {
         header('X-Content-Type-Options: nosniff');
         header('X-Frame-Options: SAMEORIGIN');
-        header('X-XSS-Protection: 1; mode=block');
+        // X-XSS-Protection removed — deprecated in modern browsers, replaced by CSP
         header('Referrer-Policy: strict-origin-when-cross-origin');
         header('Permissions-Policy: geolocation=(), microphone=(), camera=()');
+        // 🔒 Content Security Policy — restrict resource loading to same origin
+        // Adjust 'script-src' and 'style-src' as needed for external CDNs
+        header("Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self'; frame-ancestors 'self';");
     }
 }
 

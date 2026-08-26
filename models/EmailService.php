@@ -17,14 +17,18 @@ class EmailService {
     private $logFile;
     private $maxRetries;
     private $retryDelay;
+    private ?\mysqli $mysqli = null;
 
     /**
      * Initialize EmailService
+     *
+     * @param \mysqli|null $mysqli Optional database connection. Falls back to global $mysqli if not provided.
      */
-    public function __construct() {
+    public function __construct(\mysqli $mysqli = null) {
         require_once __DIR__ . '/../vendor/autoload.php';
         require_once __DIR__ . '/../config/email.php';
 
+        $this->mysqli = $mysqli;
         $this->mail = new PHPMailer(EMAIL_DEBUG);
         $this->debug = EMAIL_DEBUG;
         $this->logFile = EMAIL_LOG_FILE;
@@ -159,8 +163,7 @@ class EmailService {
      * @param array $cc Optional CC addresses
      * @param array $bcc Optional BCC addresses
      * @return bool
-     */
-    public function sendTemplate(
+     */    public function sendTemplate(
         string $to,
         string $template,
         array $data = [],
@@ -169,7 +172,8 @@ class EmailService {
         array $bcc = []
     ): bool {
         try {
-            global $mysqli;
+            // Use injected mysqli, fall back to global if not provided
+            $mysqli = $this->mysqli ?? ($GLOBALS['mysqli'] ?? null);
             
             // Prepare twig data with global config values
             $twigData = array_merge($data, [
@@ -184,14 +188,18 @@ class EmailService {
             $twigFile = EMAIL_TEMPLATE_DIR . '/' . $template . '.twig';
             
             if (file_exists($twigFile)) {
-                // Use Twig template
-                if (!class_exists('TwigManager')) {
-                    $this->logError("TwigManager class not found for template: $template");
-                    throw new Exception("TwigManager class not found");
-                }
-                
-                try {
-                    $twigManager = new TwigManager($mysqli);
+                // Use Twig template                if (!class_exists('TwigManager')) {
+                    $this->logError("TwigManager class not found for template: $template");
+                    throw new Exception("TwigManager class not found");
+                }
+                
+                if (!$mysqli) {
+                    $this->logError("No database connection available for Twig rendering");
+                    throw new Exception("Database connection not available for email template rendering");
+                }
+                
+                try {
+                    $twigManager = new TwigManager($mysqli);
                     $body = $twigManager->render($twigTemplate, $twigData);
                     
                     if (empty($body)) {
@@ -241,9 +249,8 @@ class EmailService {
                     if (!empty($settings[$settingKey])) {
                         // Use stored template body (may contain twig placeholders)
                         $stored = $settings[$settingKey];
-                        // Render stored template via Twig to resolve placeholders
-                        if (class_exists('TwigManager')) {
-                            $twigManager = new TwigManager($mysqli);
+                        // Render stored template via Twig to resolve placeholders                if (class_exists('TwigManager') && $mysqli) {
+                            $twigManager = new TwigManager($mysqli);
                             $twigEngine = $twigManager->getTwig();
                             try {
                                 $body = $twigEngine->createTemplate($stored)->render($twigData);

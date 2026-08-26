@@ -597,7 +597,7 @@ class ApplicationService
         $nid         = convertBanglaToEnglishNumber(sanitize_input($post['nid'] ?? ''));
         $birth_id    = convertBanglaToEnglishNumber(sanitize_input($post['birth_id'] ?? ''));
         $passport_no = convertBanglaToEnglishNumber(sanitize_input($post['passport_no'] ?? ''));
-        $birth_date  = sanitize_input($post['birth_date'] ?? '');
+        $birth_date  = normalizeDateToMysql(convertBanglaToEnglishNumber(sanitize_input($post['birth_date'] ?? '')));
 
         // --- Generate IDs ---
         $applicant_id    = generateApplicantId($nid, $birth_id, $passport_no, $union_code, $birth_date);
@@ -788,7 +788,7 @@ class ApplicationService
             'nid'                  => sanitize_input($post['nid'] ?? ''),
             'birth_id'             => sanitize_input($post['birth_id'] ?? ''),
             'passport_no'          => sanitize_input($post['passport_no'] ?? ''),
-            'birth_date'           => sanitize_input($post['birth_date'] ?? ''),
+            'birth_date'           => normalizeDateToMysql(convertBanglaToEnglishNumber(sanitize_input($post['birth_date'] ?? ''))),
             'gender'               => sanitize_input($post['gender'] ?? ''),
             'father_name_en'       => sanitize_input($post['father_name_en'] ?? ''),
             'father_name_bn'       => sanitize_input($post['father_name_bn'] ?? ''),
@@ -893,8 +893,8 @@ class ApplicationService
                 'name_bn'          => sanitize_input($member_name_bns[$i] ?? ''),
                 'relation_en'      => $relation_en,
                 'relation_bn'      => $relation_bn,
-                'birth_date'       => sanitize_input($member_birth_dates[$i] ?? ''),
-                'nid'              => sanitize_input($relation_nids[$i] ?? ''),
+                'birth_date'       => normalizeDateToMysql(convertBanglaToEnglishNumber(sanitize_input($member_birth_dates[$i] ?? ''))),
+                'nid'              => convertBanglaToEnglishNumber(sanitize_input($relation_nids[$i] ?? '')),
                 'gender'           => '',
                 'occupation'       => '',
                 'mobile'           => '',
@@ -1104,7 +1104,13 @@ class ApplicationService
         $posted_license_number = trim((string)($post['license_number'] ?? ''));
         try {
             if ($posted_license_number !== '') {
-                $sonod_number = sanitize_input($posted_license_number);
+                $sonod_number = convertBanglaToEnglishNumber(sanitize_input($posted_license_number));
+                if (!preg_match('/^\d{17}$/', $sonod_number)) {
+                    return [
+                        'status' => 'error',
+                        'message' => 'License number must contain exactly 17 digits.',
+                    ];
+                }
             } elseif (!empty($application['sonod_number'])) {
                 $sonod_number = sanitize_input($application['sonod_number']);
             } elseif (!empty($union_code)) {
@@ -1507,6 +1513,88 @@ class ApplicationService
      * @param string|null $certificateTypeBn From twig globals
      * @return array Prepared data for template rendering
      */
+
+    /**
+     * Update trade license fee information independently of approval flow.
+     */
+    public function updateTradeFees(string $applicationId, array $post, ?int $unionId): array
+    {
+        $lookupUnion = $unionId;
+        $application = $this->appManager->getApplication($applicationId, $lookupUnion);
+        if (!$application) {
+            return ['status' => 'error', 'message' => 'আবেদন পাওয়া যায়নি।'];
+        }
+
+        if (($application['certificate_type'] ?? '') !== 'trade') {
+            return ['status' => 'error', 'message' => 'শুধুমাত্র ট্রেড লাইসেন্সের ফি হালনাগাদ করা যায়।'];
+        }
+
+        $fiscal_year = !empty($post['fiscal_year']) ? sanitize_input($post['fiscal_year']) : null;
+        $existingMeta = $this->appManager->getBusinessMetaByApplicationId($applicationId);
+        $hasExistingMeta = !empty($existingMeta);
+        $existingMeta = $existingMeta ?: [];
+
+        $businessMetaData = [
+            'business_name_en'    => $existingMeta['business_name_en'] ?? '',
+            'business_name_bn'    => $existingMeta['business_name_bn'] ?? '',
+            'vat_id'              => $existingMeta['vat_id'] ?? '',
+            'tax_id'              => $existingMeta['tax_id'] ?? '',
+            'paid_up_capital'     => $existingMeta['paid_up_capital'] ?? 0,
+            'business_address_id' => $existingMeta['business_address_id'] ?? null,
+            'license_fee'         => isset($post['license_fee']) && $post['license_fee'] !== '' ? (float)$post['license_fee'] : ($existingMeta['license_fee'] ?? null),
+            'vat_amount'          => isset($post['vat_amount']) && $post['vat_amount'] !== '' ? (float)$post['vat_amount'] : ($existingMeta['vat_amount'] ?? null),
+            'occupation_tax'      => isset($post['occupation_tax']) && $post['occupation_tax'] !== '' ? (float)$post['occupation_tax'] : ($existingMeta['occupation_tax'] ?? null),
+            'income_tax'          => isset($post['income_tax']) && $post['income_tax'] !== '' ? (float)$post['income_tax'] : ($existingMeta['income_tax'] ?? null),
+            'signboard_tax'       => isset($post['signboard_tax']) && $post['signboard_tax'] !== '' ? (float)$post['signboard_tax'] : ($existingMeta['signboard_tax'] ?? null),
+            'surcharge'           => isset($post['surcharge']) && $post['surcharge'] !== '' ? (float)$post['surcharge'] : ($existingMeta['surcharge'] ?? null),
+            'total_fee'           => isset($post['total_fee']) && $post['total_fee'] !== '' ? (float)$post['total_fee'] : ($existingMeta['total_fee'] ?? null),
+            'fiscal_year'         => $fiscal_year ?: ($existingMeta['fiscal_year'] ?? null),
+            'ownership_type_id'   => isset($post['ownership_type_id']) && $post['ownership_type_id'] !== '' ? (int)$post['ownership_type_id'] : ($existingMeta['ownership_type_id'] ?? null),
+            'business_type_id'    => isset($post['business_type_id']) && $post['business_type_id'] !== '' ? (int)$post['business_type_id'] : ($existingMeta['business_type_id'] ?? null),
+        ];
+
+        if ($fiscal_year) {
+            $parts = explode('-', $fiscal_year);
+            $businessMetaData['expiry_date'] = isset($parts[1])
+                ? trim($parts[1]) . '-06-30'
+                : null;
+        } elseif (!empty($existingMeta['expiry_date'])) {
+            $businessMetaData['expiry_date'] = $existingMeta['expiry_date'];
+        }
+
+        $result = $hasExistingMeta
+            ? $this->appManager->updateBusinessMeta($applicationId, $businessMetaData)
+            : $this->appManager->insertBusinessMeta($applicationId, $businessMetaData);
+
+        $status = is_array($result) ? ($result['status'] ?? false) : (bool)$result;
+
+        if (!$status) {
+            $msg = is_array($result) ? ($result['message'] ?? 'Update failed') : 'Update failed';
+            return ['status' => 'error', 'message' => $msg];
+        }
+
+        // 🔒 Also update business_type table fees so future applications auto-fill
+        $businessTypeId = $businessMetaData['business_type_id'] ?? null;
+        if ($businessTypeId) {
+            require_once __DIR__ . '/../../models/BusinessOwnershipType.php';
+            $bot = new \BusinessOwnershipType($this->mysqli);
+            $btData = [
+                'business_name_bn'  => $existingMeta['business_name_bn'] ?? '',
+                'business_name_en'  => $existingMeta['business_name_en'] ?? '',
+                'license_fee'       => $businessMetaData['license_fee'] ?? 0,
+                'vat_amount'        => $businessMetaData['vat_amount'] ?? 0,
+                'occupation_tax'    => $businessMetaData['occupation_tax'] ?? 0,
+                'income_tax'        => $businessMetaData['income_tax'] ?? 0,
+                'signboard_tax'     => $businessMetaData['signboard_tax'] ?? 0,
+                'surcharge'         => $businessMetaData['surcharge'] ?? 0,
+                'union_id'          => $unionId ?? 0,
+            ];
+            $bot->updateBusinessType((int)$businessTypeId, $btData);
+        }
+
+        return ['status' => 'success', 'message' => 'ফি তথ্য সফলভাবে হালনাগাদ হয়েছে।'];
+    }
+
     public function prepareApprovalPageData(string $applicationId, ?int $unionId, ?string $certificateType = null, ?string $certificateTypeBn = null): array
     {
         $application = $this->getFullApplicationData($applicationId, $unionId, true);

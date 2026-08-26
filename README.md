@@ -19,7 +19,7 @@
 - ✅ **Document Management** - Upload and verify supporting documents
 
 ### Recent Enhancements (July 2026)
-- 🆕 Refactored `ApplicationController` / `ApplicationControllerV2` and `GeoController`
+- 🆕 Refactored `ApplicationController` and `GeoController`
 - 🆕 New `ApplicationService` and `DashboardService` layers
 - 🆕 Certificate template refactor: Bangla/English per-group layouts, shared certificate paragraph partials
 - 🆕 PDF generation updates with corrected certificate templates
@@ -220,7 +220,7 @@ Contributions are welcome! Please follow these steps:
 - ✅ Certificate template refactor with Bangla/English group layouts
 - ✅ New service layer (`ApplicationService`, `DashboardService`)
 - ✅ PDF generation improvements
-- ✅ Controller cleanup (`GeoController`, `ApplicationControllerV2`)
+- ✅ Controller cleanup (`GeoController`, `ApplicationController`)
 - ✅ Asset updates (`bg.svg`, `bg_hd.png`) and tightened error handling
 
 ### Version 1.0.0 (April 2026)

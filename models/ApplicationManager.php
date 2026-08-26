@@ -425,6 +425,9 @@ class ApplicationManager
 
     public function createApplication($data)
     {
+        // Normalize birth_date to MySQL DATE format (accepts DD-MM-YYYY, YYYY-MM-DD, etc.)
+        $data['birth_date'] = normalizeDateToMysql($data['birth_date'] ?? '');
+
         $stmt = $this->conn->prepare("INSERT INTO applications (
             application_id, applicant_id, certificate_type, union_id, sonod_number, name_en, name_bn, nid, birth_id, passport_no, birth_date,
             gender, father_name_en, father_name_bn, mother_name_en, mother_name_bn, occupation, resident, educational_qualification,
@@ -485,13 +488,11 @@ class ApplicationManager
             'status' => 'success',
             'application_id' => $data['application_id'] // OR: $this->conn->insert_id
         ];
-    }
-
-
-
-
-    public function addMember($data)
+    }    public function addMember($data)
     {
+        // Normalize birth_date to MySQL DATE format (accepts DD-MM-YYYY, YYYY-MM-DD, etc.)
+        $data['birth_date'] = normalizeDateToMysql($data['birth_date'] ?? '');
+
         $stmt = $this->conn->prepare("INSERT INTO application_members (
             application_id, certificate_type, name_en, name_bn, relation_en, relation_bn, birth_date,
             nid, gender, occupation, mobile, serial_no, address, marital_status, is_dead
@@ -552,10 +553,10 @@ class ApplicationManager
 
         $business_name_en    = $data['business_name_en'] ?? '';
         $business_name_bn    = $data['business_name_bn'] ?? '';
-        $ownership_type_id   = $data['ownership_type_id'] ?? null;
+        $ownership_type_id   = (int)($data['ownership_type_id'] ?? 0);
         $vat_id              = $data['vat_id'] ?? '';
         $tax_id              = $data['tax_id'] ?? '';
-        $business_type_id    = $data['business_type_id'] ?? null;
+        $business_type_id    = (int)($data['business_type_id'] ?? 0);
         $paid_up_capital     = $data['paid_up_capital'] ?? 0;
         $license_fee         = $data['license_fee'] ?? 0;
         $vat_amount          = $data['vat_amount'] ?? 0;
@@ -564,7 +565,7 @@ class ApplicationManager
         $signboard_tax       = $data['signboard_tax'] ?? 0;
         $surcharge           = $data['surcharge'] ?? 0;
         $total_fee           = $data['total_fee'] ?? 0;
-        $business_address_id = $data['business_address_id'] ?? null;
+        $business_address_id = (int)($data['business_address_id'] ?? 0);
         $expiry_date         = $data['expiry_date'] ?? null; // optional
 
         $stmt->bind_param(
@@ -633,7 +634,7 @@ class ApplicationManager
         $vat_id             = $data['vat_id'] ?? '';
         $tax_id             = $data['tax_id'] ?? '';
         $paid_up_capital    = $data['paid_up_capital'] ?? 0;
-        $business_address_id = $data['business_address_id'] ?? null;
+        $business_address_id = (int)($data['business_address_id'] ?? 0);
         $license_fee       = $data['license_fee'] ?? 0;
         $vat_amount        = $data['vat_amount'] ?? 0;
         $occupation_tax    = $data['occupation_tax'] ?? 0;
@@ -642,8 +643,8 @@ class ApplicationManager
         $surcharge         = $data['surcharge'] ?? 0;
         $total_fee         = $data['total_fee'] ?? 0;
         $fiscal_year       = $data['fiscal_year'] ?? '';
-        $ownership_type_id  = $data['ownership_type_id'] ?? null;
-        $business_type_id  = $data['business_type_id'] ?? null;
+        $ownership_type_id  = (int)($data['ownership_type_id'] ?? 0);
+        $business_type_id  = (int)($data['business_type_id'] ?? 0);
         $expiry_date       = $data['expiry_date'] ?? null;
 
         $stmt->bind_param(
@@ -731,10 +732,10 @@ class ApplicationManager
 
     public function getMembersByApplication($application_id)
     {
-        global $mysqli;
-        $stmt = $mysqli->prepare(
+        $stmt = $this->conn->prepare(
             "SELECT * FROM application_members WHERE application_id = ? ORDER BY serial_no ASC"
         );
+        if (!$stmt) return [];
         $stmt->bind_param("s", $application_id);
         $stmt->execute();
         return $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
@@ -743,8 +744,7 @@ class ApplicationManager
 
     public function deleteMembersByApplication($application_id)
     {
-        global $mysqli;
-        $stmt = $mysqli->prepare("DELETE FROM application_members WHERE application_id = ?");
+        $stmt = $this->conn->prepare("DELETE FROM application_members WHERE application_id = ?");
         if (!$stmt) {
             return false; // preparation failed
         }
@@ -758,8 +758,8 @@ class ApplicationManager
 
     public function deleteMember($member_id)
     {
-        global $mysqli;
-        $stmt = $mysqli->prepare("DELETE FROM application_members WHERE id = ?");
+        $stmt = $this->conn->prepare("DELETE FROM application_members WHERE id = ?");
+        if (!$stmt) return false;
         $stmt->bind_param("i", $member_id);
         return $stmt->execute();
     }
@@ -792,8 +792,9 @@ class ApplicationManager
         $name_bn    = $data['name_bn'] ?? '';
         $nid        = $data['nid'] ?? '';
         $birth_id   = $data['birth_id'] ?? '';
-        $passport_no = $data['passport_no'] ?? '';
-        $birth_date = $data['birth_date'] ?? '';
+        $passport_no = $data['passport_no'] ?? '';        $birth_date = $data['birth_date'] ?? '';
+        // Normalize birth_date to MySQL DATE format (accepts DD-MM-YYYY, YYYY-MM-DD, etc.)
+        $birth_date = normalizeDateToMysql($birth_date);
         $gender     = $data['gender'] ?? '';
         $father_name_en = $data['father_name_en'] ?? '';
         $father_name_bn = $data['father_name_bn'] ?? '';
@@ -1036,8 +1037,8 @@ class ApplicationManager
 
     public function getApprovalByApplicationId($application_id)
     {
-        global $mysqli;
-        $stmt = $mysqli->prepare("SELECT * FROM application_approvals WHERE application_id = ?");
+        $stmt = $this->conn->prepare("SELECT * FROM application_approvals WHERE application_id = ?");
+        if (!$stmt) return null;
         $stmt->bind_param("s", $application_id);
         $stmt->execute();
         $result = $stmt->get_result();
@@ -1414,8 +1415,28 @@ class ApplicationManager
 
     public function updateSonodStatus($application_id, $union_id, $sonod_number, $status)
     {
-        $stmt = $this->conn->prepare("UPDATE applications SET sonod_number = ?, status = ? WHERE application_id = ? AND union_id = ?");
-        $stmt->bind_param("sssi", $sonod_number, $status, $application_id, $union_id);
+        // 🔒 Validate sonod_number is exactly 17 digits
+        $digitsOnly = preg_replace('/\D/', '', (string)$sonod_number);
+        if (strlen($digitsOnly) !== 17) {
+            throw new \InvalidArgumentException("Sonod number must be exactly 17 digits. Got: {$digitsOnly} (" . strlen($digitsOnly) . " digits)");
+        }
+        $sonod_number = $digitsOnly;
+
+        $sql = "UPDATE applications SET sonod_number = ?, status = ? WHERE application_id = ?";
+        $params = [$sonod_number, $status, $application_id];
+        $types = 'sss';
+
+        if ($union_id !== null) {
+            $sql .= " AND union_id = ?";
+            $params[] = $union_id;
+            $types .= 'i';
+        }
+
+        $stmt = $this->conn->prepare($sql);
+        if (!$stmt) {
+            return false;
+        }
+        $stmt->bind_param($types, ...$params);
         $success = $stmt->execute();
         $stmt->close();
         return $success;
@@ -1424,13 +1445,12 @@ class ApplicationManager
 
     public function getApplicationsByApplicantId($applicant_id, $offset = 0, $limit = 10)
     {
-        global $mysqli;
-        $unionModel = new UnionModel($mysqli);
+        $unionModel = new UnionModel($this->conn);
         $selectFields = self::getSelectFields();
         $joins = self::getJoinStatements();
 
         // ডেটা আনা
-        $stmt = $mysqli->prepare("
+        $stmt = $this->conn->prepare("
             SELECT $selectFields 
             FROM applications a 
             $joins 
@@ -1453,7 +1473,7 @@ class ApplicationManager
         }
 
         // মোট রেকর্ড সংখ্যা
-        $countStmt = $mysqli->prepare("
+        $countStmt = $this->conn->prepare("
             SELECT COUNT(*) AS total 
             FROM applications a 
             $joins 

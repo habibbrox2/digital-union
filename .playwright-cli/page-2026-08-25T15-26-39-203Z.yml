@@ -1,0 +1,59 @@
+- generic [active] [ref=f1e1]:
+  - paragraph [ref=f1e4]: লোড হচ্ছে...
+  - generic [ref=f1e6]:
+    - banner [ref=f1e7]:
+      - link [ref=f1e9] [cursor=pointer]:
+        - /url: https://lgdhaka.co
+        - img "Logo" [ref=f1e10]
+      - heading "স্মার্ট ইউপি, ঢাকা" [level=3] [ref=f1e12]
+      - link "লগইন" [ref=f1e14] [cursor=pointer]:
+        - /url: /login
+    - generic [ref=f1e17]:
+      - generic [ref=f1e18]: 
+      - heading "৪০৪" [level=2] [ref=f1e20]
+      - heading "পৃষ্ঠা পাওয়া যায়নি" [level=3] [ref=f1e21]
+      - paragraph [ref=f1e22]: আপনি যে পৃষ্ঠাটি খুঁজছেন সেটি বিদ্যমান নয়।
+      - generic [ref=f1e23]:
+        - link " হোম পেইজে ফিরে যান" [ref=f1e24] [cursor=pointer]:
+          - /url: /
+          - generic [ref=f1e25]: 
+          - text: হোম পেইজে ফিরে যান
+        - button " পূর্ববর্তী পৃষ্ঠা" [ref=f1e26] [cursor=pointer]:
+          - generic [ref=f1e27]: 
+          - text: পূর্ববর্তী পৃষ্ঠা
+    - generic [ref=f1e30]:
+      - heading "মোবাইল অ্যাপ্লিকেশন" [level=4] [ref=f1e32]
+      - generic [ref=f1e33]:
+        - generic [ref=f1e35]:
+          - img "App Screen 1" [ref=f1e38]
+          - img "App Screen 2" [ref=f1e41]
+          - img "App Screen 3" [ref=f1e44]
+          - img "App Screen 4" [ref=f1e47]
+          - img "App Screen 5" [ref=f1e50]
+        - generic [ref=f1e52]:
+          - heading "ডাউনলোড করতে গুগল প্লেতে ক্লিক করুন" [level=5] [ref=f1e53]
+          - link [ref=f1e54] [cursor=pointer]:
+            - /url: https://play.google.com/store/apps/details?id=com.dhaka.smartUnion
+            - img "Google Play Store" [ref=f1e55]
+    - contentinfo [ref=f1e56]:
+      - generic [ref=f1e58]:
+        - generic [ref=f1e60]:
+          - img "Logo" [ref=f1e61]
+          - generic [ref=f1e62]:
+            - paragraph [ref=f1e63]: "পরিকল্পনা ও বাস্তবায়নে:"
+            - paragraph [ref=f1e64]: জেলা প্রশাসন, ঢাকা।
+        - generic [ref=f1e66]:
+          - img "Logo" [ref=f1e67]
+          - generic [ref=f1e68]:
+            - paragraph [ref=f1e69]: "ব্যবস্থাপনা ও তত্ত্বাবধানে:"
+            - paragraph [ref=f1e70]: জেলা প্রশাসন, ঢাকা।
+        - generic [ref=f1e72]:
+          - link [ref=f1e73] [cursor=pointer]:
+            - /url: http://innovationit.com.bd/
+            - img "Innovation IT" [ref=f1e74]
+          - generic [ref=f1e75]:
+            - paragraph [ref=f1e76]: "কারিগরি সহায়তায়:"
+            - paragraph [ref=f1e77]:
+              - link "ইনোভেশন আইটি" [ref=f1e78] [cursor=pointer]:
+                - /url: http://innovationit.com.bd/
+    - button "" [ref=f1e79] [cursor=pointer]

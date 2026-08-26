@@ -34,7 +34,7 @@
 </div>
 
 {# Passport & Birth Date #}
-{% set birth_date_required = (certificate_type|default('') != 'trade') %}
+{% set birth_date_required = (certificate_type|default('') not in ['trade', 'warish']) %}
 <div class="row align-items-center mb-3">
     <div class="{{ govt_label }}">
         <label for="passport_no" class="form-label mb-0">পাসপোর্ট নং</label>
@@ -46,7 +46,7 @@
         <label for="birth_date" class="form-label mb-0">জন্ম তারিখ {% if birth_date_required %}<span class="text-danger">*</span>{% else %}<span class="text-muted">(ঐচ্ছিক)</span>{% endif %}</label>
     </div>
     <div class="{{ govt_input }}">
-        <input type="text" name="birth_date" id="birth_date" class="form-control datepicker" placeholder="দিন-মাস-বছর"{% if birth_date_required %} required{% endif %} value="{{ data.birth_date ? data.birth_date|date('d-m-Y') : '' }}">
+        <input type="text" name="birth_date" id="birth_date" class="form-control datepicker" placeholder="দিন-মাস-বছর"{% if birth_date_required %} required{% endif %} value="{{ data.birth_date and data.birth_date != '0000-00-00' ? data.birth_date|date('d-m-Y') : '' }}">
     </div>
 </div>
 

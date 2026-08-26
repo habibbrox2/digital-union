@@ -612,7 +612,7 @@
                                     <td>{{ loop.index }}</td>
                                     <td>{{ member.name_bn ?: member.name_en ?: 'N/A' }}</td>
                                     <td>{{ member.relation_bn ?: member.relation_en ?: 'N/A' }}</td>
-                                    <td>{{ member.birth_date ?: 'N/A' }}</td>
+                                    <td>{{ member.birth_date and member.birth_date != '0000-00-00' ? member.birth_date|date('d-m-Y') : 'N/A' }}</td>
                                     <td>{{ member.nid ?: 'N/A' }}</td>
                                 </tr>
                                 {% endfor %}

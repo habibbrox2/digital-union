@@ -141,7 +141,7 @@
                 <tr>
                     <td style="padding-left: 50px; height: 25px;">
                         <font style="font-size:16px; padding-left:30px;">
-                         অত্র ইউনিয়নের স্থায়ী অধিবাসী ছিলেন। তিনি {{ (citizen.extra.death_date ?? (citizen.birth_date ?? '')) | date('d-m-Y') | bn }}
+                         অত্র ইউনিয়নের স্থায়ী অধিবাসী ছিলেন। তিনি {{ (citizen.extra.death_date ?? (citizen.birth_date ?? '')) | bn }}
 
  			তারিখে মৃত্যুবরণ করেন। মৃত্যুকালে তিনি নিম্নলিখিত ওয়ারিশগনকে রাখিয়া মৃত্যু বরণ করেন।</font>
                     </td>
@@ -164,7 +164,7 @@
                     <td style="text-align:center;font-size:13px;">{{ loop.index|bn }}</td>
                     <td style="text-align:center;font-size:14px;">{{ member.name_bn }}</td>
                     <td style="text-align:center;font-size:14px;">{{ member.relation_bn }}</td>
-                    <td style="text-align:center;font-size:14px;">{{ member.birth_date|bn }}</td>
+                    <td style="text-align:center;font-size:14px;">{{ member.birth_date and member.birth_date != '0000-00-00' ? member.birth_date|date('d-m-Y')|bn : 'N/A' }}</td>
                     <td style="text-align:center;font-size:14px;">{{ member.nid|bn }}</td>
                     <td style="text-align:center;font-size:14px;">{{ member.marital_status }}</td>
                     <td style="text-align:center;font-size:14px;">

@@ -1,0 +1,745 @@
+{# Approve Modal - Compact version for inline approval from application list #}
+{# This modal is populated via AJAX from /api/applications/{type}/approve-data/{id} #}
+
+<!-- Approve Modal -->
+<div class="modal fade" id="approveModal" tabindex="-1" aria-labelledby="approveModalLabel" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content approve-modal-content">
+            <div class="modal-header approve-modal-header">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="approve-modal-icon">
+                        <i class="bi bi-check-circle-fill"></i>
+                    </div>
+                    <div>
+                        <h5 class="modal-title fw-bold mb-0" id="approveModalLabel">অনুমোদন ফর্ম</h5>
+                        <small class="text-white-50" id="approveModalSubtitle">আবেদন তথ্য এবং অনুমোদন ফর্ম</small>
+                    </div>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body approve-modal-body">
+                <!-- Loading State -->
+                <div id="approveModalLoading" class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-3 text-muted">তথ্য লোড হচ্ছে...</p>
+                </div>
+
+                <!-- Content (hidden until data loads) -->
+                <div id="approveModalContent" style="display: none;">
+                    <!-- Status Badge -->
+                    <div class="text-center mb-3">
+                        <span class="badge rounded-pill px-3 py-1 fs-6" id="approveModalStatusBadge">—</span>
+                    </div>
+
+                    <!-- Applicant Quick Info -->
+                    <div class="approve-modal-applicant-info mb-4">
+                        <div class="row align-items-center">
+                            <div class="col-auto">
+                                <div class="position-relative">
+                                    <img id="approveModalPhoto" src="" alt="আবেদনকারীর ছবি" class="approve-modal-photo" onerror="this.src='/assets/images/default-user.png'">
+                                </div>
+                            </div>
+                            <div class="col">
+                                <div class="row g-2">
+                                    <div class="col-md-4">
+                                        <small class="text-muted d-block">নাম</small>
+                                        <strong id="approveModalName">—</strong>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <small class="text-muted d-block">নাম (ইংরেজি)</small>
+                                        <span id="approveModalNameEn">—</span>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <small class="text-muted d-block">পিতা</small>
+                                        <span id="approveModalFather">—</span>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <small class="text-muted d-block">মাতা</small>
+                                        <span id="approveModalMother">—</span>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <small class="text-muted d-block">পরিচয়পত্র</small>
+                                        <span id="approveModalNid">—</span>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <small class="text-muted d-block">জন্ম তারিখ</small>
+                                        <span id="approveModalBirthDate">—</span>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <small class="text-muted d-block">লিঙ্গ</small>
+                                        <span id="approveModalGender">—</span>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <small class="text-muted d-block">ধর্ম</small>
+                                        <span id="approveModalReligion">—</span>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <small class="text-muted d-block">বাসিন্দার ধরন</small>
+                                        <span id="approveModalResident">—</span>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <small class="text-muted d-block">শিক্ষাগত যোগ্যতা</small>
+                                        <span id="approveModalEducation">—</span>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <small class="text-muted d-block">পেশা</small>
+                                        <span id="approveModalOccupation">—</span>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <small class="text-muted d-block">বৈবাহিক অবস্থা</small>
+                                        <span id="approveModalMaritalStatus">—</span>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <small class="text-muted d-block">স্বামী/স্ত্রীর নাম</small>
+                                        <span id="approveModalSpouse">—</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Applicant Info Section -->
+                    <div class="approve-modal-fieldset mb-3 p-3" style="background:#f8f9fa;border-radius:10px;border:1px solid rgba(0,0,0,0.06);">
+                        <div class="row g-2 align-items-center">
+                            <div class="col-md-4">
+                                <small class="text-muted d-block">আবেদন আইডি</small>
+                                <strong id="approveModalAppId" class="text-primary">—</strong>
+                            </div>
+                            <div class="col-md-4">
+                                <small class="text-muted d-block">আবেদনকারীর নাম</small>
+                                <span id="approveModalApplicantName">—</span>
+                            </div>
+                            <div class="col-md-4">
+                                <small class="text-muted d-block">মোবাইল নম্বর</small>
+                                <span id="approveModalPhone">—</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Address Info -->
+                    <div class="mb-3">
+                        <div class="mb-2">
+                            <h6 class="fw-semibold text-secondary mb-2"><i class="bi bi-geo-alt me-1"></i> বর্তমান ঠিকানা</h6>
+                            <div class="address-display">
+                                <div class="address-line">
+                                    <span class="address-tag">বাড়ি</span><span class="address-sep">:</span><span class="address-val" id="addrPresentHolding">—</span>
+                                    <span class="address-divider">|</span>
+                                    <span class="address-tag">গ্রাম</span><span class="address-sep">:</span><span class="address-val" id="addrPresentVillage">—</span>
+                                    <span class="address-divider">|</span>
+                                    <span class="address-tag">ওয়ার্ড</span><span class="address-sep">:</span><span class="address-val" id="addrPresentWard">—</span>
+                                </div>
+                                <div class="address-line mt-2">
+                                    <span class="address-tag">পোস্ট অফিস</span><span class="address-sep">:</span><span class="address-val" id="addrPresentPost">—</span>
+                                    <span class="address-divider">|</span>
+                                    <span class="address-tag">ইউনিয়ন</span><span class="address-sep">:</span><span class="address-val" id="addrPresentUnion">—</span>
+                                    <span class="address-divider">|</span>
+                                    <span class="address-tag">উপজেলা</span><span class="address-sep">:</span><span class="address-val" id="addrPresentUpazila">—</span>
+                                    <span class="address-divider">|</span>
+                                    <span class="address-tag">জেলা</span><span class="address-sep">:</span><span class="address-val" id="addrPresentDistrict">—</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <h6 class="fw-semibold text-secondary mb-2"><i class="bi bi-house me-1"></i> স্থায়ী ঠিকানা</h6>
+                            <div class="address-display">
+                                <div class="address-line">
+                                    <span class="address-tag">বাড়ি</span><span class="address-sep">:</span><span class="address-val" id="addrPermanentHolding">—</span>
+                                    <span class="address-divider">|</span>
+                                    <span class="address-tag">গ্রাম</span><span class="address-sep">:</span><span class="address-val" id="addrPermanentVillage">—</span>
+                                    <span class="address-divider">|</span>
+                                    <span class="address-tag">ওয়ার্ড</span><span class="address-sep">:</span><span class="address-val" id="addrPermanentWard">—</span>
+                                </div>
+                                <div class="address-line mt-2">
+                                    <span class="address-tag">পোস্ট অফিস</span><span class="address-sep">:</span><span class="address-val" id="addrPermanentPost">—</span>
+                                    <span class="address-divider">|</span>
+                                    <span class="address-tag">ইউনিয়ন</span><span class="address-sep">:</span><span class="address-val" id="addrPermanentUnion">—</span>
+                                    <span class="address-divider">|</span>
+                                    <span class="address-tag">উপজেলা</span><span class="address-sep">:</span><span class="address-val" id="addrPermanentUpazila">—</span>
+                                    <span class="address-divider">|</span>
+                                    <span class="address-tag">জেলা</span><span class="address-sep">:</span><span class="address-val" id="addrPermanentDistrict">—</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Certificate-Specific Fields -->
+                    <div id="modalCertificateFields" class="mb-3" style="display: none;">
+                        <fieldset class="approve-modal-fieldset">
+                            <legend id="modalCertFieldsLegend"><i class="bi bi-file-earmark-text me-1"></i> সনদের বিশেষ তথ্য</legend>
+                            <div id="modalCertFieldsBody">
+                                <p class="text-muted fst-italic">এই সার্টিফিকেটের অতিরিক্ত তথ্য পাওয়া যায়নি।</p>
+                            </div>
+                        </fieldset>
+                    </div>
+
+                    <!-- Documents (collapsible) -->
+                    <div class="accordion mb-3" id="approveModalDocsAccordion">
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#approveModalDocuments" aria-expanded="false">
+                                    <i class="bi bi-file-earmark me-2"></i> ডকুমেন্ট <span class="badge bg-primary rounded-pill ms-2" id="approveModalDocCount">0</span>
+                                </button>
+                            </h2>
+                            <div id="approveModalDocuments" class="accordion-collapse collapse" data-bs-parent="#approveModalDocsAccordion">
+                                <div class="accordion-body" id="approveModalDocsBody">—</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <!-- Approval Form -->
+                    <form id="approveModalForm" method="POST" class="mb-3">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                        <input type="hidden" id="modal_certificate_type" name="certificate_type" value="">
+                        <input type="hidden" id="modal_application_id" name="application_id" value="">
+
+                        <!-- Verifier Section -->
+                        <fieldset class="approve-modal-fieldset">
+                            <legend><i class="bi bi-person-check me-1"></i> তথ্য যাচাইকারী</legend>
+                            <div class="row g-2">
+                                <div class="col-md-4">
+                                    <label class="form-label small fw-semibold">যাচাইকারী নির্বাচন</label>
+                                    <select id="modal_verifier_select" class="form-select form-select-sm">
+                                        <option value="">-- নির্বাচন করুন --</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label small fw-semibold">নাম (বাংলা) <span class="text-danger">*</span></label>
+                                    <input type="text" id="modal_verifier_name_bn" name="verifier_name_bn" class="form-control form-control-sm" required>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label small fw-semibold">নাম (ইংরেজি)</label>
+                                    <input type="text" id="modal_verifier_name_en" name="verifier_name_en" class="form-control form-control-sm">
+                                </div>
+                            </div>
+                            <input type="hidden" id="modal_verifier_id" name="verifier_id" value="">
+                            <input type="hidden" id="modal_verifier_ward_no" name="verifier_ward_no" value="">
+                            <div class="row g-2 mt-2">
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-semibold">যাচাই তারিখ <span class="text-danger">*</span></label>
+                                    <input type="text" id="modal_verification_date" name="verification_date" class="form-control form-control-sm datepicker" value="{{ "now"|date("d-m-Y") }}" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-semibold">মন্তব্য</label>
+                                    <textarea id="modal_verification_note" name="verification_note" class="form-control form-control-sm" rows="1">সফলভাবে যাচাই করা হয়েছে।</textarea>
+                                </div>
+                            </div>
+                        </fieldset>
+
+                        <!-- Approver Section -->
+                        <fieldset class="approve-modal-fieldset">
+                            <legend><i class="bi bi-person-check-fill me-1"></i> অনুমোদনকারী</legend>
+                            <div class="row g-2">
+                                <div class="col-md-4">
+                                    <label class="form-label small fw-semibold">অনুমোদনকারী নির্বাচন</label>
+                                    <select id="modal_approver_select" class="form-select form-select-sm">
+                                        <option value="">-- নির্বাচন করুন --</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label small fw-semibold">নাম (বাংলা) <span class="text-danger">*</span></label>
+                                    <input type="text" id="modal_approver_name_bn" name="approver_name_bn" class="form-control form-control-sm" required>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label small fw-semibold">নাম (ইংরেজি)</label>
+                                    <input type="text" id="modal_approver_name_en" name="approver_name_en" class="form-control form-control-sm">
+                                </div>
+                            </div>
+                            <input type="hidden" id="modal_approver_id" name="approver_id" value="">
+                            <input type="hidden" id="modal_approver_ward_no" name="approver_ward_no" value="">
+                            <div class="row g-2 mt-2">
+                                <div class="col-md-4">
+                                    <label class="form-label small fw-semibold">অনুমোদনের তারিখ <span class="text-danger">*</span></label>
+                                    <input type="text" id="modal_approval_date" name="approval_date" class="form-control form-control-sm datepicker" value="{{ "now"|date("d-m-Y") }}" required>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label small fw-semibold">ইস্যু সময় <span class="text-danger">*</span></label>
+                                    <input type="time" id="modal_issue_time" name="issue_time" step="1" class="form-control form-control-sm" value="{{ "now"|date("H:i:s") }}" required>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label small fw-semibold">মন্তব্য</label>
+                                    <textarea id="modal_approval_note" name="approval_note" class="form-control form-control-sm" rows="1">আবেদনটি অনুমোদিত হলো।</textarea>
+                                </div>
+                            </div>
+                        </fieldset>
+
+                        <!-- License Number (trade only, hidden by default) -->
+                        <div id="modalLicenseSection" style="display: none;">
+                            <fieldset class="approve-modal-fieldset">
+                                <legend><i class="bi bi-passport me-1"></i> লাইসেন্স নম্বর</legend>
+                                <div class="row align-items-center mb-3 gx-4 gy-3">
+                                    <div class="col-lg-3 col-md-4 col-12">
+                                        <label class="form-label mb-0 fw-bold small">লাইসেন্স নম্বর: <span class="text-danger">*</span>
+                                            <span id="modal_license_status_icon" class="ms-2"></span>
+                                        </label>
+                                    </div>
+                                    <div class="col-lg-7 col-md-6 col-12">
+                                        <div class="input-group">
+                                            <input type="text" class="form-control form-control-sm" id="modal_license_number" name="license_number" placeholder="লাইসেন্স নম্বর লিখুন" maxlength="17" inputmode="numeric" pattern="[0-9]*" autocomplete="off" required aria-describedby="modalLicenseDigitCount modal_license_availability_msg">
+                                            <span class="input-group-text bg-light small fw-semibold" id="modal_license_status_text"></span>
+                                        </div>
+                                        <small id="modalLicenseDigitCount" class="form-text text-danger">সংখ্যা: 0/17</small>
+                                        <small id="modal_license_availability_msg" class="form-text"></small>
+                                    </div>
+                                    <div class="col-lg-2 col-md-2 col-12 d-flex align-items-end">
+                                        <button type="button" id="modalFixSonodBtn" class="btn btn-outline-dark btn-sm w-100" title="Fix Sonod number & status">
+                                            <i class="bi bi-tools me-1"></i> Fix Sonod
+                                        </button>
+                                    </div>
+                                </div>
+                            </fieldset>
+                        </div>
+
+                        <!-- Trade Extra Fields (hidden by default) -->
+                        <div id="modalTradeFields" style="display: none;">
+                            <fieldset class="approve-modal-fieldset">
+                                <legend><i class="bi bi-shop me-1"></i> সনদের অর্থবছর ও ধরণ</legend>
+                                <div class="row align-items-center mb-3 gx-4 gy-3">
+                                    <div class="col-lg-2 col-md-3 col-12">
+                                        <label class="form-label mb-0 fw-bold small">সনদের অর্থবছর <span class="text-danger">*</span></label>
+                                    </div>
+                                    <div class="col-lg-4 col-md-3 col-12">
+                                        <select id="modal_fiscal_year" name="fiscal_year" class="form-select form-select-sm">
+                                            <option value="" selected disabled>অর্থবছর নির্বাচন করুন</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-lg-2 col-md-3 col-12">
+                                        <label class="form-label mb-0 fw-bold small">মালিকানার ধরণ <span class="text-danger">*</span></label>
+                                    </div>
+                                    <div class="col-lg-4 col-md-3 col-12">
+                                        <select id="modal_ownership_type_id" name="ownership_type_id" class="form-select form-select-sm">
+                                            <option value="" selected>মালিকানার ধরণ নির্বাচন করুন</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="row align-items-center mb-3 gx-4 gy-3">
+                                    <div class="col-lg-2 col-md-3 col-12">
+                                        <label class="form-label mb-0 fw-bold small">ব্যবসার ধরণ <span class="text-danger">*</span></label>
+                                    </div>
+                                    <div class="col-lg-8 col-md-6 col-12">
+                                        <select id="modal_business_type_id" name="business_type_id" class="form-select form-select-sm">
+                                            <option value="" selected>ব্যবসার ধরণ নির্বাচন করুন</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </fieldset>
+
+                            <fieldset class="approve-modal-fieldset">
+                                <legend><i class="bi bi-receipt me-1"></i> ট্রেড লাইসেন্স ফি তথ্য</legend>
+                                <div class="row align-items-center mb-3 gx-4 gy-3">
+                                    <div class="col-lg-2 col-md-3 col-12">
+                                        <label class="form-label mb-0 fw-bold small">লাইসেন্স ফি (টাকা) <span class="text-danger">*</span></label>
+                                    </div>
+                                    <div class="col-lg-4 col-md-3 col-12">
+                                        <input type="number" class="form-control form-control-sm" id="modal_license_fee" name="license_fee" placeholder="লাইসেন্স ফি লিখুন" min="0" step="0.01">
+                                    </div>
+                                    <div class="col-lg-2 col-md-3 col-12">
+                                        <label class="form-label mb-0 fw-bold small">ভ্যাট পরিমাণ (১৫%) <span class="text-danger">*</span></label>
+                                    </div>
+                                    <div class="col-lg-4 col-md-3 col-12">
+                                        <input type="number" class="form-control form-control-sm" id="modal_vat_amount" name="vat_amount" placeholder="ভ্যাট পরিমাণ লিখুন" min="0" step="0.01">
+                                    </div>
+                                </div>
+                                <div class="row align-items-center mb-3 gx-4 gy-3">
+                                    <div class="col-lg-2 col-md-3 col-12">
+                                        <label class="form-label mb-0 fw-bold small">পেশা কর (টাকা) <span class="text-danger">*</span></label>
+                                    </div>
+                                    <div class="col-lg-4 col-md-3 col-12">
+                                        <input type="number" class="form-control form-control-sm" id="modal_occupation_tax" name="occupation_tax" placeholder="পেশা কর লিখুন" min="0" step="0.01">
+                                    </div>
+                                    <div class="col-lg-2 col-md-3 col-12">
+                                        <label class="form-label mb-0 fw-bold small">আয়কর / উৎসে কর</label>
+                                    </div>
+                                    <div class="col-lg-4 col-md-3 col-12">
+                                        <input type="number" class="form-control form-control-sm" id="modal_income_tax" name="income_tax" placeholder="আয়কর লিখুন" min="0" step="0.01">
+                                    </div>
+                                </div>
+                                <div class="row align-items-center mb-3 gx-4 gy-3">
+                                    <div class="col-lg-2 col-md-3 col-12">
+                                        <label class="form-label mb-0 fw-bold small">সাইনবোর্ড কর</label>
+                                    </div>
+                                    <div class="col-lg-4 col-md-3 col-12">
+                                        <input type="number" class="form-control form-control-sm" id="modal_signboard_tax" name="signboard_tax" placeholder="সাইনবোর্ড কর লিখুন" min="0" step="0.01">
+                                    </div>
+                                    <div class="col-lg-2 col-md-3 col-12">
+                                        <label class="form-label mb-0 fw-bold small">সারচার্জ</label>
+                                    </div>
+                                    <div class="col-lg-4 col-md-3 col-12">
+                                        <input type="number" class="form-control form-control-sm" id="modal_surcharge" name="surcharge" placeholder="সারচার্জ লিখুন" min="0" step="0.01">
+                                    </div>
+                                </div>
+                                <div class="row align-items-center mb-3 gx-4 gy-3">
+                                    <div class="col-lg-2 col-md-3 col-12">
+                                        <label class="form-label mb-0 fw-bold small">মোট ফি (টাকা)</label>
+                                    </div>
+                                    <div class="col-lg-8 col-md-6 col-12">
+                                        <div class="input-group">
+                                            <input type="number" class="form-control form-control-sm bg-light fw-bold" id="modal_total_fee" name="total_fee" placeholder="মোট ফি" readonly>
+                                            <span class="input-group-text bg-light"><i class="bi bi-lock"></i></span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </fieldset>
+                        </div>
+
+                        <!-- Certificate Fee Section -->
+                        <fieldset class="approve-modal-fieldset">
+                            <legend><i class="bi bi-cash me-1"></i> সনদ ফি তথ্য</legend>
+                            <div class="row g-2">
+                                <div class="col-md-4">
+                                    <label class="form-label small fw-semibold">সনদের ফি (টাকা) <span class="text-danger">*</span></label>
+                                    <input type="number" id="modal_certificate_fee" name="certificate_fee" class="form-control form-control-sm" min="0" step="0.01" required>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label small fw-semibold">পরিশোধের মাধ্যম <span class="text-danger">*</span></label>
+                                    <select id="modal_payment_method" name="payment_method" class="form-select form-select-sm" required>
+                                        <option value="Cash">💵 ক্যাশ</option>
+                                        <option value="Bkash">📱 বিকাশ</option>
+                                        <option value="Nagad">📱 নগদ</option>
+                                        <option value="Rocket">📱 রকেট</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label small fw-semibold">পরিশোধের অবস্থা <span class="text-danger">*</span></label>
+                                    <select id="modal_payment_status" name="payment_status" class="form-select form-select-sm" required>
+                                        <option value="Paid">✅ পরিশোধিত</option>
+                                        <option value="Unpaid" selected>⏳ অপরিশোধিত</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </fieldset>
+
+                        <!-- Action Buttons -->
+                        <div class="d-flex flex-wrap gap-2 justify-content-center mt-4 pt-3 border-top">
+                            <button type="submit" id="modalApproveBtn" class="btn btn-success btn-lg px-4">
+                                <i class="bi bi-check-circle me-2"></i> অনুমোদন করুন
+                            </button>
+                            <button type="button" id="modalRejectBtn" class="btn btn-danger btn-lg px-4">
+                                <i class="bi bi-x-circle me-2"></i> বাতিল করুন
+                            </button>
+                            <button type="button" id="modalOnHoldBtn" class="btn btn-secondary btn-lg px-4">
+                                <i class="bi bi-pause-circle me-2"></i> অন-হোল্ড
+                            </button>
+                            <a id="modalViewLink" href="#" target="_blank" class="btn btn-primary btn-lg px-4">
+                                <i class="bi bi-files me-2"></i> আবেদন কপি
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ============================================================
+     APPROVED MODAL - Shows after successful approval with certificate links
+     ============================================================ -->
+<div class="modal fade" id="approvedModal" tabindex="-1" aria-labelledby="approvedModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content modal-approved-content">
+            <div class="modal-header bg-success text-white border-0">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="modal-success-icon">
+                        <i class="bi bi-check-circle-fill fs-2"></i>
+                    </div>
+                    <div>
+                        <h5 class="modal-title fw-bold" id="approvedModalLabel">আবেদন অনুমোদিত</h5>
+                        <p class="mb-0 small text-white-50" id="approvedModalSubtitle">আবেদনটি সফলভাবে অনুমোদিত হয়েছে</p>
+                    </div>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Success Animation -->
+                <div class="text-center mb-4">
+                    <div class="success-checkmark">
+                        <div class="check-icon">
+                            <span class="icon-line line-tip"></span>
+                            <span class="icon-line line-long"></span>
+                            <div class="icon-circle"></div>
+                            <div class="icon-fix"></div>
+                        </div>
+                    </div>
+                    <h5 class="fw-bold text-success mt-3" id="approvedModalCongrats">অভিনন্দন!</h5>
+                    <p class="text-muted mb-3" id="approvedModalBodyText">আপনার আবেদন সফলভাবে অনুমোদিত হয়েছে। নিচের তথ্য ও অপশনগুলো দেখুন।</p>
+                </div>
+
+                <div class="modal-info-grid">
+                    <div class="modal-info-item">
+                        <div class="modal-info-icon bg-primary-subtle">
+                            <i class="bi bi-upc-scan text-primary"></i>
+                        </div>
+                        <div>
+                            <span class="modal-info-label">ট্র্যাকিং নম্বর</span>
+                            <span class="modal-info-value" id="approved_application_id">—</span>
+                        </div>
+                    </div>
+                    <div class="modal-info-item">
+                        <div class="modal-info-icon bg-info-subtle">
+                            <i class="bi bi-qr-code text-info"></i>
+                        </div>
+                        <div>
+                            <span class="modal-info-label">ইউনিয়ন কোড</span>
+                            <span class="modal-info-value" id="approved_union_code">—</span>
+                        </div>
+                    </div>
+                    <div class="modal-info-item">
+                        <div class="modal-info-icon bg-secondary-subtle">
+                            <i class="bi bi-code-square text-secondary"></i>
+                        </div>
+                        <div>
+                            <span class="modal-info-label">RMO কোড</span>
+                            <span class="modal-info-value" id="approved_rmo_code">—</span>
+                        </div>
+                    </div>
+                    <div class="modal-info-item">
+                        <div class="modal-info-icon bg-warning-subtle">
+                            <i class="bi bi-file-earmark-text text-warning"></i>
+                        </div>
+                        <div>
+                            <span class="modal-info-label">আবেদনের ধরন</span>
+                            <span class="modal-info-value" id="approved_certificate_type">—</span>
+                        </div>
+                    </div>
+                    <div class="modal-info-item modal-info-item-full">
+                        <div class="modal-info-icon bg-success-subtle">
+                            <i class="bi bi-passport text-success"></i>
+                        </div>
+                        <div>
+                            <span class="modal-info-label">লাইসেন্স/সনদ নং</span>
+                            <span class="modal-info-value fw-bold fs-5 text-success" id="approved_license_number">—</span>
+                        </div>
+                    </div>
+                </div>
+
+                <hr class="my-3">
+
+                <div class="modal-actions-grid">
+                    <a id="approved_download_link" class="modal-action-btn btn-download" href="#" target="_blank">
+                        <i class="bi bi-download"></i>
+                        <span>আবেদন কপি</span>
+                    </a>
+                    <a id="approved_certificate_link" class="modal-action-btn btn-certificate" href="#" target="_blank">
+                        <i class="bi bi-file-earmark-pdf"></i>
+                        <span>সার্টিফিকেট (বাংলা)</span>
+                    </a>
+                    <a id="approved_certificate_en_link" class="modal-action-btn btn-certificate-en" href="#" target="_blank">
+                        <i class="bi bi-file-earmark-pdf"></i>
+                        <span>Certificate (English)</span>
+                    </a>
+                    <a id="approved_view_link" class="modal-action-btn btn-view" href="#" target="_blank">
+                        <i class="bi bi-eye"></i>
+                        <span>আবেদন দেখুন</span>
+                    </a>
+                    <button type="button" id="approved_new_btn" class="modal-action-btn btn-new">
+                        <i class="bi bi-plus-circle"></i>
+                        <span>নতুন আবেদন</span>
+                    </button>
+                    <button type="button" class="modal-action-btn btn-close-action" data-bs-dismiss="modal">
+                        <i class="bi bi-x-lg"></i>
+                        <span>বন্ধ করুন</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .approve-modal-content {
+        border: none;
+        border-radius: 16px;
+        overflow: hidden;
+    }
+    .approve-modal-header {
+        background: linear-gradient(135deg, #008B8B 0%, #006666 100%);
+        color: #fff;
+        border-bottom: none;
+        padding: 1rem 1.5rem;
+    }
+    .approve-modal-header .btn-close {
+        filter: brightness(0) invert(1);
+    }
+    .approve-modal-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: rgba(255,255,255,0.2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.3rem;
+    }
+    .approve-modal-body {
+        padding: 1.25rem;
+    }
+    .approve-modal-photo {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 3px solid #fff;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+    }
+    .approve-modal-applicant-info {
+        background: #f8f9fa;
+        border-radius: 12px;
+        padding: 1rem;
+        border: 1px solid rgba(0,0,0,0.05);
+    }
+    .approve-modal-fieldset {
+        border: 1px solid #e9ecef;
+        border-radius: 10px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        background: #fafbfc;
+    }
+    .approve-modal-fieldset legend {
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: #495057;
+        width: auto;
+        padding: 0 0.5rem;
+        margin-left: 0.5rem;
+    }
+
+    /* ===== Approved Modal Styles ===== */
+    .modal-approved-content {
+        border: none;
+        border-radius: 20px;
+        overflow: hidden;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+    }
+    .modal-success-icon {
+        animation: successBounce 0.6s ease;
+    }
+    @keyframes successBounce {
+        0% { transform: scale(0); }
+        50% { transform: scale(1.2); }
+        100% { transform: scale(1); }
+    }
+    .success-checkmark {
+        width: 80px;
+        height: 80px;
+        margin: 0 auto;
+    }
+    .check-icon {
+        width: 80px;
+        height: 80px;
+        position: relative;
+        border-radius: 50%;
+        box-sizing: content-box;
+        border: 4px solid #28a745;
+    }
+    .check-icon::before {
+        top: 3px;
+        left: -2px;
+        width: 30px;
+        height: 57px;
+        border: solid #28a745;
+        border-width: 0 0 0 0;
+        transform: rotate(45deg);
+        animation: checkIconDraw 0.35s ease-in-out 0.4s forwards;
+        position: absolute;
+        content: '';
+    }
+    .check-icon::after {
+        top: 0;
+        left: 3px;
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        border: solid #28a745;
+        border-width: 0 0 0 0;
+        animation: checkIconCircle 0.3s ease-in-out 0.9s forwards;
+        position: absolute;
+        content: '';
+    }
+    @keyframes checkIconDraw {
+        to { border-width: 0 0 0 4px; }
+    }
+    @keyframes checkIconCircle {
+        to { border-width: 0 0 0 4px; }
+    }
+    .modal-info-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+    }
+    .modal-info-item {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.75rem;
+        background: #f8f9fa;
+        border-radius: 10px;
+    }
+    .modal-info-item-full {
+        grid-column: 1 / -1;
+    }
+    .modal-info-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.1rem;
+        flex-shrink: 0;
+    }
+    .modal-info-label {
+        display: block;
+        font-size: 0.7rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        color: #6c757d;
+        letter-spacing: 0.3px;
+    }
+    .modal-info-value {
+        display: block;
+        font-size: 0.95rem;
+        font-weight: 500;
+        color: #212529;
+    }
+    .modal-actions-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        gap: 0.75rem;
+    }
+    .modal-action-btn {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.4rem;
+        padding: 1rem 0.75rem;
+        border-radius: 12px;
+        text-decoration: none;
+        font-size: 0.82rem;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        border: 1px solid #e9ecef;
+        background: #fff;
+        color: #495057;
+        cursor: pointer;
+    }
+    .modal-action-btn:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+    }
+    .modal-action-btn i { font-size: 1.4rem; }
+    .btn-download { color: #0d6efd; border-color: #0d6efd; }
+    .btn-download:hover { background: #0d6efd; color: #fff; }
+    .btn-certificate { color: #dc3545; border-color: #dc3545; }
+    .btn-certificate:hover { background: #dc3545; color: #fff; }
+    .btn-certificate-en { color: #fd7e14; border-color: #fd7e14; }
+    .btn-certificate-en:hover { background: #fd7e14; color: #fff; }
+    .btn-view { color: #6f42c1; border-color: #6f42c1; }
+    .btn-view:hover { background: #6f42c1; color: #fff; }
+    .btn-new { color: #198754; border-color: #198754; }
+    .btn-new:hover { background: #198754; color: #fff; }
+    .btn-close-action { color: #6c757d; border-color: #6c757d; }
+    .btn-close-action:hover { background: #6c757d; color: #fff; }
+</style>

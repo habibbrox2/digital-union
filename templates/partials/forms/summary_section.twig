@@ -67,7 +67,7 @@
                     <td>{{ member.name_bn|default('-') }}</td>
                     <td>{{ member.name_en|default('-') }}</td>
                     <td>{{ member.relation_bn|default('-') }}</td>
-                    <td>{{ member.birth_date|default('-') }}</td>
+                    <td>{{ member.birth_date and member.birth_date != '0000-00-00' ? member.birth_date|date('d-m-Y') : '-' }}</td>
                     <td>{{ member.nid|default('-') }}</td>
                     <td>{{ member.marital_status|default('-') }}</td>
                     <td>{{ member.is_dead == '1' ? 'মৃত' : 'জীবিত' }}</td>

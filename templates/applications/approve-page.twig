@@ -109,7 +109,7 @@
                 {'label':'নাম', 'value': data.name_bn},
                 {'label':'নাম (ইংরেজি)', 'value': data.name_en},
                 {'label': certificate_type == 'warish' ? 'মৃত্যু নিবন্ধন' : 'পরিচয়পত্র',  'value': data.nid ?: data.birth_id ?: data.passport_no},
-                {'label': certificate_type == 'warish' ? 'মৃত্যু তারিখ' : 'জন্ম তারিখ', 'value': data.birth_date|date('d-m-Y')|bn},
+                {'label': certificate_type == 'warish' ? 'মৃত্যু তারিখ' : 'জন্ম তারিখ', 'value': (data.birth_date and data.birth_date != '0000-00-00') ? data.birth_date|date('d-m-Y')|bn : '—'},
                 {'label':'লিঙ্গ', 'value': 
                     data.gender|lower == 'male' ? 'পুরুষ' : 
                     (data.gender|lower == 'female' ? 'মহিলা' : 'অন্যান্য')
@@ -2481,10 +2481,38 @@ document.addEventListener('DOMContentLoaded', () => {
                 title: 'লাইসেন্স নম্বর লিখুন',
                 input: 'text',
                 inputValue: $id('license_number')?.value || '',
+                inputAttributes: {
+                    maxlength: '17',
+                    inputmode: 'numeric',
+                    pattern: '[0-9]*',
+                    autocomplete: 'off'
+                },
+                footer: '<div id="license_modal_digit_count" class="small text-muted">সংখ্যা: <strong>0</strong>/17</div>',
                 showCancelButton: true,
                 confirmButtonText: '✅ OK',
                 cancelButtonText: '❌ বাতিল',
-                inputValidator: v => !v.trim() && 'লাইসেন্স নম্বর আবশ্যক!'
+                didOpen: () => {
+                    const input = Swal.getInput();
+                    const counter = document.querySelector('#license_modal_digit_count strong');
+                    const updateCount = () => {
+                        if (!input) return;
+                        const digits = input.value.replace(/\D/g, '').slice(0, 17);
+                        if (input.value !== digits) input.value = digits;
+                        if (counter) {
+                            counter.textContent = digits.length;
+                            counter.className = digits.length === 17 ? 'text-success' : 'text-danger';
+                        }
+                    };
+                    input?.addEventListener('input', updateCount);
+                    updateCount();
+                },
+                inputValidator: v => {
+                    const digits = (v || '').replace(/\D/g, '');
+                    if (!/^\d{17}$/.test(digits)) {
+                        return 'লাইসেন্স নম্বর অবশ্যই ১৭ সংখ্যার হতে হবে।';
+                    }
+                    return undefined;
+                }
             }).then(r => {
                 if (r.isConfirmed) processApproval(r.value.trim());
             });
@@ -2778,9 +2806,42 @@ document.addEventListener('DOMContentLoaded', () => {
     const licenseStatusIcon = $id('license_status_icon');
     const licenseStatusText = $id('license_status_text');
     const licenseMsg = $id('license_availability_msg');
+    const licenseDigitCount = $id('license_digit_count');
     let licenseCheckTimer = null;
 
+    function getLicenseDigits() {
+        return licenseInput ? licenseInput.value.replace(/\D/g, '') : '';
+    }
+
+    function updateLicenseLengthStatus() {
+        if (!licenseInput) return false;
+
+        const digits = getLicenseDigits();
+        const isValid = /^\d{17}$/.test(digits);
+
+        if (licenseDigitCount) {
+            licenseDigitCount.textContent = 'সংখ্যা: ' + digits.length + '/17';
+            licenseDigitCount.className = 'form-text ' + (isValid ? 'text-success' : 'text-danger fw-semibold');
+        }
+
+        if (!isValid) {
+            licenseInput.classList.remove('is-valid');
+            licenseInput.classList.add('is-invalid');
+            if (licenseStatusIcon) licenseStatusIcon.innerHTML = '<i class="bi bi-x-circle-fill text-danger"></i>';
+            if (licenseStatusText) {
+                licenseStatusText.textContent = '১৭ সংখ্যা প্রয়োজন';
+                licenseStatusText.className = 'input-group-text bg-light text-danger fw-semibold';
+            }
+            if (licenseMsg) {
+                licenseMsg.textContent = 'লাইসেন্স নম্বর অবশ্যই ১৭ সংখ্যার হতে হবে।';
+                licenseMsg.className = 'form-text text-danger fw-semibold';
+            }
+        }
+
+        return isValid;
+    }
     function setLicenseStatus(available, existingAppId) {
+        if (!updateLicenseLengthStatus()) return;
         if (!licenseInput || !licenseStatusIcon || !licenseStatusText || !licenseMsg) return;
 
         if (available === null) {
@@ -2820,6 +2881,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (licenseStatusText) licenseStatusText.className = 'input-group-text bg-light';
         if (licenseInput) licenseInput.classList.remove('is-valid', 'is-invalid');
         if (licenseMsg) { licenseMsg.textContent = ''; licenseMsg.className = 'form-text'; }
+        updateLicenseLengthStatus();
     }
 
     function checkLicenseAvailability(sonodNumber) {
@@ -2845,9 +2907,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     if (licenseInput) {
+        updateLicenseLengthStatus();
         licenseInput.addEventListener('input', function () {
             clearTimeout(licenseCheckTimer);
             const val = this.value.trim();
+            updateLicenseLengthStatus();
 
             // Only check if at least 3 characters
             if (val.length < 3) {
