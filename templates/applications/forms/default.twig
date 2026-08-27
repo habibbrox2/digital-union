@@ -339,13 +339,18 @@
         // ---------------- datepicker init ----------------
         function initDatepickers(root=document){
             root.querySelectorAll('.datepicker').forEach(input=>{
-                if (window.jQuery && typeof $(input).datepicker==='function'){
-                    $(input).datepicker({
-                        format:'dd-mm-yyyy',
-                        autoclose:true,
-                        todayHighlight:true
-                    });
-                } else {
+                try {
+                    if (window.jQuery && typeof jQuery(input).datepicker==='function'){
+                        jQuery(input).datepicker({
+                            format:'dd-mm-yyyy',
+                            autoclose:true,
+                            todayHighlight:true
+                        });
+                    } else {
+                        input.placeholder = input.placeholder || 'দিন-মাস-বছর';
+                        input.setAttribute('inputmode','numeric');
+                    }
+                } catch(e) {
                     input.placeholder = input.placeholder || 'দিন-মাস-বছর';
                     input.setAttribute('inputmode','numeric');
                 }

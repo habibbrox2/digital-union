@@ -257,7 +257,7 @@
                                 </div>
                                 <div class="col-md-4">
                                     <label class="form-label small fw-semibold">ইস্যু সময় <span class="text-danger">*</span></label>
-                                    <input type="time" id="modal_issue_time" name="issue_time" step="1" class="form-control form-control-sm" value="{{ "now"|date("H:i:s") }}" required>
+                                    <input type="time" id="modal_issue_time" name="issue_time" step="1" class="form-control form-control-sm" value="{{ "now"|date("H:i") }}" required>
                                 </div>
                                 <div class="col-md-4">
                                     <label class="form-label small fw-semibold">মন্তব্য</label>
@@ -411,6 +411,16 @@
                                 </div>
                             </div>
                         </fieldset>
+
+                        <!-- Trade Fee Sync Button (trade only) -->
+                        <div id="modalTradeSyncSection" style="display: none;">
+                            <div class="d-flex align-items-center gap-2 mt-2">
+                                <button type="button" id="modalSyncFeesBtn" class="btn btn-outline-info btn-sm">
+                                    <i class="bi bi-arrow-repeat me-1"></i> ব্যবসার ধরণের ফি সিঙ্ক করুন
+                                </button>
+                                <span id="modalSyncFeesStatus" class="small"></span>
+                            </div>
+                        </div>
 
                         <!-- Action Buttons -->
                         <div class="d-flex flex-wrap gap-2 justify-content-center mt-4 pt-3 border-top">

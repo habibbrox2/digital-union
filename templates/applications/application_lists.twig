@@ -207,15 +207,15 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 
 <script>
-$('#search-applicant-form').on('submit', function (e) {
+document.getElementById('search-applicant-form').addEventListener('submit', function (e) {
     e.preventDefault();
 
-    const applicantId = $('#applicant_id_search').val().trim();
-    const $reuseContainer = $('#reuse-options');
-    const $reuseLinks = $('#reuse-links');
+    const applicantId = document.getElementById('applicant_id_search').value.trim();
+    const reuseContainer = document.getElementById('reuse-options');
+    const reuseLinks = document.getElementById('reuse-links');
 
     if (!applicantId) {
-        $reuseContainer.hide();
+        reuseContainer.style.display = 'none';
         displayMessage('error', 'Applicant ID is required.');
         return;
     }
@@ -231,59 +231,47 @@ $('#search-applicant-form').on('submit', function (e) {
 
     const certificate_type = '{{ url_path|e('js') }}';
 
-    $.ajax({
-        url: `/api/applications/${certificate_type}/applicant`,
-        type: 'POST',
-        data: formData,
-        processData: false,
-        contentType: false,
-        dataType: "json",
+    fetch(`/api/applications/${certificate_type}/applicant`, {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            document.querySelectorAll('.reuse-header-row').forEach(el => el.remove());
 
-        success: function (data) {
-            if (data.success) {
-                $('.reuse-header-row').remove();
+            const headerRow = document.createElement('div');
+            headerRow.className = 'd-flex justify-content-between align-items-center mb-2 reuse-header-row';
+            headerRow.innerHTML = `
+                <h6 class="fw-semibold text-muted mb-0">নতুন আবেদন তৈরি করুন:</h6>
+                <a href="/applications/of/${applicantId}" 
+                   class="btn btn-sm btn-outline-primary">
+                    সকল আবেদন দেখুন
+                </a>
+            `;
 
-                const headerRow = $(`
-                    <div class="d-flex justify-content-between align-items-center mb-2 reuse-header-row">
-                        <h6 class="fw-semibold text-muted mb-0">নতুন আবেদন তৈরি করুন:</h6>
-                        <a href="/applications/of/${applicantId}" 
-                           class="btn btn-sm btn-outline-primary">
-                            সকল আবেদন দেখুন
-                        </a>
-                    </div>
-                `);
+            reuseLinks.innerHTML = '';
+            reuseLinks.parentNode.insertBefore(headerRow, reuseLinks);
 
-                $reuseLinks.empty();
-                $reuseLinks.before(headerRow);
+            data.certificate_types.forEach(function (type) {
+                const link = document.createElement('a');
+                link.href = `/applications/${type.type_url}/reapply/${applicantId}`;
+                link.className = 'btn btn-outline-secondary reuse-link';
+                link.textContent = type.name_bn;
+                reuseLinks.appendChild(link);
+            });
 
-                data.certificate_types.forEach(function (type) {
-                    const link = $('<a>')
-                        .attr('href', `/applications/${type.type_url}/reapply/${applicantId}`)
-                        .addClass('btn btn-outline-secondary reuse-link')
-                        .text(type.name_bn);
+            reuseContainer.style.display = '';
 
-                    $reuseLinks.append(link);
-                });
-
-                $reuseContainer.show();
-
-            } else {
-                $reuseContainer.hide();
-                displayMessage('error', data.message || 'Applicant not found.');
-            }
-        },
-
-        error: function (xhr) {
-            $reuseContainer.hide();
-
-            let msg = 'Something went wrong.';
-            if (xhr.responseJSON && xhr.responseJSON.message) {
-                msg = xhr.responseJSON.message;
-            }
-
-            displayMessage('error', msg);
-            console.error('AJAX Error:', xhr);
+        } else {
+            reuseContainer.style.display = 'none';
+            displayMessage('error', data.message || 'Applicant not found.');
         }
+    })
+    .catch(error => {
+        reuseContainer.style.display = 'none';
+        displayMessage('error', 'Something went wrong.');
+        console.error('Fetch Error:', error);
     });
 });
 </script>
@@ -291,13 +279,13 @@ $('#search-applicant-form').on('submit', function (e) {
 
 
 <script>
-$(document).ready(function () {
+document.addEventListener('DOMContentLoaded', function () {
 
     let currentPage = 1;
     let currentSearch = '';
     let currentSortBy = 'apply_date'; // Default sort column 'apply_date'
     let currentSortOrder = 'desc'; // Default sort order
-    let recordsPerPage = $('#recordsPerPage').val(); 
+    let recordsPerPage = document.getElementById('recordsPerPage').value; 
     let currentUnion = '';
     let currentStatus = '';
     /* ===============================
@@ -323,12 +311,14 @@ $(document).ready(function () {
     let tableLoadingCount = 0;
     function showTableLoading() {
         tableLoadingCount++;
-        $('#searchLoading').fadeIn(150);
+        var el = document.getElementById('searchLoading');
+        if (el) { el.style.display = ''; el.style.opacity = '1'; }
     }
     function hideTableLoading() {
         tableLoadingCount = Math.max(0, tableLoadingCount - 1);
         if (tableLoadingCount === 0) {
-            $('#searchLoading').fadeOut(120);
+            var el = document.getElementById('searchLoading');
+            if (el) { el.style.opacity = '0'; setTimeout(function(){ el.style.display = 'none'; }, 120); }
         }
     }
 
@@ -337,33 +327,35 @@ $(document).ready(function () {
         var url = "/applications/" + type + "/fetch_all";
         showTableLoading();
 
-        $.ajax({
-            type: "POST",
-            url: url,
-            data: {
-                page: page,
-                search: search,
-                sort_by: sortBy,
-                sort_order: sortOrder,
-                records_per_page: limit,
-                union_id: union,
-                status: status
-            },
-            dataType: "json",
-            success: function (response) {
+        var formData = new URLSearchParams();
+        formData.append('page', page);
+        formData.append('search', search);
+        formData.append('sort_by', sortBy);
+        formData.append('sort_order', sortOrder);
+        formData.append('records_per_page', limit);
+        formData.append('union_id', union);
+        formData.append('status', status);
+
+        fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: formData.toString()
+        })
+        .then(function(r) { return r.json(); })
+        .then(function (response) {
                 hideTableLoading();
-                let tbody = $("#sonodTableBody");
-                tbody.empty();
+                var tbody = document.getElementById('sonodTableBody');
+                tbody.innerHTML = '';
 
                 // যদি কোনো ডেটা না থাকে
                 if (!response.data || response.data.length === 0) {
-                    tbody.append('<tr><td colspan="8" class="text-center">কোনো আবেদন পাওয়া যায়নি।</td></tr>');
+                    tbody.insertAdjacentHTML('beforeend', '<tr><td colspan="8" class="text-center">কোনো আবেদন পাওয়া যায়নি।</td></tr>');
                     updateRangeSummary(page, limit, response.total_records, 0);
                     return;
                 }
 
                 // প্রতিটি আবেদন লুপ করা
-                $.each(response.data, function (index, application) {
+                response.data.forEach(function (application, index) {
 
                     let address = formatAddress(application);
                     let formattedDate = formatDateBN(application.apply_date);
@@ -432,7 +424,7 @@ $(document).ready(function () {
 
                     let statusBadge = getStatusBadge(application.status);
 
-                    tbody.append(`
+                    tbody.insertAdjacentHTML('beforeend', `
                         <tr data-app-id="${application.application_id}" data-sonod="${application.sonod_number || ''}" data-name="${(application.name_bn || '').replace(/"/g, '&quot;')}" data-status="${application.status}">
                             <td class="text-center"><div class="form-check mb-0"><input class="form-check-input row-checkbox" type="checkbox" value="${application.application_id}"></div></td>
                             <td>${applicationSonodNo}</td>
@@ -447,18 +439,20 @@ $(document).ready(function () {
                 });
 
 
-
-
                 // পেজিনেশন আপডেট করা
                 updatePagination(response.total_pages, page);
-                $('[data-bs-toggle="tooltip"]').tooltip({
-                    trigger: 'hover click'
+                // Initialize Bootstrap tooltips on new elements
+                document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(function(el) {
+                    if (typeof bootstrap !== 'undefined' && bootstrap.Tooltip) {
+                        new bootstrap.Tooltip(el, { trigger: 'hover click' });
+                    }
                 });
                 // মোট আবেদন সংখ্যা আপডেট করা
+                var totalCountEl = document.getElementById('totalCount');
                 if (response.total_records !== undefined) {
-                    $('#totalCount').text(`(মোট: ${response.total_records})`);
+                    totalCountEl.textContent = `(মোট: ${response.total_records})`;
                 } else {
-                    $('#totalCount').text('(মোট: 0)');
+                    totalCountEl.textContent = '(মোট: 0)';
                 }
                 // দৃশ্যমান পরিসর সারসংক্ষেপ (যেমন: মোট ২৪০টির মধ্যে ১–১০ দেখানো হচ্ছে)
                 updateRangeSummary(page, limit, response.total_records, response.data ? response.data.length : 0);
@@ -466,66 +460,82 @@ $(document).ready(function () {
                 // Reset bulk selection after fetch
                 if (typeof updateBulkBar === 'function') updateBulkBar();
 
-                // Address expand/collapse with jQuery
-                $('.address-block').each(function(){
-                    var $block = $(this);
-                    $block.attr('aria-expanded', 'false');
-                    $block.css({height: '40px', overflow: 'hidden'});
+                // Address expand/collapse
+                document.querySelectorAll('.address-block').forEach(function(block) {
+                    block.setAttribute('aria-expanded', 'false');
+                    block.style.height = '40px';
+                    block.style.overflow = 'hidden';
                 });
-                function collapseAllAddress(except) {
-                    $('.address-block[aria-expanded="true"]').each(function(){
-                        if (!except || this !== except[0]) {
-                            $(this).attr('aria-expanded', 'false').stop().animate({height: '40px'}, 250).css('overflow', 'hidden');
-                        }
-                    });
-                }
-                $(document).off('click.addressblock').on('click.addressblock', '.address-block', function(e){
-                    if ($(e.target).is('a,button,input,select,textarea,label')) return;
-                    e.stopPropagation();
-                    var $block = $(this);
-                    var expanded = $block.attr('aria-expanded') === 'true';
-                    if (expanded) {
-                        $block.attr('aria-expanded', 'false').stop().animate({height: '40px'}, 250, function(){
-                            $block.css('overflow', 'hidden');
-                        });
-                    } else {
-                        collapseAllAddress($block);
-                        $block.css('height', 'auto');
-                        var fullHeight = $block.prop('scrollHeight');
-                        $block.css('height', '40px');
-                        $block.attr('aria-expanded', 'true').css('overflow', 'visible').stop().animate({height: fullHeight + 'px'}, 250, function(){
-                            $block.css('height', 'auto');
-                        });
-                    }
-                });
-                $(document).off('keydown.addressblock').on('keydown.addressblock', '.address-block', function(e){
-                    if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') {
-                        e.preventDefault();
-                        $(this).trigger('click');
-                    }
-                });
-                $(document).off('click.addressblockoutside').on('click.addressblockoutside', function(e){
-                    if (!$(e.target).closest('.address-block').length) {
-                        collapseAllAddress();
-                    }
-                });
+                // Initialize address block event listeners
+                document.removeEventListener('click', handleAddressBlockClick);
+                document.addEventListener('click', handleAddressBlockClick);
+                document.removeEventListener('keydown', handleAddressBlockKeydown);
+                document.addEventListener('keydown', handleAddressBlockKeydown);
    
-
-            },
-            error: function (xhr, status, error) {
+            })
+            .catch(function(error) {
                 hideTableLoading();
-                displayMessage('error', `আবেদন আনতে ব্যর্থ হয়েছে। ত্রুটি: ${xhr.responseText}`);
+                displayMessage('error', `আবেদন আনতে ব্যর্থ হয়েছে। ত্রুটি: ${error.message || error}`);
+            });
+    }
+
+    // ─── Address block expand/collapse (DOM-level handlers) ───
+    function collapseAllAddress(except) {
+        document.querySelectorAll('.address-block[aria-expanded="true"]').forEach(function(block) {
+            if (!except || block !== except) {
+                block.setAttribute('aria-expanded', 'false');
+                block.style.transition = 'height 0.25s ease';
+                block.style.height = '40px';
+                block.style.overflow = 'hidden';
             }
         });
     }
-    $("#unionFilter").on("change", function () {
-        currentUnion = $(this).val();
+    function handleAddressBlockClick(e) {
+        var block = e.target.closest('.address-block');
+        if (!block) return;
+        if (e.target.matches('a,button,input,select,textarea,label')) return;
+        e.stopPropagation();
+        var expanded = block.getAttribute('aria-expanded') === 'true';
+        if (expanded) {
+            block.setAttribute('aria-expanded', 'false');
+            block.style.transition = 'height 0.25s ease';
+            block.style.height = '40px';
+            block.style.overflow = 'hidden';
+        } else {
+            collapseAllAddress(block);
+            block.style.height = 'auto';
+            var fullHeight = block.scrollHeight;
+            block.style.height = '40px';
+            block.setAttribute('aria-expanded', 'true');
+            block.style.overflow = 'visible';
+            block.style.transition = 'height 0.25s ease';
+            block.style.height = fullHeight + 'px';
+            setTimeout(function(){ block.style.height = 'auto'; }, 250);
+        }
+    }
+    function handleAddressBlockKeydown(e) {
+        if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') {
+            if (e.target.closest('.address-block')) {
+                e.preventDefault();
+                e.target.closest('.address-block').click();
+            }
+        }
+    }
+    // Single outside-click handler registered once at DOMContentLoaded level
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('.address-block')) {
+            collapseAllAddress();
+        }
+    });
+
+    document.getElementById('unionFilter').addEventListener('change', function () {
+        currentUnion = this.value;
         currentPage = 1;
         fetchApplications(currentPage, currentSearch, currentSortBy, currentSortOrder, recordsPerPage, currentUnion, currentStatus);
     });
 
-    $("#statusFilter").on("change", function () {
-        currentStatus = $(this).val();
+    document.getElementById('statusFilter').addEventListener('change', function () {
+        currentStatus = this.value;
         currentPage = 1;
         fetchApplications(currentPage, currentSearch, currentSortBy, currentSortOrder, recordsPerPage, currentUnion, currentStatus);
     });
@@ -609,8 +619,8 @@ $(document).ready(function () {
 
 
     // On Hold button click handler
-    $(document).on("click", ".onHoldButton", async function () {
-        const applicationId = $(this).data("id");
+    async function handleOnHoldButtonClick(btn) {
+        var applicationId = btn.dataset.id;
         const result = await Swal.fire({
             title: 'আবেদন স্থগিত করবেন?',
             text: 'আবেদনটি স্থগিত করা হবে এবং পুনরায় সক্রিয় না করা পর্যন্ত প্রক্রিয়া করা যাবে না।',
@@ -624,24 +634,26 @@ $(document).ready(function () {
             buttonsStyling: false
         });
         if (!result.isConfirmed) return;
-        $.ajax({
-            type: "POST",
-            url: "/applications/{{ url_path }}/on_hold",
-            data: { id: applicationId },
-            dataType: "json",
-            success: function (response) {
-                displayMessage(response.status, response.message);
-                if (response.status === "success") fetchApplications(currentPage, currentSearch, currentSortBy, currentSortOrder, recordsPerPage, currentUnion, currentStatus);
-            },
-            error: function (xhr, status, error) {
-                displayMessage('error', `একটি ত্রুটি হয়েছে: ${xhr.responseText}`);
-            }
+        var formData = new URLSearchParams();
+        formData.append('id', applicationId);
+        fetch('/applications/{{ url_path }}/on_hold', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: formData.toString()
+        })
+        .then(function(r) { return r.json(); })
+        .then(function (response) {
+            displayMessage(response.status, response.message);
+            if (response.status === 'success') fetchApplications(currentPage, currentSearch, currentSortBy, currentSortOrder, recordsPerPage, currentUnion, currentStatus);
+        })
+        .catch(function(error) {
+            displayMessage('error', `একটি ত্রুটি হয়েছে: ${error.message || error}`);
         });
-    });
+    }
 
     // Reactivate button click handler
-    $(document).on("click", ".reactivateButton", async function () {
-        const applicationId = $(this).data("id");
+    async function handleReactivateButtonClick(btn) {
+        var applicationId = btn.dataset.id;
         const result = await Swal.fire({
             title: 'আবেদন পুনরায় সক্রিয় করবেন?',
             text: 'স্থগিতকৃত আবেদনটি পুনরায় সক্রিয় করা হবে এবং প্রক্রিয়া করা যাবে।',
@@ -655,20 +667,22 @@ $(document).ready(function () {
             buttonsStyling: false
         });
         if (!result.isConfirmed) return;
-        $.ajax({
-            type: "POST",
-            url: "/applications/{{ url_path }}/reactivate",
-            data: { id: applicationId },
-            dataType: "json",
-            success: function (response) {
-                displayMessage(response.status, response.message);
-                if (response.status === "success") fetchApplications(currentPage, currentSearch, currentSortBy, currentSortOrder, recordsPerPage, currentUnion, currentStatus);
-            },
-            error: function (xhr, status, error) {
-                displayMessage('error', `একটি ত্রুটি হয়েছে: ${xhr.responseText}`);
-            }
+        var formData = new URLSearchParams();
+        formData.append('id', applicationId);
+        fetch('/applications/{{ url_path }}/reactivate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: formData.toString()
+        })
+        .then(function(r) { return r.json(); })
+        .then(function (response) {
+            displayMessage(response.status, response.message);
+            if (response.status === 'success') fetchApplications(currentPage, currentSearch, currentSortBy, currentSortOrder, recordsPerPage, currentUnion, currentStatus);
+        })
+        .catch(function(error) {
+            displayMessage('error', `একটি ত্রুটি হয়েছে: ${error.message || error}`);
         });
-    });
+    }
 
     function formatAddress(application) {
             // Present address
@@ -699,49 +713,49 @@ $(document).ready(function () {
     }
 
     function updatePagination(totalPages, page) {
-        let pagination = $("#pagination");
-        pagination.empty();
+        var pagination = document.getElementById('pagination');
+        pagination.innerHTML = '';
 
         // Add Previous button
         if (page > 1) {
-            pagination.append(`<li class="page-item"><button class="page-link" data-page="${page - 1}"><i class="fas fa-chevron-left"></i></button></li>`);
+            pagination.insertAdjacentHTML('beforeend', `<li class="page-item"><button class="page-link" data-page="${page - 1}"><i class="fas fa-chevron-left"></i></button></li>`);
         } else {
-            pagination.append(`<li class="page-item disabled"><span class="page-link"><i class="fas fa-chevron-left"></i></span></li>`);
+            pagination.insertAdjacentHTML('beforeend', `<li class="page-item disabled"><span class="page-link"><i class="fas fa-chevron-left"></i></span></li>`);
         }
 
         // Add page numbers
-        const maxPagesToShow = 5; // Number of page buttons to show
-        let startPage = Math.max(1, page - Math.floor(maxPagesToShow / 2));
-        let endPage = Math.min(totalPages, startPage + maxPagesToShow - 1);
+        var maxPagesToShow = 5;
+        var startPage = Math.max(1, page - Math.floor(maxPagesToShow / 2));
+        var endPage = Math.min(totalPages, startPage + maxPagesToShow - 1);
 
         if (endPage - startPage + 1 < maxPagesToShow) {
             startPage = Math.max(1, endPage - maxPagesToShow + 1);
         }
 
         if (startPage > 1) {
-            pagination.append(`<li class="page-item"><button class="page-link" data-page="1">1</button></li>`);
+            pagination.insertAdjacentHTML('beforeend', `<li class="page-item"><button class="page-link" data-page="1">1</button></li>`);
             if (startPage > 2) {
-                pagination.append(`<li class="page-item disabled"><span class="page-link">...</span></li>`);
+                pagination.insertAdjacentHTML('beforeend', `<li class="page-item disabled"><span class="page-link">...</span></li>`);
             }
         }
 
-        for (let i = startPage; i <= endPage; i++) {
-            let activeClass = i === page ? 'active' : '';
-            pagination.append(`<li class="page-item ${activeClass}"><button class="page-link" data-page="${i}">${i}</button></li>`);
+        for (var i = startPage; i <= endPage; i++) {
+            var activeClass = i === page ? 'active' : '';
+            pagination.insertAdjacentHTML('beforeend', `<li class="page-item ${activeClass}"><button class="page-link" data-page="${i}">${i}</button></li>`);
         }
 
         if (endPage < totalPages) {
             if (endPage < totalPages - 1) {
-                pagination.append(`<li class="page-item disabled"><span class="page-link">...</span></li>`);
+                pagination.insertAdjacentHTML('beforeend', `<li class="page-item disabled"><span class="page-link">...</span></li>`);
             }
-            pagination.append(`<li class="page-item"><button class="page-link" data-page="${totalPages}">${totalPages}</button></li>`);
+            pagination.insertAdjacentHTML('beforeend', `<li class="page-item"><button class="page-link" data-page="${totalPages}">${totalPages}</button></li>`);
         }
 
         // Add Next button
         if (page < totalPages) {
-            pagination.append(`<li class="page-item"><button class="page-link" data-page="${page + 1}"><i class="fas fa-chevron-right"></i></button></li>`);
+            pagination.insertAdjacentHTML('beforeend', `<li class="page-item"><button class="page-link" data-page="${page + 1}"><i class="fas fa-chevron-right"></i></button></li>`);
         } else {
-            pagination.append(`<li class="page-item disabled"><span class="page-link"><i class="fas fa-chevron-right"></i></span></li>`);
+            pagination.insertAdjacentHTML('beforeend', `<li class="page-item disabled"><span class="page-link"><i class="fas fa-chevron-right"></i></span></li>`);
         }
     }
 
@@ -749,25 +763,46 @@ $(document).ready(function () {
     function updateRangeSummary(page, limit, totalRecords, rowCount) {
         totalRecords = totalRecords || 0;
         rowCount = rowCount || 0;
+        var rangeSummaryEl = document.getElementById('rangeSummary');
         if (totalRecords === 0 || rowCount === 0) {
-            $('#rangeSummary').empty();
+            rangeSummaryEl.textContent = '';
             return;
         }
-        const from = (page - 1) * limit + 1;
-        const to = (page - 1) * limit + rowCount;
-        $('#rangeSummary').text(
-            `মোট ${toBanglaNumber(totalRecords)}টির মধ্যে ${toBanglaNumber(from)}–${toBanglaNumber(to)} দেখানো হচ্ছে`
-        );
+        var from = (page - 1) * limit + 1;
+        var to = (page - 1) * limit + rowCount;
+        rangeSummaryEl.textContent = `মোট ${toBanglaNumber(totalRecords)}টির মধ্যে ${toBanglaNumber(from)}–${toBanglaNumber(to)} দেখানো হচ্ছে`;
     }
 
-    $(document).on("click", ".page-link", function () {
-        let page = $(this).data("page");
-        currentPage = page;
-        fetchApplications(currentPage, currentSearch, currentSortBy, currentSortOrder, recordsPerPage, currentUnion, currentStatus);
+    document.addEventListener('click', function (e) {
+        var pageLink = e.target.closest('.page-link');
+        if (pageLink) {
+            var page = parseInt(pageLink.dataset.page);
+            currentPage = page;
+            fetchApplications(currentPage, currentSearch, currentSortBy, currentSortOrder, recordsPerPage, currentUnion, currentStatus);
+            return;
+        }
+
+        var deleteBtn = e.target.closest('.deleteButton');
+        if (deleteBtn) {
+            handleDeleteButtonClick(deleteBtn);
+            return;
+        }
+
+        var onHoldBtn = e.target.closest('.onHoldButton');
+        if (onHoldBtn) {
+            handleOnHoldButtonClick(onHoldBtn);
+            return;
+        }
+
+        var reactivateBtn = e.target.closest('.reactivateButton');
+        if (reactivateBtn) {
+            handleReactivateButtonClick(reactivateBtn);
+            return;
+        }
     });
 
-    $(document).on("click", ".deleteButton", async function () {
-        const applicationId = $(this).data("id");
+    async function handleDeleteButtonClick(btn) {
+        var applicationId = btn.dataset.id;
         const result = await Swal.fire({
             title: 'আবেদন মুছবেন?',
             text: 'এই আবেদনটি স্থায়ীভাবে মুছে যাবে। এই পদক্ষেপটি পূর্ববর্তী নয়।',
@@ -781,31 +816,33 @@ $(document).ready(function () {
             buttonsStyling: false
         });
         if (!result.isConfirmed) return;
-        $.ajax({
-            type: "POST",
-            url: "/applications/{{ url_path }}/delete",
-            data: { applicationId: applicationId },
-            dataType: "json",
-            success: function (response) {
-                displayMessage(response.status, response.message);
-                if (response.status === "success") {
-                    fetchApplications(currentPage, currentSearch, currentSortBy, currentSortOrder, recordsPerPage, currentUnion, currentStatus);
-                }
-            },
-            error: function (xhr, status, error) {
-                displayMessage('error', `একটি ত্রুটি হয়েছে: ${xhr.responseText}`);
+        var formData = new URLSearchParams();
+        formData.append('applicationId', applicationId);
+        fetch('/applications/{{ url_path }}/delete', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: formData.toString()
+        })
+        .then(function(r) { return r.json(); })
+        .then(function (response) {
+            displayMessage(response.status, response.message);
+            if (response.status === 'success') {
+                fetchApplications(currentPage, currentSearch, currentSortBy, currentSortOrder, recordsPerPage, currentUnion, currentStatus);
             }
+        })
+        .catch(function(error) {
+            displayMessage('error', `একটি ত্রুটি হয়েছে: ${error.message || error}`);
         });
-    });
+    }
 
 
     function displayMessage(status, message) {
-        let messageDiv = $("#message");
-        messageDiv.html(`<div class="alert alert-${status === 'success' ? 'success' : 'danger'} alert-dismissible fade show" role="alert">
+        var messageDiv = document.getElementById('message');
+        messageDiv.innerHTML = `<div class="alert alert-${status === 'success' ? 'success' : 'danger'} alert-dismissible fade show" role="alert">
                             ${message}
                             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                         </div>`);
-        setTimeout(() => messageDiv.empty(), 5000);
+                         </div>`;
+        setTimeout(function() { messageDiv.innerHTML = ''; }, 5000);
     }
 
     // Debounce utility for the live search input (with cancel support)
@@ -823,34 +860,38 @@ $(document).ready(function () {
 
     function runSearch() {
         currentPage = 1;
-        currentSearch = $('#liveSearch').val();
+        currentSearch = document.getElementById('liveSearch').value;
         fetchApplications(currentPage, currentSearch, currentSortBy, currentSortOrder, recordsPerPage, currentUnion, currentStatus);
     }
 
     // Show/hide the clear (×) button based on input content
-    $("#liveSearch").on("input", function () {
-        $("#clearSearch").toggle($(this).val().length > 0);
+    document.getElementById('liveSearch').addEventListener('input', function () {
+        document.getElementById('clearSearch').style.display = this.value.length > 0 ? '' : 'none';
     });
     // Debounced live search — fires 300ms after the user pauses typing.
     // Skips keys that don't change the value (arrows, Shift, etc.).
-    const debouncedSearch = debounce(function () {
-        if ($('#liveSearch').val() === currentSearch) return;
+    var debouncedSearch = debounce(function () {
+        if (document.getElementById('liveSearch').value === currentSearch) return;
         runSearch();
     }, 300);
-    $("#liveSearch").on("keyup", debouncedSearch);
+    document.getElementById('liveSearch').addEventListener('keyup', debouncedSearch);
 
     // Clear button resets the search immediately (and cancels any pending timer)
-    $("#clearSearch").on("click", function () {
-        $("#liveSearch").val("").trigger("focus");
-        $("#clearSearch").hide();
+    document.getElementById('clearSearch').addEventListener('click', function () {
+        var liveSearchEl = document.getElementById('liveSearch');
+        liveSearchEl.value = '';
+        liveSearchEl.focus();
+        document.getElementById('clearSearch').style.display = 'none';
         debouncedSearch.cancel();
         runSearch();
     });
 
-    // Handle sortable header clicks
-    $(document).on("click", "th.sortable", function () {
-        const sortBy = $(this).data("sort-by");
-        let sortOrder = $(this).data("sort-order");
+    // Handle sortable header clicks via delegation
+    document.addEventListener('click', function (e) {
+        var sortableTh = e.target.closest('th.sortable');
+        if (!sortableTh) return;
+        var sortBy = sortableTh.dataset.sortBy;
+        var sortOrder = sortableTh.dataset.sortOrder;
 
         // Toggle sort order
         if (sortBy === currentSortBy) {
@@ -861,24 +902,31 @@ $(document).ready(function () {
         }
 
         // Update data attributes for next click
-        $(this).data("sort-order", sortOrder);
+        sortableTh.dataset.sortOrder = sortOrder;
 
         // Update current sort states
         currentSortBy = sortBy;
         currentSortOrder = sortOrder;
 
         // Reset all sort icons
-        $("th.sortable i").removeClass("fa-sort-up fa-sort-down").addClass("fa-sort");
+        document.querySelectorAll('th.sortable i').forEach(function(icon) {
+            icon.classList.remove('fa-sort-up', 'fa-sort-down');
+            icon.classList.add('fa-sort');
+        });
         // Update current column's icon
-        $(this).find("i").removeClass("fa-sort").addClass(sortOrder === 'asc' ? 'fa-sort-up' : 'fa-sort-down');
+        var icon = sortableTh.querySelector('i');
+        if (icon) {
+            icon.classList.remove('fa-sort');
+            icon.classList.add(sortOrder === 'asc' ? 'fa-sort-up' : 'fa-sort-down');
+        }
 
         currentPage = 1;
         fetchApplications(currentPage, currentSearch, currentSortBy, currentSortOrder, recordsPerPage, currentUnion, currentStatus);
     });
 
     // Handle records per page change
-    $("#recordsPerPage").on("change", function() {
-        recordsPerPage = $(this).val();
+    document.getElementById('recordsPerPage').addEventListener('change', function() {
+        recordsPerPage = this.value;
         currentPage = 1;
         fetchApplications(currentPage, currentSearch, currentSortBy, currentSortOrder, recordsPerPage, currentUnion, currentStatus);
     });
@@ -914,7 +962,9 @@ $(document).ready(function () {
         });
     }
 
-    $('#sonodTableBody').on('change', '.row-checkbox', function() { updateBulkBar(); });
+    document.getElementById('sonodTableBody').addEventListener('change', function(e) {
+        if (e.target.classList.contains('row-checkbox')) updateBulkBar();
+    });
 
     if (clearSelectionBtn) {
         clearSelectionBtn.addEventListener('click', function() {
@@ -945,7 +995,11 @@ $(document).ready(function () {
                 showLoaderOnConfirm: true,
                 preConfirm: async () => {
                     const results = await Promise.all(ids.map(id =>
-                        $.ajax({ type: 'POST', url: `/applications/${type}/delete`, data: { applicationId: id }, dataType: 'json' })
+                        fetch(`/applications/${type}/delete`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                            body: new URLSearchParams({ applicationId: id }).toString()
+                        }).then(r => r.json())
                     ));
                     const failed = results.filter(r => r.status !== 'success');
                     if (failed.length) throw new Error(`${failed.length} টি মুছতে ব্যর্থ হয়েছে`);
@@ -1005,6 +1059,8 @@ function cleanupModalBackdrop() {
 
 // Reset approve modal to loading state (so re-opening shows fresh state)
 function resetApproveModal() {
+    // Destroy any open datepickers first
+    destroyModalDatepickers();
     const loadingEl = document.getElementById('approveModalLoading');
     const contentEl = document.getElementById('approveModalContent');
     if (loadingEl) loadingEl.style.display = 'block';
@@ -1016,7 +1072,7 @@ function resetApproveModal() {
     const issueTime = document.getElementById('modal_issue_time');
     if (issueTime) {
         const now = new Date();
-        issueTime.value = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')}`;
+        issueTime.value = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
     }
     // Reset trade fields
     const tradeFields = document.getElementById('modalTradeFields');
@@ -1048,22 +1104,30 @@ function resetApproveModal() {
 }
 
 // Cleanup after approve modal closes
-$(document).on('hidden.bs.modal', '#approveModal', function() {
-    cleanupModalBackdrop();
-    // Delay reset so it doesn't flash before modal fully hides
-    setTimeout(resetApproveModal, 300);
-});
+var approveModalEl = document.getElementById('approveModal');
+if (approveModalEl) {
+    approveModalEl.addEventListener('hidden.bs.modal', function() {
+        // Destroy datepickers immediately when modal starts hiding
+        destroyModalDatepickers();
+        cleanupModalBackdrop();
+        setTimeout(resetApproveModal, 300);
+    });
+}
 
 // Cleanup after approved modal closes
-$(document).on('hidden.bs.modal', '#approvedModal', function() {
-    cleanupModalBackdrop();
-});
+var approvedModalElCleanup = document.getElementById('approvedModal');
+if (approvedModalElCleanup) {
+    approvedModalElCleanup.addEventListener('hidden.bs.modal', function() {
+        cleanupModalBackdrop();
+    });
+}
 
-// Open approve modal
-$(document).on('click', '.approveBtn', async function() {
-    const btn = $(this);
-    const appId = btn.data('id');
-    const certType = btn.data('type');
+// Open approve modal via delegation
+document.addEventListener('click', async function(e) {
+    var btn = e.target.closest('.approveBtn');
+    if (!btn) return;
+    var appId = btn.dataset.id;
+    var certType = btn.dataset.type;
     if (!appId || !certType) return;
 
     // Show modal with loading state
@@ -1085,8 +1149,8 @@ $(document).on('click', '.approveBtn', async function() {
     } catch (err) {
         console.error('Approve modal error:', err);
         Swal.fire('❌ ত্রুটি', 'অনুমোদন তথ্য লোড করা যায়নি।', 'error');
-        const bsModal = bootstrap.Modal.getInstance(modalEl);
-        if (bsModal) bsModal.hide();
+        var bsModal2 = bootstrap.Modal.getInstance(modalEl);
+        if (bsModal2) bsModal2.hide();
     }
 });
 
@@ -1197,7 +1261,16 @@ function populateApproveModal(result, certType) {
     document.getElementById('modal_approver_name_en').value = a.approver_name_en || '';
     document.getElementById('modal_approver_ward_no').value = a.approver_ward_no || '';
     document.getElementById('modal_approval_date').value = normalizeModalDate(a.approval_date) || getModalToday();
-    document.getElementById('modal_issue_time').value = a.issue_time || '';
+    var issueTimeInput = document.getElementById('modal_issue_time');
+    if (issueTimeInput) {
+        // Ensure time value is in HH:MM format (remove seconds if present)
+        var rawTime = (a.issue_time || '').trim();
+        if (rawTime && rawTime.includes(':')) {
+            var timeParts = rawTime.split(':');
+            rawTime = timeParts[0] + ':' + timeParts[1];
+        }
+        issueTimeInput.value = rawTime;
+    }
     document.getElementById('modal_approval_note').value = a.approval_note || 'আবেদনটি অনুমোদিত হলো।';
     document.getElementById('modal_certificate_fee').value = a.certificate_fee || '';
     document.getElementById('modal_payment_method').value = a.payment_method || 'Cash';
@@ -1237,12 +1310,12 @@ function populateApproveModal(result, certType) {
         });
 
         // Populate trade fee fields
-        document.getElementById('modal_license_fee').value = bm?.license_fee || '';
-        document.getElementById('modal_vat_amount').value = bm?.vat_amount || '';
-        document.getElementById('modal_occupation_tax').value = bm?.occupation_tax || '';
-        document.getElementById('modal_income_tax').value = bm?.income_tax || '';
-        document.getElementById('modal_signboard_tax').value = bm?.signboard_tax || '';
-        document.getElementById('modal_surcharge').value = bm?.surcharge || '';
+        document.getElementById('modal_license_fee').value = bm?.license_fee ?? '';
+        document.getElementById('modal_vat_amount').value = bm?.vat_amount ?? '';
+        document.getElementById('modal_occupation_tax').value = bm?.occupation_tax ?? '';
+        document.getElementById('modal_income_tax').value = bm?.income_tax ?? '';
+        document.getElementById('modal_signboard_tax').value = bm?.signboard_tax ?? '';
+        document.getElementById('modal_surcharge').value = bm?.surcharge ?? '';
         // Calculate total fee
         const feeFields = ['modal_license_fee', 'modal_vat_amount', 'modal_occupation_tax', 'modal_income_tax', 'modal_signboard_tax', 'modal_surcharge'];
         let totalFee = 0;
@@ -1289,6 +1362,12 @@ function populateApproveModal(result, certType) {
         licenseSection.style.display = 'none';
     }
 
+    // Show/hide trade sync button
+    const tradeSyncSection = document.getElementById('modalTradeSyncSection');
+    if (tradeSyncSection) {
+        tradeSyncSection.style.display = (certType === 'trade') ? 'block' : 'none';
+    }
+
     initModalDatepickers();
 
     // Show content, hide loading
@@ -1310,12 +1389,25 @@ function normalizeModalDate(value) {
     return raw;
 }
 
+function destroyModalDatepickers() {
+    ['modal_verification_date', 'modal_approval_date'].forEach(function(id) {
+        const input = document.getElementById(id);
+        if (input && input.datepickerInstance) {
+            input.datepickerInstance.destroy();
+            input.datepickerInstance = null;
+        }
+    });
+}
+
 function initModalDatepickers() {
     if (typeof CompactDatepicker !== 'function') return;
     ['modal_verification_date', 'modal_approval_date'].forEach(function(id) {
         const input = document.getElementById(id);
         if (!input) return;
-        if (input.datepickerInstance) input.datepickerInstance.destroy?.();
+        if (input.datepickerInstance) {
+            input.datepickerInstance.destroy();
+            input.datepickerInstance = null;
+        }
         input.datepickerInstance = new CompactDatepicker(input);
     });
 }
@@ -1492,34 +1584,45 @@ function populateCertificateFields(certType, result) {
 }
 
 // Auto-fill verifier/approver from dropdown
-$(document).on('change', '#modal_verifier_select', function() {
-    const opt = this.options[this.selectedIndex];
-    if (!opt.value) return;
-    document.getElementById('modal_verifier_id').value = opt.value;
-    document.getElementById('modal_verifier_name_bn').value = opt.dataset.nameBn || '';
-    document.getElementById('modal_verifier_name_en').value = opt.dataset.nameEn || '';
-    document.getElementById('modal_verifier_ward_no').value = opt.dataset.wardNo || '';
-});
+var verifierSelectEl = document.getElementById('modal_verifier_select');
+if (verifierSelectEl) {
+    verifierSelectEl.addEventListener('change', function() {
+        var opt = this.options[this.selectedIndex];
+        if (!opt.value) return;
+        document.getElementById('modal_verifier_id').value = opt.value;
+        document.getElementById('modal_verifier_name_bn').value = opt.dataset.nameBn || '';
+        document.getElementById('modal_verifier_name_en').value = opt.dataset.nameEn || '';
+        document.getElementById('modal_verifier_ward_no').value = opt.dataset.wardNo || '';
+    });
+}
 
-$(document).on('change', '#modal_approver_select', function() {
-    const opt = this.options[this.selectedIndex];
-    if (!opt.value) return;
-    document.getElementById('modal_approver_id').value = opt.value;
-    document.getElementById('modal_approver_name_bn').value = opt.dataset.nameBn || '';
-    document.getElementById('modal_approver_name_en').value = opt.dataset.nameEn || '';
-    document.getElementById('modal_approver_ward_no').value = opt.dataset.wardNo || '';
-});
+var approverSelectEl = document.getElementById('modal_approver_select');
+if (approverSelectEl) {
+    approverSelectEl.addEventListener('change', function() {
+        var opt = this.options[this.selectedIndex];
+        if (!opt.value) return;
+        document.getElementById('modal_approver_id').value = opt.value;
+        document.getElementById('modal_approver_name_bn').value = opt.dataset.nameBn || '';
+        document.getElementById('modal_approver_name_en').value = opt.dataset.nameEn || '';
+        document.getElementById('modal_approver_ward_no').value = opt.dataset.wardNo || '';
+    });
+}
 
 // Trade fee auto-calculation
-$(document).on('input', '#modal_license_fee, #modal_vat_amount, #modal_occupation_tax, #modal_income_tax, #modal_signboard_tax, #modal_surcharge', function() {
-    const feeIds = ['modal_license_fee', 'modal_vat_amount', 'modal_occupation_tax', 'modal_income_tax', 'modal_signboard_tax', 'modal_surcharge'];
-    let total = 0;
-    feeIds.forEach(id => {
-        const el = document.getElementById(id);
-        if (el) total += parseFloat(el.value) || 0;
-    });
-    const totalEl = document.getElementById('modal_total_fee');
-    if (totalEl) totalEl.value = total.toFixed(2);
+var feeInputIds = ['modal_license_fee', 'modal_vat_amount', 'modal_occupation_tax', 'modal_income_tax', 'modal_signboard_tax', 'modal_surcharge'];
+feeInputIds.forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) {
+        el.addEventListener('input', function() {
+            var total = 0;
+            feeInputIds.forEach(function(fId) {
+                var feeEl = document.getElementById(fId);
+                if (feeEl) total += parseFloat(feeEl.value) || 0;
+            });
+            var totalEl = document.getElementById('modal_total_fee');
+            if (totalEl) totalEl.value = total.toFixed(2);
+        });
+    }
 });
 
 // Validate trade approval fields
@@ -1547,9 +1650,11 @@ function validateModalTradeFields() {
 }
 
 // Form submission - shows approved modal with certificate links on success
-$(document).on('submit', '#approveModalForm', function(e) {
+var approveModalFormEl = document.getElementById('approveModalForm');
+if (approveModalFormEl) {
+    approveModalFormEl.addEventListener('submit', function(e) {
     e.preventDefault();
-    const form = this;
+    var form = this;
     const certType = document.getElementById('modal_certificate_type').value;
     const appId = document.getElementById('modal_application_id').value;
     const btn = document.getElementById('modalApproveBtn');
@@ -1579,6 +1684,7 @@ $(document).on('submit', '#approveModalForm', function(e) {
         processApprovalFromModal(form, certType, appId, btn, null);
     }
 });
+}
 
 function processApprovalFromModal(form, certType, appId, btn, licenseNumber) {
     const origHtml = btn.innerHTML;
@@ -1715,7 +1821,9 @@ function showApprovedModalFromList(res, certType, licenseNumber) {
 }
 
 // Reject button in modal
-$(document).on('click', '#modalRejectBtn', function() {
+var modalRejectBtnEl = document.getElementById('modalRejectBtn');
+if (modalRejectBtnEl) {
+    modalRejectBtnEl.addEventListener('click', function() {
     Swal.fire({
         title: 'আবেদন বাতিল করবেন?',
         input: 'textarea',
@@ -1745,9 +1853,12 @@ $(document).on('click', '#modalRejectBtn', function() {
         .catch(() => Swal.fire('❌ ত্রুটি', 'সার্ভারে সংযোগ করা যায়নি।', 'error'));
     });
 });
+}
 
 // On Hold button in modal
-$(document).on('click', '#modalOnHoldBtn', function() {
+var modalOnHoldBtnEl = document.getElementById('modalOnHoldBtn');
+if (modalOnHoldBtnEl) {
+    modalOnHoldBtnEl.addEventListener('click', function() {
     Swal.fire({
         title: 'অন-হোল্ড করুন',
         input: 'textarea',
@@ -1773,12 +1884,62 @@ $(document).on('click', '#modalOnHoldBtn', function() {
                 Swal.fire('❌ ত্রুটি', res.message || 'Failed', 'error');
             }
         })
-        .catch(() => Swal.fire('❌ ত্রুটি', 'সার্ভারে সংযোগ করা যায়নি।', 'error'));
+        .catch(function() { Swal.fire('❌ ত্রুটি', 'সার্ভারে সংযোগ করা যায়নি।', 'error'); });
     });
 });
+}
+
+// Sync business type fees button in modal
+var modalSyncFeesBtnEl = document.getElementById('modalSyncFeesBtn');
+if (modalSyncFeesBtnEl) {
+    modalSyncFeesBtnEl.addEventListener('click', function() {
+        const btn = this;
+        const origHtml = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> সিঙ্ক হচ্ছে...';
+        const statusEl = document.getElementById('modalSyncFeesStatus');
+        if (statusEl) statusEl.textContent = '';
+
+        const certType = document.getElementById('modal_certificate_type')?.value || '';
+        const appId = document.getElementById('modal_application_id')?.value || '';
+        const csrfToken = document.querySelector('#approveModalForm input[name="csrf_token"]')?.value || '';
+
+        const fields = ['license_fee','vat_amount','occupation_tax','income_tax','signboard_tax','surcharge','total_fee','fiscal_year','ownership_type_id','business_type_id'];
+        const fd = new URLSearchParams();
+        fd.set('csrf_token', csrfToken);
+        fields.forEach(f => {
+            const el = document.getElementById('modal_' + f);
+            if (el) fd.set(f, el.value);
+        });
+
+        fetch(`/applications/${certType}/update-fees/${appId}`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/x-www-form-urlencoded', 'X-Requested-With': 'XMLHttpRequest'},
+            body: fd.toString()
+        })
+        .then(r => r.json())
+        .then(res => {
+            btn.disabled = false;
+            btn.innerHTML = origHtml;
+            if (res.status === 'success') {
+                if (statusEl) statusEl.innerHTML = '<span class="text-success">✅ ' + res.message + '</span>';
+            } else {
+                if (statusEl) statusEl.innerHTML = '<span class="text-danger">❌ ' + res.message + '</span>';
+            }
+            setTimeout(() => { if (statusEl) statusEl.textContent = ''; }, 5000);
+        })
+        .catch(err => {
+            btn.disabled = false;
+            btn.innerHTML = origHtml;
+            if (statusEl) statusEl.innerHTML = '<span class="text-danger">❌ সংযোগে সমস্যা হয়েছে</span>';
+        });
+    });
+}
 
 // Fix Sonod button in modal
-$(document).on('click', '#modalFixSonodBtn', function() {
+var modalFixSonodBtnEl = document.getElementById('modalFixSonodBtn');
+if (modalFixSonodBtnEl) {
+    modalFixSonodBtnEl.addEventListener('click', function() {
     const btn = this;
     const origHtml = btn.innerHTML;
     btn.disabled = true;
@@ -1806,6 +1967,7 @@ $(document).on('click', '#modalFixSonodBtn', function() {
         Swal.fire('❌ ত্রুটি', 'সার্ভারে সংযোগ করা যায়নি।', 'error');
     });
 });
+}
 
 </script>
 

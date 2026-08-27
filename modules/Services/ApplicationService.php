@@ -1180,7 +1180,7 @@ class ApplicationService
             $result = $this->appManager->approveApplication($applicationId, $data, $sonod_number, $unionId, $certificate_type);
 
             if ($certificate_type === 'trade') {
-                $this->approveTradeBusinessMeta($applicationId, $post);
+                $this->approveTradeBusinessMeta($applicationId, $post, $unionId);
             }
 
             $this->mysqli->commit();
@@ -1215,7 +1215,7 @@ class ApplicationService
      * Update trade business meta during approval.
      * Merges posted values with existing meta, calculates expiry_date from fiscal year.
      */
-    private function approveTradeBusinessMeta(string $applicationId, array $post): void
+    private function approveTradeBusinessMeta(string $applicationId, array $post, ?int $unionId = null): void
     {
         $fiscal_year = isset($post['fiscal_year']) ? sanitize_input($post['fiscal_year']) : null;
 
@@ -1230,16 +1230,16 @@ class ApplicationService
             'tax_id'              => $existingMeta['tax_id'] ?? '',
             'paid_up_capital'     => $existingMeta['paid_up_capital'] ?? 0,
             'business_address_id' => $existingMeta['business_address_id'] ?? null,
-            'license_fee'         => !empty($post['license_fee']) ? (float)$post['license_fee'] : ($existingMeta['license_fee'] ?? null),
-            'vat_amount'          => !empty($post['vat_amount']) ? (float)$post['vat_amount'] : ($existingMeta['vat_amount'] ?? null),
-            'occupation_tax'      => !empty($post['occupation_tax']) ? (float)$post['occupation_tax'] : ($existingMeta['occupation_tax'] ?? null),
-            'income_tax'          => !empty($post['income_tax']) ? (float)$post['income_tax'] : ($existingMeta['income_tax'] ?? null),
-            'signboard_tax'       => !empty($post['signboard_tax']) ? (float)$post['signboard_tax'] : ($existingMeta['signboard_tax'] ?? null),
-            'surcharge'           => !empty($post['surcharge']) ? (float)$post['surcharge'] : ($existingMeta['surcharge'] ?? null),
-            'total_fee'           => !empty($post['total_fee']) ? (float)$post['total_fee'] : ($existingMeta['total_fee'] ?? null),
+            'license_fee'         => isset($post['license_fee']) && $post['license_fee'] !== '' ? (float)$post['license_fee'] : ($existingMeta['license_fee'] ?? null),
+            'vat_amount'          => isset($post['vat_amount']) && $post['vat_amount'] !== '' ? (float)$post['vat_amount'] : ($existingMeta['vat_amount'] ?? null),
+            'occupation_tax'      => isset($post['occupation_tax']) && $post['occupation_tax'] !== '' ? (float)$post['occupation_tax'] : ($existingMeta['occupation_tax'] ?? null),
+            'income_tax'          => isset($post['income_tax']) && $post['income_tax'] !== '' ? (float)$post['income_tax'] : ($existingMeta['income_tax'] ?? null),
+            'signboard_tax'       => isset($post['signboard_tax']) && $post['signboard_tax'] !== '' ? (float)$post['signboard_tax'] : ($existingMeta['signboard_tax'] ?? null),
+            'surcharge'           => isset($post['surcharge']) && $post['surcharge'] !== '' ? (float)$post['surcharge'] : ($existingMeta['surcharge'] ?? null),
+            'total_fee'           => isset($post['total_fee']) && $post['total_fee'] !== '' ? (float)$post['total_fee'] : ($existingMeta['total_fee'] ?? null),
             'fiscal_year'         => $fiscal_year ?: ($existingMeta['fiscal_year'] ?? null),
-            'ownership_type_id'   => !empty($post['ownership_type_id']) ? (int)$post['ownership_type_id'] : ($existingMeta['ownership_type_id'] ?? null),
-            'business_type_id'    => !empty($post['business_type_id']) ? (int)$post['business_type_id'] : ($existingMeta['business_type_id'] ?? null),
+            'ownership_type_id'   => isset($post['ownership_type_id']) && $post['ownership_type_id'] !== '' ? (int)$post['ownership_type_id'] : ($existingMeta['ownership_type_id'] ?? null),
+            'business_type_id'    => isset($post['business_type_id']) && $post['business_type_id'] !== '' ? (int)$post['business_type_id'] : ($existingMeta['business_type_id'] ?? null),
         ];
 
         // Calculate expiry_date from fiscal_year
@@ -1265,6 +1265,25 @@ class ApplicationService
                 ? ($businessUpdateResult['message'] ?? 'Business meta update failed')
                 : 'Business meta update failed';
             throw new \Exception($msg);
+        }
+
+        // Sync business_type table fees so future applications auto-fill
+        $businessTypeId = $businessMetaData['business_type_id'] ?? null;
+        if ($businessTypeId) {
+            require_once __DIR__ . '/../../models/BusinessOwnershipType.php';
+            $bot = new \BusinessOwnershipType($this->mysqli);
+            $btData = [
+                'business_name_bn'  => $businessMetaData['business_name_bn'] ?? '',
+                'business_name_en'  => $businessMetaData['business_name_en'] ?? '',
+                'license_fee'       => $businessMetaData['license_fee'] ?? 0,
+                'vat_amount'        => $businessMetaData['vat_amount'] ?? 0,
+                'occupation_tax'    => $businessMetaData['occupation_tax'] ?? 0,
+                'income_tax'        => $businessMetaData['income_tax'] ?? 0,
+                'signboard_tax'     => $businessMetaData['signboard_tax'] ?? 0,
+                'surcharge'         => $businessMetaData['surcharge'] ?? 0,
+                'union_id'          => $unionId ?? 0,
+            ];
+            $bot->updateBusinessType((int)$businessTypeId, $btData);
         }
     }
 

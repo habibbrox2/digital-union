@@ -653,6 +653,17 @@
                             </select>
                         </div>
                     </div>
+
+                    {% if data.certificate_type == 'trade' %}
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <button type="button" id="syncTradeFeesBtn" class="btn btn-outline-info btn-sm" onclick="syncBusinessTypeFees()">
+                                <i class="bi bi-arrow-repeat me-1"></i> ব্যবসার ধরণের ফি সিঙ্ক করুন
+                            </button>
+                            <span id="syncFeesStatus" class="ms-2 small"></span>
+                        </div>
+                    </div>
+                    {% endif %}
                 </fieldset>
 
                 <hr class="my-5">
@@ -3128,6 +3139,51 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log('Approver selection cleared');
     };
 });
+
+// Sync business type fees (trade only)
+function syncBusinessTypeFees() {
+    const btn = document.getElementById('syncTradeFeesBtn');
+    const status = document.getElementById('syncFeesStatus');
+    if (!btn) return;
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> সিঙ্ক হচ্ছে...';
+    status.textContent = '';
+
+    const certType = document.getElementById('certificate_type')?.value || '';
+    const appId = document.getElementById('application_id')?.value || '';
+    const csrfToken = document.querySelector('input[name="csrf_token"]')?.value || '';
+
+    const fields = ['license_fee','vat_amount','occupation_tax','income_tax','signboard_tax','surcharge','total_fee','fiscal_year','ownership_type_id','business_type_id'];
+    const fd = new URLSearchParams();
+    fd.set('csrf_token', csrfToken);
+    fields.forEach(f => {
+        const el = document.getElementById(f);
+        if (el) fd.set(f, el.value);
+    });
+
+    fetch(`/applications/${certType}/update-fees/${appId}`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/x-www-form-urlencoded', 'X-Requested-With': 'XMLHttpRequest'},
+        body: fd.toString()
+    })
+    .then(r => r.json())
+    .then(res => {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-arrow-repeat me-1"></i> ব্যবসার ধরণের ফি সিঙ্ক করুন';
+        if (res.status === 'success') {
+            status.innerHTML = '<span class="text-success">✅ ' + res.message + '</span>';
+        } else {
+            status.innerHTML = '<span class="text-danger">❌ ' + res.message + '</span>';
+        }
+        setTimeout(() => { status.textContent = ''; }, 5000);
+    })
+    .catch(err => {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-arrow-repeat me-1"></i> ব্যবসার ধরণের ফি সিঙ্ক করুন';
+        status.innerHTML = '<span class="text-danger">❌ সংযোগে সমস্যা হয়েছে</span>';
+    });
+}
 </script>
 
 

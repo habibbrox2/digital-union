@@ -1,4 +1,5 @@
-<?php/* ===================== AUTHENTICATION CHECK ===================== */
+<?php
+/* ===================== AUTHENTICATION CHECK ===================== */
 // Skip browser-only auth guards when running from CLI cron/smoke scripts.
 $isCli = PHP_SAPI === 'cli' || PHP_SAPI === 'phpdbg';
 if (!$isCli) {
@@ -472,11 +473,33 @@ function createTable($data)
     }
 
     // 🔒 Whitelist allowed SQL types to prevent injection via column type
-    $allowedTypes = ['VARCHAR', 'TEXT', 'TINYTEXT', 'MEDIUMTEXT', 'LONGTEXT',
-        'INT', 'TINYINT', 'SMALLINT', 'MEDIUMINT', 'BIGINT',
-        'DECIMAL', 'FLOAT', 'DOUBLE',
-        'DATE', 'DATETIME', 'TIMESTAMP', 'TIME', 'YEAR',
-        'BOOLEAN', 'BOOL', 'BLOB', 'LONGBLOB', 'JSON', 'ENUM', 'SET'];
+    $allowedTypes = [
+        'VARCHAR',
+        'TEXT',
+        'TINYTEXT',
+        'MEDIUMTEXT',
+        'LONGTEXT',
+        'INT',
+        'TINYINT',
+        'SMALLINT',
+        'MEDIUMINT',
+        'BIGINT',
+        'DECIMAL',
+        'FLOAT',
+        'DOUBLE',
+        'DATE',
+        'DATETIME',
+        'TIMESTAMP',
+        'TIME',
+        'YEAR',
+        'BOOLEAN',
+        'BOOL',
+        'BLOB',
+        'LONGBLOB',
+        'JSON',
+        'ENUM',
+        'SET'
+    ];
 
     // 🔒 Whitelist allowed DEFAULT values
     $allowedDefaults = ['NULL', 'CURRENT_TIMESTAMP'];
@@ -572,7 +595,8 @@ function createTable($data)
 }
 
 
-/* ===================== SERVER INFO ===================== */function getServerInfo()
+/* ===================== SERVER INFO ===================== */
+function getServerInfo()
 {
     $db = db();
 

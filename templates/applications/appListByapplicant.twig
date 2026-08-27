@@ -277,65 +277,63 @@
     </div>
 </div>
 <script>
-if (typeof jQuery === 'undefined') {
-    Swal.fire('Error', 'jQuery not loaded!', 'error');
-} else {
-    console.log('jQuery version:', jQuery.fn.jquery);
-}
-</script>
-<script>
-$(function(){
+(function(){
     // Initialize all address-blocks collapsed
-    $('.address-block').each(function(){
-        var $block = $(this);
-        $block.attr('aria-expanded', 'false');
-        $block.css({height: '40px', overflow: 'hidden'});
-        $block.data('fullHeight', $block.prop('scrollHeight'));
-        $block.attr('tabindex', 0);
+    document.querySelectorAll('.address-block').forEach(function(block) {
+        block.setAttribute('aria-expanded', 'false');
+        block.style.height = '40px';
+        block.style.overflow = 'hidden';
+        block.dataset.fullHeight = block.scrollHeight;
+        block.setAttribute('tabindex', '0');
     });
 
     function collapseAll(except) {
-        $('.address-block[aria-expanded="true"]').each(function(){
-            if (!except || this !== except[0]) {
-                $(this).attr('aria-expanded', 'false').stop().animate({height: '40px'}, 250).css('overflow', 'hidden');
+        document.querySelectorAll('.address-block[aria-expanded="true"]').forEach(function(block) {
+            if (!except || block !== except) {
+                block.setAttribute('aria-expanded', 'false');
+                block.style.transition = 'height 0.25s ease';
+                block.style.height = '40px';
+                block.style.overflow = 'hidden';
             }
         });
     }
 
-    $(document).on('click', '.address-block', function(e){
-        if ($(e.target).is('a,button,input,select,textarea,label')) return;
-        e.stopPropagation();
-        var $block = $(this);
-        var expanded = $block.attr('aria-expanded') === 'true';
-        if (expanded) {
-            $block.attr('aria-expanded', 'false').stop().animate({height: '40px'}, 250, function(){
-                $block.css('overflow', 'hidden');
-            });
+    document.addEventListener('click', function(e) {
+        var block = e.target.closest('.address-block');
+        if (block) {
+            if (e.target.matches('a,button,input,select,textarea,label')) return;
+            e.stopPropagation();
+            var expanded = block.getAttribute('aria-expanded') === 'true';
+            if (expanded) {
+                block.setAttribute('aria-expanded', 'false');
+                block.style.transition = 'height 0.25s ease';
+                block.style.height = '40px';
+                block.style.overflow = 'hidden';
+            } else {
+                collapseAll(block);
+                // recalculate full height in case content changed
+                block.style.height = 'auto';
+                var fullHeight = block.scrollHeight;
+                block.style.height = '40px';
+                block.setAttribute('aria-expanded', 'true');
+                block.style.overflow = 'visible';
+                block.style.transition = 'height 0.25s ease';
+                block.style.height = fullHeight + 'px';
+                setTimeout(function(){ block.style.height = 'auto'; }, 250);
+            }
         } else {
-            collapseAll($block);
-            // recalculate full height in case content changed
-            $block.css('height', 'auto');
-            var fullHeight = $block.prop('scrollHeight');
-            $block.css('height', '40px');
-            $block.attr('aria-expanded', 'true').css('overflow', 'visible').stop().animate({height: fullHeight + 'px'}, 250, function(){
-                $block.css('height', 'auto');
-            });
-        }
-    });
-
-    $(document).on('keydown', '.address-block', function(e){
-        if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') {
-            e.preventDefault();
-            $(this).trigger('click');
-        }
-    });
-
-    // Collapse if click outside
-    $(document).on('click', function(e){
-        if (!$(e.target).closest('.address-block').length) {
+            // Collapse if click outside any address-block
             collapseAll();
         }
     });
-});
+
+    document.addEventListener('keydown', function(e) {
+        var block = e.target.closest('.address-block');
+        if (block && (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar')) {
+            e.preventDefault();
+            block.click();
+        }
+    });
+})();
 </script>
 {% endblock %}

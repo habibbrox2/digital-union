@@ -305,18 +305,18 @@
     function initDatepickers(root){
         if (!root) root = document;
         root.querySelectorAll('.datepicker').forEach(function(input){
-            if (window.jQuery && typeof $(input).datepicker === 'function'){
-                try {
-                    $(input).datepicker({
+            try {
+                if (window.jQuery && typeof jQuery(input).datepicker === 'function'){
+                    jQuery(input).datepicker({
                         format:'dd-mm-yyyy',
                         autoclose:true,
                         todayHighlight:true
                     });
-                } catch(e) {
+                } else {
                     input.placeholder = input.placeholder || 'দিন-মাস-বছর';
                     input.setAttribute('inputmode','numeric');
                 }
-            } else {
+            } catch(e) {
                 input.placeholder = input.placeholder || 'দিন-মাস-বছর';
                 input.setAttribute('inputmode','numeric');
             }

@@ -131,7 +131,7 @@
 <script src="{{ url }}/assets/js/forms.js?t={{ "now"|date("Hiss") }}"></script>
 
 <script>
-$(document).ready(function () {
+document.addEventListener('DOMContentLoaded', function () {
     window.postOfficeDebug = window.postOfficeDebug ?? true;
     window.postOfficeDebugLog = window.postOfficeDebugLog || function () {
         if (window.postOfficeDebug && window.console) {
@@ -139,25 +139,25 @@ $(document).ready(function () {
         }
     };
 
-    const applicationId = $('#application_id').val();
-    const certificate_type = $('#certificate_type').val();
+    const applicationId = document.getElementById('application_id')?.value;
+    const certificate_type = document.getElementById('certificate_type')?.value;
     if (applicationId && certificate_type) {
         loadApplicationData(applicationId, certificate_type);
     }
 
     function populateEditDropdown(selector, data, selectedValue = null) {
-        if (!$(selector).length) return;
-        const dropdown = $(selector);
-        dropdown.empty().append('<option value="">-- নির্বাচন করুন --</option>');
+        const dropdown = typeof selector === 'string' ? document.querySelector(selector) : selector;
+        if (!dropdown) return;
+        dropdown.innerHTML = '<option value="">-- নির্বাচন করুন --</option>';
         const selectedValueNorm = selectedValue ? String(selectedValue).trim().toLowerCase() : null;
 
-        $.each(data, function (_, item) {
+        data.forEach(function (item) {
             const itemIdNorm = String(item.id).trim().toLowerCase();
             const itemNameEnNorm = String(item.name_en).trim().toLowerCase();
             const isSelected = selectedValueNorm &&
                 (selectedValueNorm === itemIdNorm || selectedValueNorm === itemNameEnNorm) ? 'selected' : '';
 
-            dropdown.append(
+            dropdown.insertAdjacentHTML('beforeend',
                 `<option value="${item.name_en}" 
                     data-geo-code="${item.geo_code}" 
                     data-name-en="${item.name_en}" 
@@ -168,85 +168,98 @@ $(document).ready(function () {
     }
 
     function fetchEditGeoData(geoOrder, parentGeoId, dropdownSelector, nextDropdownSelector = null, selectedValue = null, callback = null) {
-        if (!$(dropdownSelector).length) return;
+        const dropdown = typeof dropdownSelector === 'string' ? document.querySelector(dropdownSelector) : dropdownSelector;
+        if (!dropdown) return;
 
-        $.ajax({
-            url: '/geo/getdata',
+        var formData = new URLSearchParams();
+        formData.append('geo_order', geoOrder);
+        formData.append('parent_geo_id', parentGeoId);
+
+        fetch('/geo/getdata', {
             method: 'POST',
-            data: { geo_order: geoOrder, parent_geo_id: parentGeoId },
-            dataType: 'json',
-            success: function (data) {
-                populateEditDropdown(dropdownSelector, data, selectedValue);
-                if (nextDropdownSelector && $(nextDropdownSelector).length) {
-                    $(nextDropdownSelector).empty().append('<option value="">-- নির্বাচন করুন --</option>');
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: formData.toString()
+        })
+        .then(function(r) { return r.json(); })
+        .then(function (data) {
+            populateEditDropdown(dropdownSelector, data, selectedValue);
+            if (nextDropdownSelector) {
+                const nextEl = typeof nextDropdownSelector === 'string' ? document.querySelector(nextDropdownSelector) : nextDropdownSelector;
+                if (nextEl) {
+                    nextEl.innerHTML = '<option value="">-- নির্বাচন করুন --</option>';
                 }
-                if (callback) callback();
-            },
-            error: function (err) {
-                console.error(`Geo data fetch failed: ${dropdownSelector}`, err);
             }
+            if (callback) callback();
+        })
+        .catch(function (err) {
+            console.error(`Geo data fetch failed: ${dropdownSelector}`, err);
         });
     }
 
     window.highlightPrefilled = window.highlightPrefilled || function(el) {
-        if (el && el.length && el.val()) {
-            el.css('background-color', '#d4edda');
-            el.css('border', '2px solid #c3e6cb');
+        if (el && el.tagName && el.value) {
+            el.style.backgroundColor = '#d4edda';
+            el.style.border = '2px solid #c3e6cb';
         }
     }
 
     function populateAddressFields(prefix, addressData) {
-        if (!addressData || !$(`#${prefix}_district_id`).length) return;
+        if (!addressData || !document.getElementById(prefix + '_district_id')) return;
 
         const fields = ['village_en', 'village_bn', 'rbs_en', 'rbs_bn', 'holding_no', 'ward_no', 'postoffice_en', 'postoffice_bn'];
         fields.forEach(field => {
-            const el = $(`#${prefix}_${field}`);
-            el.val(addressData[field] || '');
-            highlightPrefilled(el);
+            const el = document.getElementById(prefix + '_' + field);
+            if (el) { el.value = addressData[field] || ''; highlightPrefilled(el); }
         });
 
-        const districtBn = $(`#${prefix}_district`);
-        if (addressData.district_bn) {
-            districtBn.val(addressData.district_bn);
+        const districtBn = document.getElementById(prefix + '_district');
+        if (districtBn && addressData.district_bn) {
+            districtBn.value = addressData.district_bn;
             highlightPrefilled(districtBn);
         }
-        const upazilaBn = $(`#${prefix}_upazila`);
-        if (addressData.upazila_bn) {
-            upazilaBn.val(addressData.upazila_bn);
+        const upazilaBn = document.getElementById(prefix + '_upazila');
+        if (upazilaBn && addressData.upazila_bn) {
+            upazilaBn.value = addressData.upazila_bn;
             highlightPrefilled(upazilaBn);
         }
-        const unionBn = $(`#${prefix}_union`);
-        if (addressData.union_bn) {
-            unionBn.val(addressData.union_bn);
+        const unionBn = document.getElementById(prefix + '_union');
+        if (unionBn && addressData.union_bn) {
+            unionBn.value = addressData.union_bn;
             highlightPrefilled(unionBn);
         }
 
         // Cascading geo dropdowns
-        fetchEditGeoData(1, 0, `#${prefix}_district_id`, null, addressData.district_geo_id || addressData.district_en, function () {
-            const selectedDistrictId = $(`#${prefix}_district_id option:selected`).data('geo-id');
-            fetchEditGeoData(2, selectedDistrictId, `#${prefix}_upazila_id`, null, addressData.upazila_geo_id || addressData.upazila_en, function () {
-                const selectedUpazilaId = $(`#${prefix}_upazila_id option:selected`).data('geo-id');
-                fetchEditGeoData(3, selectedUpazilaId, `#${prefix}_union_id`, null, addressData.union_geo_id || addressData.union_en, function () {
+        fetchEditGeoData(1, 0, '#' + prefix + '_district_id', null, addressData.district_geo_id || addressData.district_en, function () {
+            const districtSelect = document.getElementById(prefix + '_district_id');
+            const selectedDistrictId = districtSelect?.selectedOptions[0]?.dataset?.geoId;
+            fetchEditGeoData(2, selectedDistrictId, '#' + prefix + '_upazila_id', null, addressData.upazila_geo_id || addressData.upazila_en, function () {
+                const upazilaSelect = document.getElementById(prefix + '_upazila_id');
+                const selectedUpazilaId = upazilaSelect?.selectedOptions[0]?.dataset?.geoId;
+                fetchEditGeoData(3, selectedUpazilaId, '#' + prefix + '_union_id', null, addressData.union_geo_id || addressData.union_en, function () {
                     // Fill Bengali text fields from the selected dropdown options
-                    if ($(`#${prefix}_district`).length) {
-                        const selectedDistrict = $(`#${prefix}_district_id option:selected`).data('name-bn') || '';
-                        $(`#${prefix}_district`).val(selectedDistrict);
+                    const distEl = document.getElementById(prefix + '_district');
+                    if (distEl) {
+                        const selectedDistrict = districtSelect?.selectedOptions[0]?.dataset?.nameBn || '';
+                        distEl.value = selectedDistrict;
                     }
-                    if ($(`#${prefix}_upazila`).length) {
-                        const selectedUpazila = $(`#${prefix}_upazila_id option:selected`).data('name-bn') || '';
-                        $(`#${prefix}_upazila`).val(selectedUpazila);
+                    const upaEl = document.getElementById(prefix + '_upazila');
+                    if (upaEl) {
+                        const selectedUpazila = upazilaSelect?.selectedOptions[0]?.dataset?.nameBn || '';
+                        upaEl.value = selectedUpazila;
                     }
-                    if ($(`#${prefix}_union`).length) {
-                        const selectedUnion = $(`#${prefix}_union_id option:selected`).data('name-bn') || '';
-                        $(`#${prefix}_union`).val(selectedUnion);
+                    const uniEl = document.getElementById(prefix + '_union');
+                    if (uniEl) {
+                        const selectedUnion = document.getElementById(prefix + '_union_id')?.selectedOptions[0]?.dataset?.nameBn || '';
+                        uniEl.value = selectedUnion;
                     }
-                    const unionNameForPo = $(`#${prefix}_union_id option:selected`).data('name-en') || $(`#${prefix}_union_id`).val();
+                    const unionSelectEl = document.getElementById(prefix + '_union_id');
+                    const unionNameForPo = unionSelectEl?.selectedOptions[0]?.dataset?.nameEn || unionSelectEl?.value;
                     window.postOfficeDebugLog('[post-office] update form prefill', {
                         prefix: prefix,
                         unionNameForPo: unionNameForPo
                     });
                     if (unionNameForPo && typeof window.fetchPostOffices === 'function') {
-                        window.fetchPostOffices(unionNameForPo, `#${prefix}_postoffice_en`, `#${prefix}_postoffice_bn`);
+                        window.fetchPostOffices(unionNameForPo, '#' + prefix + '_postoffice_en', '#' + prefix + '_postoffice_bn');
                     }
                 });
             });
@@ -289,11 +302,9 @@ $(document).ready(function () {
     }
 
     function loadApplicationData(applicationId, certificate_type) {
-        $.ajax({
-            url: `/applications/${certificate_type}/api/${applicationId}`,
-            method: 'GET',
-            dataType: 'json',
-            success: function (data) {
+        fetch(`/applications/${certificate_type}/api/${applicationId}`)
+        .then(function(r) { return r.json(); })
+        .then(function (data) {
 
                 // Extra data — parse JSON and init dynamic fields
                 let parsedExtraData = {};
@@ -327,23 +338,30 @@ $(document).ready(function () {
 
                 // Documents preview
                 if (data.documents && Array.isArray(data.documents)) {
-                    $('#documents_container .document-row:gt(0)').remove();
+                    const docContainer = document.getElementById('documents_container');
+                    const allRows = docContainer.querySelectorAll('.document-row');
+                    // Remove all rows except the first
+                    for (let i = 1; i < allRows.length; i++) allRows[i].remove();
+                    const firstRow = docContainer.querySelector('.document-row');
                     data.documents.forEach(function(doc, idx) {
                         let row;
                         if (idx === 0) {
-                            row = $('#documents_container .document-row').first();
+                            row = firstRow;
                         } else {
-                            row = $('#documents_container .document-row').first().clone();
-                            row.find('input[type="file"]').val('');
-                            row.find('.preview-area').empty();
-                            $('#documents_container').append(row);
+                            row = firstRow.cloneNode(true);
+                            row.querySelector('input[type="file"]').value = '';
+                            row.querySelector('.preview-area').innerHTML = '';
+                            docContainer.appendChild(row);
                         }
-                        if (doc && row.find('.preview-area').length) {
-                            let ext = doc.split('.').pop().toLowerCase();
-                            if(['jpg','jpeg','png','gif','bmp','webp'].includes(ext)) {
-                                row.find('.preview-area').html(`<img src="${doc}" alt="ডকুমেন্ট" style="max-width:100px;max-height:100px;">`);
-                            } else {
-                                row.find('.preview-area').html(`<button type="button" class="btn btn-link p-0" data-preview="${doc}" data-preview-title="ডকুমেন্ট">ডকুমেন্ট দেখুন</button>`);
+                        if (doc) {
+                            const previewArea = row.querySelector('.preview-area');
+                            if (previewArea) {
+                                let ext = doc.split('.').pop().toLowerCase();
+                                if(['jpg','jpeg','png','gif','bmp','webp'].includes(ext)) {
+                                    previewArea.innerHTML = `<img src="${doc}" alt="ডকুমেন্ট" style="max-width:100px;max-height:100px;">`;
+                                } else {
+                                    previewArea.innerHTML = `<button type="button" class="btn btn-link p-0" data-preview="${doc}" data-preview-title="ডকুমেন্ট">ডকুমেন্ট দেখুন</button>`;
+                                }
                             }
                         }
                     });
@@ -356,91 +374,99 @@ $(document).ready(function () {
                         : data.name_bn;
                     const isOwnName = !data.applicant_name || String(data.applicant_name).trim() === '' || applicantName === data.name_bn;
 
+                    const ownNameRadio = document.getElementById('own_name');
+                    const otherNameRadio = document.getElementById('other_name');
+                    const applicantNameInput = document.getElementById('applicant_name');
                     if (isOwnName) {
-                        $('#own_name').prop('checked', true);
-                        $('#applicant_name').val(applicantName || data.name_bn || '').prop('readonly', true).show();
+                        if (ownNameRadio) ownNameRadio.checked = true;
+                        if (applicantNameInput) { applicantNameInput.value = applicantName || data.name_bn || ''; applicantNameInput.readOnly = true; applicantNameInput.style.display = ''; }
                     } else {
-                        $('#other_name').prop('checked', true);
-                        $('#applicant_name').val(applicantName).prop('readonly', false).show();
+                        if (otherNameRadio) otherNameRadio.checked = true;
+                        if (applicantNameInput) { applicantNameInput.value = applicantName; applicantNameInput.readOnly = false; applicantNameInput.style.display = ''; }
                     }
-                    highlightPrefilled($('#applicant_name'));
+                    if (applicantNameInput) highlightPrefilled(applicantNameInput);
                 }
-                if ($('#applicant_phone').length) $('#applicant_phone').val(data.applicant_phone || '');
+                const phoneEl = document.getElementById('applicant_phone');
+                if (phoneEl) phoneEl.value = data.applicant_phone || '';
 
                 // Applicant name radio change handler
-                $('input[name="applicant_name_option"]').change(function() {
-                    if ($(this).val() === 'own') {
-                        $('#applicant_name').prop('readonly', true).show();
-                    } else {
-                        $('#applicant_name').prop('readonly', false).show();
-                    }
+                document.querySelectorAll('input[name="applicant_name_option"]').forEach(function(radio) {
+                    radio.addEventListener('change', function() {
+                        const applicantNameInput = document.getElementById('applicant_name');
+                        if (applicantNameInput) {
+                            applicantNameInput.readOnly = (this.value === 'own');
+                            applicantNameInput.style.display = '';
+                        }
+                    });
                 });
 
                 // Personal info prefill
-                function setWithHighlight(el, val) {
-                    el.val(val || '');
-                    highlightPrefilled(el);
+                function setWithHighlight(id, val) {
+                    const el = document.getElementById(id);
+                    if (el) { el.value = val || ''; highlightPrefilled(el); }
                 }
-                setWithHighlight($('#name_en'), data.name_en);
-                setWithHighlight($('#name_bn'), data.name_bn);
-                setWithHighlight($('#nid'), data.nid);
-                setWithHighlight($('#birth_id'), data.birth_id);
-                setWithHighlight($('#passport_no'), data.passport_no);
-                if ($('#birth_date').length && data.birth_date) {
+                setWithHighlight('name_en', data.name_en);
+                setWithHighlight('name_bn', data.name_bn);
+                setWithHighlight('nid', data.nid);
+                setWithHighlight('birth_id', data.birth_id);
+                setWithHighlight('passport_no', data.passport_no);
+                const birthDateEl = document.getElementById('birth_date');
+                if (birthDateEl && data.birth_date) {
                     let date = new Date(data.birth_date);
                     if (!isNaN(date.getTime())) {
                         let day = String(date.getDate()).padStart(2, '0');
                         let month = String(date.getMonth() + 1).padStart(2, '0');
                         let year = date.getFullYear();
-                        const el = $('#birth_date');
-                        el.val(`${day}-${month}-${year}`);
-                        el.css('background-color', '#d4edda');
-                        el.css('border', '2px solid #c3e6cb');
+                        birthDateEl.value = `${day}-${month}-${year}`;
+                        birthDateEl.style.backgroundColor = '#d4edda';
+                        birthDateEl.style.border = '2px solid #c3e6cb';
                     } else {
-                        setWithHighlight($('#birth_date'), data.birth_date);
+                        setWithHighlight('birth_date', data.birth_date);
                     }
                 }
 
-                setWithHighlight($('#father_name_en'), data.father_name_en);
-                setWithHighlight($('#father_name_bn'), data.father_name_bn);
-                setWithHighlight($('#mother_name_en'), data.mother_name_en);
-                setWithHighlight($('#mother_name_bn'), data.mother_name_bn);
-                setWithHighlight($('#occupation'), data.occupation);
-                setWithHighlight($('#educational_qualification'), data.educational_qualification);
-                setWithHighlight($('#resident'), data.resident);
-                setWithHighlight($('#religion'), data.religion);
-                setWithHighlight($('#spouse_name_en'), data.spouse_name_en);
-                setWithHighlight($('#spouse_name_bn'), data.spouse_name_bn);
+                setWithHighlight('father_name_en', data.father_name_en);
+                setWithHighlight('father_name_bn', data.father_name_bn);
+                setWithHighlight('mother_name_en', data.mother_name_en);
+                setWithHighlight('mother_name_bn', data.mother_name_bn);
+                setWithHighlight('occupation', data.occupation);
+                setWithHighlight('educational_qualification', data.educational_qualification);
+                setWithHighlight('resident', data.resident);
+                setWithHighlight('religion', data.religion);
+                setWithHighlight('spouse_name_en', data.spouse_name_en);
+                setWithHighlight('spouse_name_bn', data.spouse_name_bn);
 
                 // Gender select
-                if ($('#gender').length && data.gender) {
-                    $('#gender').val(function(){
-                        let val = String(data.gender).toLowerCase();
-                        if(val==='male'||val==='পুরুষ') return 'male';
-                        if(val==='female'||val==='মহিলা') return 'female';
-                        if(val==='other'||val==='অন্যান্য') return 'other';
-                        return '';
-                    });
+                const genderEl = document.getElementById('gender');
+                if (genderEl && data.gender) {
+                    let val = String(data.gender).toLowerCase();
+                    if(val==='male'||val==='পুরুষ') genderEl.value = 'male';
+                    else if(val==='female'||val==='মহিলা') genderEl.value = 'female';
+                    else if(val==='other'||val==='অন্যান্য') genderEl.value = 'other';
+                    else genderEl.value = '';
                 }
                 // Marital status select
-                if ($('#marital_status').length && data.marital_status) {
-                    $('#marital_status').val(function(){
-                        let val = String(data.marital_status).toLowerCase();
-                        if(val==='single'||val==='অবিবাহিত') return 'single';
-                        if(val==='married'||val==='বিবাহিত') return 'married';
-                        if(val==='divorced'||val==='তালাকপ্রাপ্ত') return 'divorced';
-                        if(val==='widowed'||val==='বিধবা/বিপত্নীক') return 'widowed';
-                        if(val==='other'||val==='অন্যান্য') return 'other';
-                        return '';
-                    }).trigger('change');
+                const maritalStatusEl = document.getElementById('marital_status');
+                if (maritalStatusEl && data.marital_status) {
+                    let val = String(data.marital_status).toLowerCase();
+                    if(val==='single'||val==='অবিবাহিত') maritalStatusEl.value = 'single';
+                    else if(val==='married'||val==='বিবাহিত') maritalStatusEl.value = 'married';
+                    else if(val==='divorced'||val==='তালাকপ্রাপ্ত') maritalStatusEl.value = 'divorced';
+                    else if(val==='widowed'||val==='বিধবা/বিপত্নীক') maritalStatusEl.value = 'widowed';
+                    else if(val==='other'||val==='অন্যান্য') maritalStatusEl.value = 'other';
+                    else maritalStatusEl.value = '';
+                    maritalStatusEl.dispatchEvent(new Event('change'));
                 }
                 // Spouse info show/hide
+                const spouseSection = document.getElementById('spouse_section');
                 if (data.marital_status && (String(data.marital_status).toLowerCase() === 'married' || String(data.marital_status).toLowerCase() === 'বিবাহিত')) {
-                    $('#spouse_section').show();
-                    if ($('#spouse_name_en').length) $('#spouse_name_en').val(data.spouse_name_en || '');
-                    if ($('#spouse_name_bn').length) $('#spouse_name_bn').val(data.spouse_name_bn || '');
+                    if (spouseSection) spouseSection.style.display = '';
+                    const spouseEn = document.getElementById('spouse_name_en');
+                    const spouseBn = document.getElementById('spouse_name_bn');
+                    if (spouseEn) spouseEn.value = data.spouse_name_en || '';
+                    if (spouseBn) spouseBn.value = data.spouse_name_bn || '';
                 } else {
-                    $('#spouse_section').hide();
+                    if (spouseSection) spouseSection.style.display = 'none';
                 }
 
                 const addressPrefixes = ['present', 'permanent'];
@@ -508,10 +534,9 @@ $(document).ready(function () {
                     };
                     populateAddressFields('business', businessAddress);
                 }
-            },
-            error: function (err) {
-                console.error("Could not load application data:", err);
-            }
+        })
+        .catch(function (err) {
+            console.error("Could not load application data:", err);
         });
     }
 
@@ -539,16 +564,22 @@ $(document).ready(function () {
 
     function initDatepickers(rootEl){
         if (!rootEl) rootEl = document;
-        $(rootEl).find('.datepicker').each(function(){
+        const datepickers = (rootEl === document) ? rootEl.querySelectorAll('.datepicker') : rootEl.querySelectorAll('.datepicker');
+        datepickers.forEach(function(input){
             try {
-                $(this).datepicker({
-                    format:'dd-mm-yyyy',
-                    autoclose:true,
-                    todayHighlight:true
-                });
+                if (window.jQuery && typeof jQuery(input).datepicker === 'function') {
+                    jQuery(input).datepicker({
+                        format:'dd-mm-yyyy',
+                        autoclose:true,
+                        todayHighlight:true
+                    });
+                } else {
+                    input.placeholder = input.placeholder || 'দিন-মাস-বছর';
+                    input.setAttribute('inputmode','numeric');
+                }
             } catch(e) {
-                this.placeholder = this.placeholder || 'দিন-মাস-বছর';
-                this.setAttribute('inputmode','numeric');
+                input.placeholder = input.placeholder || 'দিন-মাস-বছর';
+                input.setAttribute('inputmode','numeric');
             }
         });
     }
@@ -632,7 +663,7 @@ $(document).ready(function () {
 
     async function initExtraFieldsForUpdate(){
         const extraFields = await fetchExtraFields();
-        const certType = $('#certificate_type').val();
+        const certType = document.getElementById('certificate_type')?.value;
         if (!certType || !extraFields[certType]) return;
 
         const form = document.getElementById('applicationForm');
@@ -662,8 +693,10 @@ $(document).ready(function () {
         if (!form) return;
 
         // Remove any existing handler to avoid duplicates
-        $(form).off('submit.extraFields');
-        $(form).on('submit.extraFields', function(e) {
+        if (form._extraFieldsHandler) {
+            form.removeEventListener('submit', form._extraFieldsHandler);
+        }
+        form._extraFieldsHandler = function(e) {
             try {
                 const payload = {};
                 const dynamicInputs = form.querySelectorAll('[data-extra-field="1"]');
@@ -679,7 +712,8 @@ $(document).ready(function () {
                 }
                 hidden.value = JSON.stringify(payload);
             } catch(err){ console.error(err); }
-        });
+        };
+        form.addEventListener('submit', form._extraFieldsHandler);
     }
 
     function updateLabelAndPlaceholderSafe(labelEl, inputEl, text){
