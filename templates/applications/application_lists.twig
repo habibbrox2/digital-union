@@ -1077,6 +1077,10 @@ function resetApproveModal() {
     // Reset trade fields
     const tradeFields = document.getElementById('modalTradeFields');
     if (tradeFields) tradeFields.style.display = 'none';
+    // Reset trade fee fields in certificate fee section
+    // Reset trade license fee section
+    const tradeFeeSection = document.getElementById('modalTradeFeeSection');
+    if (tradeFeeSection) tradeFeeSection.style.display = 'none';
     // Reset certificate fields
     const certFields = document.getElementById('modalCertificateFields');
     if (certFields) certFields.style.display = 'none';
@@ -1254,6 +1258,24 @@ function populateApproveModal(result, certType) {
     document.getElementById('modal_verifier_name_bn').value = a.verifier_name_bn || '';
     document.getElementById('modal_verifier_name_en').value = a.verifier_name_en || '';
     document.getElementById('modal_verifier_ward_no').value = a.verifier_ward_no || '';
+
+    // Auto-select verifier based on application's present_ward_no
+    if (!a.verifier_id) {
+        var appWard = (d.present_ward_no || '').toString().trim();
+        if (appWard) {
+            var verifierSelect = document.getElementById('modal_verifier_select');
+            for (var i = 1; i < verifierSelect.options.length; i++) {
+                var opt = verifierSelect.options[i];
+                var wards = (opt.dataset.wards || opt.dataset.wardNo || '').split(',').map(function(w) { return w.trim(); });
+                if (wards.indexOf(appWard) !== -1) {
+                    verifierSelect.selectedIndex = i;
+                    verifierSelect.dispatchEvent(new Event('change'));
+                    console.log('Auto-selected verifier for ward:', appWard, '→', opt.textContent);
+                    break;
+                }
+            }
+        }
+    }
     document.getElementById('modal_verification_date').value = normalizeModalDate(a.verification_date) || getModalToday();
     document.getElementById('modal_verification_note').value = a.verification_note || 'সফলভাবে যাচাই করা হয়েছে।';
     document.getElementById('modal_approver_id').value = a.approver_id || '';
@@ -1286,6 +1308,8 @@ function populateApproveModal(result, certType) {
     if (certType === 'trade') {
         tradeFields.style.display = 'block';
         licenseSection.style.display = 'block';
+        const tradeFeeSection = document.getElementById('modalTradeFeeSection');
+        if (tradeFeeSection) tradeFeeSection.style.display = 'block';
 
         // Populate fiscal year options
         const fySelect = document.getElementById('modal_fiscal_year');
@@ -1363,10 +1387,7 @@ function populateApproveModal(result, certType) {
     }
 
     // Show/hide trade sync button
-    const tradeSyncSection = document.getElementById('modalTradeSyncSection');
-    if (tradeSyncSection) {
-        tradeSyncSection.style.display = (certType === 'trade') ? 'block' : 'none';
-    }
+
 
     initModalDatepickers();
 
@@ -1408,7 +1429,20 @@ function initModalDatepickers() {
             input.datepickerInstance.destroy();
             input.datepickerInstance = null;
         }
-        input.datepickerInstance = new CompactDatepicker(input);
+        const datepicker = new CompactDatepicker(input);
+
+        // Prevent selectDate() from reopening the popup via the input focus handler.
+        const selectDate = datepicker.selectDate.bind(datepicker);
+        datepicker.selectDate = function(date) {
+            const originalFocus = input.focus;
+            input.focus = function() {};
+            try {
+                return selectDate(date);
+            } finally {
+                input.focus = originalFocus;
+            }
+        };
+        input.datepickerInstance = datepicker;
     });
 }
 

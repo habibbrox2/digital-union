@@ -825,9 +825,9 @@ $router->get('/api/chat/admin/typing', function () use ($chatModel, $authService
  * GET /api/chat/admin/unread/total
  * Get total count of unread visitor messages across all sessions.
  * Lightweight endpoint for global notification polling.
- */
-$router->get('/api/chat/admin/unread/total', function () use ($chatModel, $authService, $chatService) {
-    $authService->ensureCan('manage_chat');
+ */$router->get('/api/chat/admin/unread/total', function () use ($chatModel, $authService, $chatService) {
+    try {
+        $authService->ensureCan('manage_chat');
 
     // Live chat unread count
     $liveCount = $chatModel->countAllUnreadVisitorMessages();
@@ -879,11 +879,20 @@ $router->get('/api/chat/admin/unread/total', function () use ($chatModel, $authS
                 'created_at' => $latestOfflineMsg['created_at'] ?? '',
             ] : null,
             'notify_settings' => $adminNotifySettings,
-        ]
-    ], JSON_UNESCAPED_UNICODE);
-    exit;
-});
-
+        ]    ], JSON_UNESCAPED_UNICODE);
+    exit;
+    } catch (\Throwable $e) {
+        header('Content-Type: application/json; charset=utf-8');
+        http_response_code(500);
+        echo json_encode([
+            'status' => 'error',
+            'message' => 'সার্ভার ত্রুটি: ' . $e->getMessage(),
+        ], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+});
+
+
 // ================================================================
 // SETTINGS API
 // ================================================================
