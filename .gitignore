@@ -192,6 +192,12 @@ temp/
 tmp/
 *.tmp
 
+# 🔒 Security: test/backdoor scripts (never deploy)
+public/_test_admin_session.php
+
+# Old/legacy config (should not be in production)
+_old/
+
 # ============================================
 # Chat: local scratch files & push keys (never commit VAPID private keys)
 # ============================================

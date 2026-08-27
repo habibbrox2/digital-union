@@ -1,5 +1,4 @@
-<?php
-/* ===================== AUTHENTICATION CHECK ===================== */
+<?php/* ===================== AUTHENTICATION CHECK ===================== */
 // Skip browser-only auth guards when running from CLI cron/smoke scripts.
 $isCli = PHP_SAPI === 'cli' || PHP_SAPI === 'phpdbg';
 if (!$isCli) {
