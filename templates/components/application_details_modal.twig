@@ -163,7 +163,7 @@
         var id = encodeURIComponent(a.application_id);
         var links = [];
 
-        // Approve button (first in footer for all statuses)
+        // Approve button (only for actionable statuses)
         if (a.status === 'Approved') {
             links.push('<a href="/applications/' + type + '/approve/' + id + '" target="_blank" rel="noopener noreferrer" class="btn btn-success btn-sm">' +
                 '<i class="fas fa-check-circle me-1"></i> অনুমোদন পৃষ্ঠা</a>');
@@ -173,9 +173,6 @@
         } else if (a.status === 'On Hold' || a.status === 'On_Hold' || a.status === 'on_hold') {
             links.push('<a href="/applications/' + type + '/approve/' + id + '" target="_blank" rel="noopener noreferrer" class="btn btn-success btn-sm">' +
                 '<i class="fas fa-check-circle me-1"></i> পুনরায় অনুমোদন করুন</a>');
-        } else {
-            links.push('<a href="/applications/' + type + '/approve/' + id + '" target="_blank" rel="noopener noreferrer" class="btn btn-success btn-sm">' +
-                '<i class="fas fa-check-circle me-1"></i> অনুমোদন পৃষ্ঠা</a>');
         }
 
         links.push('<a href="/applications/' + type + '/view/' + id + '" target="_blank" rel="noopener noreferrer" class="btn btn-outline-info btn-sm">' +

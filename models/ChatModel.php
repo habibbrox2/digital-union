@@ -712,12 +712,13 @@ class ChatModel
 
     /**
      * Get all chat settings (system_settings with 'chat_' prefix).
-     */
-    public function getChatSettings(): array
-    {
-        $stmt = $this->mysqli->prepare("SELECT setting_name, setting_value FROM system_settings WHERE setting_name LIKE 'chat_%'");
-        $stmt->execute();
-        $result = $stmt->get_result();
+     */    public function getChatSettings(): array
+    {
+        $stmt = $this->mysqli->prepare("SELECT setting_name, setting_value FROM system_settings WHERE setting_name LIKE 'chat_%'");
+        if (!$stmt) return [];
+        $stmt->execute();
+        $result = $stmt->get_result();
+        if (!$result) { $stmt->close(); return []; }
         $settings = [];
         while ($row = $result->fetch_assoc()) {
             $settings[$row['setting_name']] = $row['setting_value'];
@@ -1023,17 +1024,17 @@ class ChatModel
 
     /**
      * Count offline messages (optionally unread only).
-     */
-    public function countOfflineMessages(bool $unreadOnly = false): int
-    {
-        if ($unreadOnly) {
-            $result = $this->mysqli->query("SELECT COUNT(*) as cnt FROM chat_offline_messages WHERE is_read = 0");
-        } else {
-            $result = $this->mysqli->query("SELECT COUNT(*) as cnt FROM chat_offline_messages");
-        }
-        $row = $result->fetch_assoc();
-        $result->free();
-        return (int)$row['cnt'];
+     */    public function countOfflineMessages(bool $unreadOnly = false): int
+    {
+        if ($unreadOnly) {
+            $result = $this->mysqli->query("SELECT COUNT(*) as cnt FROM chat_offline_messages WHERE is_read = 0");
+        } else {
+            $result = $this->mysqli->query("SELECT COUNT(*) as cnt FROM chat_offline_messages");
+        }
+        if (!$result) return 0;
+        $row = $result->fetch_assoc();
+        $result->free();
+        return (int)$row['cnt'];
     }
 
     /**
