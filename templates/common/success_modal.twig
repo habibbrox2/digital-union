@@ -5,7 +5,7 @@
             <i class="fa fa-check-circle"></i> {{ certificate_type_bn ? (certificate_type_bn ~ ' - ') : '' }}আবেদন সফল!
         </div>
         <div class="custom-modal-body">
-            <p>আপনার আবেদনটি সফলভাবে সাবমিট হয়েছে।</p>
+            <p>আপনার আবেদনটি সফলভাবে সাবমিট হয়েছে।</p>
             <p><b>আপনার ট্র্যাকিং নম্বর:</b> <span id="application_id"></span></p>
         </div>
         <div class="custom-modal-footer">
@@ -22,7 +22,7 @@
             <i class="fa fa-check-circle"></i> {{ certificate_type_bn ? (certificate_type_bn ~ ' - ') : '' }}আবেদন আপডেট সফল!
         </div>
         <div class="custom-modal-body">
-            <p>আপনার আবেদনটি সফলভাবে আপডেট হয়েছে।</p>
+            <p>আপনার আবেদনটি সফলভাবে আপডেট হয়েছে।</p>
             <ul id="updateChangeList" style="margin-bottom: 15px;"></ul>
             <div id="updateLinks" style="margin-top: 10px;">
                 <a href="#" id="downloadCertificate" class="btn-action" target="_blank">সার্টিফিকেট ডাউনলোড করুন</a>
@@ -35,128 +35,143 @@
     </div>
 </div>
     <script>
-        $(document).ready(function () {
-            const form = $("#applicationForm");
-            const submitButton = form.find("button[type='submit']");
-            const isLoggedIn = {{ is_logged_in ? 'true' : 'false' }};
+        document.addEventListener('DOMContentLoaded', function () {
+            var form = document.getElementById('applicationForm');
+            var submitButton = form ? form.querySelector("button[type='submit']") : null;
+            var isLoggedIn = {{ is_logged_in ? 'true' : 'false' }};
+            var certificateType = "{{ certificate_type }}";
 
+            if (form) {
+                form.addEventListener('submit', function (event) {
+                    event.preventDefault();
+                    var appIdEl = document.getElementById('application_id');
+                    var isUpdate = appIdEl && appIdEl.value ? true : false;
+                    var url = '/applications/' + certificateType + '/' + (isUpdate ? 'update' : 'insert');
 
-            form.submit(function (event) {
-                event.preventDefault();
-                var certificateType = "{{ certificate_type }}";
-                var isUpdate = $("#application_id").val() ? true : false;
-                var url = `/applications/${certificateType}/${isUpdate ? 'update' : 'insert'}`;
+                    var restoreBtn;
+                    if (submitButton) {
+                        restoreBtn = btnLoading(submitButton, 'জমা দেওয়া হচ্ছে...');
+                    }
 
-
-                let restoreBtn;
-                $.ajax({
-                    type: "POST",
-                    url: url,
-                    data: new FormData(this),
-                    contentType: false,
-                    processData: false,
-                    dataType: "json",
-                    beforeSend: function () {
-                        restoreBtn = btnLoading(submitButton[0], 'জমা দেওয়া হচ্ছে...');
-                    },
-                    success: function (response) {
+                    fetch(url, {
+                        method: 'POST',
+                        body: new FormData(form),
+                    })
+                    .then(function (resp) {
+                        return resp.json();
+                    })
+                    .then(function (response) {
+                        if (restoreBtn) restoreBtn();
                         if (response.status === "success") {
                             if (isUpdate) {
-                                // Show change list if provided
+                                var updateChangeList = document.getElementById('updateChangeList');
                                 if (response.changes && Array.isArray(response.changes) && response.changes.length > 0) {
-                                    let listHtml = response.changes.map(function(item) {
+                                    var listHtml = response.changes.map(function(item) {
                                         return '<li>' + item + '</li>';
                                     }).join('');
-                                    $("#updateChangeList").html(listHtml).show();
+                                    updateChangeList.innerHTML = listHtml;
+                                    updateChangeList.style.display = '';
                                 } else {
-                                    $("#updateChangeList").hide();
+                                    updateChangeList.style.display = 'none';
                                 }
-                                // Show certificate download for logged-in users if sonod_number exists
                                 var certType = certificateType || 'application';
-                                var existingSonod = response.sonod_number || $("#sonod_number").val();
+                                var existingSonod = response.sonod_number || (document.getElementById('sonod_number') ? document.getElementById('sonod_number').value : '');
+                                var downloadCert = document.getElementById('downloadCertificate');
                                 if (isLoggedIn && existingSonod) {
-                                    var certUrl = '/application/' + certType + '/bangla/' + existingSonod;
-                                    $("#downloadCertificate").attr("href", certUrl).text('সার্টিফিকেট ডাউনলোড করুন').show();
+                                    downloadCert.href = '/application/' + certType + '/bangla/' + existingSonod;
+                                    downloadCert.textContent = '\u09B8\u09BE\u09B0\u09CD\u099F\u09BF\u09AB\u09BF\u0995\u09C7\u099F \u09A1\u09BE\u0989\u09A8\u09B2\u09CB\u09A1 \u0995\u09B0\u09C1\u09A8';
+                                    downloadCert.style.display = '';
                                 } else if (response.sonod_number && (!response.status || response.status.toLowerCase() !== 'pending')) {
-                                    var certUrl = '/application/' + certType + '/bangla/' + response.sonod_number;
-                                    $("#downloadCertificate").attr("href", certUrl).text('সার্টিফিকেট ডাউনলোড করুন').show();
+                                    downloadCert.href = '/application/' + certType + '/bangla/' + response.sonod_number;
+                                    downloadCert.textContent = '\u09B8\u09BE\u09B0\u09CD\u099F\u09BF\u09AB\u09BF\u0995\u09C7\u099F \u09A1\u09BE\u0989\u09A8\u09B2\u09CB\u09A1 \u0995\u09B0\u09C1\u09A8';
+                                    downloadCert.style.display = '';
                                 } else if (response.application_id) {
-                                    var approveUrl = '/applications/' + certType + '/approve/' + response.application_id;
-                                    $("#downloadCertificate").attr("href", approveUrl).text('অনুমোদন দিন / দেখুন').show();
+                                    downloadCert.href = '/applications/' + certType + '/approve/' + response.application_id;
+                                    downloadCert.textContent = '\u0985\u09A8\u09C1\u09AE\u09CB\u09A6\u09A8 \u09A6\u09BF\u09A8 / \u09A6\u09C7\u0996\u09C1\u09A8';
+                                    downloadCert.style.display = '';
                                 } else {
-                                    $("#downloadCertificate").hide();
+                                    downloadCert.style.display = 'none';
                                 }
-                                $("#updateModal").show();
+                                document.getElementById('updateModal').style.display = '';
                             } else {
-                                $("#application_id").text(response.application_id);
-                                $("#union_code").text(response.union_code);
-                                $("#rmo_code").text(response.rmo_code);
-                                $("#successModal").show();
+                                document.getElementById('application_id').textContent = response.application_id;
+                                document.getElementById('union_code').textContent = response.union_code;
+                                document.getElementById('rmo_code').textContent = response.rmo_code;
+                                document.getElementById('successModal').style.display = '';
                             }
                         } else {
                             Swal.fire('Error', response.message, 'error');
                         }
-                    },
-                    error: function (xhr) {
-                        let message = "⚠️ কিছু সমস্যা হয়েছে, আবার চেষ্টা করুন।";
-                        try {
-                            let response = JSON.parse(xhr.responseText);
-                            if (response.message) {
-                                message = "⚠️ " + response.message;
-                            }
-                        } catch (e) {
-                            if (xhr.responseText) {
-                                message = "⚠️ সার্ভার থেকে উত্তর: " + xhr.responseText;
-                            }
-                        }
-                        Swal.fire('Error', message, 'error');
-                    },
-                    complete: function () {
+                    })
+                    .catch(function (error) {
                         if (restoreBtn) restoreBtn();
-                    }
+                        var message = '\u26A0\uFE0F \u0995\u09BF\u099B\u09C1 \u09B8\u09AE\u09B8\u09CD\u09AF\u09BE \u09B9\u09AF\u09BC\u09C7\u099B\u09C7, \u0986\u09AC\u09BE\u09B0 \u099A\u09C7\u09B7\u09CD\u099F\u09BE \u0995\u09B0\u09C1\u09A8\u0964';
+                        if (error && error.text) {
+                            error.text().then(function (text) {
+                                try {
+                                    var resp = JSON.parse(text);
+                                    if (resp.message) message = '\u26A0\uFE0F ' + resp.message;
+                                } catch (e) {
+                                    if (text) message = '\u26A0\uFE0F \u09B8\u09BE\u09B0\u09CD\u09AD\u09BE\u09B0 \u09A5\u09C7\u0995\u09C7 \u0989\u09A4\u09CD\u09A4\u09B0: ' + text;
+                                }
+                                Swal.fire('Error', message, 'error');
+                            });
+                        } else {
+                            Swal.fire('Error', message, 'error');
+                        }
+                    });
                 });
+            }
+
+            var newAppBtn = document.getElementById('newApplication');
+            if (newAppBtn) {
+                newAppBtn.addEventListener('click', function () {
+                    document.getElementById('successModal').style.display = 'none';
+                    if (form) form.reset();
+                });
+            }
+
+            document.addEventListener('click', function (e) {
+                var closeBtn = e.target.closest('.btn-close-modal');
+                if (closeBtn) {
+                    var modal = closeBtn.closest('.custom-modal');
+                    if (modal) {
+                        modal.style.display = 'none';
+                    } else {
+                        ['successModal', 'updateModal'].forEach(function(id) {
+                            var m = document.getElementById(id);
+                            if (m && m.style.display !== 'none') m.style.display = 'none';
+                        });
+                    }
+                }
             });
 
-
-            $("#newApplication").click(function () {
-                $("#successModal").hide();
-                form[0].reset();
-                // Optional: reset district/upazila/union dropdowns if needed
+            document.addEventListener('click', function (e) {
+                if (e.target.classList.contains('custom-modal') && e.target.style.display !== 'none') {
+                    e.target.style.display = 'none';
+                }
             });
 
-            $(document).on('click', '.btn-close-modal', function () {
-                var modal = $(this).closest('.custom-modal');
-                if (modal.length === 0) {
-                    modal = $('#successModal, #updateModal').filter(function() {
-                        return $(this).css('display') !== 'none' || $(this).is(':visible');
+            document.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape') {
+                    document.querySelectorAll('.custom-modal').forEach(function(m) {
+                        if (m.style.display !== 'none') m.style.display = 'none';
                     });
                 }
-                modal.hide();
             });
 
-            // Close on backdrop click
-            $(document).on('click', '.custom-modal:visible', function (e) {
-                if ($(e.target).is('.custom-modal')) {
-                    $(this).hide();
-                }
-            });
+            var downloadCopyBtn = document.getElementById('downloadCopy');
+            if (downloadCopyBtn) {
+                downloadCopyBtn.addEventListener('click', function () {
+                    var applicantId = document.getElementById('application_id').textContent;
+                    var union_code = (document.getElementById('union_code').textContent || '').trim() || "0";
+                    var rmo_code = (document.getElementById('rmo_code').textContent || '').trim() || "0";
 
-            // Close on Escape key
-            $(document).on('keydown', function (e) {
-                if (e.key === 'Escape') {
-                    $('.custom-modal:visible').hide();
-                }
-            });
-
-            $("#downloadCopy").click(function () {
-                let applicantId = $("#application_id").text();
-                let union_code = $("#union_code").text().trim() || "0";
-                let rmo_code = $("#rmo_code").text().trim() || "0";
-
-                window.open(
-                    "/" + certificateType + "/_verify/application/" + applicantId + "/" + union_code + "/" + rmo_code,
-                    "_blank"
-                );
-            });
+                    window.open(
+                        "/" + certificateType + "/_verify/application/" + applicantId + "/" + union_code + "/" + rmo_code,
+                        "_blank"
+                    );
+                });
+            }
         });
     </script>

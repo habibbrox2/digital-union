@@ -42,9 +42,14 @@
     <!-- Header -->
     <div class="d-flex flex-wrap align-items-center justify-content-between mb-3 gap-2">
         <div>
-            <h4 class="mb-1 fw-bold" style="color: #1e293b;">
-                <i class="bi bi-envelope-gear me-2 text-primary"></i>ইমেইল টেমপ্লেট সেটিংস
-            </h4>
+            <div class="d-flex align-items-center gap-2">
+                <h4 class="mb-1 fw-bold" style="color: #1e293b;">
+                    <i class="bi bi-envelope-gear me-2 text-primary"></i>ইমেইল টেমপ্লেট সেটিংস
+                </h4>
+                <span class="badge bg-warning text-dark" style="font-size: 0.65rem;" data-bs-toggle="tooltip" data-bs-placement="top" title="ইমেইল টেমপ্লেট সম্পাদনা শুধুমাত্র অ্যাডমিনরা করতে পারবেন। ভুল সম্পাদনা সকল ব্যবহারকারীদের অটো-জেনারেটেড ইমেইলের মান নষ্ট করতে পারে।">
+                    <i class="fas fa-shield-alt me-1"></i>অ্যাডমিন শুধু
+                </span>
+            </div>
             <p class="text-muted mb-0" style="font-size: 0.85rem;">
                 সিস্টেম কর্তৃক ব্যবহৃত ইমেইল বার্তার মূল অংশ সম্পাদনা করুন।
                 Twig প্লেসহোল্ডার (যেমন <code>{{ '{{ username }}' }}</code>) ব্যবহার করুন।
@@ -319,6 +324,13 @@
 
 <script>
 document.addEventListener("DOMContentLoaded", function() {
+    // Initialize admin-only tooltips
+    document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(function(el) {
+        if (typeof bootstrap !== 'undefined' && bootstrap.Tooltip) {
+            new bootstrap.Tooltip(el, { trigger: 'hover focus', boundary: 'clippingParents' });
+        }
+    });
+
     // ─── Toggle Card ───
     document.querySelectorAll(".toggle-card-btn").forEach(function(btn) {
         btn.addEventListener("click", function() {

@@ -51,8 +51,6 @@
         .card{ border-radius: var(--card-radius); border: 1px solid #D6D6D6; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
     </style>
 
-    <!-- jQuery & Plugins -->
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js"></script>
 
@@ -295,6 +293,22 @@
     <!-- Visitor Live Chat Widget (never load it inside authenticated pages) -->
     {% if not is_logged_in %}
     <link rel="stylesheet" href="{{ url }}/assets/css/chat.css?t={{ "now"|date("Hiss") }}">
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging-compat.js"></script>
+    <script>
+        // Initialize Firebase for FCM
+        const firebaseConfig = {
+            apiKey: "AIzaSyBdNqFdh0DZ3Zz-iztHL2uGtoYZDLzhdyw",
+            authDomain: "digi-union-lgdhaka.firebaseapp.com",
+            projectId: "digi-union-lgdhaka",
+            storageBucket: "digi-union-lgdhaka.firebasestorage.app",
+            messagingSenderId: "599628365980",
+            appId: "1:599628365980:web:e90cefbce2c52ccf036d59"
+        };
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+    </script>
     <script src="{{ url }}/assets/js/chat.js?t={{ "now"|date("Hiss") }}"></script>
     {% else %}
     <!-- Shared admin chat notification/FAB styles; visitor widget JS remains disabled. -->

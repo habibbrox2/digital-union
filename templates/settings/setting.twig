@@ -16,9 +16,14 @@
 <form id="systemSettingsForm" method="POST" enctype="multipart/form-data" class="needs-validation">
     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
     <div class="card mb-4 shadow-sm rounded">
-        <div class="card-header bg-primary text-white d-flex align-items-center">
-            <i class="bi bi-gear me-2"></i>
-            <h4 class="mb-0 text-light">System Settings</h4>
+        <div class="card-header bg-primary text-white d-flex align-items-center justify-content-between">
+            <div class="d-flex align-items-center">
+                <i class="bi bi-gear me-2"></i>
+                <h4 class="mb-0 text-light">System Settings</h4>
+            </div>
+            <span class="badge bg-warning text-dark" style="font-size: 0.65rem;" data-bs-toggle="tooltip" data-bs-placement="top" title="সিস্টেম সেটিংস শুধুমাত্র অ্যাডমিনরা পরিবর্তন করতে পারবেন। রক্ষণাবেক্ষণ মোড এবং PDF মোড সকল ব্যবহারকারীকে প্রভাবিত করে।">
+                <i class="fas fa-shield-alt me-1"></i>অ্যাডমিন শুধু
+            </span>
         </div>
         <div class="card-body">
             <div class="row g-3">
@@ -103,9 +108,14 @@
     <input type="hidden" name="union_id" id="union_id" value="">
 
     <div class="card mb-4 shadow-sm rounded">
-        <div class="card-header bg-success text-white d-flex align-items-center">
-            <i class="bi bi-building me-2"></i>
-            <h4 class="mb-0 text-light">Union Parishad Settings</h4>
+        <div class="card-header bg-success text-white d-flex align-items-center justify-content-between">
+            <div class="d-flex align-items-center">
+                <i class="bi bi-building me-2"></i>
+                <h4 class="mb-0 text-light">Union Parishad Settings</h4>
+            </div>
+            <span class="badge bg-warning text-dark" style="font-size: 0.65rem;" data-bs-toggle="tooltip" data-bs-placement="top" title="ইউনিয়ন পরিষদের সেটিংস শুধুমাত্র অ্যাডমিনরা পরিবর্তন করতে পারবেন। এটি সকল সনদ এবং ইউনিয়নের তথ্যকে প্রভাবিত করে।">
+                <i class="fas fa-shield-alt me-1"></i>অ্যাডমিন শুধু
+            </span>
         </div>
         <div class="card-body">
             <div class="row g-3">
@@ -263,4 +273,13 @@
         font-style: italic;
     }
 </style>
+{% endblock %}
+{% block scripts %}
+<script>
+document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(function(el) {
+    if (typeof bootstrap !== 'undefined' && bootstrap.Tooltip) {
+        new bootstrap.Tooltip(el, { trigger: 'hover focus', boundary: 'clippingParents' });
+    }
+});
+</script>
 {% endblock %}

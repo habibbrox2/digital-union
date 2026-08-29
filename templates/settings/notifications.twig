@@ -5,7 +5,12 @@
 {% block content %}
 {% include 'components/sweetAlert.twig' %}
 <div class="container mt-4">
-    <h2>{{ header_title }}</h2>
+    <div class="d-flex align-items-center gap-2 mb-3">
+        <h2 class="mb-0">{{ header_title }}</h2>
+        <span class="badge bg-warning text-dark" style="font-size: 0.7rem;" data-bs-toggle="tooltip" data-bs-placement="top" title="নোটিফিকেশন সেটিংস শুধুমাত্র অ্যাডমিনরা পরিবর্তন করতে পারবেন। ইমেইল, SMS এবং পুশ নোটিফিকেশন চ্যানেল সকল ব্যবহারকারীকে প্রভাবিত করে।">
+            <i class="fas fa-shield-alt me-1"></i>অ্যাডমিন শুধু
+        </span>
+    </div>
 
     <form id="notificationSettingsForm" method="POST" action="/settings/notifications" class="mt-4">
         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
@@ -54,30 +59,50 @@
 
 {% block javascripts %}
 <script>
-    $(function() {
-        $('#notificationSettingsForm').on('submit', function(e) {
+document.addEventListener('DOMContentLoaded', function() {
+    var form = document.getElementById('notificationSettingsForm');
+    if (form) {
+        form.addEventListener('submit', function(e) {
             e.preventDefault();
 
-            let $form = $(this);
-            let $btn = $form.find('button[type="submit"]');
-            let url = $form.attr('action');
-            let data = $form.serialize();
-            const restore = btnLoading($btn[0], 'সংরক্ষণ করা হচ্ছে...');
+            var btn = form.querySelector('button[type="submit"]');
+            var url = form.getAttribute('action');
+            var data = new URLSearchParams(new FormData(form)).toString();
+            var restore = btnLoading(btn, 'সংরক্ষণ করা হচ্ছে...');
+            var alertEl = document.getElementById('notificationAlert');
 
-            $.post(url, data, function(response) {
-                let $alert = $('#notificationAlert');
+            fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: data
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(response) {
+                alertEl.classList.remove('d-none', 'alert-danger', 'alert-success');
                 if (response.status === 'success') {
-                    $alert.removeClass('d-none alert-danger').addClass('alert-success').text(response.message);
+                    alertEl.classList.add('alert-success');
                 } else {
-                    $alert.removeClass('d-none alert-success').addClass('alert-danger').text(response.message);
+                    alertEl.classList.add('alert-danger');
                 }
+                alertEl.textContent = response.message;
                 restore();
-            }, 'json').fail(function() {
-                $('#notificationAlert').removeClass('d-none alert-success').addClass('alert-danger').text('Something went wrong. Please try again.');
+            })
+            .catch(function() {
+                alertEl.classList.remove('d-none', 'alert-success');
+                alertEl.classList.add('alert-danger');
+                alertEl.textContent = 'Something went wrong. Please try again.';
                 restore();
             });
         });
+    }
+
+    // Initialize admin-only tooltips
+    document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(function(el) {
+        if (typeof bootstrap !== 'undefined' && bootstrap.Tooltip) {
+            new bootstrap.Tooltip(el, { trigger: 'hover focus', boundary: 'clippingParents' });
+        }
     });
+});
 </script>
 {% endblock %}
 {% endblock %}

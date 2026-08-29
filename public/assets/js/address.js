@@ -1,201 +1,164 @@
-$(document).ready(function() {
-    // Load divisions when page loads
-    loadDivisions('#present_division_en', '#present_division_bn');
-    loadDivisions('#permanent_division_en', '#permanent_division_bn');
-
-    // Event listener for Division change (Present Address)
-    $('#present_division_en, #present_division_bn').change(function() {
-        var divisionId = $(this).val();
-        if (divisionId) {
-            loadDistricts(divisionId, '#present_district_en', '#present_district_bn');
-        }
-    });
-
-    // Event listener for District change (Present Address)
-    $('#present_district_en, #present_district_bn').change(function() {
-        var districtId = $(this).val();
-        if (districtId) {
-            loadUpazilas(districtId, '#present_upazila_en', '#present_upazila_bn');
-        }
-    });
-
-    // Event listener for Division change (Permanent Address)
-    $('#permanent_division_en, #permanent_division_bn').change(function() {
-        var divisionId = $(this).val();
-        if (divisionId) {
-            loadDistricts(divisionId, '#permanent_district_en', '#permanent_district_bn');
-        }
-    });
-
-    // Event listener for District change (Permanent Address)
-    $('#permanent_district_en, #permanent_district_bn').change(function() {
-        var districtId = $(this).val();
-        if (districtId) {
-            loadUpazilas(districtId, '#permanent_upazila_en', '#permanent_upazila_bn');
-        }
-    });
-
-    // Function to synchronize _en and _bn select elements
-    function syncSelects(selectEn, selectBn) {
-        $(selectEn).change(function() {
-            var selectedValue = $(this).val();
-            $(selectBn).val(selectedValue); // Synchronize Bangla select with English select
-        });
-
-        $(selectBn).change(function() {
-            var selectedValue = $(this).val();
-            $(selectEn).val(selectedValue); // Synchronize English select with Bangla select
-        });
-    }
-
-    // Sync Divisions, Districts, and Upazilas
-    syncSelects('#present_division_en', '#present_division_bn');
-    syncSelects('#permanent_division_en', '#permanent_division_bn');
-    syncSelects('#present_district_en', '#present_district_bn');
-    syncSelects('#permanent_district_en', '#permanent_district_bn');
-    syncSelects('#present_upazila_en', '#present_upazila_bn');
-    syncSelects('#permanent_upazila_en', '#permanent_upazila_bn');
-
-    // Function to load Divisions
-    function loadDivisions(selectEn, selectBn) {
-        $.ajax({
-            url: '/geo/divisions', // PHP file to fetch divisions
-            method: 'GET',
-            dataType: 'json',
-            success: function(data) {
-                $(selectEn).empty().append('<option value="">Select Division</option>');
-                $(selectBn).empty().append('<option value="">বিভাগ নির্বাচন করুন</option>');
-                $.each(data, function(index, division) {
-                    $(selectEn).append('<option value="' + division.division_code + '">' + division.division_name_en + '</option>');
-                    $(selectBn).append('<option value="' + division.division_code + '">' + division.division_name_bn + '</option>');
-                });
-            },
-            error: function() {
-                SweetAlertUtil.error('ত্রুটি', 'বিভাগ লোড করতে ব্যর্থ হয়েছে।');
-            }
-        });
-    }
-
-    // Function to load Districts based on Division
-    function loadDistricts(divisionId, selectEn, selectBn) {
-        $.ajax({
-            url: '/geo/districts', // PHP file to fetch districts
-            method: 'GET',
-            data: { division_code: divisionId },
-            dataType: 'json',
-            success: function(data) {
-                $(selectEn).empty().append('<option value="">Select District</option>');
-                $(selectBn).empty().append('<option value="">জেলা নির্বাচন করুন</option>');
-                $.each(data, function(index, district) {
-                    $(selectEn).append('<option value="' + district.district_code + '">' + district.district_name_en + '</option>');
-                    $(selectBn).append('<option value="' + district.district_code + '">' + district.district_name_bn + '</option>');
-                });
-            },
-            error: function() {
-                SweetAlertUtil.error('ত্রুটি', 'জেলা লোড করতে ব্যর্থ হয়েছে।');
-            }
-        });
-    }
-
-    // Function to load Upazilas based on District
-    function loadUpazilas(districtId, selectEn, selectBn) {
-        $.ajax({
-            url: '/geo/upazilas', // PHP file to fetch upazilas
-            method: 'GET',
-            data: { district_code: districtId },
-            dataType: 'json',
-            success: function(data) {
-                $(selectEn).empty().append('<option value="">Select Upazila</option>');
-                $(selectBn).empty().append('<option value="">উপজেলা নির্বাচন করুন</option>');
-                $.each(data, function(index, upazila) {
-                    $(selectEn).append('<option value="' + upazila.upazila_code + '">' + upazila.upazila_name_en + '</option>');
-                    $(selectBn).append('<option value="' + upazila.upazila_code + '">' + upazila.upazila_name_bn + '</option>');
-                });
-            },
-            error: function() {
-                SweetAlertUtil.error('ত্রুটি', 'উপজেলা লোড করতে ব্যর্থ হয়েছে।');
-            }
-        });
-    }
-
-    $('#permanentAddress').hide();
-
-    // Event listener for the nagorik_status checkbox
-    $('#nagorik_status').change(function() {
-        if ($(this).is(':checked')) {
-            $('#permanentAddress').show(); // Show permanent address if checked
-        } else {
-            $('#permanentAddress').hide(); // Hide permanent address if unchecked
-        }
-    });
-
-    // AddressisSame checkbox: copy present → permanent with cascading
-    $('#AddressisSame').change(function() {
-        if ($(this).is(':checked')) {
-            // Copy the present address to the permanent address fields
-            $('#permanent_division_en').val($('#present_division_en').val());
-            $('#permanent_district_en').val($('#present_district_en').val());
-            $('#permanent_upazila_en').val($('#present_upazila_en').val());
-            $('#permanent_post_office_en').val($('#present_post_office_en').val());
-            $('#permanent_word_en').val($('#present_word_en').val());
-            $('#permanent_village_en').val($('#present_village_en').val());
-            $('#permanent_road_area_en').val($('#present_road_area_en').val());
-            $('#permanent_holding_house_number_en').val($('#present_holding_house_number_en').val());
-
-            $('#permanent_division_bn').val($('#present_division_bn').val());
-            $('#permanent_district_bn').val($('#present_district_bn').val());
-            $('#permanent_upazila_bn').val($('#present_upazila_bn').val());
-            $('#permanent_post_office_bn').val($('#present_post_office_bn').val());
-            $('#permanent_word_bn').val($('#present_word_bn').val());
-            $('#permanent_village_bn').val($('#present_village_bn').val());
-            $('#permanent_road_area_bn').val($('#present_road_area_bn').val());
-            $('#permanent_holding_house_number_bn').val($('#present_holding_house_number_bn').val());
-
-            // Remove any previously bound handlers first (prevents stacking),
-            // then register one-time handlers that auto-cleanup after execution.
-            // These ensure cascading dropdowns (district → upazila) trigger
-            // after the division value is set during the copy operation.
-            $('#permanent_division_en').off('.addressCopy').on('change.addressCopy', function() {
-                $('#permanent_district_en').val($('#present_district_en').val());
-                $('#permanent_upazila_en').val($('#present_upazila_en').val());
-                $('#permanent_district_en').trigger('change');
-                $('#permanent_upazila_en').trigger('change');
-            });
-
-            $('#permanent_division_bn').off('.addressCopy').on('change.addressCopy', function() {
-                $('#permanent_district_bn').val($('#present_district_bn').val());
-                $('#permanent_upazila_bn').val($('#present_upazila_bn').val());
-                $('#permanent_district_bn').trigger('change');
-                $('#permanent_upazila_bn').trigger('change');
-            });
-
-            // Trigger the initial changes to populate dependent fields
-            $('#permanent_division_en').trigger('change');
-            $('#permanent_division_bn').trigger('change');
-
-        } else {
-            // Clear the permanent address fields when unchecked
-            $('#permanent_division_en').val('');
-            $('#permanent_district_en').val('');
-            $('#permanent_upazila_en').val('');
-            $('#permanent_post_office_en').val('');
-            $('#permanent_word_en').val('');
-            $('#permanent_village_en').val('');
-            $('#permanent_road_area_en').val('');
-            $('#permanent_holding_house_number_en').val('');
-
-            $('#permanent_division_bn').val('');
-            $('#permanent_district_bn').val('');
-            $('#permanent_upazila_bn').val('');
-            $('#permanent_post_office_bn').val('');
-            $('#permanent_word_bn').val('');
-            $('#permanent_village_bn').val('');
-            $('#permanent_road_area_bn').val('');
-            $('#permanent_holding_house_number_bn').val('');
-
-            // Cleanup the one-time copy handlers
-            $('#permanent_division_en, #permanent_division_bn').off('.addressCopy');
-        }
-    });
-
-});
+document.addEventListener('DOMContentLoaded', function() {
+    function addChangeListener(id, callback) {
+        var el = document.getElementById(id);
+        if (el) el.addEventListener('change', callback);
+    }
+
+    function populateSelect(selectId, items, valueKey, labelKey, placeholder) {
+        var sel = document.getElementById(selectId);
+        if (!sel) return;
+        sel.innerHTML = '<option value="">' + placeholder + '</option>';
+        items.forEach(function(item) {
+            var opt = document.createElement('option');
+            opt.value = item[valueKey];
+            opt.textContent = item[labelKey];
+            sel.appendChild(opt);
+        });
+    }
+
+    function syncSelects(selectEnId, selectBnId) {
+        var selEn = document.getElementById(selectEnId);
+        var selBn = document.getElementById(selectBnId);
+        if (selEn) selEn.addEventListener('change', function() { if (selBn) selBn.value = this.value; });
+        if (selBn) selBn.addEventListener('change', function() { if (selEn) selEn.value = this.value; });
+    }
+
+    function loadDivisions(selectEnId, selectBnId) {
+        fetch('/geo/divisions')
+        .then(function(resp) { return resp.json(); })
+        .then(function(data) {
+            populateSelect(selectEnId, data, 'division_code', 'division_name_en', 'Select Division');
+            populateSelect(selectBnId, data, 'division_code', 'division_name_bn', '\u09AC\u09BF\u09AD\u09BE\u0997 \u09A8\u09BF\u09B0\u09CD\u09AC\u09BE\u099A\u09A8 \u0995\u09B0\u09C1\u09A8');
+        })
+        .catch(function() {
+            SweetAlertUtil.error('\u09A4\u09CD\u09B0\u09C1\u099F\u09BF', '\u09AC\u09BF\u09AD\u09BE\u0997 \u09B2\u09CB\u09A1 \u0995\u09B0\u09A4\u09C7 \u09AC\u09CD\u09AF\u09B0\u09CD\u09A5 \u09B9\u09AF\u09BC\u09C7\u099B\u09C7\u0964');
+        });
+    }
+
+    function loadDistricts(divisionId, selectEnId, selectBnId) {
+        fetch('/geo/districts?division_code=' + encodeURIComponent(divisionId))
+        .then(function(resp) { return resp.json(); })
+        .then(function(data) {
+            populateSelect(selectEnId, data, 'district_code', 'district_name_en', 'Select District');
+            populateSelect(selectBnId, data, 'district_code', 'district_name_bn', '\u099C\u09C7\u09B2\u09BE \u09A8\u09BF\u09B0\u09CD\u09AC\u09BE\u099A\u09A8 \u0995\u09B0\u09C1\u09A8');
+        })
+        .catch(function() {
+            SweetAlertUtil.error('\u09A4\u09CD\u09B0\u09C1\u099F\u09BF', '\u099C\u09C7\u09B2\u09BE \u09B2\u09CB\u09A1 \u0995\u09B0\u09A4\u09C7 \u09AC\u09CD\u09AF\u09B0\u09CD\u09A5 \u09B9\u09AF\u09BC\u09C7\u099B\u09C7\u0964');
+        });
+    }
+
+    function loadUpazilas(districtId, selectEnId, selectBnId) {
+        fetch('/geo/upazilas?district_code=' + encodeURIComponent(districtId))
+        .then(function(resp) { return resp.json(); })
+        .then(function(data) {
+            populateSelect(selectEnId, data, 'upazila_code', 'upazila_name_en', 'Select Upazila');
+            populateSelect(selectBnId, data, 'upazila_code', 'upazila_name_bn', '\u0989\u09AA\u099C\u09C7\u09B2\u09BE \u09A8\u09BF\u09B0\u09CD\u09AC\u09BE\u099A\u09A8 \u0995\u09B0\u09C1\u09A8');
+        })
+        .catch(function() {
+            SweetAlertUtil.error('\u09A4\u09CD\u09B0\u09C1\u099F\u09BF', '\u0989\u09AA\u099C\u09C7\u09B2\u09BE \u09B2\u09CB\u09A1 \u0995\u09B0\u09A4\u09C7 \u09AC\u09CD\u09AF\u09B0\u09CD\u09A5 \u09B9\u09AF\u09BC\u09C7\u099B\u09C7\u0964');
+        });
+    }
+
+    loadDivisions('present_division_en', 'present_division_bn');
+    loadDivisions('permanent_division_en', 'permanent_division_bn');
+
+    addChangeListener('present_division_en', function() {
+        var val = this.value;
+        if (val) loadDistricts(val, 'present_district_en', 'present_district_bn');
+    });
+    addChangeListener('present_division_bn', function() {
+        var val = this.value;
+        if (val) loadDistricts(val, 'present_district_en', 'present_district_bn');
+    });
+
+    addChangeListener('present_district_en', function() {
+        var val = this.value;
+        if (val) loadUpazilas(val, 'present_upazila_en', 'present_upazila_bn');
+    });
+    addChangeListener('present_district_bn', function() {
+        var val = this.value;
+        if (val) loadUpazilas(val, 'present_upazila_en', 'present_upazila_bn');
+    });
+
+    addChangeListener('permanent_division_en', function() {
+        var val = this.value;
+        if (val) loadDistricts(val, 'permanent_district_en', 'permanent_district_bn');
+    });
+    addChangeListener('permanent_division_bn', function() {
+        var val = this.value;
+        if (val) loadDistricts(val, 'permanent_district_en', 'permanent_district_bn');
+    });
+
+    addChangeListener('permanent_district_en', function() {
+        var val = this.value;
+        if (val) loadUpazilas(val, 'permanent_upazila_en', 'permanent_upazila_bn');
+    });
+    addChangeListener('permanent_district_bn', function() {
+        var val = this.value;
+        if (val) loadUpazilas(val, 'permanent_upazila_en', 'permanent_upazila_bn');
+    });
+
+    syncSelects('present_division_en', 'present_division_bn');
+    syncSelects('permanent_division_en', 'permanent_division_bn');
+    syncSelects('present_district_en', 'present_district_bn');
+    syncSelects('permanent_district_en', 'permanent_district_bn');
+    syncSelects('present_upazila_en', 'present_upazila_bn');
+    syncSelects('permanent_upazila_en', 'permanent_upazila_bn');
+
+    var permAddr = document.getElementById('permanentAddress');
+    if (permAddr) permAddr.style.display = 'none';
+
+    addChangeListener('nagorik_status', function() {
+        if (permAddr) permAddr.style.display = this.checked ? '' : 'none';
+    });
+
+    addChangeListener('AddressisSame', function() {
+        if (this.checked) {
+            var fields = ['division_en', 'district_en', 'upazila_en', 'post_office_en', 'word_en', 'village_en', 'road_area_en', 'holding_house_number_en',
+                          'division_bn', 'district_bn', 'upazila_bn', 'post_office_bn', 'word_bn', 'village_bn', 'road_area_bn', 'holding_house_number_bn'];
+            fields.forEach(function(f) {
+                var pres = document.getElementById('present_' + f);
+                var perm = document.getElementById('permanent_' + f);
+                if (pres && perm) perm.value = pres.value;
+            });
+
+            var permDivEn = document.getElementById('permanent_division_en');
+            if (permDivEn) {
+                permDivEn.addEventListener('change', function() {
+                    var pd = document.getElementById('permanent_district_en');
+                    var pu = document.getElementById('permanent_upazila_en');
+                    var sd = document.getElementById('present_district_en');
+                    var su = document.getElementById('present_upazila_en');
+                    if (pd && sd) pd.value = sd.value;
+                    if (pu && su) pu.value = su.value;
+                    if (pd) pd.dispatchEvent(new Event('change'));
+                    if (pu) pu.dispatchEvent(new Event('change'));
+                });
+            }
+
+            var permDivBn = document.getElementById('permanent_division_bn');
+            if (permDivBn) {
+                permDivBn.addEventListener('change', function() {
+                    var pd = document.getElementById('permanent_district_bn');
+                    var pu = document.getElementById('permanent_upazila_bn');
+                    var sd = document.getElementById('present_district_bn');
+                    var su = document.getElementById('present_upazila_bn');
+                    if (pd && sd) pd.value = sd.value;
+                    if (pu && su) pu.value = su.value;
+                    if (pd) pd.dispatchEvent(new Event('change'));
+                    if (pu) pu.dispatchEvent(new Event('change'));
+                });
+            }
+
+            if (permDivEn) permDivEn.dispatchEvent(new Event('change'));
+            if (permDivBn) permDivBn.dispatchEvent(new Event('change'));
+        } else {
+            var fields = ['division_en', 'district_en', 'upazila_en', 'post_office_en', 'word_en', 'village_en', 'road_area_en', 'holding_house_number_en',
+                          'division_bn', 'district_bn', 'upazila_bn', 'post_office_bn', 'word_bn', 'village_bn', 'road_area_bn', 'holding_house_number_bn'];
+            fields.forEach(function(f) {
+                var perm = document.getElementById('permanent_' + f);
+                if (perm) perm.value = '';
+            });
+        }
+    });
+});

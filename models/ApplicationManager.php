@@ -27,6 +27,7 @@ class ApplicationManager
             END AS type_url
         ";
     }
+
     /**
      * Returns SELECT fields for applications with address and translation info.
      *
@@ -427,6 +428,8 @@ class ApplicationManager
     {
         // Normalize birth_date to MySQL DATE format (accepts DD-MM-YYYY, YYYY-MM-DD, etc.)
         $data['birth_date'] = normalizeDateToMysql($data['birth_date'] ?? '');
+        // Normalize file paths to prevent malformed URLs
+        $data['applicant_photo'] = normalize_file_path($data['applicant_photo'] ?? '');
 
         $stmt = $this->conn->prepare("INSERT INTO applications (
             application_id, applicant_id, certificate_type, union_id, sonod_number, name_en, name_bn, nid, birth_id, passport_no, birth_date,
@@ -809,7 +812,7 @@ class ApplicationManager
         $spouse_name_bn = $data['spouse_name_bn'] ?? '';
         $applicant_name = $data['applicant_name'] ?? '';
         $applicant_phone = $data['applicant_phone'] ?? '';
-        $applicant_photo = $data['applicant_photo'] ?? '';
+        $applicant_photo = normalize_file_path($data['applicant_photo'] ?? '');
         $documents = isset($data['documents']) ? json_encode($data['documents'], JSON_UNESCAPED_UNICODE) : '[]';
 
         // ---------------- Extra Data Handling ----------------

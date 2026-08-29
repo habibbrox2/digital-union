@@ -1,7 +1,7 @@
 {# common/address_fields_script.twig — Geo-loading, autocomplete, address copy script (include once per page) #}
 <script>
-$(document).ready(function () {
-    const prefixes = ['business', 'present', 'permanent'];
+document.addEventListener('DOMContentLoaded', function () {
+    var prefixes = ['business', 'present', 'permanent'];
     window.postOfficeDebug = window.postOfficeDebug ?? true;
     window.postOfficeDebugLog = window.postOfficeDebugLog || function () {
         if (window.postOfficeDebug && window.console) {
@@ -9,392 +9,486 @@ $(document).ready(function () {
         }
     };
 
-    window.isPrefixAvailable = window.isPrefixAvailable || function(prefix) {
-        return $(`#${prefix}_district_id`).length > 0;
+    function escapeAttr(str) {
+        var div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
     }
+
+    window.isPrefixAvailable = window.isPrefixAvailable || function(prefix) {
+        return document.getElementById(prefix + '_district_id') !== null;
+    };
 
     window.populateDropdown = window.populateDropdown || function(selector, data) {
-        if (!$(selector).length) return;
+        var el = typeof selector === 'string' ? document.querySelector(selector) : selector;
+        if (!el) return;
 
-        const selectedValue = $(selector).data('selected');
-        $(selector).empty().append('<option value="">চিহ্নিত করুন</option>');
-        const selectedValueNorm = selectedValue ? String(selectedValue).trim().toLowerCase() : null;
+        var selectedValue = el.dataset.selected;
+        el.innerHTML = '<option value="">\u099A\u09BF\u09B9\u09CD\u09A8\u09BF\u09A4 \u0995\u09B0\u09C1\u09A8</option>';
+        var selectedValueNorm = selectedValue ? String(selectedValue).trim().toLowerCase() : null;
 
-        $.each(data, function (_, item) {
-            const itemIdNorm = String(item.id).trim().toLowerCase();
-            const itemNameEnNorm = String(item.name_en).trim().toLowerCase();
-            const isSelected = selectedValueNorm && (selectedValueNorm === itemIdNorm || selectedValueNorm === itemNameEnNorm) ? 'selected' : '';
+        data.forEach(function (item) {
+            var itemIdNorm = String(item.id).trim().toLowerCase();
+            var itemNameEnNorm = String(item.name_en).trim().toLowerCase();
+            var isSelected = selectedValueNorm && (selectedValueNorm === itemIdNorm || selectedValueNorm === itemNameEnNorm) ? 'selected' : '';
 
-            $(selector).append(
-                `<option value="${item.name_en}" 
-                    data-geo-code="${item.geo_code}" 
-                    data-name-en="${item.name_en}" 
-                    data-name-bn="${item.name_bn}" 
-                    data-geo-id="${item.id}" ${isSelected}>${item.name_en} (${item.name_bn})</option>`
-            );
+            var opt = document.createElement('option');
+            opt.value = item.name_en;
+            opt.setAttribute('data-geo-code', item.geo_code);
+            opt.setAttribute('data-name-en', item.name_en);
+            opt.setAttribute('data-name-bn', item.name_bn);
+            opt.setAttribute('data-geo-id', item.id);
+            if (isSelected) opt.selected = true;
+            opt.textContent = item.name_en + ' (' + item.name_bn + ')';
+            el.appendChild(opt);
         });
-    }
+    };
 
     window.resetDropdown = window.resetDropdown || function(selector) {
-        if ($(selector).length)
-            $(selector).empty().append('<option value="">চিহ্নিত করুন</option>');
-    }
+        var el = typeof selector === 'string' ? document.querySelector(selector) : selector;
+        if (el) {
+            el.innerHTML = '<option value="">\u099A\u09BF\u09B9\u09CD\u09A8\u09BF\u09A4 \u0995\u09B0\u09C1\u09A8</option>';
+        }
+    };
 
-    window.fetchGeoData = window.fetchGeoData || function(geoOrder, parentGeoId, dropdownSelector, nextGeoOrder = null, nextGeoIdSelector = null, callback = null) {
-        if (!dropdownSelector || !$(dropdownSelector).length) return;
+    window.fetchGeoData = window.fetchGeoData || function(geoOrder, parentGeoId, dropdownSelector, nextGeoOrder, nextGeoIdSelector, callback) {
+        nextGeoOrder = nextGeoOrder || null;
+        nextGeoIdSelector = nextGeoIdSelector || null;
+        callback = callback || null;
+        if (!dropdownSelector || !document.querySelector(dropdownSelector)) return;
 
-        $.ajax({
-            url: '/geo/getdata',
+        var formData = new FormData();
+        formData.append('geo_order', geoOrder);
+        formData.append('parent_geo_id', parentGeoId);
+
+        fetch('/geo/getdata', {
             method: 'POST',
-            data: { geo_order: geoOrder, parent_geo_id: parentGeoId },
-            dataType: 'json',
-            success: function (data) {
-                populateDropdown(dropdownSelector, data);
-                if (nextGeoOrder && nextGeoIdSelector) resetDropdown(nextGeoIdSelector);
-                if (callback) callback();
-            },
-            error: function (err) {
-                console.error('Geo fetch error:', err);
-            }
+            body: formData,
+        })
+        .then(function(resp) { return resp.json(); })
+        .then(function(data) {
+            populateDropdown(dropdownSelector, data);
+            if (nextGeoOrder && nextGeoIdSelector) resetDropdown(nextGeoIdSelector);
+            if (callback) callback();
+        })
+        .catch(function(err) {
+            console.error('Geo fetch error:', err);
         });
-    }
+    };
 
-    // ✅ Initial District Load for available prefixes
-    $.ajax({
-        url: '/geo/getdata',
-        method: 'POST',
-        data: { geo_order: 1, parent_geo_id: 0 },
-        dataType: 'json',
-        success: function (data) {
-            prefixes.forEach(prefix => {
+    // Initial District Load for available prefixes
+    (function() {
+        var formData = new FormData();
+        formData.append('geo_order', '1');
+        formData.append('parent_geo_id', '0');
+
+        fetch('/geo/getdata', {
+            method: 'POST',
+            body: formData,
+        })
+        .then(function(resp) { return resp.json(); })
+        .then(function(data) {
+            prefixes.forEach(function(prefix) {
                 if (isPrefixAvailable(prefix)) {
-                    populateDropdown(`#${prefix}_district_id`, data);
+                    populateDropdown('#' + prefix + '_district_id', data);
                     // Trigger change if a value is pre-selected
-                    const selected = $(`#${prefix}_district_id`).data('selected');
+                    var distEl = document.getElementById(prefix + '_district_id');
+                    var selected = distEl.dataset.selected;
                     if (selected) {
-                        $(`#${prefix}_district_id`).val(selected).trigger('change');
+                        distEl.value = selected;
+                        distEl.dispatchEvent(new Event('change'));
                     }
                 }
             });
 
             // Auto-check after initial data load
-            setTimeout(() => {
-                if (addressesMatch('business', 'present')) $('#same_as_business_address').prop('checked', true);
-                if (addressesMatch('present', 'permanent')) $('#permanentBtn').prop('checked', true);
-                if (addressesMatch('present', 'business')) $('#copy_present_to_business').prop('checked', true);
+            setTimeout(function() {
+                if (addressesMatch('business', 'present')) {
+                    var el = document.getElementById('same_as_business_address');
+                    if (el) el.checked = true;
+                }
+                if (addressesMatch('present', 'permanent')) {
+                    var el2 = document.getElementById('permanentBtn');
+                    if (el2) el2.checked = true;
+                }
+                if (addressesMatch('present', 'business')) {
+                    var el3 = document.getElementById('copy_present_to_business');
+                    if (el3) el3.checked = true;
+                }
             }, 500);
-        },
-        error: function (error) {
+        })
+        .catch(function(error) {
             console.error('Error loading districts:', error);
+        });
+    })();
+
+    // Bind dropdown change events
+    prefixes.forEach(function(prefix) {
+        if (!isPrefixAvailable(prefix)) return;
+
+        var distIdEl = document.getElementById(prefix + '_district_id');
+        var upaIdEl = document.getElementById(prefix + '_upazila_id');
+        var unionIdEl = document.getElementById(prefix + '_union_id');
+        var distEl = document.getElementById(prefix + '_district');
+        var upaEl = document.getElementById(prefix + '_upazila');
+        var unionEl = document.getElementById(prefix + '_union');
+        var postEnEl = document.getElementById(prefix + '_postoffice_en');
+
+        if (distIdEl) {
+            distIdEl.addEventListener('change', function () {
+                var opt = this.options[this.selectedIndex];
+                var id = (opt ? opt.getAttribute('data-geo-id') : null) || 0;
+                var nameBn = (opt ? opt.getAttribute('data-name-bn') : '') || '';
+                if (!id) return;
+                if (distEl) distEl.value = nameBn;
+                fetchGeoData(2, id, '#' + prefix + '_upazila_id', 3, '#' + prefix + '_union_id', function() {
+                    var selectedUpazila = upaIdEl ? upaIdEl.dataset.selected : null;
+                    if (selectedUpazila && upaIdEl) {
+                        upaIdEl.value = selectedUpazila;
+                        upaIdEl.dispatchEvent(new Event('change'));
+                    }
+                });
+            });
+        }
+
+        if (upaIdEl) {
+            upaIdEl.addEventListener('change', function () {
+                var opt = this.options[this.selectedIndex];
+                var id = (opt ? opt.getAttribute('data-geo-id') : null) || 0;
+                var nameBn = (opt ? opt.getAttribute('data-name-bn') : '') || '';
+                if (!id) return;
+                if (upaEl) upaEl.value = nameBn;
+                fetchGeoData(3, id, '#' + prefix + '_union_id', null, null, function() {
+                    var selectedUnion = unionIdEl ? unionIdEl.dataset.selected : null;
+                    if (selectedUnion && unionIdEl) {
+                        unionIdEl.value = selectedUnion;
+                        unionIdEl.dispatchEvent(new Event('change'));
+                    }
+                });
+            });
+        }
+
+        if (unionIdEl) {
+            unionIdEl.addEventListener('change', function () {
+                var opt = this.options[this.selectedIndex];
+                var nameBn = (opt ? opt.getAttribute('data-name-bn') : '') || '';
+                if (unionEl) unionEl.value = nameBn;
+                var unionName = (opt ? opt.getAttribute('data-name-en') : '') || this.value;
+                window.postOfficeDebugLog('[post-office] union change', {
+                    prefix: prefix,
+                    unionName: unionName,
+                    unionBn: nameBn
+                });
+                if (unionName) {
+                    fetchPostOffices(
+                        unionName,
+                        '#' + prefix + '_postoffice_en',
+                        '#' + prefix + '_postoffice_bn'
+                    );
+                }
+            });
+        }
+
+        if (postEnEl) {
+            postEnEl.addEventListener('input', function() { updateBnFromMap(prefix); });
+            postEnEl.addEventListener('change', function() { updateBnFromMap(prefix); });
         }
     });
 
-    // ✅ Bind dropdown change events
-    prefixes.forEach(prefix => {
-        if (!isPrefixAvailable(prefix)) return;
-
-        $(`#${prefix}_district_id`).change(function () {
-            const id = $(this).find('option:selected').data('geo-id') || 0;
-            const nameBn = $(this).find('option:selected').data('name-bn') || '';
-            if (!id) return;
-            $(`#${prefix}_district`).val(nameBn);
-            fetchGeoData(2, id, `#${prefix}_upazila_id`, 3, `#${prefix}_union_id`, function() {
-                // Set upazila if pre-selected
-                const selectedUpazila = $(`#${prefix}_upazila_id`).data('selected');
-                if (selectedUpazila) {
-                    $(`#${prefix}_upazila_id`).val(selectedUpazila).trigger('change');
-                }
-            });
-        });
-
-        $(`#${prefix}_upazila_id`).change(function () {
-            const id = $(this).find('option:selected').data('geo-id') || 0;
-            const nameBn = $(this).find('option:selected').data('name-bn') || '';
-            if (!id) return;
-            $(`#${prefix}_upazila`).val(nameBn);
-            fetchGeoData(3, id, `#${prefix}_union_id`, null, null, function() {
-                // Set union if pre-selected
-                const selectedUnion = $(`#${prefix}_union_id`).data('selected');
-                if (selectedUnion) {
-                    $(`#${prefix}_union_id`).val(selectedUnion).trigger('change');
-                }
-            });
-        });
-
-        $(`#${prefix}_union_id`).change(function () {
-            const nameBn = $(this).find('option:selected').data('name-bn') || '';
-            $(`#${prefix}_union`).val(nameBn);
-            const unionSelect = $(this);
-            const unionName = unionSelect.find('option:selected').data('name-en') || unionSelect.val();
-            window.postOfficeDebugLog('[post-office] union change', {
-                prefix: prefix,
-                unionName: unionName,
-                unionBn: nameBn
-            });
-            if (unionName) {
-                fetchPostOffices(
-                    unionName,
-                    `#${prefix}_postoffice_en`,
-                    `#${prefix}_postoffice_bn`
-                );
-            }
-        });
-
-        $(`#${prefix}_postoffice_en`).on('input change', function () {
-            const wrapper = $(this).closest('.autocomplete-wrapper');
-            const dropdown = wrapper.find('.autocomplete-dropdown');
-            const map = dropdown.data('bn-map') || {};
-            const val = String($(this).val()).trim().toLowerCase();
-            if (val && map[val]) {
-                $(`#${prefix}_postoffice_bn`).val(map[val]);
-            }
-        });
-    });
+    function updateBnFromMap(prefix) {
+        var wrapper = document.querySelector('#' + prefix + '_postoffice_en').closest('.autocomplete-wrapper');
+        if (!wrapper) return;
+        var dropdown = wrapper.querySelector('.autocomplete-dropdown');
+        if (!dropdown) return;
+        var map = dropdown._bnMap || {};
+        var val = String(document.getElementById(prefix + '_postoffice_en').value).trim().toLowerCase();
+        if (val && map[val]) {
+            document.getElementById(prefix + '_postoffice_bn').value = map[val];
+        }
+    }
 
     window.fetchPostOffices = window.fetchPostOffices || function(unionName, inputSelector, bnInputSelector) {
         if (!unionName) return;
-        const input = $(inputSelector);
-        if (!input.length) return;
+        var input = document.querySelector(inputSelector);
+        if (!input) return;
 
-        const dropdown = input.siblings('.autocomplete-dropdown');
-        if (!dropdown.length) return;
+        var wrapper = input.closest('.autocomplete-wrapper');
+        if (!wrapper) return;
+        var dropdown = wrapper.querySelector('.autocomplete-dropdown');
+        if (!dropdown) return;
 
         // Clear previous items
-        dropdown.empty().removeClass('show');
-        dropdown.data('bn-map', {});
-        dropdown.data('items', []);
+        dropdown.innerHTML = '';
+        dropdown.classList.remove('show');
+        dropdown._bnMap = {};
+        dropdown._items = [];
         window.postOfficeDebugLog('[post-office] fetch start', {
             unionName: unionName,
             inputSelector: inputSelector,
             bnInputSelector: bnInputSelector
         });
 
-        $.ajax({
-            url: '/api/post-offices',
-            method: 'GET',
-            data: { union_name: unionName },
-            dataType: 'json',
-            success: function (res) {
-                window.postOfficeDebugLog('[post-office] fetch response', res);
-                if (res.status !== 'success' || !res.data) return;
+        fetch('/api/post-offices?union_name=' + encodeURIComponent(unionName))
+        .then(function(resp) { return resp.json(); })
+        .then(function(res) {
+            window.postOfficeDebugLog('[post-office] fetch response', res);
+            if (res.status !== 'success' || !res.data) return;
 
-                const currentVal = String(input.val()).trim().toLowerCase();
-                const map = {};
-                const items = [];
+            var currentVal = String(input.value).trim().toLowerCase();
+            var map = {};
+            var items = [];
 
-                $.each(res.data, function (_, item) {
-                    const enName = item.en_name || '';
-                    if (enName) map[enName.trim().toLowerCase()] = item.bn_name || '';
-                    items.push(item);
+            res.data.forEach(function(item) {
+                var enName = item.en_name || '';
+                if (enName) map[enName.trim().toLowerCase()] = item.bn_name || '';
+                items.push(item);
 
-                    const li = $('<li>');
-                    li.data('en', enName);
-                    li.data('bn', item.bn_name || '');
-                    li.html([
-                        '<span class="postoffice-name">',
-                            $('<span>').text(enName + (item.post_code ? '-' + item.post_code : '')).html(),
-                        '</span>',
-                        item.bn_name ? '<span class="postoffice-bn">' + $('<span>').text(item.bn_name).html() + '</span>' : ''
-                    ].join(''));
+                var li = document.createElement('li');
+                li.dataset.en = enName;
+                li.dataset.bn = item.bn_name || '';
+                li.innerHTML = '<span class="postoffice-name">' +
+                    escapeAttr(enName + (item.post_code ? '-' + item.post_code : '')) +
+                    '</span>' +
+                    (item.bn_name ? '<span class="postoffice-bn">' + escapeAttr(item.bn_name) + '</span>' : '');
 
-                    li.on('mousedown', function(e) {
-                        e.preventDefault();
-                        const thisItem = $(this);
-                        input.val(thisItem.data('en'));
-                        $(bnInputSelector).val(thisItem.data('bn'));
-                        dropdown.removeClass('show');
-                        input.focus();
-                    });
-
-                    dropdown.append(li);
+                li.addEventListener('mousedown', function(e) {
+                    e.preventDefault();
+                    input.value = li.dataset.en;
+                    var bnInput = document.querySelector(bnInputSelector);
+                    if (bnInput) bnInput.value = li.dataset.bn;
+                    dropdown.classList.remove('show');
+                    input.focus();
                 });
 
-                dropdown.data('bn-map', map);
-                dropdown.data('items', items);
+                dropdown.appendChild(li);
+            });
 
-                // Auto-fill BN if current value matches an option
-                if (currentVal && map[currentVal]) {
-                    $(bnInputSelector).val(map[currentVal]);
-                }
+            dropdown._bnMap = map;
+            dropdown._items = items;
 
-                // Do NOT auto-show dropdown during prefill.
-                // The dropdown opens only when the user focuses/clicks the input field
-                // via the showPostOfficeDropdown function below.
-            },
-            error: function (err) {
-                window.postOfficeDebugLog('[post-office] fetch error', err);
-                console.error('Post offices fetch error:', err);
+            // Auto-fill BN if current value matches an option
+            if (currentVal && map[currentVal]) {
+                var bnInput = document.querySelector(bnInputSelector);
+                if (bnInput) bnInput.value = map[currentVal];
             }
+        })
+        .catch(function(err) {
+            window.postOfficeDebugLog('[post-office] fetch error', err);
+            console.error('Post offices fetch error:', err);
         });
-    }
+    };
 
-    // ✅ Generic address copy function
+    // Generic address copy function
     window.copyAddress = window.copyAddress || function(from, to) {
         if (!isPrefixAvailable(from) || !isPrefixAvailable(to)) return;
 
-        const fields = ['village_en', 'village_bn', 'rbs_en', 'rbs_bn', 'holding_no', 'ward_no', 'postoffice_en', 'postoffice_bn'];
-        fields.forEach(field => {
-            $(`#${to}_${field}`).val($(`#${from}_${field}`).val());
+        var fields = ['village_en', 'village_bn', 'rbs_en', 'rbs_bn', 'holding_no', 'ward_no', 'postoffice_en', 'postoffice_bn'];
+        fields.forEach(function(field) {
+            var fromEl = document.getElementById(from + '_' + field);
+            var toEl = document.getElementById(to + '_' + field);
+            if (fromEl && toEl) toEl.value = fromEl.value;
         });
 
-        const districtId = $(`#${from}_district_id`).val();
-        const districtName = $(`#${from}_district`).val();
-        const districtGeoId = $(`#${from}_district_id option:selected`).data('geo-id');
+        var fromDistId = document.getElementById(from + '_district_id');
+        var toDistId = document.getElementById(to + '_district_id');
+        var fromDist = document.getElementById(from + '_district');
+        if (fromDistId && toDistId) {
+            toDistId.value = fromDistId.value;
+            var selectedOpt = fromDistId.options[fromDistId.selectedIndex];
+            var districtGeoId = selectedOpt ? selectedOpt.getAttribute('data-geo-id') : 0;
 
-        $(`#${to}_district_id`).val(districtId);
+            fetchGeoData(2, districtGeoId, '#' + to + '_upazila_id', 3, '#' + to + '_union_id', function () {
+                if (fromDist && document.getElementById(to + '_district'))
+                    document.getElementById(to + '_district').value = fromDist.value;
 
-        fetchGeoData(2, districtGeoId, `#${to}_upazila_id`, 3, `#${to}_union_id`, function () {
-            $(`#${to}_district`).val(districtName);
+                var fromUpaId = document.getElementById(from + '_upazila_id');
+                var toUpaId = document.getElementById(to + '_upazila_id');
+                var fromUpa = document.getElementById(from + '_upazila');
+                if (fromUpaId && toUpaId) {
+                    toUpaId.value = fromUpaId.value;
+                    var upaOpt = fromUpaId.options[fromUpaId.selectedIndex];
+                    var upazilaGeoId = upaOpt ? upaOpt.getAttribute('data-geo-id') : 0;
 
-            const upazilaId = $(`#${from}_upazila_id`).val();
-            const upazilaName = $(`#${from}_upazila`).val();
-            const upazilaGeoId = $(`#${from}_upazila_id option:selected`).data('geo-id');
+                    fetchGeoData(3, upazilaGeoId, '#' + to + '_union_id', null, null, function () {
+                        var fromUnionId = document.getElementById(from + '_union_id');
+                        var toUnionId = document.getElementById(to + '_union_id');
+                        var fromUnion = document.getElementById(from + '_union');
 
-            $(`#${to}_upazila_id`).val(upazilaId);
-
-            fetchGeoData(3, upazilaGeoId, `#${to}_union_id`, null, null, function () {
-                const unionId = $(`#${from}_union_id`).val();
-                const unionName = $(`#${from}_union`).val();
-
-                $(`#${to}_upazila`).val(upazilaName);
-                $(`#${to}_union_id`).val(unionId);
-                $(`#${to}_union`).val(unionName);
+                        if (fromUpa && document.getElementById(to + '_upazila'))
+                            document.getElementById(to + '_upazila').value = fromUpa.value;
+                        if (fromUnionId && toUnionId) toUnionId.value = fromUnionId.value;
+                        if (fromUnion && document.getElementById(to + '_union'))
+                            document.getElementById(to + '_union').value = fromUnion.value;
+                    });
+                }
             });
-        });
-    }
+        }
+    };
 
-    // ✅ Compare two addresses
+    // Compare two addresses
     window.addressesMatch = window.addressesMatch || function(prefix1, prefix2) {
-        const fields = [
+        var fields = [
             'village_en', 'village_bn', 'rbs_en', 'rbs_bn',
             'holding_no', 'ward_no', 'postoffice_en', 'postoffice_bn',
             'district_id', 'district', 'upazila_id', 'upazila',
             'union_id', 'union'
         ];
-        return fields.every(field => {
-            return $(`#${prefix1}_${field}`).val() === $(`#${prefix2}_${field}`).val();
+        return fields.every(function(field) {
+            var el1 = document.getElementById(prefix1 + '_' + field);
+            var el2 = document.getElementById(prefix2 + '_' + field);
+            return (el1 ? el1.value : '') === (el2 ? el2.value : '');
         });
-    }
+    };
 
-    // ✅ Bind address copy + auto check/uncheck
+    // Bind address copy + auto check/uncheck
     window.bindAddressSync = window.bindAddressSync || function(from, to, checkboxSelector) {
-        $(checkboxSelector).change(function () {
-            if ($(this).is(":checked")) {
+        var checkbox = document.querySelector(checkboxSelector);
+        if (!checkbox) return;
+
+        checkbox.addEventListener('change', function () {
+            if (this.checked) {
                 copyAddress(from, to);
             } else {
-                $(`#${to}_address_fields input, #${to}_address_fields select`).val('');
+                var container = document.getElementById(to + '_address_fields');
+                if (container) {
+                    container.querySelectorAll('input, select').forEach(function(el) { el.value = ''; });
+                }
             }
         });
 
-        $(`#${to}_address_fields input, #${to}_address_fields select`).on('input change', function () {
-            if (!addressesMatch(from, to)) {
-                $(checkboxSelector).prop('checked', false);
-            }
-        });
+        var toContainer = document.getElementById(to + '_address_fields');
+        if (toContainer) {
+            toContainer.addEventListener('input', function() {
+                if (!addressesMatch(from, to)) checkbox.checked = false;
+            });
+            toContainer.addEventListener('change', function() {
+                if (!addressesMatch(from, to)) checkbox.checked = false;
+            });
+        }
 
-        $(`#${from}_address_fields input, #${from}_address_fields select`).on('input change', function () {
-            if (addressesMatch(from, to)) {
-                $(checkboxSelector).prop('checked', true);
-            } else {
-                $(checkboxSelector).prop('checked', false);
-            }
-        });
-    }
+        var fromContainer = document.getElementById(from + '_address_fields');
+        if (fromContainer) {
+            fromContainer.addEventListener('input', function() {
+                checkbox.checked = addressesMatch(from, to);
+            });
+            fromContainer.addEventListener('change', function() {
+                checkbox.checked = addressesMatch(from, to);
+            });
+        }
+    };
 
-    // ✅ Call sync bindings
+    // Call sync bindings
     bindAddressSync('business', 'present', '#same_as_business_address');
     bindAddressSync('present', 'permanent', '#permanentBtn');
     bindAddressSync('present', 'business', '#copy_present_to_business');
 
-    // ✅ Manual button to copy present to permanent
-    $("#copy_present_to_permanent").click(function () {
-        copyAddress('present', 'permanent');
-    });
+    // Manual button to copy present to permanent
+    var copyBtn = document.getElementById('copy_present_to_permanent');
+    if (copyBtn) {
+        copyBtn.addEventListener('click', function () {
+            copyAddress('present', 'permanent');
+        });
+    }
 
-    // ===== Custom Autocomplete Dropdown: show/filter on click/focus/input =====
+    // Custom Autocomplete Dropdown: show/filter on click/focus/input
     function showPostOfficeDropdown(input) {
-        const wrapper = $(input).closest('.autocomplete-wrapper');
-        const dropdown = wrapper.find('.autocomplete-dropdown');
-        if (!dropdown.length) return;
-        const items = dropdown.data('items');
+        var wrapper = input.closest('.autocomplete-wrapper');
+        if (!wrapper) return;
+        var dropdown = wrapper.querySelector('.autocomplete-dropdown');
+        if (!dropdown) return;
+        var items = dropdown._items;
         if (!items || items.length === 0) return;
 
-        const val = $(input).val().toLowerCase();
-        let visibleCount = 0;
-        dropdown.find('li').each(function() {
-            const en = ($(this).data('en') || '').toLowerCase();
-            const match = !val || en.includes(val);
-            $(this).toggle(match);
+        var val = input.value.toLowerCase();
+        var visibleCount = 0;
+        var lis = dropdown.querySelectorAll('li');
+        lis.forEach(function(li) {
+            var en = (li.dataset.en || '').toLowerCase();
+            var match = !val || en.includes(val);
+            li.style.display = match ? '' : 'none';
             if (match) visibleCount++;
         });
 
         if (visibleCount > 0) {
-            dropdown.addClass('show');
+            dropdown.classList.add('show');
         } else {
-            dropdown.removeClass('show');
+            dropdown.classList.remove('show');
         }
     }
 
-    $(document).on('focus click', '.autocomplete-wrapper input[type="text"]', function() {
-        showPostOfficeDropdown(this);
+    document.addEventListener('focus', function(e) {
+        if (e.target.matches && e.target.matches('.autocomplete-wrapper input[type="text"]')) {
+            showPostOfficeDropdown(e.target);
+        }
+    }, true);
+
+    document.addEventListener('click', function(e) {
+        if (e.target.matches && e.target.matches('.autocomplete-wrapper input[type="text"]')) {
+            showPostOfficeDropdown(e.target);
+        }
     });
 
-    $(document).on('input', '.autocomplete-wrapper input[type="text"]', function() {
-        showPostOfficeDropdown(this);
+    document.addEventListener('input', function(e) {
+        if (e.target.matches && e.target.matches('.autocomplete-wrapper input[type="text"]')) {
+            showPostOfficeDropdown(e.target);
+        }
     });
 
     // Hide on blur (with delay for click capture)
-    $(document).on('blur', '.autocomplete-wrapper input[type="text"]', function() {
-        const wrapper = $(this).closest('.autocomplete-wrapper');
-        const dropdown = wrapper.find('.autocomplete-dropdown');
-        setTimeout(function() {
-            dropdown.removeClass('show');
-        }, 200);
-    });
+    document.addEventListener('blur', function(e) {
+        if (e.target.matches && e.target.matches('.autocomplete-wrapper input[type="text"]')) {
+            var wrapper = e.target.closest('.autocomplete-wrapper');
+            if (!wrapper) return;
+            var dropdown = wrapper.querySelector('.autocomplete-dropdown');
+            if (!dropdown) return;
+            setTimeout(function() {
+                dropdown.classList.remove('show');
+            }, 200);
+        }
+    }, true);
 
     // Keyboard navigation
-    $(document).on('keydown', '.autocomplete-wrapper input[type="text"]', function(e) {
-        const wrapper = $(this).closest('.autocomplete-wrapper');
-        const dropdown = wrapper.find('.autocomplete-dropdown');
-        if (!dropdown.length || !dropdown.hasClass('show')) return;
+    document.addEventListener('keydown', function(e) {
+        if (!e.target.matches || !e.target.matches('.autocomplete-wrapper input[type="text"]')) return;
 
-        const items = dropdown.find('li:visible');
-        if (items.length === 0) return;
+        var wrapper = e.target.closest('.autocomplete-wrapper');
+        if (!wrapper) return;
+        var dropdown = wrapper.querySelector('.autocomplete-dropdown');
+        if (!dropdown || !dropdown.classList.contains('show')) return;
 
-        let active = dropdown.find('li.active');
-        let idx = active.length > 0 ? items.index(active) : -1;
+        var allLis = Array.from(dropdown.querySelectorAll('li')).filter(function(li) {
+            return li.style.display !== 'none';
+        });
+        if (allLis.length === 0) return;
+
+        var activeLi = dropdown.querySelector('li.active');
+        var idx = activeLi ? allLis.indexOf(activeLi) : -1;
 
         if (e.key === 'ArrowDown') {
             e.preventDefault();
-            idx = Math.min(idx + 1, items.length - 1);
-            items.removeClass('active').eq(idx).addClass('active');
-            items[idx].scrollIntoView({ block: 'nearest' });
+            idx = Math.min(idx + 1, allLis.length - 1);
+            allLis.forEach(function(li) { li.classList.remove('active'); });
+            allLis[idx].classList.add('active');
+            allLis[idx].scrollIntoView({ block: 'nearest' });
         } else if (e.key === 'ArrowUp') {
             e.preventDefault();
-            items.removeClass('active');
+            allLis.forEach(function(li) { li.classList.remove('active'); });
             if (idx > 0) {
                 idx--;
-                items.eq(idx).addClass('active');
-                items[idx].scrollIntoView({ block: 'nearest' });
+                allLis[idx].classList.add('active');
+                allLis[idx].scrollIntoView({ block: 'nearest' });
             }
-        } else if (e.key === 'Enter') {
-            if (idx >= 0 && idx < items.length) {
+        } else if (e.key === 'Enter' || e.key === 'Tab') {
+            if (idx >= 0 && idx < allLis.length) {
                 e.preventDefault();
-                const item = items.eq(idx);
-                $(this).val(item.data('en'));
-                wrapper.closest('.row').find('[id$="_postoffice_bn"]').val(item.data('bn'));
-                dropdown.removeClass('show');
-            }
-        } else if (e.key === 'Tab') {
-            if (idx >= 0 && idx < items.length) {
-                // Select item but let Tab naturally move focus to next field
-                const item = items.eq(idx);
-                $(this).val(item.data('en'));
-                wrapper.closest('.row').find('[id$="_postoffice_bn"]').val(item.data('bn'));
-                dropdown.removeClass('show');
+                var item = allLis[idx];
+                e.target.value = item.dataset.en;
+                var bnInput = wrapper.closest('.row').querySelector('[id$="_postoffice_bn"]');
+                if (bnInput) bnInput.value = item.dataset.bn;
+                dropdown.classList.remove('show');
             }
         } else if (e.key === 'Escape') {
-            dropdown.removeClass('show');
+            dropdown.classList.remove('show');
         }
     });
 

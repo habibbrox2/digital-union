@@ -143,7 +143,10 @@ document.addEventListener("DOMContentLoaded", function() {
     }
 
     function escapeHtml(str) {
-        return $('<div>').text(str ?? '').html();
+        if (str == null) return '';
+        var div = document.createElement('div');
+        div.appendChild(document.createTextNode(str));
+        return div.innerHTML;
     }
 
     function populateTable(selectEl) {

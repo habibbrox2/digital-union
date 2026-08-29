@@ -567,12 +567,8 @@ document.addEventListener('DOMContentLoaded', function () {
         const datepickers = (rootEl === document) ? rootEl.querySelectorAll('.datepicker') : rootEl.querySelectorAll('.datepicker');
         datepickers.forEach(function(input){
             try {
-                if (window.jQuery && typeof jQuery(input).datepicker === 'function') {
-                    jQuery(input).datepicker({
-                        format:'dd-mm-yyyy',
-                        autoclose:true,
-                        todayHighlight:true
-                    });
+                if (input.type !== 'date') {
+                    input.type = 'date';
                 } else {
                     input.placeholder = input.placeholder || 'দিন-মাস-বছর';
                     input.setAttribute('inputmode','numeric');

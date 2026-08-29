@@ -6,56 +6,56 @@
 
 {% if reuse_data is defined and reuse_data[prefix~'_address_id'] is defined and reuse_data[prefix~'_address_id'] %}
 <script>
-$(document).ready(function() {
+document.addEventListener('DOMContentLoaded', function() {
     var addressId = '{{ reuse_data[prefix~'_address_id'] }}';
     if (addressId) {
-        $.ajax({
-            url: '/api/address/' + addressId,
-            method: 'GET',
-            dataType: 'json',
-            success: function(addr) {
-                // Fill all address fields — map data keys to actual element IDs
-                var fieldMap = {
-                    'village_en': 'village_en',
-                    'village_bn': 'village_bn',
-                    'rbs_en': 'rbs_en',
-                    'rbs_bn': 'rbs_bn',
-                    'holding_no': 'holding_no',
-                    'ward_no': 'ward_no',
-                    'district_en': 'district_id',  // actual ID (not 'district_en')
-                    'district_bn': 'district',      // actual ID (not 'district_bn')
-                    'upazila_en': 'upazila_id',     // actual ID (not 'upazila_en')
-                    'upazila_bn': 'upazila',        // actual ID (not 'upazila_bn')
-                    'union_en': 'union_id',         // actual ID (not 'union_en')
-                    'union_bn': 'union',            // actual ID (not 'union_bn')
-                    'postoffice_en': 'postoffice_en',
-                    'postoffice_bn': 'postoffice_bn'
-                };
-                for (var dataKey in fieldMap) {
-                    if (!fieldMap.hasOwnProperty(dataKey)) continue;
-                    var el = $("#{{ prefix }}_" + fieldMap[dataKey]);
-                    if (el.length && addr[dataKey] !== undefined) {
-                        el.val(addr[dataKey]);
-                        // Highlight prefilled fields
-                        el.css('background-color', '#d4edda');
-                        el.css('border', '2px solid #c3e6cb');
-                    }
-                }
-                // Set dropdowns and trigger change for cascading
-                if (addr['district_en']) {
-                    $("#{{ prefix }}_district_id").val(addr['district_en']).trigger('change');
-                }
-                if (addr['upazila_en']) {
-                    setTimeout(function() {
-                        $("#{{ prefix }}_upazila_id").val(addr['upazila_en']).trigger('change');
-                    }, 500);
-                }
-                if (addr['union_en']) {
-                    setTimeout(function() {
-                        $("#{{ prefix }}_union_id").val(addr['union_en']).trigger('change');
-                    }, 1000);
+        fetch('/api/address/' + addressId)
+        .then(function(resp) { return resp.json(); })
+        .then(function(addr) {
+            var fieldMap = {
+                'village_en': 'village_en',
+                'village_bn': 'village_bn',
+                'rbs_en': 'rbs_en',
+                'rbs_bn': 'rbs_bn',
+                'holding_no': 'holding_no',
+                'ward_no': 'ward_no',
+                'district_en': 'district_id',
+                'district_bn': 'district',
+                'upazila_en': 'upazila_id',
+                'upazila_bn': 'upazila',
+                'union_en': 'union_id',
+                'union_bn': 'union',
+                'postoffice_en': 'postoffice_en',
+                'postoffice_bn': 'postoffice_bn'
+            };
+            for (var dataKey in fieldMap) {
+                if (!fieldMap.hasOwnProperty(dataKey)) continue;
+                var el = document.getElementById('{{ prefix }}_' + fieldMap[dataKey]);
+                if (el && addr[dataKey] !== undefined) {
+                    el.value = addr[dataKey];
+                    el.style.backgroundColor = '#d4edda';
+                    el.style.border = '2px solid #c3e6cb';
                 }
             }
+            if (addr['district_en']) {
+                var distEl = document.getElementById('{{ prefix }}_district_id');
+                if (distEl) { distEl.value = addr['district_en']; distEl.dispatchEvent(new Event('change')); }
+            }
+            if (addr['upazila_en']) {
+                setTimeout(function() {
+                    var upaEl = document.getElementById('{{ prefix }}_upazila_id');
+                    if (upaEl) { upaEl.value = addr['upazila_en']; upaEl.dispatchEvent(new Event('change')); }
+                }, 500);
+            }
+            if (addr['union_en']) {
+                setTimeout(function() {
+                    var unionEl = document.getElementById('{{ prefix }}_union_id');
+                    if (unionEl) { unionEl.value = addr['union_en']; unionEl.dispatchEvent(new Event('change')); }
+                }, 1000);
+            }
+        })
+        .catch(function(err) {
+            console.error('Address fetch error:', err);
         });
     }
 });

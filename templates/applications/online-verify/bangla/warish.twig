@@ -164,7 +164,7 @@
                     <td style="text-align:center;font-size:13px;">{{ loop.index|bn }}</td>
                     <td style="text-align:center;font-size:14px;">{{ member.name_bn }}</td>
                     <td style="text-align:center;font-size:14px;">{{ member.relation_bn }}</td>
-                    <td style="text-align:center;font-size:14px;">{{ member.birth_date and member.birth_date != '0000-00-00' ? member.birth_date|date('d-m-Y')|bn : 'N/A' }}</td>
+                    <td style="text-align:center;font-size:14px;">{{ member.birth_date and member.birth_date != '0000-00-00' ? member.birth_date|date('d-m-Y')|bn : '' }}</td>
                     <td style="text-align:center;font-size:14px;">{{ member.nid|bn }}</td>
                     <td style="text-align:center;font-size:14px;">{{ member.marital_status }}</td>
                     <td style="text-align:center;font-size:14px;">

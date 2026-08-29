@@ -2,20 +2,15 @@
 /**
  * modules/Services/PushService.php
  *
- * Web Push delivery (Push API + VAPID) for the live chat system.
+ * Push notification delivery for the live chat system using Firebase Cloud Messaging (FCM).
  * Visitors subscribe their browser to a chat session; when an admin replies,
  * ChatController asks this service to push a notification to that session's
  * subscriptions (delivered even when the visitor's tab is closed).
  */
 
-use Minishlink\WebPush\Subscription;
-use Minishlink\WebPush\VAPID;
-use Minishlink\WebPush\WebPush;
-
 class PushService
 {
     private ChatModel $chatModel;
-    private ?string $subject = null;
 
     public function __construct(ChatModel $chatModel)
     {
@@ -31,165 +26,157 @@ class PushService
     }
 
     /**
-     * Whether a usable VAPID key pair is already stored (no generation).
+     * Whether FCM is configured (Firebase Admin SDK available).
      */
     public function isConfigured(): bool
     {
-        return (string)($this->chatModel->getChatSetting('chat_push_vapid_public_key') ?? '') !== ''
-            && (string)($this->chatModel->getChatSetting('chat_push_vapid_private_key') ?? '') !== '';
+        $serviceAccountPath = __DIR__ . '/../../config/digi-union-lgdhaka-firebase-adminsdk-fbsvc-39e5307dd4.json';
+        return file_exists($serviceAccountPath);
     }
 
     /**
-     * Ensure VAPID keys exist; generate and persist them on first use.
-     *
-     * @return bool true when a usable key pair is present
+     * Get the Firebase client config for the frontend.
+     * Returns an array with apiKey, projectId, etc.
      */
-    public function ensureKeys(): bool
+    public function getFirebaseClientConfig(): array
     {
-        if ($this->isConfigured()) {
-            return true;
-        }
-
-        // Some Windows/XAMPP PHP builds cannot generate EC keys unless an
-        // explicit OpenSSL config file is provided before the extension loads.
-        if (getenv('OPENSSL_CONF') === false || getenv('OPENSSL_CONF') === '') {
-            foreach (['C:/xampp/apache/conf/openssl.cnf', 'D:/xampp/apache/conf/openssl.cnf'] as $cnf) {
-                if (is_file($cnf)) {
-                    putenv('OPENSSL_CONF=' . $cnf);
-                    break;
-                }
-            }
-        }
-
-        try {
-            $keys = VAPID::createVapidKeys();
-        } catch (\Throwable $e) {
-            error_log('[Push] VAPID key generation failed: ' . $e->getMessage());
-            return false;
-        }
-
-        $this->chatModel->saveChatSetting('chat_push_vapid_public_key', $keys['publicKey']);
-        $this->chatModel->saveChatSetting('chat_push_vapid_private_key', $keys['privateKey']);
-        return true;
+        return [
+            'apiKey' => 'AIzaSyBdNqFdh0DZ3Zz-iztHL2uGtoYZDLzhdyw',
+            'authDomain' => 'digi-union-lgdhaka.firebaseapp.com',
+            'projectId' => 'digi-union-lgdhaka',
+            'storageBucket' => 'digi-union-lgdhaka.firebasestorage.app',
+            'messagingSenderId' => '599628365980',
+            'appId' => '1:599628365980:web:e90cefbce2c52ccf036d59',
+        ];
     }
 
     /**
-     * Current VAPID public key ('' when not configured).
+     * Get the VAPID public key for FCM web push (still needed for web push with FCM).
      */
     public function getVapidPublicKey(): string
     {
-        return (string)($this->chatModel->getChatSetting('chat_push_vapid_public_key') ?? '');
+        // FCM uses its own VAPID key derived from the service account.
+        // For web push, we return the key pair the user provided.
+        return 'BEXZ3EoUslEvolRGpCkIN0BbDMPyEc0FsAej9yk9M_I9f-fIbI-yNS-r7IcnJ5MCzEjDZNVpymuX-3zmGzN8AHk';
     }
 
     /**
-     * VAPID subject (mailto:). Persists a sensible default on first use.
+     * Save an FCM token for a session.
      */
-    public function getSubject(): string
+    public function subscribeFcm(string $sessionId, string $fcmToken, string $sessionSig = '', string $userType = 'visitor', ?int $userId = null): bool
     {
-        if ($this->subject !== null) {
-            return $this->subject;
-        }
-        $stored = (string)($this->chatModel->getChatSetting('chat_push_subject') ?? '');
-        if ($stored !== '') {
-            $this->subject = $stored;
-            return $stored;
-        }
-        $host = 'localhost';
-        if (defined('SITE_URL') && SITE_URL !== '') {
-            $host = (string)(parse_url(SITE_URL, PHP_URL_HOST) ?: 'localhost');
-        }
-        $subject = 'mailto:no-reply@' . $host;
-        $this->chatModel->saveChatSetting('chat_push_subject', $subject);
-        $this->subject = $subject;
-        return $subject;
-    }
-
-    /**
-     * Validate and persist a browser push subscription for a session.
-     */
-    public function subscribe(string $sessionId, string $endpoint, string $p256dh, string $auth): bool
-    {
-        $endpoint = trim($endpoint);
-        if (!filter_var($endpoint, FILTER_VALIDATE_URL) || !preg_match('#^https?://#i', $endpoint)) {
+        $fcmToken = trim($fcmToken);
+        if (empty($fcmToken) || strlen($fcmToken) < 10) {
             return false;
         }
-        $p256 = base64_decode(strtr($p256dh, '-_', '+/'), true);
-        $authRaw = base64_decode(strtr($auth, '-_', '+/'), true);
-        if ($p256 === false || strlen($p256) !== 65 || $authRaw === false || strlen($authRaw) !== 16) {
-            return false;
-        }
-        $this->chatModel->savePushSubscription($sessionId, $endpoint, $p256dh, $auth);
+        $this->chatModel->saveFcmToken($sessionId, $fcmToken, $sessionSig, $userType, $userId);
         return true;
     }
 
     /**
-     * Remove a push subscription.
+     * Remove an FCM token.
      */
-    public function unsubscribe(string $endpoint): void
+    public function unsubscribeFcm(string $fcmToken): void
     {
-        $this->chatModel->deletePushSubscription($endpoint);
+        $this->chatModel->deleteFcmToken($fcmToken);
     }
 
     /**
-     * Send a push notification to every subscription of a session.
-     * Best-effort: never throws; failures are logged and expired
-     * (410 Gone) subscriptions are pruned.
+     * Send a push notification to every FCM token of a session (visitor notifications).
+     * Best-effort: never throws; failures are logged and invalid tokens are pruned.
      */
-    public function sendToSession(string $sessionId, string $title, string $body): void
+    public function sendToSession(string $sessionId, string $title, string $body, array $data = []): void
     {
         if (!$this->isEnabled()) {
             return;
         }
-        if (!$this->ensureKeys()) {
-            return;
-        }
-        $subscriptions = $this->chatModel->getPushSubscriptions($sessionId);
-        if (empty($subscriptions)) {
-            return;
+
+        // Require FCM config
+        if (!function_exists('sendFcmMulticast')) {
+            require_once __DIR__ . '/../../config/fcm.php';
         }
 
-        $publicKey  = (string)($this->chatModel->getChatSetting('chat_push_vapid_public_key') ?? '');
-        $privateKey = (string)($this->chatModel->getChatSetting('chat_push_vapid_private_key') ?? '');
-        if ($publicKey === '' || $privateKey === '') {
+        if (!function_exists('sendFcmMulticast')) {
+            error_log('[Push] FCM functions not available');
             return;
         }
 
-        try {
-            $webPush = new WebPush([
-                'VAPID' => [
-                    'subject'    => $this->getSubject(),
-                    'publicKey'  => $publicKey,
-                    'privateKey' => $privateKey,
-                ],
-            ], ['TTL' => 86400]);
-
-            $payload = json_encode([
-                'title' => $title,
-                'body'  => $body,
-                'url'   => defined('SITE_URL') ? rtrim(SITE_URL, '/') . '/' : '/',
-            ], JSON_UNESCAPED_UNICODE);
-
-            foreach ($subscriptions as $sub) {
-                try {
-                    $report = $webPush->sendOneNotification(
-                        Subscription::create([
-                            'endpoint' => $sub['endpoint'],
-                            'keys'     => ['p256dh' => $sub['p256dh'], 'auth' => $sub['auth']],
-                        ]),
-                        $payload
-                    );
-                    if (!$report->isSuccess()) {
-                        if ($report->isSubscriptionExpired()) {
-                            $this->chatModel->deletePushSubscription($sub['endpoint']);
-                        }
-                        error_log('[Push] send failed for ' . substr($sub['endpoint'], 0, 60) . ': ' . $report->getReason());
-                    }
-                } catch (\Throwable $e) {
-                    error_log('[Push] send error for ' . substr($sub['endpoint'], 0, 60) . ': ' . $e->getMessage());
-                }
-            }
-        } catch (\Throwable $e) {
-            error_log('[Push] push delivery error: ' . $e->getMessage());
+        $tokens = $this->chatModel->getFcmTokensBySession($sessionId);
+        if (empty($tokens)) {
+            return;
         }
+
+        $fcmTokens = array_column($tokens, 'fcm_token');
+        $result = sendFcmMulticast($fcmTokens, $title, $body, $data);
+
+        // Prune invalid tokens
+        if (!empty($result['invalid_tokens'])) {
+            $this->chatModel->deleteInvalidFcmTokens($result['invalid_tokens']);
+        }
+
+        if ($result['failure'] > 0) {
+            error_log("[Push] Session $sessionId: {$result['success']} success, {$result['failure']} failed");
+        }
+    }
+
+    /**
+     * Send a push notification to all admin devices (for new visitor messages).
+     */
+    public function sendToAdmins(string $title, string $body, array $data = []): void
+    {
+        if (!$this->isEnabled()) {
+            return;
+        }
+
+        if (!function_exists('sendFcmMulticast')) {
+            require_once __DIR__ . '/../../config/fcm.php';
+        }
+
+        if (!function_exists('sendFcmMulticast')) {
+            error_log('[Push] FCM functions not available');
+            return;
+        }
+
+        $tokens = $this->chatModel->getAllAdminFcmTokens();
+        if (empty($tokens)) {
+            return;
+        }
+
+        $fcmTokens = array_column($tokens, 'fcm_token');
+        $result = sendFcmMulticast($fcmTokens, $title, $body, $data);
+
+        // Prune invalid tokens
+        if (!empty($result['invalid_tokens'])) {
+            $this->chatModel->deleteInvalidFcmTokens($result['invalid_tokens']);
+        }
+
+        if ($result['failure'] > 0) {
+            error_log("[Push] Admin notification: {$result['success']} success, {$result['failure']} failed");
+        }
+    }
+
+    /**
+     * Send a data-only message (no notification) to trigger in-app update.
+     */
+    public function sendDataMessage(string $fcmToken, array $data): bool
+    {
+        if (!function_exists('sendFcmNotification')) {
+            require_once __DIR__ . '/../../config/fcm.php';
+        }
+
+        if (!function_exists('sendFcmNotification')) {
+            return false;
+        }
+
+        // Send as notification with silent data for FCM
+        return sendFcmNotification($fcmToken, '', '', $data);
+    }
+
+    /**
+     * Clean up expired tokens (older than 30 days).
+     */
+    public function cleanExpiredTokens(): int
+    {
+        return $this->chatModel->cleanExpiredFcmTokens();
     }
 }

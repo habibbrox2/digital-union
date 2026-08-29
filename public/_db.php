@@ -1,4 +1,5 @@
-<?php/* ===================== AUTHENTICATION CHECK ===================== */
+<?php
+/* ===================== AUTHENTICATION CHECK ===================== */
 // Skip browser-only auth guards when running from CLI cron/smoke scripts.
 $isCli = PHP_SAPI === 'cli' || PHP_SAPI === 'phpdbg';
 if (!$isCli) {
@@ -21,7 +22,9 @@ if (!$isCli) {
         ]);
         exit;
     }
-}/* ===================== কনফিগারেশন / CONFIG ===================== */
+}
+
+/* ===================== কনফিগারেশন / CONFIG ===================== */
 
 // 🔒 Load .env for database credentials (never hardcode)
 if (file_exists(__DIR__ . '/../.env')) {
@@ -53,7 +56,7 @@ if (empty(DB_USER) || empty(DB_PASS) || empty(DB_NAME)) {
 }
 
 // ব্যাকআপ ডিরেক্টরি
-define('BACKUP_DIR', dirname(__DIR__, 1) . '/Database/');
+define('BACKUP_DIR', dirname(__DIR__, 1) . '/database/');
 
 // প্রতিবার কতগুলো সারি এক্সপোর্ট করবে
 define('EXPORT_CHUNK_SIZE', 500);

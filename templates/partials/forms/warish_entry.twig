@@ -119,128 +119,135 @@
 
 
 <script>
-$(function () {
+document.addEventListener('DOMContentLoaded', function() {
     // ----------------- Validation -----------------
-    function validateEntries($form) {
+    function validateEntries(form) {
         let isValid = true;
         let messages = [];
 
-        $form.find('#warish_container .warish_entry').each((index, row) => {
+        var rows = form.querySelectorAll('#warish_container .warish_entry');
+        rows.forEach(function(row, index) {
             const rowNum = index + 1;
 
-            const serial = $(row).find('input[name="serial_no[]"]');
-            const nameBn = $(row).find('input[name="warish_name_bn[]"]');
-            const relation = $(row).find('select[name="relation[]"]');
-            const marital = $(row).find('select[name="marrage_state[]"]');
-            const isDead = $(row).find('select[name="is_dead[]"]');
+            const serial = row.querySelector('input[name="serial_no[]"]');
+            const nameBn = row.querySelector('input[name="warish_name_bn[]"]');
+            const relation = row.querySelector('select[name="relation[]"]');
+            const marital = row.querySelector('select[name="marrage_state[]"]');
+            const isDead = row.querySelector('select[name="is_dead[]"]');
 
             // Required validation
-            if (serial.prop('required') && !serial.val().trim()) {
+            if (serial.required && !serial.value.trim()) {
                 isValid = false;
                 messages.push(`Row ${rowNum}: ক্রমিক নং দিতে হবে`);
-                serial.addClass('is-invalid');
-            } else { serial.removeClass('is-invalid'); }
+                serial.classList.add('is-invalid');
+            } else { serial.classList.remove('is-invalid'); }
 
-            if (nameBn.prop('required') && !nameBn.val().trim()) {
+            if (nameBn.required && !nameBn.value.trim()) {
                 isValid = false;
                 messages.push(`Row ${rowNum}: নাম (বাংলায়) দিতে হবে`);
-                nameBn.addClass('is-invalid');
-            } else { nameBn.removeClass('is-invalid'); }
+                nameBn.classList.add('is-invalid');
+            } else { nameBn.classList.remove('is-invalid'); }
 
-            if (relation.prop('required') && !relation.val().trim()) {
+            if (relation.required && !relation.value.trim()) {
                 isValid = false;
                 messages.push(`Row ${rowNum}: সম্পর্ক নির্বাচন করতে হবে`);
-                relation.addClass('is-invalid');
-            } else { relation.removeClass('is-invalid'); }
+                relation.classList.add('is-invalid');
+            } else { relation.classList.remove('is-invalid'); }
 
-            if (marital.prop('required') && !marital.val().trim()) {
+            if (marital.required && !marital.value.trim()) {
                 isValid = false;
                 messages.push(`Row ${rowNum}: বৈবাহিক অবস্থা দিতে হবে`);
-                marital.addClass('is-invalid');
-            } else { marital.removeClass('is-invalid'); }
+                marital.classList.add('is-invalid');
+            } else { marital.classList.remove('is-invalid'); }
 
-            if (isDead.prop('required') && !isDead.val().trim()) {
+            if (isDead.required && !isDead.value.trim()) {
                 isValid = false;
                 messages.push(`Row ${rowNum}: মৃত্যু অবস্থা নির্বাচন করতে হবে`);
-                isDead.addClass('is-invalid');
-            } else { isDead.removeClass('is-invalid'); }
+                isDead.classList.add('is-invalid');
+            } else { isDead.classList.remove('is-invalid'); }
         });
 
-        const errorDiv = $form.find('#emptyError');
-        const errorList = $form.find('#errorList');
-        errorList.html('');
+        const errorDiv = document.getElementById('emptyError');
+        const errorList = document.getElementById('errorList');
+        errorList.innerHTML = '';
 
         if (!isValid) {
             messages.forEach(msg => {
-                errorList.append(`<li>${msg}</li>`);
+                errorList.insertAdjacentHTML('beforeend', '<li>' + msg + '</li>');
             });
-            errorDiv.show();
+            errorDiv.style.display = '';
             return false;
         } else {
-            errorDiv.hide();
+            errorDiv.style.display = 'none';
             return true;
         }
     }
 
     // ----------------- Apply to all forms -----------------
-    $('form').on('submit', function(e) {
-        const $form = $(this);
-        if (!validateEntries($form)) {
-            e.preventDefault();
-        }
+    document.querySelectorAll('form').forEach(function(form) {
+        form.addEventListener('submit', function(e) {
+            if (!validateEntries(form)) {
+                e.preventDefault();
+            }
+        });
     });
 
     // ----------------- Dynamic Rows -----------------
     function updateRemoveButtons() {
-        if ($(".warish_entry").length > 1) {
-            $(".remove_warish").show();
+        if (document.querySelectorAll('.warish_entry').length > 1) {
+            document.querySelectorAll('.remove_warish').forEach(function(el) {
+                el.style.display = '';
+            });
         } else {
-            $(".remove_warish").hide();
+            document.querySelectorAll('.remove_warish').forEach(function(el) {
+                el.style.display = 'none';
+            });
         }
     }
 
     function reorderSerials() {
-        $(".warish_entry").each(function (index) {
-            $(this).find("input[name='serial_no[]']").val(index + 1);
-            // Reassign unique IDs when rows are removed/reordered
-            $(this).find("input, select").each(function () {
-                var $input = $(this);
-                var oldId = $input.attr("id");
+        document.querySelectorAll('.warish_entry').forEach(function(entry, index) {
+            var sn = entry.querySelector("input[name='serial_no[]']");
+            if (sn) sn.value = index + 1;
+            entry.querySelectorAll('input, select').forEach(function(input) {
+                var oldId = input.getAttribute('id');
                 if (oldId) {
-                    $input.attr("id", oldId.replace(/\d+$/, index));
+                    input.setAttribute('id', oldId.replace(/\d+$/, index));
                 }
             });
         });
     }
 
     function createNewEntry() {
-        var newIndex = $(".warish_entry").length;
-        var $clone = $(".warish_entry:first").clone();
+        var newIndex = document.querySelectorAll('.warish_entry').length;
+        var clone = document.querySelector('.warish_entry').cloneNode(true);
 
-        $clone.find("input, select").each(function () {
-            var $input = $(this);
-            var name = $input.attr("name");
-            $input.val(name === "serial_no[]" ? (newIndex + 1) : "");
-            // Assign a unique ID for the new row
-            var oldId = $input.attr("id");
+        clone.querySelectorAll('input, select').forEach(function(input) {
+            var name = input.getAttribute('name');
+            input.value = (name === 'serial_no[]') ? (newIndex + 1) : '';
+            var oldId = input.getAttribute('id');
             if (oldId) {
-                $input.attr("id", oldId.replace(/\d+$/, newIndex));
+                input.setAttribute('id', oldId.replace(/\d+$/, newIndex));
             }
         });
 
-        return $clone;
+        return clone;
     }
 
-    $("#add_warish").click(function () {
-        $("#warish_container").append(createNewEntry());
+    document.getElementById('add_warish').addEventListener('click', function() {
+        document.getElementById('warish_container').appendChild(createNewEntry());
         updateRemoveButtons();
         reorderSerials();
     });
 
-    $(document).on("click", ".remove_warish", function () {
-        $(this).closest(".warish_entry").remove();
-        updateRemoveButtons();
-        reorderSerials();
+    document.addEventListener('click', function(e) {
+        var btn = e.target.closest('.remove_warish');
+        if (btn) {
+            var entry = btn.closest('.warish_entry');
+            if (entry) entry.remove();
+            updateRemoveButtons();
+            reorderSerials();
+        }
     });
 
     updateRemoveButtons();
@@ -270,7 +277,9 @@ $(function () {
     }
 
     // ----------------- Auto-format birth date on input -----------------
-    $('#warish_container').on('input', 'input[name="member_birth_date[]"]', function() {
+    document.getElementById('warish_container').addEventListener('input', function(e) {
+        if (!e.target.matches('input[name="member_birth_date[]"]')) return;
+        (function() {
         var val = bnToEn(this.value);
 
         // Only auto-format if the input looks like it's being typed as a date
@@ -292,31 +301,37 @@ $(function () {
     });
 
     // ----------------- Convert age → DD-MM-YYYY on blur -----------------
-    $('#warish_container').on('blur', 'input[name="member_birth_date[]"]', function() {
-        var converted = parseAgeInput(this.value);
+    document.getElementById('warish_container').addEventListener('blur', function(e) {
+        if (!e.target.matches('input[name="member_birth_date[]"]')) return;
+        var converted = parseAgeInput(e.target.value);
         if (converted) {
-            this.value = converted;
+            e.target.value = converted;
         }
-    });
+    }, true);
 
     // Auto-convert Bengali digits to English on input for NID fields
-    $('#warish_container').on('input', 'input[name="relation_nid[]"]', function() {
-        var converted = bnToEn(this.value);
-        if (converted !== this.value) {
-            var start = this.selectionStart, end = this.selectionEnd;
-            this.value = converted;
-            this.setSelectionRange(start, end);
+    document.getElementById('warish_container').addEventListener('input', function(e) {
+        if (!e.target.matches('input[name="relation_nid[]"]')) return;
+        var converted = bnToEn(e.target.value);
+        if (converted !== e.target.value) {
+            var start = e.target.selectionStart, end = e.target.selectionEnd;
+            e.target.value = converted;
+            e.target.setSelectionRange(start, end);
         }
     });
 
     // ----------------- Convert age → DD-MM-YYYY on form submit -----------------
-    $('#warish_container').closest('form').on('submit', function() {
-        $(this).find('input[name="member_birth_date[]"]').each(function() {
-            var converted = parseAgeInput(this.value);
-            if (converted) {
-                this.value = converted;
-            }
+    var warishForm = document.getElementById('warish_container');
+    while (warishForm && warishForm.tagName !== 'FORM') warishForm = warishForm.parentNode;
+    if (warishForm) {
+        warishForm.addEventListener('submit', function() {
+            warishForm.querySelectorAll('input[name="member_birth_date[]"]').forEach(function(input) {
+                var converted = parseAgeInput(input.value);
+                if (converted) {
+                    input.value = converted;
+                }
+            });
         });
-    });
+    }
 });
 </script>

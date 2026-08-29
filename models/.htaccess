@@ -1,2 +1,2 @@
-# Deny all HTTP access to this folder and its contents
-Require all denied
+# Deny all HTTP access to this folder and its contents
+Require all denied

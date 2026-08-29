@@ -412,8 +412,8 @@ if (!function_exists('verifyEmailConnection')) {
                     'success' => false,
                     'message' => 'EmailService class not found',
                 ];
-            }            global $mysqli;
-            $emailService = new EmailService($mysqli ?? null);
+            }            global $mysqli;
+            $emailService = new EmailService($mysqli ?? null);
             return $emailService->verifyConnection();
         } catch (Exception $e) {
             return [

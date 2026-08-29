@@ -1,105 +1,105 @@
-<?php
-
-/**
-
- * Secure Server Configuration File
-
- * Author: Hr Habib
-
- * Last Updated: 2025-07-25
-
- * Updated: 2024 - Environment-based configuration
-
- */
-
-
-
-declare(strict_types=1);
-
-date_default_timezone_set('Asia/Dhaka');
-
-
-
-// Prevent direct access
-
-if (basename(__FILE__) === basename($_SERVER['SCRIPT_FILENAME'])) {
-
-    renderError(403, 'Access Denied');
-
-}
-
-
-
-// Load environment variables from .env file
-
-require_once __DIR__ . '/../vendor/autoload.php';
-
-$dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/..');
-
-if (file_exists(__DIR__ . '/../.env')) {
-
-    $dotenv->load();
-
-}
-
-
-
-// Database Configuration (from .env)
-
-define('DB_HOST', $_ENV['DB_HOST'] ?? 'localhost');
-
-define('DB_PORT', $_ENV['DB_PORT'] ?? 3306);
-
-define('DB_USER', $_ENV['DB_USER'] ?? 'root');
-
-define('DB_PASS', $_ENV['DB_PASS'] ?? '');
-
-define('DB_NAME', $_ENV['DB_NAME'] ?? 'lgdhaka');
-
-define('DB_CHARSET', $_ENV['DB_CHARSET'] ?? 'utf8mb4');
-
-
-
-/**
- * Safely create a directory and all its parent directories.
- *
- * @param string $dirPath Path of the directory to create
- * @param int $permissions Directory permissions (default 0775)
- * @throws RuntimeException if creation fails
- */
-function ensureDirectory(string $dirPath, int $permissions = 0775): void {
-    if (!is_dir($dirPath)) {
-        if (!mkdir($dirPath, $permissions, true) && !is_dir($dirPath)) {
-            throw new RuntimeException("Failed to create directory: $dirPath");
-        }
-    }
-}
-
-// Define base paths
-define('BASE_PATH', dirname(__DIR__));
-define('STORAGE_DIR', BASE_PATH . DIRECTORY_SEPARATOR . 'storage'); 
-define('CACHE_DIR', STORAGE_DIR . DIRECTORY_SEPARATOR . 'cache');  
-define('TEMP_DIR', STORAGE_DIR . DIRECTORY_SEPARATOR . 'tmp'); 
-
-// Ensure directories exist
-foreach ([STORAGE_DIR, CACHE_DIR, TEMP_DIR] as $dir) {
-    ensureDirectory($dir);
-}
-
-
-
-
-
-// Path to mysqldump.exe for database backups & exports
-define('MYSQLDUMP_PATH', $_ENV['MYSQLDUMP_PATH'] ?? 'C:\\xampp\\mysql\\bin\\mysqldump.exe');
-
-
-// Detect protocol & host automatically
-
-$protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
-
-$host = $_SERVER['HTTP_HOST'] ?? 'localhost';
-
+<?php
+
+/**
+
+ * Secure Server Configuration File
+
+ * Author: Hr Habib
+
+ * Last Updated: 2025-07-25
+
+ * Updated: 2024 - Environment-based configuration
+
+ */
+
+
+
+declare(strict_types=1);
+
+date_default_timezone_set('Asia/Dhaka');
+
+
+
+// Prevent direct access
+
+if (basename(__FILE__) === basename($_SERVER['SCRIPT_FILENAME'])) {
+
+    renderError(403, 'Access Denied');
+
+}
+
+
+
+// Load environment variables from .env file
+
+require_once __DIR__ . '/../vendor/autoload.php';
+
+$dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/..');
+
+if (file_exists(__DIR__ . '/../.env')) {
+
+    $dotenv->load();
+
+}
+
+
+
+// Database Configuration (from .env)
+
+define('DB_HOST', $_ENV['DB_HOST'] ?? 'localhost');
+
+define('DB_PORT', $_ENV['DB_PORT'] ?? 3306);
+
+define('DB_USER', $_ENV['DB_USER'] ?? 'root');
+
+define('DB_PASS', $_ENV['DB_PASS'] ?? '');
+
+define('DB_NAME', $_ENV['DB_NAME'] ?? 'lgdhaka');
+
+define('DB_CHARSET', $_ENV['DB_CHARSET'] ?? 'utf8mb4');
+
+
+
+/**
+ * Safely create a directory and all its parent directories.
+ *
+ * @param string $dirPath Path of the directory to create
+ * @param int $permissions Directory permissions (default 0775)
+ * @throws RuntimeException if creation fails
+ */
+function ensureDirectory(string $dirPath, int $permissions = 0775): void {
+    if (!is_dir($dirPath)) {
+        if (!mkdir($dirPath, $permissions, true) && !is_dir($dirPath)) {
+            throw new RuntimeException("Failed to create directory: $dirPath");
+        }
+    }
+}
+
+// Define base paths
+define('BASE_PATH', dirname(__DIR__));
+define('STORAGE_DIR', BASE_PATH . DIRECTORY_SEPARATOR . 'storage'); 
+define('CACHE_DIR', STORAGE_DIR . DIRECTORY_SEPARATOR . 'cache');  
+define('TEMP_DIR', STORAGE_DIR . DIRECTORY_SEPARATOR . 'tmp'); 
+
+// Ensure directories exist
+foreach ([STORAGE_DIR, CACHE_DIR, TEMP_DIR] as $dir) {
+    ensureDirectory($dir);
+}
+
+
+
+
+
+// Path to mysqldump.exe for database backups & exports
+define('MYSQLDUMP_PATH', $_ENV['MYSQLDUMP_PATH'] ?? 'C:\\xampp\\mysql\\bin\\mysqldump.exe');
+
+
+// Detect protocol & host automatically
+
+$protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+
+$host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+
 define('SITE_URL', $protocol . '://' . $host);// Start secure session
 // 🔒 Detect HTTPS via X-Forwarded-Proto (for reverse proxies like Cloudflare/cPanel)
 $isSecure = !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off'
@@ -111,11 +111,11 @@ if (session_status() === PHP_SESSION_NONE) {    session_start([
         'use_strict_mode' => true,
         'cookie_samesite' => 'Lax',
     ]);
-}
-
-// ============================
-// Encryption Configuration 🔐
-// ============================
+}
+
+// ============================
+// Encryption Configuration 🔐
+// ============================
 if (empty($_ENV['ENCRYPTION_KEY'])) {
     error_log('[SECURITY] ENCRYPTION_KEY is not set in .env. Using a generated fallback — re-key production data!');
     // Generate a runtime key if .env is missing. Data encrypted with this key
@@ -125,5 +125,5 @@ if (empty($_ENV['ENCRYPTION_KEY'])) {
     define('ENCRYPTION_KEY', $_ENV['ENCRYPTION_KEY']);
 }
 
-define('ENCRYPTION_METHOD', $_ENV['ENCRYPTION_METHOD'] ?? 'AES-256-CBC');
-
+define('ENCRYPTION_METHOD', $_ENV['ENCRYPTION_METHOD'] ?? 'AES-256-CBC');
+

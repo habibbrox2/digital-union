@@ -14,7 +14,7 @@ class CompactDatepicker {
         this.isOpen = false;
         this._suppressInput = false;
 
-        // Bound handler references for cleanup
+        // Bound handler references for cleanup (must be stored so destroy() can remove them)
         // Use mousedown (not click) so the datepicker closes BEFORE focus shifts,
         // preventing Bootstrap modal focus-management from re-opening it.
         this._boundMouseDown = (e) => {
@@ -29,6 +29,32 @@ class CompactDatepicker {
             if (this.isOpen && this.datepicker) this.positionDatepicker();
         };
 
+        // Input handler references (must be stored for destroy() cleanup)
+        this._boundInputClick = () => this.showDatepicker();
+        this._boundInputKeydown = (e) => this.handleInputKeydown(e);
+        this._boundInputPaste = (e) => {
+            e.preventDefault();
+            const pasted = (e.clipboardData || window.clipboardData).getData('text');
+            const formatted = this.normalizePastedDate(pasted);
+            this.input.value = formatted;
+            this.input.dispatchEvent(new Event('input'));
+        };
+        this._boundInputChange = () => {
+            if (this._suppressInput) return;
+            this.handleInputChange();
+        };
+        this._boundInputFocus = () => {
+            if (!this.isOpen && !this.input.disabled) {
+                this.showDatepicker();
+            }
+        };
+        this._boundInputPointerdown = (e) => {
+            if (this.input.disabled) {
+                e.preventDefault();
+                if (this.isOpen) this.hideDatepicker();
+            }
+        };
+
         if (!this.input.placeholder) this.input.placeholder = "dd-mm-yyyy";
         this.input.autocomplete = "off";
         this.input.setAttribute('role', 'combobox');
@@ -41,46 +67,16 @@ class CompactDatepicker {
     }
 
     initializeEventListeners() {
-        // Input click event
-        this.input.addEventListener('click', () => this.showDatepicker());        // Global mousedown handler for closing datepicker (cleaned up in destroy)
+        // All input handlers use stored bound references for proper cleanup in destroy()
+        this.input.addEventListener('click', this._boundInputClick);
         document.addEventListener('mousedown', this._boundMouseDown);
-
-        // Reposition on scroll/resize while open
         window.addEventListener('scroll', this._boundScroll, { passive: true });
         window.addEventListener('resize', this._boundResize, { passive: true });
-
-        // Keydown handler
-        this.input.addEventListener('keydown', (e) => this.handleInputKeydown(e));
-
-        // Paste handler
-        this.input.addEventListener('paste', (e) => {
-            e.preventDefault();
-            const pasted = (e.clipboardData || window.clipboardData).getData('text');
-            const formatted = this.normalizePastedDate(pasted);
-            this.input.value = formatted;
-            this.input.dispatchEvent(new Event('input'));
-        });
-
-        // Input handler (with suppress flag to prevent re-trigger loops)
-        this.input.addEventListener('input', () => {
-            if (this._suppressInput) return;
-            this.handleInputChange();
-        });
-
-        // Focus handler
-        this.input.addEventListener('focus', () => {
-            if (!this.isOpen && !this.input.disabled) {
-                this.showDatepicker();
-            }
-        });
-
-        // Respect disabled attribute
-        this.input.addEventListener('pointerdown', (e) => {
-            if (this.input.disabled) {
-                e.preventDefault();
-                if (this.isOpen) this.hideDatepicker();
-            }
-        });
+        this.input.addEventListener('keydown', this._boundInputKeydown);
+        this.input.addEventListener('paste', this._boundInputPaste);
+        this.input.addEventListener('input', this._boundInputChange);
+        this.input.addEventListener('focus', this._boundInputFocus);
+        this.input.addEventListener('pointerdown', this._boundInputPointerdown);
     }
 
     handleInputKeydown(e) {
@@ -626,11 +622,21 @@ class CompactDatepicker {
         this.input.dispatchEvent(new Event('change'));
         this.hideDatepicker();
         this.input.focus();
-    }    destroy() {
-        this.hideDatepicker();
+    }    destroy() {
+        this.hideDatepicker();
+
+        // Remove all global/document handlers
         document.removeEventListener('mousedown', this._boundMouseDown);
         window.removeEventListener('scroll', this._boundScroll);
         window.removeEventListener('resize', this._boundResize);
+
+        // Remove all input handlers (must match initializeEventListeners exactly)
+        this.input.removeEventListener('click', this._boundInputClick);
+        this.input.removeEventListener('keydown', this._boundInputKeydown);
+        this.input.removeEventListener('paste', this._boundInputPaste);
+        this.input.removeEventListener('input', this._boundInputChange);
+        this.input.removeEventListener('focus', this._boundInputFocus);
+        this.input.removeEventListener('pointerdown', this._boundInputPointerdown);
     }
 
     setDate(date) {

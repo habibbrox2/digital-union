@@ -176,21 +176,7 @@ ul.list-unstyled li {
 
 {% block scripts %}
 <script>
-    // Scroll to top
-    const topBtn = document.getElementById("topBtn");
-    if(topBtn){
-        window.addEventListener('scroll', function() {
-            if (document.body.scrollTop > 100 || document.documentElement.scrollTop > 100) {
-                topBtn.style.display = "block";
-            } else {
-                topBtn.style.display = "none";
-            }
-        });
-        topBtn.addEventListener('click', function() {
-            document.body.scrollTop = 0;
-            document.documentElement.scrollTop = 0;
-        });
-    }
+    // Scroll to top handled globally by script.js
 
     // Delete union with SweetAlert confirmation
     document.querySelectorAll('.delete-union-btn').forEach(btn => {

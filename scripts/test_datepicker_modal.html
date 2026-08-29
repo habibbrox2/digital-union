@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test: Datepicker Modal Close Fix</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { padding: 2rem; background: #f0f2f5; }
+        .test-result {
+            margin-top: 1.5rem;
+            padding: 1rem 1.5rem;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 1rem;
+        }
+        .test-result.pass { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .test-result.fail { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .test-result.pending { background: #fff3cd; color: #856404; border: 1px solid #ffeeba; }
+        #log { max-height: 300px; overflow-y: auto; font-family: monospace; font-size: 0.85rem; background: #1e1e1e; color: #d4d4d4; padding: 1rem; border-radius: 8px; margin-top: 1rem; }
+        #log .info { color: #569cd6; }
+        #log .success { color: #4ec9b0; }
+        #log .error { color: #f44747; }
+        #log .warn { color: #ce9178; }
+
+        /* Minimal vs-datepicker styles (inlined for self-contained test) */
+        .vs-datepicker {
+            position: absolute;
+            z-index: 99999;
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            padding: 8px;
+            min-width: 260px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        .vs-datepicker .header {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 0 8px;
+        }
+        .vs-datepicker .month-arrow {
+            background: none;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 4px 8px;
+            cursor: pointer;
+            font-size: 10px;
+        }
+        .vs-datepicker .month-arrow:hover { background: #f0f0f0; }
+        .vs-datepicker select {
+            flex: 1;
+            padding: 4px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+        .vs-datepicker table { width: 100%; border-collapse: collapse; }
+        .vs-datepicker th {
+            font-size: 11px;
+            color: #888;
+            padding: 4px;
+            text-align: center;
+            font-weight: 600;
+        }
+        .vs-datepicker td { text-align: center; padding: 1px; }
+        .vs-datepicker td button {
+            width: 32px;
+            height: 32px;
+            border: none;
+            background: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: background 0.15s;
+        }
+        .vs-datepicker td button:hover { background: #e8f5e9; }
+        .vs-datepicker td button.selected { background: #008B8B; color: #fff; font-weight: 700; }
+        .vs-datepicker td button.today { border: 2px solid #008B8B; }
+        .vs-datepicker td button.disabled { color: #ccc; cursor: default; }
+        .vs-datepicker .footer {
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 0 2px;
+            border-top: 1px solid #eee;
+            margin-top: 4px;
+        }
+        .vs-datepicker .today-btn, .vs-datepicker .clear-btn {
+            background: none;
+            border: none;
+            padding: 4px 10px;
+            cursor: pointer;
+            font-size: 12px;
+            border-radius: 4px;
+        }
+        .vs-datepicker .today-btn { color: #008B8B; font-weight: 600; }
+        .vs-datepicker .today-btn:hover { background: #e0f2f1; }
+        .vs-datepicker .clear-btn { color: #dc3545; }
+        .vs-datepicker .clear-btn:hover { background: #fce4ec; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2 class="mb-3">🧪 Datepicker Modal Close Fix Test</h2>
+        <p class="text-muted">This test verifies that datepickers inside the approve modal close properly when the modal is dismissed via the X button, backdrop click, or Escape key.</p>
+
+        <div class="card mb-4">
+            <div class="card-body">
+                <button class="btn btn-primary btn-lg" onclick="openTestModal()">
+                    📅 Open Approve Modal
+                </button>
+                <button class="btn btn-warning btn-lg ms-2" onclick="runDestroyTests()">
+                    🧹 Test destroy() Cleanup
+                </button>
+                <button class="btn btn-outline-secondary btn-lg ms-2" onclick="resetTests()">
+                    🔄 Reset Tests
+                </button>
+            </div>
+        </div>
+
+        <div id="testResults"></div>
+        <div id="log"></div>
+    </div>
+
+    <!-- Approve Modal (simulates the real one) -->
+    <div class="modal fade" id="approveModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title">অনুমোদন ফর্ম</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">যাচাই তারিখ <span class="text-danger">*</span></label>
+                            <input type="text" id="modal_verification_date" name="verification_date"
+                                   class="form-control datepicker" placeholder="DD-MM-YYYY"
+                                   value="28-08-2026" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">অনুমোদনের তারিখ <span class="text-danger">*</span></label>
+                            <input type="text" id="modal_approval_date" name="approval_date"
+                                   class="form-control datepicker" placeholder="DD-MM-YYYY"
+                                   value="28-08-2026" required>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <button type="button" class="btn btn-success" onclick="approveAndClose()">Approve & Close</button>
+                        <button type="button" class="btn btn-outline-danger ms-2" onclick="closeViaBackdrop()">Close via Backdrop</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+    /* ================================================================
+       CompactDatepicker (inlined for self-contained test)
+       ================================================================ */
+    class CompactDatepicker {
+        constructor(input, options = {}) {
+            this.input = input;
+            this.options = {
+                minDate: input.dataset.minDate || options.minDate || null,
+                maxDate: input.dataset.maxDate || options.maxDate || null,
+                yearStart: parseInt(input.dataset.yearStart) || options.yearStart || 1935,
+                yearEnd: parseInt(input.dataset.yearEnd) || options.yearEnd || new Date().getFullYear() + 10,
+                ...options
+            };
+            this.datepicker = null;
+            this.currentDate = new Date();
+            this.focusedButton = null;
+            this.isOpen = false;
+            this._suppressInput = false;
+
+            // Bound handler references for cleanup (must be stored so destroy() can remove them)
+            this._boundMouseDown = (e) => {
+                if (this.isOpen && !this.input.contains(e.target) && !this.datepicker?.contains(e.target)) {
+                    this.hideDatepicker();
+                }
+            };
+            this._boundScroll = () => {
+                if (this.isOpen && this.datepicker) this.positionDatepicker();
+            };
+            this._boundResize = () => {
+                if (this.isOpen && this.datepicker) this.positionDatepicker();
+            };
+
+            // Input handler references (must be stored for destroy() cleanup)
+            this._boundInputClick = () => this.showDatepicker();
+            this._boundInputKeydown = (e) => this.handleInputKeydown(e);
+            this._boundInputFocus = () => {
+                if (!this.isOpen && !this.input.disabled) {
+                    this.showDatepicker();
+                }
+            };
+
+            if (!this.input.placeholder) this.input.placeholder = "dd-mm-yyyy";
+            this.input.autocomplete = "off";
+
+            if (input.value.trim()) this.setCurrentDateFromInput();
+            this.initializeEventListeners();
+        }
+
+        initializeEventListeners() {
+            this.input.addEventListener('click', this._boundInputClick);
+            document.addEventListener('mousedown', this._boundMouseDown);
+            window.addEventListener('scroll', this._boundScroll, { passive: true });
+            window.addEventListener('resize', this._boundResize, { passive: true });
+            this.input.addEventListener('keydown', this._boundInputKeydown);
+            this.input.addEventListener('focus', this._boundInputFocus);
+        }
+
+        handleInputKeydown(e) {
+            if (e.key === 'Escape' && this.isOpen) {
+                this.hideDatepicker();
+                e.preventDefault();
+            }
+            if (e.key === 'Tab' && this.isOpen) {
+                this.hideDatepicker();
+            }
+        }
+
+        setCurrentDateFromInput() {
+            const regex = /^(\d{2})-(\d{2})-(\d{4})$/;
+            const match = this.input.value.match(regex);
+            if (match) {
+                const [_, dd, mm, yyyy] = match;
+                const parsed = new Date(`${yyyy}-${mm}-${dd}`);
+                if (!isNaN(parsed)) this.currentDate = parsed;
+            }
+        }
+
+        showDatepicker() {
+            if (this.datepicker) return;
+            this.datepicker = document.createElement('div');
+            this.datepicker.className = 'vs-datepicker';
+            document.body.appendChild(this.datepicker);
+            this.isOpen = true;
+            this.renderCalendar(this.currentDate);
+            this.positionDatepicker();
+        }
+
+        positionDatepicker() {
+            requestAnimationFrame(() => {
+                if (!this.datepicker) return;
+                const rect = this.input.getBoundingClientRect();
+                const scrollY = window.scrollY || window.pageYOffset;
+                this.datepicker.style.top = `${rect.bottom + scrollY + 4}px`;
+                this.datepicker.style.left = `${rect.left + scrollX}px`;
+            });
+        }
+
+        hideDatepicker() {
+            if (this.datepicker) {
+                this.datepicker.remove();
+                this.datepicker = null;
+                this.focusedButton = null;
+                this.isOpen = false;
+            }
+        }
+
+        renderCalendar(date) {
+            this.datepicker.innerHTML = '';
+            const month = date.getMonth();
+            const year = date.getFullYear();
+            const header = document.createElement('div');
+            header.className = 'header';
+            const leftArrow = document.createElement('button');
+            leftArrow.innerHTML = '◀';
+            leftArrow.type = 'button';
+            leftArrow.className = 'month-arrow';
+            leftArrow.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.currentDate.setMonth(this.currentDate.getMonth() - 1);
+                this.renderCalendar(this.currentDate);
+            });
+            header.appendChild(leftArrow);
+            const monthSelect = document.createElement('select');
+            const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+            for (let m = 0; m < 12; m++) {
+                const opt = document.createElement('option');
+                opt.value = m;
+                opt.textContent = monthNames[m];
+                if (m === month) opt.selected = true;
+                monthSelect.appendChild(opt);
+            }
+            monthSelect.addEventListener('change', (e) => {
+                e.stopPropagation();
+                this.currentDate.setMonth(parseInt(monthSelect.value));
+                this.renderCalendar(this.currentDate);
+            });
+            header.appendChild(monthSelect);
+            const yearSelect = document.createElement('select');
+            for (let y = this.options.yearStart; y <= this.options.yearEnd; y++) {
+                const opt = document.createElement('option');
+                opt.value = y;
+                opt.textContent = y;
+                if (y === year) opt.selected = true;
+                yearSelect.appendChild(opt);
+            }
+            yearSelect.addEventListener('change', (e) => {
+                e.stopPropagation();
+                this.currentDate.setFullYear(parseInt(yearSelect.value));
+                this.renderCalendar(this.currentDate);
+            });
+            header.appendChild(yearSelect);
+            const rightArrow = document.createElement('button');
+            rightArrow.innerHTML = '▶';
+            rightArrow.type = 'button';
+            rightArrow.className = 'month-arrow';
+            rightArrow.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.currentDate.setMonth(this.currentDate.getMonth() + 1);
+                this.renderCalendar(this.currentDate);
+            });
+            header.appendChild(rightArrow);
+            this.datepicker.appendChild(header);
+            const table = document.createElement('table');
+            const thead = document.createElement('thead');
+            const trHead = document.createElement('tr');
+            ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].forEach(d => {
+                const th = document.createElement('th');
+                th.textContent = d;
+                trHead.appendChild(th);
+            });
+            thead.appendChild(trHead);
+            table.appendChild(thead);
+            const tbody = document.createElement('tbody');
+            const firstDay = new Date(year, month, 1).getDay();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            const today = new Date();
+            const todayStr = `${String(today.getDate()).padStart(2,'0')}-${String(today.getMonth()+1).padStart(2,'0')}-${today.getFullYear()}`;
+            let tr = document.createElement('tr');
+            for (let i = 0; i < firstDay; i++) {
+                const td = document.createElement('td');
+                tr.appendChild(td);
+            }
+            for (let day = 1; day <= daysInMonth; day++) {
+                if (tr.children.length === 7) {
+                    tbody.appendChild(tr);
+                    tr = document.createElement('tr');
+                }
+                const td = document.createElement('td');
+                const btn = document.createElement('button');
+                btn.textContent = day;
+                btn.type = 'button';
+                const formattedDate = `${String(day).padStart(2,'0')}-${String(month+1).padStart(2,'0')}-${year}`;
+                btn.dataset.date = formattedDate;
+                if (this.input.value.trim() && this.input.value === formattedDate) {
+                    btn.classList.add('selected');
+                }
+                if (formattedDate === todayStr) btn.classList.add('today');
+                const dateObj = new Date(year, month, day);
+                btn.addEventListener('click', () => {
+                    this.selectDate(dateObj);
+                });
+                td.appendChild(btn);
+                tr.appendChild(td);
+            }
+            if (tr.children.length > 0) tbody.appendChild(tr);
+            table.appendChild(tbody);
+            this.datepicker.appendChild(table);
+            const footer = document.createElement('div');
+            footer.className = 'footer';
+            const todayBtn = document.createElement('button');
+            todayBtn.textContent = 'Today';
+            todayBtn.className = 'today-btn';
+            todayBtn.type = 'button';
+            todayBtn.addEventListener('click', () => this.selectDate(new Date()));
+            footer.appendChild(todayBtn);
+            const clearBtn = document.createElement('button');
+            clearBtn.innerHTML = '✕';
+            clearBtn.className = 'clear-btn';
+            clearBtn.type = 'button';
+            clearBtn.addEventListener('click', () => {
+                this.input.value = '';
+                this.hideDatepicker();
+            });
+            footer.appendChild(clearBtn);
+            this.datepicker.appendChild(footer);
+        }
+
+        selectDate(d) {
+            const day = String(d.getDate()).padStart(2, '0');
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const year = d.getFullYear();
+            this.input.value = `${day}-${month}-${year}`;
+            this.hideDatepicker();
+            this.input.focus();
+        }
+
+        destroy() {
+            this.hideDatepicker();
+
+            // Remove all global/document handlers
+            document.removeEventListener('mousedown', this._boundMouseDown);
+            window.removeEventListener('scroll', this._boundScroll);
+            window.removeEventListener('resize', this._boundResize);
+
+            // Remove all input handlers (must match initializeEventListeners exactly)
+            this.input.removeEventListener('click', this._boundInputClick);
+            this.input.removeEventListener('keydown', this._boundInputKeydown);
+            this.input.removeEventListener('focus', this._boundInputFocus);
+        }
+    }
+
+    /* ================================================================
+       DATEPICKER MODAL CLOSE FIX (same as application_lists.twig)
+       ================================================================ */
+    let approveModalIsClosing = false;
+
+    function destroyModalDatepickers() {
+        ['modal_verification_date', 'modal_approval_date'].forEach(function(id) {
+            const input = document.getElementById(id);
+            if (input && input.datepickerInstance) {
+                input.datepickerInstance.destroy();
+                input.datepickerInstance = null;
+            }
+        });
+    }
+
+    function initModalDatepickers() {
+        if (typeof CompactDatepicker !== 'function') return;
+        ['modal_verification_date', 'modal_approval_date'].forEach(function(id) {
+            const input = document.getElementById(id);
+            if (!input) return;
+            if (input.datepickerInstance) {
+                input.datepickerInstance.destroy();
+                input.datepickerInstance = null;
+            }
+            const datepicker = new CompactDatepicker(input);
+
+            // Prevent selectDate() from reopening via focus handler
+            const selectDate = datepicker.selectDate.bind(datepicker);
+            datepicker.selectDate = function(date) {
+                const originalFocus = input.focus;
+                input.focus = function() {};
+                try {
+                    return selectDate(date);
+                } finally {
+                    input.focus = originalFocus;
+                }
+            };
+
+            // Prevent datepicker from opening while modal is closing
+            const origShow = datepicker.showDatepicker.bind(datepicker);
+            datepicker.showDatepicker = function() {
+                if (approveModalIsClosing) return;
+                origShow();
+            };
+
+            input.datepickerInstance = datepicker;
+        });
+    }
+
+    // Modal event listeners
+    const approveModalEl = document.getElementById('approveModal');
+    if (approveModalEl) {
+        approveModalEl.addEventListener('hide.bs.modal', function() {
+            approveModalIsClosing = true;
+            destroyModalDatepickers();
+            if (document.activeElement && document.activeElement.closest('#approveModal')) {
+                document.activeElement.blur();
+            }
+        });
+
+        approveModalEl.addEventListener('hidden.bs.modal', function() {
+            setTimeout(function() {
+                approveModalIsClosing = false;
+            }, 300);
+        });
+    }
+
+    /* ================================================================
+       Test Harness
+       ================================================================ */
+    let testResults = [];
+    let testCount = 0;
+    let passedCount = 0;
+
+    function log(msg, cls = 'info') {
+        const el = document.getElementById('log');
+        const line = document.createElement('div');
+        line.className = cls;
+        line.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+        el.appendChild(line);
+        el.scrollTop = el.scrollHeight;
+    }
+
+    function addResult(name, passed, detail = '') {
+        testCount++;
+        if (passed) passedCount++;
+        testResults.push({ name, passed, detail });
+        renderResults();
+    }
+
+    function renderResults() {
+        const el = document.getElementById('testResults');
+        let html = `<div class="test-result ${passedCount === testCount ? 'pass' : (testCount > 0 ? 'fail' : 'pending')}">
+            ✅ ${passedCount}/${testCount} tests passed
+        </div><div class="mt-3">`;
+        testResults.forEach((r) => {
+            html += `<div class="d-flex align-items-start gap-2 mb-1">
+                <span>${r.passed ? '✅' : '❌'}</span>
+                <span><strong>${r.name}</strong>${r.detail ? '<br><small class="text-muted">' + r.detail + '</small>' : ''}</span>
+            </div>`;
+        });
+        html += '</div>';
+        el.innerHTML = html;
+    }
+
+    function resetTests() {
+        testResults = [];
+        testCount = 0;
+        passedCount = 0;
+        document.getElementById('testResults').innerHTML = '';
+        document.getElementById('log').innerHTML = '';
+        log('Tests reset', 'warn');
+    }
+
+    function sleep(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    let datepickerOpenedDuringClose = false;
+
+    function openTestModal() {
+        resetTests();
+        log('Opening modal...', 'info');
+        initModalDatepickers();
+        const modal = new bootstrap.Modal(approveModalEl);
+        modal.show();
+        setTimeout(runTests, 600);
+    }
+
+    function runDestroyTests() {
+        resetTests();
+        log('=== DESTROY CLEANUP TESTS ===', 'info');
+
+        // Create a fresh datepicker on a test input
+        const testInput = document.createElement('input');
+        testInput.type = 'text';
+        testInput.className = 'form-control';
+        testInput.value = '28-08-2026';
+        document.body.appendChild(testInput);
+
+        const dp = new CompactDatepicker(testInput);
+        testInput.datepickerInstance = dp;
+
+        log('Created datepicker instance', 'success');
+
+        // Open the datepicker
+        testInput.click();
+        const wasOpen = dp.isOpen;
+        addResult('Datepicker opens before destroy', wasOpen);
+        log(`Was open: ${wasOpen}`, wasOpen ? 'success' : 'error');
+
+        // Count event listeners via getEventListeners (Chrome DevTools API)
+        // We can't use getEventListeners in page scripts, so we test behavior instead
+
+        // Destroy the datepicker
+        dp.destroy();
+        testInput.datepickerInstance = null;
+        log('Destroyed datepicker instance', 'warn');
+
+        // After destroy: datepicker should be closed
+        addResult('Datepicker closed after destroy', !dp.isOpen);
+        log(`Is open after destroy: ${dp.isOpen}`, !dp.isOpen ? 'success' : 'error');
+
+        // After destroy: clicking input should NOT open a datepicker
+        let clickOpened = false;
+        const origClickHandler = testInput.onclick;
+        testInput.click();
+        // Check if a new datepicker was created (it shouldn't be)
+        // The input still has the click listener from before destroy - but our fix removes it
+        // So clicking should NOT open a new datepicker popup
+        const dpStillExists = dp.datepicker !== null;
+        addResult('Click after destroy does NOT open datepicker', !dpStillExists);
+        log(`Datepicker popup exists after destroy+click: ${dpStillExists}`, !dpStillExists ? 'success' : 'error');
+
+        // After destroy: focus should NOT open a datepicker
+        let focusOpened = false;
+        testInput.focus();
+        const dpStillExistsAfterFocus = dp.datepicker !== null;
+        addResult('Focus after destroy does NOT open datepicker', !dpStillExistsAfterFocus);
+        log(`Datepicker popup exists after destroy+focus: ${dpStillExistsAfterFocus}`, !dpStillExistsAfterFocus ? 'success' : 'error');
+
+        // Cleanup
+        testInput.remove();
+
+        log(`\n=== Destroy tests complete: ${passedCount}/${testCount} passed ===`, passedCount === testCount ? 'success' : 'error');
+    }
+
+    async function runTests() {
+        // Test 1: Modal is visible
+        const modalVisible = approveModalEl.classList.contains('show');
+        addResult('Modal opens correctly', modalVisible);
+        log(`Modal visible: ${modalVisible}`, modalVisible ? 'success' : 'error');
+
+        // Test 2: Datepicker instances exist
+        const vInput = document.getElementById('modal_verification_date');
+        const aInput = document.getElementById('modal_approval_date');
+        const instancesExist = vInput?.datepickerInstance && aInput?.datepickerInstance;
+        addResult('Datepicker instances initialized', !!instancesExist);
+        log(`Datepicker instances: ${!!instancesExist}`, instancesExist ? 'success' : 'error');
+
+        // Test 3: Click on datepicker input opens popup
+        vInput.click();
+        await sleep(200);
+        const popupOpened = vInput.datepickerInstance?.isOpen === true;
+        addResult('Clicking datepicker opens popup', popupOpened);
+        log(`Popup opened after click: ${popupOpened}`, popupOpened ? 'success' : 'error');
+
+        // Show popup is visible
+        const popupVisible = vInput.datepickerInstance?.datepicker !== null;
+        addResult('Datepicker popup is visible in DOM', popupVisible);
+        log(`Popup in DOM: ${popupVisible}`, popupVisible ? 'success' : 'error');
+
+        // Test 4: Close modal via X button while datepicker is open
+        log('--- Closing modal via X button while datepicker is open ---', 'warn');
+        datepickerOpenedDuringClose = false;
+
+        // Monkey-patch to detect if datepicker re-opens during close
+        if (vInput.datepickerInstance) {
+            const origShow2 = vInput.datepickerInstance.showDatepicker;
+            vInput.datepickerInstance.showDatepicker = function() {
+                if (approveModalIsClosing) {
+                    datepickerOpenedDuringClose = true;
+                    log('⚠️ Datepicker tried to re-open during modal close!', 'error');
+                    return; // Block it
+                }
+                origShow2.call(this);
+            };
+        }
+
+        // Click the X button
+        const closeBtn = approveModalEl.querySelector('.btn-close');
+        closeBtn.click();
+        await sleep(1000);
+
+        // Test 5: Datepicker did NOT re-open during close
+        addResult('Datepicker did NOT re-open during modal close', !datepickerOpenedDuringClose,
+            datepickerOpenedDuringClose ? 'Datepicker reopened when it should not have!' : 'Correctly prevented re-opening during close');
+
+        // Test 6: Modal is hidden
+        const modalHidden = !approveModalEl.classList.contains('show');
+        addResult('Modal closed correctly', modalHidden);
+        log(`Modal hidden: ${modalHidden}`, modalHidden ? 'success' : 'error');
+
+        // Test 7: No datepicker popups remain
+        const noPopups = document.querySelectorAll('.vs-datepicker').length === 0;
+        addResult('No lingering datepicker popups', noPopups);
+        log(`Lingering popups: ${document.querySelectorAll('.vs-datepicker').length}`, noPopups ? 'success' : 'error');
+
+        // Test 8: approveModalIsClosing flag was reset
+        await sleep(400);
+        addResult('Closing flag was reset after modal hidden', !approveModalIsClosing);
+        log(`Flag reset: ${!approveModalIsClosing}`, !approveModalIsClosing ? 'success' : 'error');
+
+        log(`\n=== Test complete: ${passedCount}/${testCount} passed ===`, passedCount === testCount ? 'success' : 'error');
+    }
+
+    function approveAndClose() {
+        log('Simulating approval (closing modal programmatically)...', 'info');
+        const modal = bootstrap.Modal.getInstance(approveModalEl);
+        if (modal) modal.hide();
+    }
+
+    function closeViaBackdrop() {
+        log('Closing modal via backdrop click...', 'info');
+        const modal = bootstrap.Modal.getInstance(approveModalEl);
+        if (modal) modal.hide();
+    }
+    </script>
+</body>
+</html>

@@ -127,6 +127,23 @@
             <i class="bi bi-list-ul"></i> আবেদনের তালিকা
         </h6>
 
+        <!-- Auto-refresh bar -->
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3 py-2 px-3 rounded" id="autoRefreshBar" style="background:#f0f7ff;border:1px solid #d0e3f7;">
+            <div class="d-flex align-items-center gap-2">
+                <div class="form-check form-switch mb-0">
+                    <input class="form-check-input" type="checkbox" id="autoRefreshToggle" checked title="স্বয়ংক্রিয় রিফ্রেশ">
+                    <label class="form-check-label small text-muted" for="autoRefreshToggle">স্বয়ংক্রিয় রিফ্রেশ</label>
+                </div>
+                <span class="text-muted small" id="autoRefreshCountdown"></span>
+            </div>
+            <div class="d-flex align-items-center gap-3">
+                <span class="text-muted small" id="lastUpdatedTime"></span>
+                <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3" id="manualRefreshBtn" title="এখনই রিফ্রেশ করুন">
+                    <i class="bi bi-arrow-clockwise me-1"></i> রিফ্রেশ
+                </button>
+            </div>
+        </div>
+
         <div class="table-responsive rounded-3" style="position:relative;">
             <table class="table table-hover align-middle mb-0 table-enhanced">
                 <thead class="table-primary text-center">
@@ -187,6 +204,14 @@
 @keyframes fadeIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
 .form-check-input:checked { background-color: #0d6efd; border-color: #0d6efd; }
 .form-check-input:focus { box-shadow: 0 0 0 0.2rem rgba(13,110,253,0.25); }
+/* Auto-refresh flash animation */
+@keyframes flashUpdate { 0% { background-color: transparent; } 30% { background-color: #d4edda; } 100% { background-color: transparent; } }
+.flash-update { animation: flashUpdate 1.5s ease; }
+/* Refresh spinning icon */
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+.spinning { animation: spin 1s linear infinite; display: inline-block; }
+#autoRefreshBar { transition: opacity 0.3s ease; }
+#autoRefreshBar.disabled { opacity: 0.5; }
 </style>
 {% block scripts %}
 <script>
@@ -292,7 +317,7 @@ document.addEventListener('DOMContentLoaded', function () {
        Bangla Helpers
     =============================== */
     function toBanglaNumber(input) {
-        if (input === null || input === undefined) return 'N/A';
+        if (input === null || input === undefined) return '';
         const bnDigits = ['০','১','২','৩','৪','৫','৬','৭','৮','৯'];
         return input.toString().replace(/\d/g, d => bnDigits[d]);
     }
@@ -390,12 +415,12 @@ document.addEventListener('DOMContentLoaded', function () {
                         <small class="d-inline-block text-truncate"
                                style="max-width:70px;cursor:pointer"
                                data-bs-toggle="tooltip"
-                               title="${application.sonod_number || 'N/A'}">
+                               title="${application.sonod_number || ''}">
                             সনদ নং:<br>${shortSonodNo}
                         </small>
                     `;
 
-                    let identityNoFull = application.nid || application.birth_id || application.passport_no || "N/A";
+                    let identityNoFull = application.nid || application.birth_id || application.passport_no || "";
                     let identityNo = `
                         <span class="text-truncate d-inline-block"
                               style="max-width:60px;cursor:pointer"
@@ -541,7 +566,7 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     function shortenNumber(num) {
-        if (!num) return 'N/A';
+        if (!num) return '';
         const str = num.toString();
         if (str.length <= 10) return str;
         return str.slice(0, 10) + '...';
@@ -549,7 +574,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Function to format date (DD-MM-YYYY)
     function formatDate(dateString) {
-        if (!dateString) return 'N/A';
+        if (!dateString) return '';
         const date = new Date(dateString);
         const day = String(date.getDate()).padStart(2, '0');
         const month = String(date.getMonth() + 1).padStart(2, '0'); // Months are 0-indexed
@@ -1041,6 +1066,214 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     fetchApplications(currentPage, currentSearch, currentSortBy, currentSortOrder, recordsPerPage); // Initial fetch
+
+    /* ===============================
+       Auto-Refresh System
+    =============================== */
+    var autoRefreshInterval = null;
+    var autoRefreshSeconds = 30;
+    var autoRefreshCountdownVal = autoRefreshSeconds;
+    var autoRefreshEnabled = true;
+    var lastRefreshTimestamp = Date.now();
+
+    var autoRefreshToggle = document.getElementById('autoRefreshToggle');
+    var autoRefreshCountdownEl = document.getElementById('autoRefreshCountdown');
+    var lastUpdatedTimeEl = document.getElementById('lastUpdatedTime');
+    var manualRefreshBtn = document.getElementById('manualRefreshBtn');
+    var autoRefreshBar = document.getElementById('autoRefreshBar');
+
+    function formatTimeAgo(timestamp) {
+        var diff = Math.floor((Date.now() - timestamp) / 1000);
+        if (diff < 5) return 'এইমাত্র রিফ্রেশ হয়েছে';
+        if (diff < 60) return toBanglaNumber(diff) + ' সেকেন্ড আগে রিফ্রেশ হয়েছে';
+        if (diff < 3600) return toBanglaNumber(Math.floor(diff / 60)) + ' মিনিট আগে রিফ্রেশ হয়েছে';
+        return toBanglaNumber(Math.floor(diff / 3600)) + ' ঘণ্টা আগে রিফ্রেশ হয়েছে';
+    }
+
+    function updateLastUpdatedTime() {
+        if (lastUpdatedTimeEl) {
+            lastUpdatedTimeEl.textContent = 'শেষ রিফ্রেশ: ' + formatTimeAgo(lastRefreshTimestamp);
+        }
+    }
+
+    function startAutoRefreshCountdown() {
+        stopAutoRefreshCountdown();
+        autoRefreshCountdownVal = autoRefreshSeconds;
+        if (autoRefreshCountdownEl) {
+            autoRefreshCountdownEl.textContent = toBanglaNumber(autoRefreshCountdownVal) + ' সেকেন্ড পরে রিফ্রেশ';
+        }
+        autoRefreshInterval = setInterval(function() {
+            autoRefreshCountdownVal--;
+            if (autoRefreshCountdownVal <= 0) {
+                // Perform silent refresh (no loading spinner)
+                doAutoRefresh();
+                autoRefreshCountdownVal = autoRefreshSeconds;
+            }
+            if (autoRefreshCountdownEl) {
+                autoRefreshCountdownEl.textContent = toBanglaNumber(autoRefreshCountdownVal) + ' সেকেন্ড পরে রিফ্রেশ';
+            }
+        }, 1000);
+    }
+
+    function stopAutoRefreshCountdown() {
+        if (autoRefreshInterval) {
+            clearInterval(autoRefreshInterval);
+            autoRefreshInterval = null;
+        }
+    }
+
+    function doAutoRefresh() {
+        // Use the existing fetchApplications but suppress loading overlay
+        var type = '{{ url_path |e("js") }}';
+        var url = '/applications/' + type + '/fetch_all';
+
+        var formData = new URLSearchParams();
+        formData.append('page', currentPage);
+        formData.append('search', currentSearch);
+        formData.append('sort_by', currentSortBy);
+        formData.append('sort_order', currentSortOrder);
+        formData.append('records_per_page', recordsPerPage);
+        formData.append('union_id', currentUnion);
+        formData.append('status', currentStatus);
+
+        fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: formData.toString()
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(response) {
+            lastRefreshTimestamp = Date.now();
+            updateLastUpdatedTime();
+
+            var tbody = document.getElementById('sonodTableBody');
+            var existingRows = {};
+            var existingRowEls = tbody.querySelectorAll('tr[data-app-id]');
+            existingRowEls.forEach(function(row) {
+                existingRows[row.dataset.appId] = row;
+            });
+
+            if (!response.data || response.data.length === 0) {
+                if (existingRowEls.length > 0) {
+                    // Data was cleared — do a full refresh
+                    fetchApplications(currentPage, currentSearch, currentSortBy, currentSortOrder, recordsPerPage, currentUnion, currentStatus);
+                }
+                return;
+            }
+
+            var newIds = response.data.map(function(a) { return String(a.application_id); });
+
+            // Check if any rows were added or removed
+            var rowsChanged = false;
+            Object.keys(existingRows).forEach(function(id) {
+                if (newIds.indexOf(id) === -1) rowsChanged = true;
+            });
+            if (newIds.length !== existingRowEls.length) rowsChanged = true;
+
+            if (rowsChanged) {
+                // Full re-render for structural changes
+                fetchApplications(currentPage, currentSearch, currentSortBy, currentSortOrder, recordsPerPage, currentUnion, currentStatus);
+                return;
+            }
+
+            // Diff-based update: only update rows whose status or data changed
+            response.data.forEach(function(application, index) {
+                var existingRow = existingRows[String(application.application_id)];
+                if (!existingRow) return;
+
+                var oldStatus = existingRow.dataset.status;
+                var newStatus = application.status;
+
+                // Check if status changed
+                if (oldStatus !== newStatus) {
+                    existingRow.dataset.status = newStatus;
+                    var statusTd = existingRow.querySelectorAll('td')[5];
+                    if (statusTd) {
+                        statusTd.innerHTML = getStatusBadge(newStatus);
+                    }
+                    // Flash animation
+                    existingRow.classList.add('flash-update');
+                    setTimeout(function() {
+                        existingRow.classList.remove('flash-update');
+                    }, 1500);
+                }
+            });
+
+            // Update total count if changed
+            var totalCountEl = document.getElementById('totalCount');
+            if (response.total_records !== undefined && totalCountEl) {
+                totalCountEl.textContent = '(মোট: ' + response.total_records + ')';
+            }
+        })
+        .catch(function(error) {
+            // Silently fail for auto-refresh
+            console.warn('Auto-refresh failed:', error.message);
+        });
+    }
+
+    // Toggle auto-refresh on/off
+    if (autoRefreshToggle) {
+        autoRefreshToggle.addEventListener('change', function() {
+            autoRefreshEnabled = this.checked;
+            if (autoRefreshEnabled) {
+                autoRefreshBar.classList.remove('disabled');
+                startAutoRefreshCountdown();
+            } else {
+                autoRefreshBar.classList.add('disabled');
+                stopAutoRefreshCountdown();
+                if (autoRefreshCountdownEl) autoRefreshCountdownEl.textContent = '';
+            }
+        });
+    }
+
+    // Manual refresh button
+    if (manualRefreshBtn) {
+        manualRefreshBtn.addEventListener('click', function() {
+            var icon = this.querySelector('i');
+            if (icon) icon.classList.add('spinning');
+            this.disabled = true;
+
+            // Full refresh via existing function
+            fetchApplications(currentPage, currentSearch, currentSortBy, currentSortOrder, recordsPerPage, currentUnion, currentStatus);
+            lastRefreshTimestamp = Date.now();
+            updateLastUpdatedTime();
+
+            var btn = this;
+            setTimeout(function() {
+                if (icon) icon.classList.remove('spinning');
+                btn.disabled = false;
+            }, 500);
+
+            // Restart countdown
+            if (autoRefreshEnabled) {
+                startAutoRefreshCountdown();
+            }
+        });
+    }
+
+    // Pause auto-refresh when user is interacting with search/filter
+    document.getElementById('liveSearch').addEventListener('focus', function() {
+        if (autoRefreshEnabled) stopAutoRefreshCountdown();
+    });
+    document.getElementById('liveSearch').addEventListener('blur', function() {
+        if (autoRefreshEnabled) startAutoRefreshCountdown();
+    });
+
+    // Update the "time ago" display every 10 seconds
+    setInterval(updateLastUpdatedTime, 10000);
+
+    // Start auto-refresh
+    if (autoRefreshEnabled) {
+        startAutoRefreshCountdown();
+    }
+    updateLastUpdatedTime();
+
+    // Expose refresh function globally so modal handlers can trigger table refresh
+    window.refreshApplicationList = function() {
+        fetchApplications(currentPage, currentSearch, currentSortBy, currentSortOrder, recordsPerPage, currentUnion, currentStatus);
+        lastRefreshTimestamp = Date.now();
+        updateLastUpdatedTime();
+    };
 });
 
 /* ================================================================
@@ -1107,14 +1340,29 @@ function resetApproveModal() {
     if (licenseAvailMsg) licenseAvailMsg.textContent = '';
 }
 
+// Flag to prevent datepicker re-opening during modal close
+var approveModalIsClosing = false;
+
 // Cleanup after approve modal closes
 var approveModalEl = document.getElementById('approveModal');
 if (approveModalEl) {
+    // Immediately destroy datepickers when modal starts hiding
+    // (before Bootstrap shifts focus, which can re-open them)
+    approveModalEl.addEventListener('hide.bs.modal', function() {
+        approveModalIsClosing = true;
+        destroyModalDatepickers();
+        // Blur any focused element to prevent focus-related re-opening
+        if (document.activeElement && document.activeElement.closest('#approveModal')) {
+            document.activeElement.blur();
+        }
+    });
     approveModalEl.addEventListener('hidden.bs.modal', function() {
-        // Destroy datepickers immediately when modal starts hiding
         destroyModalDatepickers();
         cleanupModalBackdrop();
-        setTimeout(resetApproveModal, 300);
+        setTimeout(function() {
+            resetApproveModal();
+            approveModalIsClosing = false;
+        }, 300);
     });
 }
 
@@ -1181,7 +1429,7 @@ function populateApproveModal(result, certType) {
 
     // Photo
     const photo = document.getElementById('approveModalPhoto');
-    photo.src = d.applicant_photo ? `/${d.applicant_photo}` : '/assets/images/default-user.png';
+    photo.src = d.applicant_photo ? (d.applicant_photo.startsWith('/') ? d.applicant_photo : '/' + d.applicant_photo) : '/assets/images/default-user.png';
 
     // Basic info
     document.getElementById('approveModalName').textContent = `${d.name_bn || '—'}`;
@@ -1259,6 +1507,17 @@ function populateApproveModal(result, certType) {
     document.getElementById('modal_verifier_name_en').value = a.verifier_name_en || '';
     document.getElementById('modal_verifier_ward_no').value = a.verifier_ward_no || '';
 
+    // Pre-select verifier dropdown to match existing verifier_id
+    if (a.verifier_id) {
+        var verifierSelect = document.getElementById('modal_verifier_select');
+        for (var i = 0; i < verifierSelect.options.length; i++) {
+            if (verifierSelect.options[i].value == a.verifier_id) {
+                verifierSelect.selectedIndex = i;
+                break;
+            }
+        }
+    }
+
     // Auto-select verifier based on application's present_ward_no
     if (!a.verifier_id) {
         var appWard = (d.present_ward_no || '').toString().trim();
@@ -1282,6 +1541,17 @@ function populateApproveModal(result, certType) {
     document.getElementById('modal_approver_name_bn').value = a.approver_name_bn || '';
     document.getElementById('modal_approver_name_en').value = a.approver_name_en || '';
     document.getElementById('modal_approver_ward_no').value = a.approver_ward_no || '';
+
+    // Pre-select approver dropdown to match existing approver_id
+    if (a.approver_id) {
+        var approverSelect = document.getElementById('modal_approver_select');
+        for (var i = 0; i < approverSelect.options.length; i++) {
+            if (approverSelect.options[i].value == a.approver_id) {
+                approverSelect.selectedIndex = i;
+                break;
+            }
+        }
+    }
     document.getElementById('modal_approval_date').value = normalizeModalDate(a.approval_date) || getModalToday();
     var issueTimeInput = document.getElementById('modal_issue_time');
     if (issueTimeInput) {
@@ -1442,6 +1712,15 @@ function initModalDatepickers() {
                 input.focus = originalFocus;
             }
         };
+
+        // Override the input focus handler to prevent datepicker from opening
+        // while the modal is closing (Bootstrap shifts focus during hide animation).
+        const origShow = datepicker.showDatepicker.bind(datepicker);
+        datepicker.showDatepicker = function() {
+            if (approveModalIsClosing) return;
+            origShow();
+        };
+
         input.datepickerInstance = datepicker;
     });
 }
@@ -1832,7 +2111,8 @@ function showApprovedModalFromList(res, certType, licenseNumber) {
             const newBtnClone = newBtn.cloneNode(true);
             newBtn.parentNode.replaceChild(newBtnClone, newBtn);
             newBtnClone.addEventListener('click', function() {
-                location.reload();
+                if (typeof window.refreshApplicationList === 'function') window.refreshApplicationList();
+                else location.reload();
             });
         }
 
@@ -1850,7 +2130,7 @@ function showApprovedModalFromList(res, certType, licenseNumber) {
             title: '✅ সফল!',
             text: res.message || 'আবেদন সফলভাবে অনুমোদিত হয়েছে।',
             confirmButtonColor: '#28a745'
-        }).then(() => location.reload());
+        }).then(() => { if (typeof window.refreshApplicationList === 'function') window.refreshApplicationList(); else location.reload(); });
     }
 }
 
@@ -1879,7 +2159,7 @@ if (modalRejectBtnEl) {
                 const bsModal = bootstrap.Modal.getInstance(document.getElementById('approveModal'));
                 if (bsModal) bsModal.hide();
                 setTimeout(cleanupModalBackdrop, 350);
-                Swal.fire('❌ বাতিল হয়েছে!', '', 'success').then(() => location.reload());
+                Swal.fire('❌ বাতিল হয়েছে!', '', 'success').then(() => { if (typeof window.refreshApplicationList === 'function') window.refreshApplicationList(); else location.reload(); });
             } else {
                 Swal.fire('❌ ত্রুটি', res.message || 'বাতিল করা যায়নি।', 'error');
             }
@@ -1913,7 +2193,7 @@ if (modalOnHoldBtnEl) {
                 const bsModal = bootstrap.Modal.getInstance(document.getElementById('approveModal'));
                 if (bsModal) bsModal.hide();
                 setTimeout(cleanupModalBackdrop, 350);
-                Swal.fire('✅ Success', res.message, 'success').then(() => location.reload());
+                Swal.fire('✅ Success', res.message, 'success').then(() => { if (typeof window.refreshApplicationList === 'function') window.refreshApplicationList(); else location.reload(); });
             } else {
                 Swal.fire('❌ ত্রুটি', res.message || 'Failed', 'error');
             }
@@ -2003,6 +2283,104 @@ if (modalFixSonodBtnEl) {
 });
 }
 
+
+    /* ===============================
+       Modal Issue Time - Live Clock & Auto-sync
+    =============================== */
+    if (typeof window.__modalIssueTimeBound === 'undefined') {
+    window.__modalIssueTimeBound = true;
+    const modalIssueTimeInput = document.getElementById('modal_issue_time');
+    const modalIssueTimeLive = document.getElementById('modalIssueTimeLive');
+    let modalIssueTimeTimer = null;
+    let modalIssueTimeTimeout = null;
+
+    const isDefaultModalIssueTime = (v) => {
+        const value = String(v || '').trim();
+        return value === '' || value === '12:00' || value === '12:00:00';
+    };
+
+    const formatModalTimeHHMMSS = (d) => {
+        const hours = String(d.getHours()).padStart(2, '0');
+        const minutes = String(d.getMinutes()).padStart(2, '0');
+        const seconds = String(d.getSeconds()).padStart(2, '0');
+        return hours + ':' + minutes + ':' + seconds;
+    };
+
+    const startModalLiveClock = () => {
+        if (!modalIssueTimeLive || modalIssueTimeTimer) return;
+        const tick = () => {
+            modalIssueTimeLive.textContent = formatModalTimeHHMMSS(new Date());
+        };
+        tick();
+        modalIssueTimeTimer = setInterval(tick, 1000);
+    };
+
+    const stopModalLiveClock = () => {
+        if (modalIssueTimeTimer) {
+            clearInterval(modalIssueTimeTimer);
+            modalIssueTimeTimer = null;
+        }
+    };
+
+    const startModalIssueTimeSync = () => {
+        if (!modalIssueTimeInput || modalIssueTimeTimer) return;
+        const tick = () => {
+            if (!isDefaultModalIssueTime(modalIssueTimeInput.value)) {
+                stopModalIssueTimeSync();
+                return;
+            }
+            const now = new Date();
+            modalIssueTimeInput.value = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+        };
+        tick();
+        modalIssueTimeTimeout = setTimeout(() => {
+            modalIssueTimeTimeout = null;
+            tick();
+            modalIssueTimeTimer = setInterval(() => {
+                if (!isDefaultModalIssueTime(modalIssueTimeInput.value)) {
+                    stopModalIssueTimeSync();
+                    return;
+                }
+                const now = new Date();
+                modalIssueTimeInput.value = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+            }, 1000);
+        }, 1000 - (Date.now() % 1000));
+    };
+
+    const stopModalIssueTimeSync = () => {
+        if (modalIssueTimeTimeout) {
+            clearTimeout(modalIssueTimeTimeout);
+            modalIssueTimeTimeout = null;
+        }
+        if (modalIssueTimeTimer) {
+            clearInterval(modalIssueTimeTimer);
+            modalIssueTimeTimer = null;
+        }
+    };
+
+    // Initialize live clock and auto-sync when modal is shown
+    if (approveModalEl) {
+        approveModalEl.addEventListener('shown.bs.modal', function() {
+            startModalLiveClock();
+            startModalIssueTimeSync();
+        });
+        approveModalEl.addEventListener('hide.bs.modal', function() {
+            stopModalLiveClock();
+            stopModalIssueTimeSync();
+        });
+    }
+
+    // Stop sync when user interacts with the time input
+    if (modalIssueTimeInput) {
+        modalIssueTimeInput.addEventListener('focus', stopModalIssueTimeSync);
+        modalIssueTimeInput.addEventListener('blur', () => {
+            if (isDefaultModalIssueTime(modalIssueTimeInput.value)) startModalIssueTimeSync();
+        });
+        modalIssueTimeInput.addEventListener('input', () => {
+            if (!isDefaultModalIssueTime(modalIssueTimeInput.value)) stopModalIssueTimeSync();
+        });
+    }
+    } // end __modalIssueTimeBound guard
 </script>
 
 {% include 'applications/approve-modal.twig' %}

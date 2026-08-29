@@ -10,8 +10,7 @@
 
 <!-- Libraries -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="{{ url }}/assets/datepicker/jquery-ui.min.js"></script>
-<link rel="stylesheet" href="{{ url }}/assets/datepicker/jquery-ui.min.css"/>
+<!-- jQuery UI removed — native search autocomplete in use -->
 
 <div class="container py-4">
 
@@ -319,20 +318,15 @@ function toBn(v){
 /* ===============================
    Autocomplete Rendering
 ================================= */
-$.ui.autocomplete.prototype._renderItem=function(ul,item){
-    return $("<li>").append(
-        `<div class="ui-menu-item-wrapper">
-            <strong>${item.data.name_bn}</strong>
-            <span class="badge bg-secondary ms-auto">${item.data.sonod_number}</span>
-        </div>`
-    ).appendTo(ul);
-};
+/* jQuery UI autocomplete removed — using native search */
 
 function renderResults(res) {
-    const $list = $('.list-group').empty();
+    var listEl = document.querySelector('.list-group');
+    if (!listEl) return;
+    listEl.innerHTML = '';
 
     if (!res.results || !res.results.length) {
-        $list.html('<div class="text-center text-muted my-3">কোন ফলাফল পাওয়া যায়নি</div>');
+        listEl.innerHTML = '<div class="text-center text-muted my-3">কোন ফলাফল পাওয়া যায়নি</div>';
         return;
     }
 
@@ -375,7 +369,7 @@ function renderResults(res) {
         buttons += `</div>`;
 
         /* Card render */
-        $list.append(`
+        listEl.insertAdjacentHTML('beforeend', `
             <div class="list-group-item mb-4 p-4 rounded-4 shadow-sm border-0 bg-white hover-shadow">
 
                 <div class="d-flex justify-content-between align-items-center mb-3">
@@ -444,36 +438,57 @@ ${toBn(JSON.stringify(certificate.extra_data, null, 2))}
    Search Logic
 ================================= */
 // Dashboard navigation cards - migrated from inline onclick
-$(document).on('click', '.dashboard-nav-card', function() {
-    var href = $(this).data('href');
-    if (href) {
-        location.href = href;
-    }
+document.addEventListener('click', function(e) {
+    var card = e.target.closest('.dashboard-nav-card');
+    if (!card) return;
+    var href = card.dataset.href;
+    if (href) location.href = href;
 });
 
-$(function(){
-    $("#certificateSearch").autocomplete({
-        appendTo: ".position-relative",
-        position:{ my:"left top+8", at:"left bottom" },
-        minLength:2,
-        source:function(req,res){
-            $('#searchLoader').removeClass('d-none');
-            $.getJSON('/certificate-search',{q:req.term},data=>{
-                $('#searchLoader').addClass('d-none');
-                res(data.results?.map(r=>({
-                    label:r.name_bn,value:r.name_bn,data:r
-                }))||[]);
-            });
-        },
-        select:(e,ui)=>renderResults({results:[ui.item.data]})
-    });
+document.addEventListener('DOMContentLoaded', function() {
+    var searchInput = document.getElementById('certificateSearch');
+    var searchLoader = document.getElementById('searchLoader');
+    var searchDropdown = document.createElement('div');
+    searchDropdown.className = 'position-absolute bg-white shadow rounded';
+    searchDropdown.style.cssText = 'display:none;top:100%;left:0;right:0;z-index:1000;max-height:300px;overflow-y:auto;';
+    if (searchInput && searchInput.parentNode) searchInput.parentNode.appendChild(searchDropdown);
+    var searchDebounce = null;
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            clearTimeout(searchDebounce);
+            var q = this.value.trim();
+            if (q.length < 2) { searchDropdown.style.display = 'none'; return; }
+            searchDebounce = setTimeout(function() {
+                if (searchLoader) searchLoader.classList.remove('d-none');
+                fetch('/certificate-search?q=' + encodeURIComponent(q))
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    if (searchLoader) searchLoader.classList.add('d-none');
+                    var results = (data.results || []).map(function(r) {
+                        return '<div class="search-result-item p-2" style="cursor:pointer;border-bottom:1px solid #eee" data-json=' + JSON.stringify(r) + '><strong>' + r.name_bn + '</strong> <span class="badge bg-secondary">' + r.sonod_number + '</span></div>';
+                    });
+                    searchDropdown.innerHTML = results.join('');
+                    searchDropdown.style.display = results.length ? 'block' : 'none';
+                })
+                .catch(function() { if (searchLoader) searchLoader.classList.add('d-none'); });
+            }, 300);
+        });
+        searchDropdown.addEventListener('click', function(e) {
+            var item = e.target.closest('.search-result-item');
+            if (item) {
+                var data = JSON.parse(item.dataset.json);
+                renderResults({results: [data]});
+                searchDropdown.style.display = 'none';
+            }
+        });
+    }
 });
 
 
 /* ===============================
    Charts
 ================================= */
-$(function () {
+document.addEventListener('DOMContentLoaded', function() {
 
     /**
      * Load simple chart (line / bar)
@@ -510,9 +525,10 @@ $(function () {
                 });
             })
             .catch(() => {
-                $('#' + chartId)
-                    .parent()
-                    .append('<div class="text-danger mt-2">চার্ট ডেটা লোড করতে ব্যর্থ হয়েছে।</div>');
+                var el = document.getElementById(chartId);
+                if (el && el.parentNode) {
+                    el.parentNode.insertAdjacentHTML('beforeend', '<div class="text-danger mt-2">চার্ট ডেটা লোড করতে ব্যর্থ হয়েছে।</div>');
+                }
             });
     }
 
@@ -536,14 +552,12 @@ $(function () {
     /* ===============================
        Certificate-wise Chart
     ================================= */
-    $('#chartLoader').show();
+    var chartLoader = document.getElementById('chartLoader'); if (chartLoader) chartLoader.style.display = '';
 
-    $.ajax({
-        url: '/chart-data',
-        method: 'GET',
-        dataType: 'json',
-        success: function (chartData) {
-            $('#chartLoader').hide();
+    fetch('/chart-data')
+    .then(function(r) { return r.json(); })
+    .then(function (chartData) {
+            if (chartLoader) chartLoader.style.display = 'none';
 
             /* Summary info */
             const summaryHtml = `
@@ -552,7 +566,7 @@ $(function () {
                     <strong>মোট আবেদন:</strong> ${chartData.total_applications}
                 </div>
             `;
-            $('#chartLegend').before(summaryHtml);
+            var chartLegend = document.getElementById('chartLegend'); if (chartLegend) chartLegend.insertAdjacentHTML('beforebegin', summaryHtml);
 
             /* Chart */
             const ctx = document.getElementById('certificateChart').getContext('2d');
@@ -579,63 +593,64 @@ $(function () {
             });
 
             /* Custom legend */
-            const legendContainer = $('#chartLegend').empty();
+            var legendContainer = document.getElementById('chartLegend');
+
+            legendContainer.innerHTML = '';
 
             chartData.datasets.forEach((dataset, index) => {
-                const legendItem = $('<div>').css({
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                    cursor: 'pointer',
-                    fontSize: '14px',
-                    userSelect: 'none'
-                });
+                const legendItem = document.createElement('div');
+                legendItem.style.cssText = 'display:flex;align-items:center;gap:6px;cursor:pointer;font-size:14px;user-select:none';
 
-                const colorBox = $('<div>').css({
-                    width: '18px',
-                    height: '18px',
-                    backgroundColor: dataset.backgroundColor,
-                    border: `2px solid ${dataset.borderColor}`,
-                    borderRadius: '3px'
-                });
+                const colorBox = document.createElement('div');
+                colorBox.style.cssText = `width:18px;height:18px;background-color:${dataset.backgroundColor};border:2px solid ${dataset.borderColor};border-radius:3px`;
 
-                const labelText = $('<span>').text(dataset.label);
+                const labelText = document.createElement('span');
+                labelText.textContent = dataset.label;
 
-                legendItem.append(colorBox).append(labelText);
-                legendContainer.append(legendItem);
+                legendItem.appendChild(colorBox);
+                legendItem.appendChild(labelText);
+                legendContainer.appendChild(legendItem);
 
-                legendItem.on('click', function () {
+                legendItem.addEventListener('click', function () {
                     const meta = myChart.getDatasetMeta(index);
                     meta.hidden = !meta.hidden;
                     myChart.update();
-                    $(this).css('opacity', meta.hidden ? 0.5 : 1);
+                    legendItem.style.opacity = meta.hidden ? 0.5 : 1;
                 });
             });
-        },
-        error: function () {
-            $('#chartLoader').text('চার্ট ডেটা লোড করতে ব্যর্থ হয়েছে।');
-        }
-    });
+        })
+        .catch(function () {
+            var loader = document.getElementById('chartLoader');
+            if (loader) loader.textContent = '\u099A\u09BE\u09B0\u09CD\u099F \u09A1\u09C7\u099F\u09BE \u09B2\u09CB\u09A1 \u0995\u09B0\u09A4\u09C7 \u09AC\u09CD\u09AF\u09B0\u09CD\u09A5 \u09B9\u09AF়\u09C7\u099B\u09C7\u0964';
+        });
 });
 
 
 /* ===============================
    Error Statistics — Live Load
 ================================= */
-$(function () {
-    $.getJSON('/admin/error-stats')
-        .done(function (stats) {
-            $('#errorStatsLoader').hide();
-            $('#errorStatsGrid').fadeIn(300);
+document.addEventListener('DOMContentLoaded', function() {
+    fetch('/admin/error-stats')
+    .then(function(r) { return r.json(); })
+    .then(function (stats) {
+            var errorLoader = document.getElementById('errorStatsLoader');
+            var errorGrid = document.getElementById('errorStatsGrid');
+            if (errorLoader) errorLoader.style.display = 'none';
+            if (errorGrid) { errorGrid.style.display = ''; errorGrid.style.opacity = '1'; }
 
             // Helper: animate number
             function animate(el, val) {
-                const $el = $(el);
-                $({ n: 0 }).animate({ n: val }, {
-                    duration: 600,
-                    step: function () { $el.text(toBn(Math.round(this.n))); },
-                    done: function () { $el.text(toBn(val)); }
-                });
+                var el2 = typeof el === 'string' ? document.querySelector(el) : el;
+                if (!el2) return;
+                var startTime = null;
+                function step(timestamp) {
+                    if (!startTime) startTime = timestamp;
+                    var progress = Math.min((timestamp - startTime) / 600, 1);
+                    el2.textContent = toBn(Math.round(progress * val));
+                    if (progress < 1) requestAnimationFrame(step);
+                    else el2.textContent = toBn(val);
+                }
+                requestAnimationFrame(step);
             }
 
             animate('#statTotal', stats.total_errors);
@@ -647,11 +662,13 @@ $(function () {
             animate('#statTwig', stats.twig_errors);
             animate('#statHttp', stats.http_errors || 0);
             animate('#stat404', stats.route_404_errors || 0);
-            $('#statFileSize').text(stats.file_size_display || '—');
-        })
-        .fail(function () {
-            $('#errorStatsLoader').removeClass('spinner-border').addClass('text-danger').text('⚠️');
-        });
+            var fileSizeEl = document.getElementById('statFileSize');
+            if (fileSizeEl) fileSizeEl.textContent = stats.file_size_display || '\u2014';
+    })
+    .catch(function () {
+        var errorLoader2 = document.getElementById('errorStatsLoader');
+        if (errorLoader2) { errorLoader2.classList.remove('spinner-border'); errorLoader2.classList.add('text-danger'); errorLoader2.textContent = '\u26A0\uFE0F'; }
+    });
 });
 
 </script>

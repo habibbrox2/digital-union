@@ -526,7 +526,7 @@ $router->post('/api/check/existing/application', function() use ($appmanager) {
     header('Content-Type: application/json; charset=utf-8');
     
     // Parse JSON body
-    $input = json_decode(file_get_contents('php://input'), true);
+    $input = json_decode(file_get_contents('php://input'), true) ?? [];
     if (empty($input)) {
         $input = $_POST;
     }

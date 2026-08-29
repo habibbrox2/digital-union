@@ -72,13 +72,13 @@
 # Security Headers (Basic, tweak as needed)
 # ============================================================
 
-<IfModule mod_headers.c>
+#<IfModule mod_headers.c>
     #Header always append X-Frame-Options SAMEORIGIN
     #Header set X-XSS-Protection "1; mode=block"
     #Header set X-Content-Type-Options nosniff
-    # Header set Content-Security-Policy "default-src 'self';"
-    # Header set Cache-Control "no-store, no-cache, must-revalidate"
-</IfModule>
+    #Header set Content-Security-Policy "default-src 'self';"
+    #Header set Cache-Control "no-store, no-cache, must-revalidate"
+#</IfModule>
 
 # ============================================================
 # Error Handling

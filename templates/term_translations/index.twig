@@ -101,169 +101,248 @@
     </div>
 </div>
 
-
-
 <script>
-    let currentPage = 1;
-    let currentSort = { column: 'slug', direction: 'asc' };
-    let searchQuery = '';
+var currentPage = 1;
+var currentSort = { column: 'slug', direction: 'asc' };
+var searchQuery = '';
 
-    function escapeHtml(str) {
-        return $('<div>').text(str ?? '').html();
-    }
+function escapeHtml(str) {
+    if (!str) return '';
+    var div = document.createElement('div');
+    div.appendChild(document.createTextNode(str));
+    return div.innerHTML;
+}
 
-    function loadTerms(page = 1) {
-        currentPage = page;
+function loadTerms(page) {
+    page = page || 1;
+    currentPage = page;
 
-        $.post('/ajax/term_translations', {
-            action: 'filter',
-            page: page,
-            sortColumn: currentSort.column,
-            sortDirection: currentSort.direction,
-            search: searchQuery
-        }, function(data) {
-            try {
-                const response = typeof data === "string" ? JSON.parse(data) : data;
-
-                if (response.status !== 'success') {
-                    throw new Error(response.message || 'ডেটা লোড করা যায়নি');
-                }
-
-                const terms = response.data || [];
-                let html = '';
-
-                terms.forEach(term => {
-                    const certBadge = term.is_certificate_type == 1
-                        ? '<span class="badge bg-success-subtle text-success"><i class="fas fa-check me-1"></i> হ্যাঁ</span>'
-                        : '<span class="text-muted">—</span>';
-                    html += `<tr>
-                        <td><code class="term-slug">${escapeHtml(term.slug)}</code></td>
-                        <td class="fw-medium">${escapeHtml(term.name_bn)}</td>
-                        <td>${escapeHtml(term.name_en)}</td>
-                        <td>${escapeHtml(term.name_bl)}</td>
-                        <td class="text-center">${certBadge}</td>
-                        <td class="text-center text-nowrap">
-                            <button class="btn btn-sm btn-outline-primary me-1 edit-term-btn" data-term-id="${term.id}"><i class="fas fa-pen"></i></button>
-                            <button class="btn btn-sm btn-outline-danger delete-term-btn" data-term-id="${term.id}"><i class="fas fa-trash"></i></button>
-                        </td>
-                    </tr>`;
-                });
-
-                $('#termTable tbody').html(html);
-                $('#tableEmpty').toggleClass('d-none', terms.length > 0);
-                updateSortIcons();
-                renderPagination(response.total, page);
-            } catch (err) {
-                console.error('Invalid JSON or server error:', err);
-                Swal.fire('ত্রুটি', 'ডেটা লোড করা যায়নি। অনুগ্রহ করে পরে আবার চেষ্টা করুন।', 'error');
-            }
-        });
-    }
-
-    function updateSortIcons() {
-        $('#termTable thead th.sortable').each(function() {
-            const icon = $(this).find('.sort-icon');
-            if ($(this).data('column') === currentSort.column) {
-                icon.removeClass('fa-sort').addClass(currentSort.direction === 'asc' ? 'fa-sort-up' : 'fa-sort-down');
-            } else {
-                icon.removeClass('fa-sort-up fa-sort-down').addClass('fa-sort');
-            }
-        });
-    }
-
-    function renderPagination(totalItems, currentPage) {
-        const itemsPerPage = 10;
-        const totalPages = Math.ceil(totalItems / itemsPerPage);
-
-        if (totalPages <= 1) {
-            $('#pagination').html('');
-            return;
-        }
-
-        let html = '<nav><ul class="pagination justify-content-center mb-0">';
-        for (let i = 1; i <= totalPages; i++) {
-            html += `<li class="page-item ${i === currentPage ? 'active' : ''}">
-                <a class="page-link" href="#" data-page="${i}">${i}</a>
-            </li>`;
-        }
-        html += '</ul></nav>';
-        $('#pagination').html(html);
-    }
-
-    $(document).on('click', '#pagination .page-link', function(e) {
-        e.preventDefault();
-        const page = parseInt($(this).data('page'));
-        if (page && page !== currentPage) {
-            loadTerms(page);
-        }
+    var params = new URLSearchParams({
+        action: 'filter',
+        page: page,
+        sortColumn: currentSort.column,
+        sortDirection: currentSort.direction,
+        search: searchQuery
     });
 
-    $('#searchTerm').on('input', function() {
-        searchQuery = $(this).val().trim();
-        loadTerms(1);
-    });
+    fetch('/ajax/term_translations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: params.toString()
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(response) {
+        if (response.status !== 'success') {
+            throw new Error(response.message || 'ডেটা লোড করা যায়নি');
+        }
 
-    $('#termTable thead th.sortable').on('click', function() {
-        const clickedColumn = $(this).data('column');
-        if (currentSort.column === clickedColumn) {
-            currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
+        var terms = response.data || [];
+        var html = '';
+        var tbody = document.querySelector('#termTable tbody');
+        var tableEmpty = document.getElementById('tableEmpty');
+
+        terms.forEach(function(term) {
+            var certBadge = term.is_certificate_type == 1
+                ? '<span class="badge bg-success-subtle text-success"><i class="fas fa-check me-1"></i> হ্যাঁ</span>'
+                : '<span class="text-muted">—</span>';
+            html += '<tr>' +
+                '<td><code class="term-slug">' + escapeHtml(term.slug) + '</code></td>' +
+                '<td class="fw-medium">' + escapeHtml(term.name_bn) + '</td>' +
+                '<td>' + escapeHtml(term.name_en) + '</td>' +
+                '<td>' + escapeHtml(term.name_bl) + '</td>' +
+                '<td class="text-center">' + certBadge + '</td>' +
+                '<td class="text-center text-nowrap">' +
+                    '<button class="btn btn-sm btn-outline-primary me-1 edit-term-btn" data-term-id="' + term.id + '"><i class="fas fa-pen"></i></button>' +
+                    '<button class="btn btn-sm btn-outline-danger delete-term-btn" data-term-id="' + term.id + '"><i class="fas fa-trash"></i></button>' +
+                '</td>' +
+            '</tr>';
+        });
+
+        tbody.innerHTML = html;
+        if (tableEmpty) {
+            tableEmpty.classList.toggle('d-none', terms.length > 0);
+        }
+        updateSortIcons();
+        renderPagination(response.total, page);
+    })
+    .catch(function(err) {
+        console.error('Invalid JSON or server error:', err);
+        Swal.fire('ত্রুটি', 'ডেটা লোড করা যায়নি। অনুগ্রহ করে পরে আবার চেষ্টা করুন।', 'error');
+    });
+}
+
+function updateSortIcons() {
+    document.querySelectorAll('#termTable thead th.sortable').forEach(function(th) {
+        var icon = th.querySelector('.sort-icon');
+        if (!icon) return;
+        icon.classList.remove('fa-sort', 'fa-sort-up', 'fa-sort-down');
+        if (th.dataset.column === currentSort.column) {
+            icon.classList.add(currentSort.direction === 'asc' ? 'fa-sort-up' : 'fa-sort-down');
         } else {
-            currentSort.column = clickedColumn;
-            currentSort.direction = 'asc';
+            icon.classList.add('fa-sort');
         }
+    });
+}
+
+function renderPagination(totalItems, curPage) {
+    var itemsPerPage = 10;
+    var totalPages = Math.ceil(totalItems / itemsPerPage);
+    var paginationEl = document.getElementById('pagination');
+
+    if (totalPages <= 1) {
+        paginationEl.innerHTML = '';
+        return;
+    }
+
+    var html = '<nav><ul class="pagination justify-content-center mb-0">';
+    for (var i = 1; i <= totalPages; i++) {
+        html += '<li class="page-item ' + (i === curPage ? 'active' : '') + '">' +
+            '<a class="page-link" href="#" data-page="' + i + '">' + i + '</a></li>';
+    }
+    html += '</ul></nav>';
+    paginationEl.innerHTML = html;
+}
+
+function setEditMode(isEdit) {
+    document.getElementById('submitBtnText').textContent = isEdit ? 'আপডেট করুন' : 'সংরক্ষণ করুন';
+}
+
+function editTerm(id) {
+    var params = new URLSearchParams({ action: 'get', id: id });
+    fetch('/ajax/term_translations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: params.toString()
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(response) {
+        var term = response.data || response;
+        document.getElementById('id').value = term.id;
+        var slugField = document.getElementById('slug');
+        slugField.value = term.slug;
+        slugField.dataset.oldSlug = term.slug;
+        document.getElementById('bn').value = term.name_bn;
+        document.getElementById('en').value = term.name_en;
+        document.getElementById('bl').value = term.name_bl;
+        document.getElementById('is_certificate_type').checked = term.is_certificate_type == 1;
+        setEditMode(true);
+        document.getElementById('termForm').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+}
+
+function resetForm() {
+    document.getElementById('termForm').reset();
+    document.getElementById('id').value = '';
+    document.getElementById('slug').dataset.oldSlug = '';
+    document.getElementById('responseMessage').innerHTML = '';
+    setEditMode(false);
+}
+
+function submitForm(formData) {
+    var msgEl = document.getElementById('responseMessage');
+
+    fetch('/ajax/term_translations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: formData
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(res) {
+        if (res.status === 'success') {
+            msgEl.innerHTML = '<div class="alert alert-success alert-dismissible fade show" role="alert">' +
+                escapeHtml(res.message) +
+                '<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button></div>';
+            resetForm();
+            loadTerms(currentPage);
+        } else {
+            msgEl.innerHTML = '<div class="alert alert-danger alert-dismissible fade show" role="alert">' +
+                escapeHtml(res.message || 'কিছু ভুল হয়েছে!') +
+                '<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button></div>';
+        }
+    })
+    .catch(function() {
+        msgEl.innerHTML = '<div class="alert alert-danger alert-dismissible fade show" role="alert">' +
+            'সার্ভার ত্রুটি। অনুগ্রহ করে আবার চেষ্টা করুন।' +
+            '<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button></div>';
+    });
+}
+
+function deleteTerm(id) {
+    Swal.fire({
+        title: 'মুছে ফেলবেন?',
+        text: 'এটি স্থায়ীভাবে মুছে ফেলা হবে।',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'হ্যাঁ, মুছে ফেলুন',
+        cancelButtonText: 'বাতিল'
+    }).then(function(result) {
+        if (result.isConfirmed) {
+            var params = new URLSearchParams({ action: 'delete', id: id });
+            fetch('/ajax/term_translations', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: params.toString()
+            }).then(function() {
+                loadTerms(currentPage);
+            });
+        }
+    });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Pagination click
+    document.getElementById('pagination').addEventListener('click', function(e) {
+        var link = e.target.closest('.page-link');
+        if (!link) return;
+        e.preventDefault();
+        var page = parseInt(link.dataset.page);
+        if (page && page !== currentPage) loadTerms(page);
+    });
+
+    // Search input
+    document.getElementById('searchTerm').addEventListener('input', function() {
+        searchQuery = this.value.trim();
         loadTerms(1);
     });
 
-    function setEditMode(isEdit) {
-        $('#submitBtnText').text(isEdit ? 'আপডেট করুন' : 'সংরক্ষণ করুন');
-    }
-
-    function editTerm(id) {
-        $.post('/ajax/term_translations', { action: 'get', id: id }, function(data) {
-            const response = typeof data === "string" ? JSON.parse(data) : data;
-            const term = response.data ?? response;
-            $('#id').val(term.id);
-            $('#slug').val(term.slug).data('old-slug', term.slug);
-            $('#bn').val(term.name_bn);
-            $('#en').val(term.name_en);
-            $('#bl').val(term.name_bl);
-            $('#is_certificate_type').prop('checked', term.is_certificate_type == 1);
-            setEditMode(true);
-            $('html, body').animate({ scrollTop: $('#termForm').offset().top - 20 }, 400);
+    // Sort columns
+    document.querySelectorAll('#termTable thead th.sortable').forEach(function(th) {
+        th.addEventListener('click', function() {
+            var col = this.dataset.column;
+            if (currentSort.column === col) {
+                currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
+            } else {
+                currentSort.column = col;
+                currentSort.direction = 'asc';
+            }
+            loadTerms(1);
         });
-    }
-
-    $('#resetFormBtn').on('click', function() {
-        resetForm();
     });
 
-    function resetForm() {
-        $('#termForm')[0].reset();
-        $('#id').val('');
-        $('#slug').data('old-slug', '');
-        $('#responseMessage').html('');
-        setEditMode(false);
-    }
+    // Reset form
+    document.getElementById('resetFormBtn').addEventListener('click', resetForm);
 
-    $('#termForm').on('submit', function(e) {
+    // Form submit
+    document.getElementById('termForm').addEventListener('submit', function(e) {
         e.preventDefault();
 
-        const action = $('#id').val() ? 'update' : 'create';
-        const slugField = $('#slug');
-        const newSlug = slugField.val().trim();
-        const oldSlug = slugField.data('old-slug') || '';
-        const isCertificateType = $('#is_certificate_type').is(':checked') ? '1' : '0';
-        const formData = $(this).serialize() + '&is_certificate_type=' + isCertificateType + '&action=' + action;
+        var idVal = document.getElementById('id').value;
+        var action = idVal ? 'update' : 'create';
+        var slugField = document.getElementById('slug');
+        var newSlug = slugField.value.trim();
+        var oldSlug = slugField.dataset.oldSlug || '';
+        var isCertificateType = document.getElementById('is_certificate_type').checked ? '1' : '0';
+        var formData = new URLSearchParams(new FormData(this)).toString() + '&is_certificate_type=' + isCertificateType + '&action=' + action;
 
         if (action === 'update' && oldSlug && newSlug !== oldSlug) {
             Swal.fire({
                 title: 'স্লাগ পরিবর্তন করবেন?',
-                html: `আপনি <strong>slug</strong> পরিবর্তন করছেন।<br><br>পুরাতন: <code>${escapeHtml(oldSlug)}</code><br>নতুন: <code>${escapeHtml(newSlug)}</code>`,
+                html: 'আপনি <strong>slug</strong> পরিবর্তন করছেন।<br><br>পুরাতন: <code>' + escapeHtml(oldSlug) + '</code><br>নতুন: <code>' + escapeHtml(newSlug) + '</code>',
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonText: 'হ্যাঁ, পরিবর্তন করুন',
                 cancelButtonText: 'বাতিল করুন'
-            }).then((result) => {
+            }).then(function(result) {
                 if (result.isConfirmed) {
                     submitForm(formData);
                 }
@@ -273,66 +352,16 @@
         }
     });
 
-    function submitForm(formData) {
-        $.post('/ajax/term_translations', formData, function(response) {
-            const res = typeof response === 'string' ? JSON.parse(response) : response;
-            if (res.status === 'success') {
-                $('#responseMessage').html(
-                    `<div class="alert alert-success alert-dismissible fade show" role="alert">
-                        ${escapeHtml(res.message)}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                    </div>`
-                );
-                resetForm();
-                loadTerms(currentPage);
-            } else {
-                $('#responseMessage').html(
-                    `<div class="alert alert-danger alert-dismissible fade show" role="alert">
-                        ${escapeHtml(res.message || 'কিছু ভুল হয়েছে!')}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                    </div>`
-                );
-            }
-        }).fail(function() {
-            $('#responseMessage').html(
-                `<div class="alert alert-danger alert-dismissible fade show" role="alert">
-                    সার্ভার ত্রুটি। অনুগ্রহ করে আবার চেষ্টা করুন।
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                </div>`
-            );
-        });
-    }
-
-    function deleteTerm(id) {
-        Swal.fire({
-            title: 'মুছে ফেলবেন?',
-            text: 'এটি স্থায়ীভাবে মুছে ফেলা হবে।',
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonText: 'হ্যাঁ, মুছে ফেলুন',
-            cancelButtonText: 'বাতিল'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                $.post('/ajax/term_translations', { action: 'delete', id: id }, function() {
-                    loadTerms(currentPage);
-                });
-            }
-        });
-    }
-
-    // Event delegation for edit/delete buttons - migrated from inline onclick
-    $(document).on('click', '.edit-term-btn', function() {
-        var id = $(this).data('term-id');
-        editTerm(id);
+    // Edit/Delete buttons (event delegation)
+    document.addEventListener('click', function(e) {
+        var editBtn = e.target.closest('.edit-term-btn');
+        if (editBtn) { editTerm(editBtn.dataset.termId); return; }
+        var delBtn = e.target.closest('.delete-term-btn');
+        if (delBtn) { deleteTerm(delBtn.dataset.termId); return; }
     });
 
-    $(document).on('click', '.delete-term-btn', function() {
-        var id = $(this).data('term-id');
-        deleteTerm(id);
-    });
-
-    $(document).ready(function() {
-        loadTerms();
-    });
+    // Initial load
+    loadTerms();
+});
 </script>
 {% endblock %}

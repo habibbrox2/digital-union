@@ -17,18 +17,35 @@
 
         <!-- General Settings -->
         <div class="card shadow-sm mb-4">
-            <div class="card-header bg-white d-flex align-items-center" style="border-left: 4px solid #008B8B;">
-                <i class="fas fa-cog me-2" style="color: #008B8B;"></i>
-                <h6 class="mb-0 fw-semibold">সাধারণ সেটিংস</h6>
+            <div class="card-header bg-white d-flex align-items-center justify-content-between" style="border-left: 4px solid #008B8B;">
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-cog me-2" style="color: #008B8B;"></i>
+                    <h6 class="mb-0 fw-semibold">সাধারণ সেটিংস</h6>
+                </div>
+                {% if is_superadmin or is_admin %}
+                <span class="badge bg-warning text-dark" style="font-size: 0.65rem;" data-bs-toggle="tooltip" data-bs-placement="top" title="শুধুমাত্র সুপারঅ্যাডমিন এবং অ্যাডমিন ব্যবহারকারীরা চ্যাট চালু/বন্ধ করতে পারবেন। অন্যান্য ভূমিকার ব্যবহারকারীদের জন্য এই সেটিংস নিরাপদ।">
+                    <i class="fas fa-shield-alt me-1"></i>অ্যাডমিন শুধু (চ্যাট চালু/বন্ধ)
+                </span>
+                {% endif %}
             </div>
             <div class="card-body">
                 <div class="row g-3">
                     <div class="col-md-4">
                         <label class="form-label fw-medium">চ্যাট সক্রিয়</label>
+                        {% if is_superadmin or is_admin %}
                         <div class="form-check form-switch mt-2">
                             <input type="checkbox" class="form-check-input" id="chat_enabled" name="settings[chat_enabled]" value="1" {% if settings.chat_enabled == '1' %}checked{% endif %}>
                             <label class="form-check-label" for="chat_enabled">উইজেট সক্রিয় করুন</label>
                         </div>
+                        {% else %}
+                        <div class="form-check form-switch mt-2">
+                            <input type="checkbox" class="form-check-input" id="chat_enabled" disabled {% if settings.chat_enabled == '1' %}checked{% endif %}>
+                            <label class="form-check-label text-muted" for="chat_enabled">
+                                {% if settings.chat_enabled == '1' %}সক্রিয়{% else %}নিষ্ক্রিয়{% endif %}
+                                <br><small>শুধুমাত্র অ্যাডমিন পরিবর্তন করতে পারবেন</small>
+                            </label>
+                        </div>
+                        {% endif %}
                     </div>
                     <div class="col-md-4">
                         <label for="chat_primary_color" class="form-label fw-medium">প্রাথমিক রঙ</label>
@@ -177,11 +194,17 @@
             </div>
         </div>
 
-        <!-- Visitor Push Notifications (Web Push) -->
+        <!-- Visitor Push Notifications (Web Push) — Admin/Superadmin only -->
+        {% if is_superadmin or is_admin %}
         <div class="card shadow-sm mb-4">
-            <div class="card-header bg-white d-flex align-items-center" style="border-left: 4px solid #008B8B;">
-                <i class="fas fa-bell me-2" style="color: #008B8B;"></i>
-                <h6 class="mb-0 fw-semibold">ভিজিটর পুশ নোটিফিকেশন (Web Push)</h6>
+            <div class="card-header bg-white d-flex align-items-center justify-content-between" style="border-left: 4px solid #008B8B;">
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-bell me-2" style="color: #008B8B;"></i>
+                    <h6 class="mb-0 fw-semibold">ভিজিটর পুশ নোটিফিকেশন (Web Push)</h6>
+                </div>
+                <span class="badge bg-warning text-dark" style="font-size: 0.65rem;" data-bs-toggle="tooltip" data-bs-placement="top" title="পুশ নোটিফিকেশন কনফিগারেশন শুধুমাত্র অ্যাডমিনরা পরিবর্তন করতে পারবেন। ভুল কনফিগারেশন ভিজিটরদের অবাঞ্ছিত বিজ্ঞপ্তি পাঠাতে পারে।">
+                    <i class="fas fa-shield-alt me-1"></i>অ্যাডমিন শুধু
+                </span>
             </div>
             <div class="card-body">
                 <div class="row g-3">
@@ -228,12 +251,19 @@
                 </div>
             </div>
         </div>
+        {% endif %}
 
         <!-- Offline Hours -->
+        {% if is_superadmin or is_admin %}
         <div class="card shadow-sm mb-4">
-            <div class="card-header bg-white d-flex align-items-center" style="border-left: 4px solid #008B8B;">
-                <i class="fas fa-clock me-2" style="color: #008B8B;"></i>
-                <h6 class="mb-0 fw-semibold">অফলাইন সময়</h6>
+            <div class="card-header bg-white d-flex align-items-center justify-content-between" style="border-left: 4px solid #008B8B;">
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-clock me-2" style="color: #008B8B;"></i>
+                    <h6 class="mb-0 fw-semibold">অফলাইন সময়</h6>
+                </div>
+                <span class="badge bg-warning text-dark" style="font-size: 0.65rem;" data-bs-toggle="tooltip" data-bs-placement="top" title="অফলাইন সময় সেটিংস শুধুমাত্র অ্যাডমিনরা পরিবর্তন করতে পারবেন। এটি সকল ভিজিটরদের চ্যাট অ্যাক্সেস প্রভাবিত করে।">
+                    <i class="fas fa-shield-alt me-1"></i>অ্যাডমিন শুধু
+                </span>
             </div>
             <div class="card-body">
                 <div class="row g-3">
@@ -262,6 +292,7 @@
                 </small>
             </div>
         </div>
+        {% endif %}
 
         <!-- Preview -->
         <div class="card shadow-sm mb-4">
@@ -303,6 +334,13 @@
 {% block scripts %}
 <script>
 (function() {
+    // Initialize Bootstrap tooltips for admin-only badges
+    document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(function(el) {
+        if (typeof bootstrap !== 'undefined' && bootstrap.Tooltip) {
+            new bootstrap.Tooltip(el, { trigger: 'hover focus', boundary: 'clippingParents' });
+        }
+    });
+
     const form = document.getElementById('chatSettingsForm');
 
     // Live preview

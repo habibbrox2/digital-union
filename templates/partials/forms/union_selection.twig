@@ -178,166 +178,133 @@
 
 
 <script>
-$(document).ready(function () {
+document.addEventListener('DOMContentLoaded', function () {
 
-    function populateDropdown(selector, data, placeholder = "চিহ্নিত করুন") {
-        if (!$(selector).length) return;
-        const select = $(selector);
-        select.empty().append(`<option value="">${placeholder}</option>`);
-        $.each(data, function (_, item) {
-            select.append(
-                `<option value="${item.union_code || item.name_en}" 
-                    data-geo-id="${item.id || item.union_id}" 
-                    data-name-en="${item.name_en || item.union_name_en}" 
-                    data-name-bn="${item.name_bn || item.union_name_bn}" 
-                    data-union-code="${item.union_code || ''}">
-                    ${item.name_en || item.union_name_en} (${item.name_bn || item.union_name_bn})
-                </option>`
-            );
+    function populateDropdown(selector, data, placeholder) {
+        placeholder = placeholder || '\u099A\u09BF\u09B9\u09CD\u09A8\u09BF\u09A4 \u0995\u09B0\u09C1\u09A8';
+        var el = document.querySelector(selector);
+        if (!el) return;
+        el.innerHTML = '<option value="">' + placeholder + '</option>';
+        data.forEach(function(item) {
+            var opt = document.createElement('option');
+            opt.value = item.union_code || item.name_en;
+            opt.setAttribute('data-geo-id', item.id || item.union_id);
+            opt.setAttribute('data-name-en', item.name_en || item.union_name_en);
+            opt.setAttribute('data-name-bn', item.name_bn || item.union_name_bn);
+            opt.setAttribute('data-union-code', item.union_code || '');
+            opt.textContent = (item.name_en || item.union_name_en) + ' (' + (item.name_bn || item.union_name_bn) + ')';
+            el.appendChild(opt);
         });
     }
 
-    // ========================
-    // Fetch Districts
-    // ========================
+    function fetchGeo(fd, callback) {
+        fetch('/geo/getdata', { method: 'POST', body: fd })
+        .then(function(r) { return r.json(); })
+        .then(callback)
+        .catch(function(err) { console.error('Geo fetch error:', err); });
+    }
+
     function fetchDistricts(callback) {
-        $.ajax({
-            url: '/geo/getdata',
-            method: 'POST',
-            data: { geo_order: 1, parent_geo_id: 0 },
-            dataType: 'json',
-            success: function(data) {
-                const select = $('#select_district_id');
-                select.empty();
-                $.each(data, function(_, district) {
-                    select.append(
-                        `<option value="${district.name_en}" 
-                            data-geo-id="${district.id}" 
-                            data-name-en="${district.name_en}" 
-                            data-name-bn="${district.name_bn}">
-                            ${district.name_en} (${district.name_bn})
-                        </option>`
-                    );
-                });
-                if (callback) callback();
-            },
-            error: function(err) { console.error('District fetch error:', err); }
+        var fd = new FormData(); fd.append('geo_order', '1'); fd.append('parent_geo_id', '0');
+        fetchGeo(fd, function(data) {
+            var select = document.getElementById('select_district_id');
+            select.innerHTML = '';
+            data.forEach(function(district) {
+                var opt = document.createElement('option');
+                opt.value = district.name_en;
+                opt.setAttribute('data-geo-id', district.id);
+                opt.setAttribute('data-name-en', district.name_en);
+                opt.setAttribute('data-name-bn', district.name_bn);
+                opt.textContent = district.name_en + ' (' + district.name_bn + ')';
+                select.appendChild(opt);
+            });
+            if (callback) callback();
         });
     }
 
-    // ========================
-    // Fetch Upazilas
-    // ========================
-    function fetchUpazilas(districtId, preselectUpazilaId = null, callback = null) {
-        $.ajax({
-            url: '/geo/getdata',
-            method: 'POST',
-            data: { geo_order: 2, parent_geo_id: districtId },
-            dataType: 'json',
-            success: function(data) {
-                const select = $('#select_upazila_id');
-                select.empty().append('<option value="">উপজেলা নির্বাচন করুন</option>');
-
-                let firstUpazilaId = null;
-                $.each(data, function(_, item) {
-                    if (!firstUpazilaId) firstUpazilaId = item.id;
-                    const selected = (item.id == preselectUpazilaId) ? 'selected' : '';
-                    select.append(
-                        `<option value="${item.name_en}" data-geo-id="${item.id}" data-name-bn="${item.name_bn}" ${selected}>
-                            ${item.name_en} (${item.name_bn})
-                        </option>`
-                    );
-                });
-
-                // auto-select first if nothing pre-selected
-                if (!preselectUpazilaId && firstUpazilaId) {
-                    select.val(select.find(`option[data-geo-id="${firstUpazilaId}"]`).val());
-                    preselectUpazilaId = firstUpazilaId;
-                }
-
-                $('#union_id').empty().append('<option value="">ইউনিয়ন নির্বাচন করুন</option>');
-                if (callback) callback(preselectUpazilaId);
-            },
-            error: function(err) { console.error('Upazila fetch error:', err); }
-        });
-    }
-
-    // ========================
-    // Fetch Unions
-    // ========================
-    function fetchUnions(upazilaId, preselectUnionCode = null) {
-        if (!upazilaId) return;
-        $.ajax({
-            url: '/geo/geoUnion',
-            method: 'POST',
-            data: { upazila_id: upazilaId },
-            dataType: 'json',
-            success: function(res) {
-                if (res.status === 'success') {
-                    populateDropdown('#union_id', res.data, 'ইউনিয়ন নির্বাচন করুন');
-                    // auto-select union
-                    if (preselectUnionCode) {
-                        $('#union_id').val(preselectUnionCode);
-                    } else if (res.data.length) {
-                        $('#union_id').val(res.data[0].union_code);
-                    }
-                    // Save union in localStorage
-                    const currentUnion = $('#union_id').val();
-                    if (currentUnion) localStorage.setItem('unionCode', currentUnion);
-                }
-            },
-            error: function(err) { console.error('Union fetch error:', err); }
-        });
-    }
-
-    // ========================
-    // Load saved selections
-    // ========================
-    const savedDistrictId = parseInt(localStorage.getItem('districtId')) || 25; // DHAKA default
-    const savedUpazilaId = parseInt(localStorage.getItem('upazilaId')) || null;
-    const savedUnionCode = localStorage.getItem('unionCode') || null;
-
-    // ========================
-    // Initial Load
-    // ========================
-    fetchDistricts(function() {
-        // select district
-        $('#select_district_id option').each(function() {
-            if (parseInt($(this).data('geo-id')) === savedDistrictId) {
-                $(this).prop('selected', true);
+    function fetchUpazilas(districtId, preselectUpazilaId, callback) {
+        preselectUpazilaId = preselectUpazilaId || null;
+        callback = callback || null;
+        var fd = new FormData(); fd.append('geo_order', '2'); fd.append('parent_geo_id', districtId);
+        fetchGeo(fd, function(data) {
+            var select = document.getElementById('select_upazila_id');
+            select.innerHTML = '<option value="">\u0989\u09AA\u099C\u09C7\u09B2\u09BE \u09A8\u09BF\u09B0\u09CD\u09AC\u09BE\u099A\u09A8 \u0995\u09B0\u09C1\u09A8</option>';
+            var firstUpazilaId = null;
+            data.forEach(function(item) {
+                if (!firstUpazilaId) firstUpazilaId = item.id;
+                var opt = document.createElement('option');
+                opt.value = item.name_en;
+                opt.setAttribute('data-geo-id', item.id);
+                opt.setAttribute('data-name-bn', item.name_bn);
+                if (item.id == preselectUpazilaId) opt.selected = true;
+                opt.textContent = item.name_en + ' (' + item.name_bn + ')';
+                select.appendChild(opt);
+            });
+            if (!preselectUpazilaId && firstUpazilaId) {
+                var firstOpt = select.querySelector('option[data-geo-id="' + firstUpazilaId + '"]');
+                if (firstOpt) select.value = firstOpt.value;
+                preselectUpazilaId = firstUpazilaId;
             }
+            document.getElementById('union_id').innerHTML = '<option value="">\u0987\u09A9\u09BF\u09AF\u09BC\u09CB\u09A8 \u09A8\u09BF\u09B0\u09CD\u09AC\u09BE\u099A\u09A8 \u0995\u09B0\u09C1\u09A8</option>';
+            if (callback) callback(preselectUpazilaId);
         });
+    }
 
+    function fetchUnions(upazilaId, preselectUnionCode) {
+        if (!upazilaId) return;
+        var fd = new FormData(); fd.append('upazila_id', upazilaId);
+        fetch('/geo/geoUnion', { method: 'POST', body: fd })
+        .then(function(r) { return r.json(); })
+        .then(function(res) {
+            if (res.status === 'success') {
+                populateDropdown('#union_id', res.data, '\u0987\u09A9\u09BF\u09AF\u09BC\u09CB\u09A8 \u09A8\u09BF\u09B0\u09CD\u09AC\u09BE\u099A\u09A8 \u0995\u09B0\u09C1\u09A8');
+                var unionEl = document.getElementById('union_id');
+                if (preselectUnionCode) {
+                    unionEl.value = preselectUnionCode;
+                } else if (res.data.length) {
+                    unionEl.value = res.data[0].union_code;
+                }
+                var currentUnion = unionEl.value;
+                if (currentUnion) localStorage.setItem('unionCode', currentUnion);
+            }
+        })
+        .catch(function(err) { console.error('Union fetch error:', err); });
+    }
+
+    var savedDistrictId = parseInt(localStorage.getItem('districtId')) || 25;
+    var savedUpazilaId = parseInt(localStorage.getItem('upazilaId')) || null;
+    var savedUnionCode = localStorage.getItem('unionCode') || null;
+
+    fetchDistricts(function() {
+        var districtEl = document.getElementById('select_district_id');
+        Array.from(districtEl.options).forEach(function(opt) {
+            if (parseInt(opt.getAttribute('data-geo-id')) === savedDistrictId) opt.selected = true;
+        });
         fetchUpazilas(savedDistrictId, savedUpazilaId, function(upazilaId) {
             fetchUnions(upazilaId, savedUnionCode);
         });
     });
 
-    // ========================
-    // Bind Change Events
-    // ========================
-    $('#select_district_id').change(function () {
-        const districtId = parseInt($(this).find('option:selected').data('geo-id')) || 0;
+    document.getElementById('select_district_id').addEventListener('change', function () {
+        var opt = this.options[this.selectedIndex];
+        var districtId = parseInt(opt.getAttribute('data-geo-id')) || 0;
         localStorage.setItem('districtId', districtId);
         localStorage.removeItem('upazilaId');
         localStorage.removeItem('unionCode');
-        fetchUpazilas(districtId, null, function(upazilaId) {
-            fetchUnions(upazilaId);
-        });
+        fetchUpazilas(districtId, null, function(upazilaId) { fetchUnions(upazilaId); });
     });
 
-    $('#select_upazila_id').change(function () {
-        const upazilaId = parseInt($(this).find('option:selected').data('geo-id')) || 0;
+    document.getElementById('select_upazila_id').addEventListener('change', function () {
+        var opt = this.options[this.selectedIndex];
+        var upazilaId = parseInt(opt.getAttribute('data-geo-id')) || 0;
         localStorage.setItem('upazilaId', upazilaId);
         localStorage.removeItem('unionCode');
         fetchUnions(upazilaId);
     });
 
-    $('#union_id').change(function () {
-        const unionCode = $(this).val();
-        localStorage.setItem('unionCode', unionCode);
+    document.getElementById('union_id').addEventListener('change', function () {
+        localStorage.setItem('unionCode', this.value);
     });
-
 });
 </script>
 
@@ -375,7 +342,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const formData = new URLSearchParams();
             formData.append('query', query);
-            formData.append('union_code', $('#union_id').val() || '');
+            formData.append('union_code', (document.getElementById('union_id') ? document.getElementById('union_id').value : '') || '');
             // certificate_type is NOT sent — the backend looks it up from the application data itself
 
             const res = await fetch('/api/applications/search', {

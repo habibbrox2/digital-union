@@ -117,247 +117,195 @@ select.is-required-empty {
 
 <!-- ================= JS Handling ================= -->
 <script>
-$(document).ready(function () {
-    const form = $("#applicationForm");
-    const submitButton = form.find("button[type='submit']");
-    const certificateType = "{{ certificate_type|default('application') }}";
-    const isLoggedIn = {{ is_logged_in ? 'true' : 'false' }};
+document.addEventListener('DOMContentLoaded', function () {
+    var form = document.getElementById('applicationForm');
+    if (!form) return;
+    var submitButton = form.querySelector("button[type='submit']");
+    var certificateType = "{{ certificate_type|default('application') }}";
+    var isLoggedIn = {{ is_logged_in ? 'true' : 'false' }};
 
-    // ===== Validation Helper =====
     function clearFieldErrors() {
-        form.find('.is-required-empty').each(function() {
-            $(this).removeClass('is-required-empty');
+        form.querySelectorAll('.is-required-empty').forEach(function(el) {
+            el.classList.remove('is-required-empty');
         });
-        form.find('.validation-error-text.show').each(function() {
-            $(this).removeClass('show');
+        form.querySelectorAll('.validation-error-text.show').forEach(function(el) {
+            el.classList.remove('show');
         });
     }
 
     function validateRequiredFields() {
         clearFieldErrors();
-        let firstInvalid = null;
+        var firstInvalid = null;
+        form.querySelectorAll('[required]').forEach(function(el) {
+            var val = el.value;
+            var fieldName = el.name;
+            if (el.offsetParent === null || el.disabled) return;
 
-        form.find('[required]').each(function() {
-            const $el = $(this);
-            const val = $el.val();
-            const fieldName = $el.attr('name');
-
-            // Skip hidden inputs and disabled fields
-            if ($el.is(':hidden') || $el.is(':disabled')) return true;
-
-            // ===== Warish: birth_date OR death_year is acceptable =====
             if (certificateType === 'warish' && fieldName === 'birth_date') {
-                const $deathYear = $('input[name="death_year"]');
-                const deathYearVal = $deathYear.length ? $deathYear.val() : '';
-                // If death_year has a value, skip the birth_date required check
-                if (deathYearVal && String(deathYearVal).trim() !== '') {
-                    return true;
-                }
-                // If birth_date is empty AND death_year is also empty, show error
-                const isEmpty = val === null || val === undefined || String(val).trim() === '';
+                var deathYear = document.querySelector('input[name="death_year"]');
+                var deathYearVal = deathYear ? deathYear.value : '';
+                if (deathYearVal && String(deathYearVal).trim() !== '') return;
+                var isEmpty = val === null || val === undefined || String(val).trim() === '';
                 if (isEmpty) {
-                    $el.addClass('is-required-empty');
-                    let $error = $el.next('.validation-error-text');
-                    if ($error.length === 0) {
-                        $error = $('<small class="validation-error-text">জন্মতারিখ অথবা মৃত্যুসাল যেকোনো একটি দিন</small>');
-                        $el.after($error);
+                    el.classList.add('is-required-empty');
+                    var error = el.nextElementSibling;
+                    if (!error || !error.classList.contains('validation-error-text')) {
+                        error = document.createElement('small');
+                        error.className = 'validation-error-text';
+                        error.textContent = '\u099C\u09A8\u09CD\u09AE\u09A4\u09BE\u09B0\u09BF\u0996 \u0985\u09A5\u09AC\u09BE \u09AE\u09C3\u09A4\u09CD\u09AF\u09C1\u09B8\u09BE\u09B2 \u09AF\u09C7\u0995\u09CB\u09A8\u09CB \u098F\u0995\u099F\u09BF \u09A6\u09BF\u09A8';
+                        el.parentNode.insertBefore(error, el.nextSibling);
                     }
-                    $error.addClass('show');
-                    if (!firstInvalid) firstInvalid = $el;
+                    error.classList.add('show');
+                    if (!firstInvalid) firstInvalid = el;
                 }
-                return true; // handled — don't fall through to generic check
+                return;
             }
 
-            // Check empty: select with default value, or empty input/textarea
-            const isEmpty = val === null || val === undefined || String(val).trim() === '';
-
+            var isEmpty = val === null || val === undefined || String(val).trim() === '';
             if (isEmpty) {
-                $el.addClass('is-required-empty');
-
-                // Create or show error message below the field
-                let $error = $el.next('.validation-error-text');
-                if ($error.length === 0) {
-                    $error = $('<small class="validation-error-text">এই ফিল্ডটি পূরণ করুন</small>');
-                    $el.after($error);
+                el.classList.add('is-required-empty');
+                var error2 = el.nextElementSibling;
+                if (!error2 || !error2.classList.contains('validation-error-text')) {
+                    error2 = document.createElement('small');
+                    error2.className = 'validation-error-text';
+                    error2.textContent = '\u098F\u0987 \u09AB\u09BF\u09B2\u09CD\u09A1\u099F\u09BF \u09AA\u09C2\u09B0\u09A3 \u0995\u09B0\u09C1\u09A8';
+                    el.parentNode.insertBefore(error2, el.nextSibling);
                 }
-                $error.addClass('show');
-
-                if (!firstInvalid) firstInvalid = $el;
+                error2.classList.add('show');
+                if (!firstInvalid) firstInvalid = el;
             }
         });
-
         return firstInvalid;
     }
 
-    // Clear error styling when user interacts with a field
-    form.on('input change', '[required]', function() {
-        $(this).removeClass('is-required-empty');
-        $(this).next('.validation-error-text').removeClass('show');
-    });
+    form.addEventListener('input', function(e) {
+        if (e.target.matches('[required]')) {
+            e.target.classList.remove('is-required-empty');
+            var next = e.target.nextElementSibling;
+            if (next && next.classList.contains('validation-error-text')) next.classList.remove('show');
+        }
+    }, true);
+    form.addEventListener('change', function(e) {
+        if (e.target.matches('[required]')) {
+            e.target.classList.remove('is-required-empty');
+            var next = e.target.nextElementSibling;
+            if (next && next.classList.contains('validation-error-text')) next.classList.remove('show');
+        }
+    }, true);
 
-    // ===== Form Submit (Ajax) =====
-    form.submit(function (event) {
+    form.addEventListener('submit', function (event) {
         event.preventDefault();
-
-        // ===== Client-side validation =====
-        const firstInvalid = validateRequiredFields();
+        var firstInvalid = validateRequiredFields();
         if (firstInvalid) {
-            // Scroll to the first invalid field smoothly
-            $('html, body').animate({
-                scrollTop: firstInvalid.offset().top - 120
-            }, 400);
-            // Focus the field
+            firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
             firstInvalid.focus();
             return;
         }
 
-        const isUpdate = Boolean($("input[name='application_id']").val());
-        const url = form.attr("action");
+        var appIdInput = form.querySelector("input[name='application_id']");
+        var isUpdate = Boolean(appIdInput && appIdInput.value);
+        var url = form.action;
+        var restoreBtn = submitButton ? btnLoading(submitButton, '\u099C\u09AE\u09BE \u09A6\u09C7\u0993\u09AF\u09BC\u09BE \u09B9\u099A\u09CD\u099B\u09C7...') : function(){};
 
-let restoreBtn;
-            $.ajax({
-                type: "POST",
-                url: url,
-                data: new FormData(this),
-                contentType: false,
-                processData: false,
-                dataType: "json",
-                beforeSend: function () {
-                    restoreBtn = btnLoading(submitButton[0], 'জমা দেওয়া হচ্ছে...');
-                },
-                success: function (response) {
-                if (response.status === "success") {
-
-                    if (isUpdate) {
-                        // ===== Update Modal =====
-                        const changes = Array.isArray(response.changes) ? response.changes : [];
-                        if (changes.length > 0) {
-                            const listHtml = changes.map(item => `<li>${item}</li>`).join('');
-                            $("#updateChangeList").html(listHtml).show();
-                        } else {
-                            $("#updateChangeList").hide();
-                        }
-
-                        // ===== Certificate / Approve Link =====
-                        const certLink = $("#downloadCertificate");
-                        const existingSonod = response.sonod_number || $("#sonod_number").val();
-                        if (isLoggedIn && existingSonod) {
-                            const certUrl = `/application/${certificateType}/bangla/${existingSonod}`;
-                            certLink.attr("data-preview", certUrl).text('সার্টিফিকেট ডাউনলোড করুন').show();
-                        } else if (response.sonod_number) {
-                            const certUrl = `/application/${certificateType}/bangla/${response.sonod_number}`;
-                            certLink.attr("data-preview", certUrl).text('সার্টিফিকেট ডাউনলোড করুন').show();
-                        } else if (response.application_id) {
-                            const approveUrl = `/applications/${certificateType}/approve/${response.application_id}`;
-                            certLink.attr("href", approveUrl).text('অনুমোদন দিন / দেখুন').show();
-                        } else {
-                            certLink.hide();
-                        }
-
-                        $("#updateModal").addClass('show');
-
-                        // Show upload warning if any
-                        if (response.upload_warning) {
-                            Swal.fire({
-                                icon: 'warning',
-                                title: 'ছবি আপলোড সতর্কতা',
-                                text: response.upload_warning,
-                                timer: 6000,
-                                timerProgressBar: true,
-                                showConfirmButton: true,
-                                confirmButtonText: 'ঠিক আছে'
-                            });
-                        }
-
+        fetch(url, { method: 'POST', body: new FormData(form) })
+        .then(function(resp) { return resp.json(); })
+        .then(function (response) {
+            if (response.status === "success") {
+                if (isUpdate) {
+                    var updateChangeList = document.getElementById('updateChangeList');
+                    var changes = Array.isArray(response.changes) ? response.changes : [];
+                    if (changes.length > 0) {
+                        updateChangeList.innerHTML = changes.map(function(item) { return '<li>' + item + '</li>'; }).join('');
+                        updateChangeList.style.display = '';
                     } else {
-                        // ===== Success Modal =====
-                        $("#application_id").text(response.application_id || 'N/A');
-                        $("#union_code")    .text(response.union_code || 'N/A');
-                        $("#rmo_code")       .text(response.rmo_code || 'N/A');
-
-                        // ===== Show approve button for logged-in users =====
-                        const approveBtn = $("#approveApplication");
-                        if (isLoggedIn && response.application_id) {
-                            approveBtn.attr("href", `/applications/${certificateType}/approve/${response.application_id}`).show();
-                        } else {
-                            approveBtn.hide();
-                        }
-
-                        $("#successModal").addClass('show');
-
-                        // Show upload warning if any
-                        if (response.upload_warning) {
-                            Swal.fire({
-                                icon: 'warning',
-                                title: 'ছবি আপলোড সতর্কতা',
-                                text: response.upload_warning,
-                                timer: 6000,
-                                timerProgressBar: true,
-                                confirmButtonText: 'ঠিক আছে'
-                            });
-                        }
+                        updateChangeList.style.display = 'none';
                     }
-
+                    var certLink = document.getElementById('downloadCertificate');
+                    var existingSonod = response.sonod_number || (document.getElementById('sonod_number') ? document.getElementById('sonod_number').value : '');
+                    if (isLoggedIn && existingSonod) {
+                        certLink.setAttribute('data-preview', '/application/' + certificateType + '/bangla/' + existingSonod);
+                        certLink.textContent = '\u09B8\u09BE\u09B0\u09CD\u099F\u09BF\u09AB\u09BF\u0995\u09C7\u099F \u09A1\u09BE\u0989\u09A8\u09B2\u09CB\u09A1 \u0995\u09B0\u09C1\u09A8';
+                        certLink.style.display = '';
+                    } else if (response.sonod_number) {
+                        certLink.setAttribute('data-preview', '/application/' + certificateType + '/bangla/' + response.sonod_number);
+                        certLink.textContent = '\u09B8\u09BE\u09B0\u09CD\u099F\u09BF\u09AB\u09BF\u0995\u09C7\u099F \u09A1\u09BE\u0989\u09A8\u09B2\u09CB\u09A1 \u0995\u09B0\u09C1\u09A8';
+                        certLink.style.display = '';
+                    } else if (response.application_id) {
+                        certLink.href = '/applications/' + certificateType + '/approve/' + response.application_id;
+                        certLink.textContent = '\u0985\u09A8\u09C1\u09AE\u09CB\u09A6\u09A8 \u09A6\u09BF\u09A8 / \u09A6\u09C7\u0996\u09C1\u09A8';
+                        certLink.style.display = '';
+                    } else {
+                        certLink.style.display = 'none';
+                    }
+                    document.getElementById('updateModal').classList.add('show');
+                    if (response.upload_warning) {
+                        Swal.fire({ icon: 'warning', title: '\u099B\u09AC\u09BF \u0986\u09AA\u09B2\u09CB\u09A1 \u09B8\u09A4\u09B0্\u0995\u09A4\u09BE', text: response.upload_warning, timer: 6000, timerProgressBar: true, showConfirmButton: true, confirmButtonText: '\u09A0\u09BF\u0995 \u0986\u099B\u09C7' });
+                    }
                 } else {
-                    Swal.fire('Error', response.message || 'Unknown error', 'error');
+                    document.getElementById('application_id').textContent = response.application_id || 'N/A';
+                    document.getElementById('union_code').textContent = response.union_code || 'N/A';
+                    document.getElementById('rmo_code').textContent = response.rmo_code || 'N/A';
+                    var approveBtn = document.getElementById('approveApplication');
+                    if (isLoggedIn && response.application_id) {
+                        approveBtn.href = '/applications/' + certificateType + '/approve/' + response.application_id;
+                        approveBtn.style.display = '';
+                    } else {
+                        approveBtn.style.display = 'none';
+                    }
+                    document.getElementById('successModal').classList.add('show');
+                    if (response.upload_warning) {
+                        Swal.fire({ icon: 'warning', title: '\u099B\u09AC\u09BF \u0986\u09AA\u09B2\u09CB\u09A1 \u09B8\u09A4\u09B0\u09CD\u0995\u09A4\u09BE', text: response.upload_warning, timer: 6000, timerProgressBar: true, confirmButtonText: '\u09A0\u09BF\u0995 \u0986\u099B\u09C7' });
+                    }
                 }
-            },
-            error: function (xhr) {
-                let message = "⚠️ কিছু সমস্যা হয়েছে, আবার চেষ্টা করুন।";
-                try {
-                    const response = JSON.parse(xhr.responseText);
-                    if (response.message) message = "⚠️ " + response.message;
-                } catch (e) {
-                    if (xhr.responseText) message = "⚠️ সার্ভার থেকে উত্তর: " + xhr.responseText;
-                }
-                Swal.fire('Error', message, 'error');
-            },
-            complete: function () {
-                if (restoreBtn) restoreBtn();
+            } else {
+                Swal.fire('Error', response.message || 'Unknown error', 'error');
             }
-        });
+        })
+        .catch(function (error) {
+            var message = "\u26A0\uFE0F \u0995\u09BF\u099B\u09C1 \u09B8\u09AE\u09B8\u09CD\u09AF\u09BE \u09B9\u09AF\u09BC\u09C7\u099B\u09C7, \u0986\u09AC\u09BE\u09B0 \u099A\u09C7\u09B7\u09CD\u099F\u09BE \u0995\u09B0\u09C1\u09A8\u0964";
+            if (error && error.text) {
+                error.text().then(function(text) {
+                    try { var resp = JSON.parse(text); if (resp.message) message = "\u26A0\uFE0F " + resp.message; } catch(e) {}
+                    Swal.fire('Error', message, 'error');
+                });
+            } else {
+                Swal.fire('Error', message, 'error');
+            }
+        })
+        .finally(function() { restoreBtn(); });
     });
 
-    // ===== New Application Reset =====
-    $("#newApplication").click(function () {
-        $("#successModal").removeClass('show');
+    document.getElementById('newApplication').addEventListener('click', function () {
+        document.getElementById('successModal').classList.remove('show');
         clearFieldErrors();
-        form[0].reset();
+        form.reset();
     });
 
-    // ===== Close Modal (directly by ID) =====
-    $('#successModal .btn-close-modal, #updateModal .btn-close-modal').on('click', function () {
-        var modalId = $(this).closest('.custom-modal').attr('id');
-        if (modalId) {
-            $('#' + modalId).removeClass('show');
+    document.addEventListener('click', function (e) {
+        var closeBtn = e.target.closest('.btn-close-modal');
+        if (closeBtn) {
+            var modal = closeBtn.closest('.custom-modal');
+            if (modal) modal.classList.remove('show');
         }
     });
 
-    // Close modal when clicking the backdrop (outside the dialog)
-    $(document).on('click', '.custom-modal.show', function (e) {
-        if ($(e.target).is('.custom-modal')) {
-            $(this).removeClass('show');
+    document.addEventListener('click', function (e) {
+        if (e.target.classList.contains('custom-modal') && e.target.classList.contains('show')) {
+            e.target.classList.remove('show');
         }
     });
 
-    // Close modal on Escape key
-    $(document).on('keydown', function (e) {
+    document.addEventListener('keydown', function (e) {
         if (e.key === 'Escape') {
-            $('#successModal.show, #updateModal.show').removeClass('show');
+            document.querySelectorAll('.custom-modal.show').forEach(function(m) { m.classList.remove('show'); });
         }
     });
 
-    // ===== Download Copy =====
-    $("#downloadCopy").click(function () {
-        const applicantId = $("#application_id").text().trim() || '0';
-        const union_code = $("#union_code").text().trim() || '0';
-        const rmo_code = $("#rmo_code").text().trim() || '0';
-
-        openPreview(
-            `/${certificateType}_verify/application/${applicantId}`,
-            'আবেদন কপি'
-        );
+    document.getElementById('downloadCopy').addEventListener('click', function () {
+        var applicantId = document.getElementById('application_id').textContent.trim() || '0';
+        var unionCode = document.getElementById('union_code').textContent.trim() || '0';
+        var rmoCode = document.getElementById('rmo_code').textContent.trim() || '0';
+        openPreview('/' + certificateType + '_verify/application/' + applicantId, '\u0986\u09AC\u09C7\u09A6\u09A8 \u0995\u09AA\u09BF');
     });
 });
-
 </script>

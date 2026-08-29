@@ -188,18 +188,19 @@ class EmailService {
             $twigFile = EMAIL_TEMPLATE_DIR . '/' . $template . '.twig';
             
             if (file_exists($twigFile)) {
-                // Use Twig template                if (!class_exists('TwigManager')) {
-                    $this->logError("TwigManager class not found for template: $template");
-                    throw new Exception("TwigManager class not found");
-                }
-                
-                if (!$mysqli) {
-                    $this->logError("No database connection available for Twig rendering");
-                    throw new Exception("Database connection not available for email template rendering");
-                }
-                
-                try {
-                    $twigManager = new TwigManager($mysqli);
+                // Use Twig template
+                if (!class_exists('TwigManager')) {
+                    $this->logError("TwigManager class not found for template: $template");
+                    throw new Exception("TwigManager class not found");
+                }
+                
+                if (!$mysqli) {
+                    $this->logError("No database connection available for Twig rendering");
+                    throw new Exception("Database connection not available for email template rendering");
+                }
+                
+                try {
+                    $twigManager = new TwigManager($mysqli);
                     $body = $twigManager->render($twigTemplate, $twigData);
                     
                     if (empty($body)) {
@@ -249,8 +250,9 @@ class EmailService {
                     if (!empty($settings[$settingKey])) {
                         // Use stored template body (may contain twig placeholders)
                         $stored = $settings[$settingKey];
-                        // Render stored template via Twig to resolve placeholders                if (class_exists('TwigManager') && $mysqli) {
-                            $twigManager = new TwigManager($mysqli);
+                        // Render stored template via Twig to resolve placeholders
+                        if (class_exists('TwigManager') && $mysqli) {
+                            $twigManager = new TwigManager($mysqli);
                             $twigEngine = $twigManager->getTwig();
                             try {
                                 $body = $twigEngine->createTemplate($stored)->render($twigData);

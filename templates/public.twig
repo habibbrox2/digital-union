@@ -539,9 +539,6 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://code.jquery.com/jquery-3.7.1.min.js"
-        integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo="
-        crossorigin="anonymous"></script>
 <!-- SweetAlert2 CSS -->
 <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
     <script src="{{ url }}/assets/js/csrf.js?t={{ "now"|date("Hiss") }}"></script>
@@ -552,16 +549,31 @@
 <!-- DOMPurify - XSS Protection -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.1.7/purify.min.js"></script>
 
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging-compat.js"></script>
+<script>
+    const firebaseConfig = {
+        apiKey: "AIzaSyBdNqFdh0DZ3Zz-iztHL2uGtoYZDLzhdyw",
+        authDomain: "digi-union-lgdhaka.firebaseapp.com",
+        projectId: "digi-union-lgdhaka",
+        storageBucket: "digi-union-lgdhaka.firebasestorage.app",
+        messagingSenderId: "599628365980",
+        appId: "1:599628365980:web:e90cefbce2c52ccf036d59"
+    };
+    if (!firebase.apps.length) {
+        firebase.initializeApp(firebaseConfig);
+    }
+</script>
 <script src="{{ url }}/assets/js/chat.js?t={{ "now"|date("Hiss") }}"></script>
 
 <script>
 // ===============================
 // Global Base URL
 // ===============================
-    var BASE_URL     = 'https://lgdhaka.co';
-    var BASE_API_URL = 'https://lgdhaka.co';
+    var BASE_URL     = '{{ url|default("/") }}';
+    var BASE_API_URL = 'https://lgdhaka.com/';
 
-jQuery(document).ready(function ($) {
+document.addEventListener('DOMContentLoaded', function() {
 
     // ===============================
     // জেলা List (Script থেকে)
@@ -592,99 +604,100 @@ jQuery(document).ready(function ($) {
         let selected = (d.id == 55) ? 'selected' : '';
         districtOptions += `<option value="${d.id}" ${selected}>${d.name}</option>`;
     });
-    $('#app_district_id').html(districtOptions);
-    $('#app_district_id').prop('disabled', true);
+    var appDistrict = document.getElementById('app_district_id');
+    appDistrict.innerHTML = districtOptions;
+    appDistrict.disabled = true;
 
     // ===============================
     // Load Upazila by District (on load)
     // ===============================
-    let district_id = $('#app_district_id').val();
+    let district_id = appDistrict.value;
     if (district_id) {
-        $.get(BASE_API_URL + '/geo/code/get', {id: district_id, type: 3}, function (data) {
+        fetch(BASE_API_URL + '/geo/code/get?id=' + encodeURIComponent(district_id) + '&type=3').then(r => r.json()).then(function (data) {
             let option = "<option value=''>চিহ্নিত করুন</option>";
             data.upzilla.forEach(function (el) {
                 option += `<option value="${el.id}">${el.bn_name}</option>`;
             });
-            $('#app_upazila_id').html(option);
+            document.getElementById('app_upazila_id').innerHTML = option;
         });
     }
 
     // ===============================
     // Upazila → Union
     // ===============================
-    $('#app_upazila_id').on('change', function () {
-        let upazila_id = $(this).val();
-        $('#union_id, #ward_id, #moholla').html("<option value=''>চিহ্নিত করুন</option>");
+    document.getElementById('app_upazila_id').addEventListener('change', function () {
+        let upazila_id = this.value;
+        ['union_id','ward_id','moholla'].forEach(function(id){ var el=document.getElementById(id); if(el) el.innerHTML="<option value=''>চিহ্নিত করুন</option>"; });
         if (!upazila_id) return;
-        $.get(BASE_API_URL + '/geo/code/get_union', { id: upazila_id }, function (data) {
+        fetch(BASE_API_URL + '/geo/code/get_union?id=' + encodeURIComponent(upazila_id)).then(r => r.json()).then(function (data) {
             let option = "<option value=''>চিহ্নিত করুন</option>";
             data.union.forEach(function (item) {
                 option += `<option value="${item.union_code}">${item.bn_name}</option>`;
             });
-            $('#union_id').html(option);
+            var unionEl = document.getElementById('union_id'); if(unionEl) unionEl.innerHTML = option;
         });
     });
 
     // ===============================
     // Union → Ward
     // ===============================
-    $('#union_id').on('change', function () {
-        let union_id = $(this).val();
-        $('#ward_id, #moholla').html("<option value=''>চিহ্নিত করুন</option>");
+    var unionEl2 = document.getElementById('union_id');
+    if(unionEl2) unionEl2.addEventListener('change', function () {
+        let union_id = this.value;
+        ['ward_id','moholla'].forEach(function(id){ var el=document.getElementById(id); if(el) el.innerHTML="<option value=''>চিহ্নিত করুন</option>"; });
         if (!union_id) return;
-        $.get(BASE_API_URL + '/geo/code/get_word_no', { id: union_id }, function (data) {
+        fetch(BASE_API_URL + '/geo/code/get_word_no?id=' + encodeURIComponent(union_id)).then(r => r.json()).then(function (data) {
             let option = "<option value=''>চিহ্নিত করুন</option>";
             data.word.forEach(function (item) {
                 option += `<option value="${item.ward_no}">${item.ward_no}</option>`;
             });
-            $('#ward_id').html(option);
+            var wardEl = document.getElementById('ward_id'); if(wardEl) wardEl.innerHTML = option;
         });
     });
 
     // ===============================
     // Ward → Moholla
     // ===============================
-    $('#ward_id').on('change', function () {
-        let ward_id = $(this).val();
-        let union_id = $('#union_id').val();
-        $('#moholla').html("<option value=''>চিহ্নিত করুন</option>");
+    var wardEl2 = document.getElementById('ward_id');
+    if(wardEl2) wardEl2.addEventListener('change', function () {
+        let ward_id = this.value;
+        let union_id = unionEl2 ? unionEl2.value : '';
+        var mohollaEl = document.getElementById('moholla');
+        if(mohollaEl) mohollaEl.innerHTML="<option value=''>চিহ্নিত করুন</option>";
         if (!ward_id || !union_id) return;
-        $.get(BASE_API_URL + '/geo/code/get_moholla', { id: ward_id, union_id: union_id }, function (data) {
+        fetch(BASE_API_URL + '/geo/code/get_moholla?id=' + encodeURIComponent(ward_id) + '&union_id=' + encodeURIComponent(union_id)).then(r => r.json()).then(function (data) {
             let option = "<option value=''>চিহ্নিত করুন</option>";
             data.moholla.forEach(function (item) {
                 option += `<option value="${item.id}">${item.name}</option>`;
             });
-            $('#moholla').html(option);
+            if(mohollaEl) mohollaEl.innerHTML = option;
         });
     });
 
     // ===============================
     // Tax Verification Submit
     // ===============================
-    $('#tax-verification-form').on('submit', function (e) {
+    var taxForm = document.getElementById('tax-verification-form');
+    if(taxForm) taxForm.addEventListener('submit', function (e) {
         e.preventDefault();
-        let formData = $(this).serialize();
-        let btn = $(this).find('button[type=submit]');
-        let output = $('#tax-verification-info');
+        let form = e.target;
+        let formData = new URLSearchParams(new FormData(form)).toString();
+        let btn = form.querySelector('button[type=submit]');
+        let output = document.getElementById('tax-verification-info');
 
-        $.ajax({
-            type: 'GET',
-            url: BASE_API_URL + '/verify/get_verify_tax',
-            data: formData,
-            beforeSend: function () {
-                btn.prop('disabled', true);
-                output.html('');
-            },
-            success: function (res) {
-                output.html(res);
-            },
-            complete: function () {
-                btn.prop('disabled', false);
-            },
-            error: function () {
+        btn.disabled = true;
+        output.innerHTML = '';
+        fetch(BASE_API_URL + '/verify/get_verify_tax?' + formData)
+            .then(function (res) { return res.text(); })
+            .then(function (res) {
+                output.innerHTML = res;
+            })
+            .catch(function () {
                 Swal.fire('Error', 'কিছু সমস্যা হয়েছে!', 'error');
-            }
-        });
+            })
+            .finally(function () {
+                btn.disabled = false;
+            });
     });
 
     // ===============================
@@ -692,10 +705,10 @@ jQuery(document).ready(function ($) {
     // ===============================
     let TypeApplication = ['nagorik', 'death', 'obibahito', 'punobibaho', 'ekoinam', 'sonaton', 'prottyon', 'nodibanga', 'character', 'vumihin', 'yearlyincome', 'protibondi', 'onumoti', 'voter', 'onapotti', 'rastakhonon', 'warish', 'family', 'trade', 'bibahito'];
 
-    $('#search').on('click', function () {
-        let searchData = $('#search-data').val();
-        let applicationType = $('#appType').val();
-        let Type = $('#type').val();
+    document.getElementById('search').addEventListener('click', function () {
+        let searchData = document.getElementById('search-data').value;
+        let applicationType = document.getElementById('appType').value;
+        let Type = document.getElementById('type').value;
 
         if (!searchData || !applicationType || !Type) {
             Swal.fire({
@@ -740,35 +753,35 @@ jQuery(document).ready(function ($) {
         // ------------------------------
         // Main API call with CSRF support
         // ------------------------------
-    $.ajax({
-        type: 'POST',
-        url: BASE_URL + '/api/check/existing/application',
-        contentType: 'application/json',
-        data: JSON.stringify({ searchData, applicationType, type: Type, call_from: 'web' }),
-        success: function(res) {
+    fetch(BASE_URL + '/api/check/existing/application', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ searchData, applicationType, type: Type, call_from: 'web' })
+    })
+    .then(function(res) { return res.json(); })
+    .then(function(res) {
+        handleResponse(res);
+    })
+    .catch(function() {
+        // Fallback: proxy route
+        var fd = new FormData();
+        fd.append('searchData', searchData);
+        fd.append('applicationType', applicationType);
+        fd.append('type', Type);
+        fd.append('call_from', 'web');
+        fetch(BASE_URL + '/api2/check/existing/application', { method: 'POST', body: fd })
+        .then(function(res) { return res.json(); })
+        .then(function(res) {
             handleResponse(res);
-        },
-        error: function() {
-            // ------------------------------
-            // Fallback: proxy route
-            // ------------------------------
-            $.ajax({
-                type: 'POST',
-                url: BASE_URL + '/api2/check/existing/application',
-                data: { searchData, applicationType, type: Type, call_from: 'web' },
-                success: function(res) {
-                    handleResponse(res);
-                },
-                error: function() {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'দুঃখিত...',
-                        text: 'দুঃখিত! সার্ভার উপলব্ধ নয়।',
-                        confirmButtonText: 'ঠিক আছে'
-                    });
-                }
+        })
+        .catch(function() {
+            Swal.fire({
+                icon: 'error',
+                title: 'দুঃখিত...',
+                text: 'দুঃখিত! সার্ভার উপলব্ধ নয়।',
+                confirmButtonText: 'ঠিক আছে'
             });
-        }
+        });
     });
 
         // SweetAlert helper
@@ -792,7 +805,21 @@ jQuery(document).ready(function ($) {
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', function() {
         navigator.serviceWorker.register('/sw.js')
-            .then(function(reg) { console.log('SW registered:', reg.scope); })
+            .then(function(reg) {
+                console.log('SW registered:', reg.scope);
+                // Auto-activate new service worker on update
+                reg.onupdatefound = function() {
+                    var newWorker = reg.installing;
+                    if (newWorker) {
+                        newWorker.onstatechange = function() {
+                            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                // New SW available — activate immediately
+                                newWorker.postMessage({ type: 'SKIP_WAITING' });
+                            }
+                        };
+                    }
+                };
+            })
             .catch(function(err) { console.log('SW registration failed:', err); });
     });
 }

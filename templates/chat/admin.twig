@@ -193,9 +193,98 @@
 {% endblock %}
 
 {% block scripts %}
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging-compat.js"></script>
 <script>
 (function() {
     'use strict';
+
+    // Initialize Firebase for FCM admin notifications
+    const firebaseConfig = {
+        apiKey: "AIzaSyBdNqFdh0DZ3Zz-iztHL2uGtoYZDLzhdyw",
+        authDomain: "digi-union-lgdhaka.firebaseapp.com",
+        projectId: "digi-union-lgdhaka",
+        storageBucket: "digi-union-lgdhaka.firebasestorage.app",
+        messagingSenderId: "599628365980",
+        appId: "1:599628365980:web:e90cefbce2c52ccf036d59"
+    };
+
+    if (!firebase.apps.length) {
+        firebase.initializeApp(firebaseConfig);
+    }
+    let adminMessaging = null;
+    try {
+        adminMessaging = firebase.messaging();
+    } catch (e) {
+        console.warn('[Admin Chat] Firebase messaging init deferred:', e.message);
+    }
+
+    let _adminFcmToken = null;
+
+    // Register admin FCM token for receiving visitor message notifications
+    async function registerAdminFcmToken() {
+        try {
+            if (!adminMessaging) {
+                try { adminMessaging = firebase.messaging(); } catch (e) { return; }
+            }
+            const permission = await Notification.requestPermission();
+            if (permission !== 'granted') return;
+
+            const token = await adminMessaging.getToken({
+                vapidKey: 'BEXZ3EoUslEvolRGpCkIN0BbDMPyEc0FsAej9yk9M_I9f-fIbI-yNS-r7IcnJ5MCzEjDZNVpymuX-3zmGzN8AHk'
+            });
+
+            if (token) {
+                const csrf = window.getCsrfToken ? window.getCsrfToken() : (document.querySelector('meta[name="csrf_token"]')?.content || '');
+                await fetch('/api/chat/push/fcm-admin-subscribe', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrf,
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify({ fcm_token: token })
+                });
+                _adminFcmToken = token;
+                console.log('[Admin Chat] FCM token registered');
+            }
+        } catch (err) {
+            console.error('[Admin Chat] FCM registration error:', err);
+        }
+    }
+
+    // Register on page load
+    if ('Notification' in window && Notification.permission === 'default') {
+        registerAdminFcmToken();
+    } else if (Notification.permission === 'granted') {
+        registerAdminFcmToken();
+    }
+
+    // Poll for token refresh every 6 hours
+    if (adminMessaging) {
+    setInterval(async () => {
+        try {
+            const newToken = await adminMessaging.getToken({
+                vapidKey: 'BEXZ3EoUslEvolRGpCkIN0BbDMPyEc0FsAej9yk9M_I9f-fIbI-yNS-r7IcnJ5MCzEjDZNVpymuX-3zmGzN8AHk'
+            });
+            if (newToken && newToken !== _adminFcmToken) {
+                _adminFcmToken = newToken;
+                const csrf = window.getCsrfToken ? window.getCsrfToken() : (document.querySelector('meta[name="csrf_token"]')?.content || '');
+                await fetch('/api/chat/push/fcm-admin-subscribe', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrf,
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify({ fcm_token: newToken })
+                });
+            }
+        } catch (err) {
+            console.error('[Admin Chat] Token refresh check error:', err);
+        }
+    }, 6 * 60 * 60 * 1000);
+    } // end if (adminMessaging)
 
     let activeSessionId = null;
     let pendingFile = null;
@@ -933,6 +1022,8 @@
             formData.append('file', fileToUpload);
             formData.append('session_id', activeSessionId);
             formData.append('message', text);
+            const csrfTokenEl = document.querySelector('input[name="csrf_token"]');
+            if (csrfTokenEl) formData.append('csrf_token', csrfTokenEl.value);
 
             try {
                 const res = await fetch('/api/chat/admin/upload', {
@@ -975,6 +1066,8 @@
                 } else {
                     alert('ফাইল পাঠানো যায়নি।');
                 }
+            } finally {
+                adminInput.focus();
             }
             isReplyPending = false;
             return;
@@ -1182,6 +1275,11 @@
             const data = await res.json();
             if (data.status === 'success') {
                 stopTypingCheck();
+                // Stop auto-refresh timer when conversation is closed
+                if (_activeConversationTimer) {
+                    clearInterval(_activeConversationTimer);
+                    _activeConversationTimer = null;
+                }
                 const closedIndex = openConversationIds.indexOf(activeSessionId);
                 if (closedIndex >= 0) openConversationIds.splice(closedIndex, 1);
                 activeSessionId = null;
@@ -1586,14 +1684,7 @@ bulkReadAllBtn.addEventListener('click', async function() {
     // Load canned responses on init
     loadCannedResponses();
 
-    // Send on Enter (Shift+Enter for new line) - Moved to autocomplete handler above
-    adminInput.addEventListener('keydown', function(e) {
-        if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-            sendReply();
-        }
-    });
-
+    // Send on Enter is handled by the autocomplete keydown listener above.
     adminSendBtn.addEventListener('click', sendReply);
 
     // Auto-refresh conversations every 10s (only first page, preserves pagination state)

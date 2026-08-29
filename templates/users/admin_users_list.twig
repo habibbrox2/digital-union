@@ -113,12 +113,25 @@
                         {% endfor %}
                     </select>
                 </div>
-                <div class="col-md-3">
+                {% if is_admin and unions is defined and unions|length > 0 %}
+                <div class="col-md-2">
+                    <label class="form-label fw-semibold small text-secondary mb-1">{{ 'ইউনিয়ন' }}</label>
+                    <select name="union_id" class="form-select input-enhanced rounded-pill">
+                        <option value="">{{ 'সব ইউনিয়ন' }}</option>
+                        {% for union in unions %}
+                        <option value="{{ union.union_id }}" {% if filters.union_id == union.union_id %}selected{% endif %}>
+                            {{ union.union_name_bn ?: union.union_name_en }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                {% endif %}
+                <div class="col-md-2">
                     <div class="d-flex gap-2">
                         <button type="submit" class="btn btn-primary rounded-pill px-4 flex-fill">
                             <i class="bi bi-search me-1"></i> অনুসন্ধান
                         </button>
-                        {% if filters.search or filters.status or filters.role %}
+                        {% if filters.search or filters.status or filters.role or filters.union_id %}
                         <a href="/users" class="btn btn-outline-secondary rounded-pill px-3">
                             <i class="bi bi-x-circle"></i>
                         </a>
@@ -268,7 +281,7 @@
                                 </div>
                                 <h6 class="fw-bold mt-3 mb-1">কোন ব্যবহারকারী পাওয়া যায়নি</h6>
                                 <p class="text-muted small mb-0">
-                                    {% if filters.search or filters.status or filters.role %}
+                                    {% if filters.search or filters.status or filters.role or filters.union_id %}
                                         অনুগ্রহ করে ভিন্ন ফিল্টার ব্যবহার করে অনুসন্ধান করুন
                                     {% else %}
                                         এখনও কোন ব্যবহারকারী যোগ করা হয়নি। উপরে "নতুন ব্যবহারকারী" বাটনে ক্লিক করুন।
@@ -287,7 +300,7 @@
     {% if pagination and pagination.total > 1 %}
     <div class="d-flex flex-wrap align-items-center justify-content-between mt-3 px-1 gap-2">
         <div class="d-flex align-items-center gap-2">
-            <a href="?page={{ pagination.current > 1 ? pagination.current - 1 : 1 }}&search={{ filters.search ?? '' }}&status={{ filters.status ?? '' }}&role={{ filters.role ?? '' }}"
+            <a href="?page={{ pagination.current > 1 ? pagination.current - 1 : 1 }}&search={{ filters.search ?? '' }}&status={{ filters.status ?? '' }}&role={{ filters.role ?? '' }}&union_id={{ filters.union_id ?? '' }}"
                class="btn btn-outline-primary btn-sm rounded-pill px-3 {{ pagination.current <= 1 ? 'disabled' : '' }}">
                 <i class="bi bi-chevron-left me-1"></i> পূর্ববর্তী
             </a>
@@ -296,7 +309,7 @@
                 {% set startPage = max(1, pagination.current - range) %}
                 {% set endPage = min(pagination.total, pagination.current + range) %}
                 {% if startPage > 1 %}
-                <a href="?page=1&search={{ filters.search ?? '' }}&status={{ filters.status ?? '' }}&role={{ filters.role ?? '' }}"
+                <a href="?page=1&search={{ filters.search ?? '' }}&status={{ filters.status ?? '' }}&role={{ filters.role ?? '' }}&union_id={{ filters.union_id ?? '' }}"
                    class="page-num-btn">1</a>
                 {% if startPage > 2 %}<span class="px-1 text-muted" style="font-size: 0.8rem; align-self: center;">&hellip;</span>{% endif %}
                 {% endif %}
@@ -304,17 +317,17 @@
                     {% if i == pagination.current %}
                     <span class="page-num-btn active">{{ i }}</span>
                     {% else %}
-                    <a href="?page={{ i }}&search={{ filters.search ?? '' }}&status={{ filters.status ?? '' }}&role={{ filters.role ?? '' }}"
+                    <a href="?page={{ i }}&search={{ filters.search ?? '' }}&status={{ filters.status ?? '' }}&role={{ filters.role ?? '' }}&union_id={{ filters.union_id ?? '' }}"
                        class="page-num-btn">{{ i }}</a>
                     {% endif %}
                 {% endfor %}
                 {% if endPage < pagination.total %}
                 {% if endPage < pagination.total - 1 %}<span class="px-1 text-muted" style="font-size: 0.8rem; align-self: center;">&hellip;</span>{% endif %}
-                <a href="?page={{ pagination.total }}&search={{ filters.search ?? '' }}&status={{ filters.status ?? '' }}&role={{ filters.role ?? '' }}"
+                <a href="?page={{ pagination.total }}&search={{ filters.search ?? '' }}&status={{ filters.status ?? '' }}&role={{ filters.role ?? '' }}&union_id={{ filters.union_id ?? '' }}"
                    class="page-num-btn">{{ pagination.total }}</a>
                 {% endif %}
             </div>
-            <a href="?page={{ pagination.current < pagination.total ? pagination.current + 1 : pagination.total }}&search={{ filters.search ?? '' }}&status={{ filters.status ?? '' }}&role={{ filters.role ?? '' }}"
+            <a href="?page={{ pagination.current < pagination.total ? pagination.current + 1 : pagination.total }}&search={{ filters.search ?? '' }}&status={{ filters.status ?? '' }}&role={{ filters.role ?? '' }}&union_id={{ filters.union_id ?? '' }}"
                class="btn btn-outline-primary btn-sm rounded-pill px-3 {{ pagination.current >= pagination.total ? 'disabled' : '' }}">
                 পরবর্তী <i class="bi bi-chevron-right ms-1"></i>
             </a>

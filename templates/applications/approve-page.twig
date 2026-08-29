@@ -438,7 +438,7 @@
                                        name="verification_date"
                                        class="form-control form-control-sm datepicker shadow-sm input-enhanced"
                                        placeholder="DD-MM-YYYY"
-                                       value="{{ approval.verification_date|default('now'|date('d-m-Y')) }}" 
+                                       value="{{ approval.verification_date|date('d-m-Y')|default('now'|date('d-m-Y')) }}" 
                                        required>
                             </div>
 
@@ -562,7 +562,7 @@
                                        name="approval_date"
                                        class="form-control form-control-sm datepicker shadow-sm input-enhanced"
                                        placeholder="DD-MM-YYYY"
-                                       value="{{ approval.approval_date|default('now'|date('d-m-Y')) }}" 
+                                       value="{{ approval.approval_date|date('d-m-Y')|default('now'|date('d-m-Y')) }}" 
                                        required>
                             </div>
 
@@ -3139,6 +3139,58 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log('Approver selection cleared');
     };
 });
+
+/* ================================================================
+   APPROVED MODAL - Datepicker close fix
+   When the approved modal closes, Bootstrap shifts focus which can
+   re-open datepickers on the main page.
+   ================================================================ */
+(function() {
+    var approvedModalIsClosing = false;
+
+    var approvedModalEl = document.getElementById('approvedModal');
+    if (!approvedModalEl) return;
+
+    // Destroy all page datepickers when modal starts hiding
+    approvedModalEl.addEventListener('hide.bs.modal', function() {
+        approvedModalIsClosing = true;
+        document.querySelectorAll('.datepicker').forEach(function(input) {
+            if (input.datepickerInstance) {
+                input.datepickerInstance.hideDatepicker();
+            }
+        });
+        // Blur any focused element to prevent focus-related re-opening
+        if (document.activeElement && document.activeElement.closest('#approvedModal')) {
+            document.activeElement.blur();
+        }
+    });
+
+    // Reset flag after modal is fully hidden
+    approvedModalEl.addEventListener('hidden.bs.modal', function() {
+        setTimeout(function() {
+            approvedModalIsClosing = false;
+        }, 300);
+    });
+
+    // Override showDatepicker on all page datepickers to respect closing flag
+    function patchDatepickers() {
+        document.querySelectorAll('.datepicker').forEach(function(input) {
+            if (input.datepickerInstance && !input._dpPatched) {
+                var origShow = input.datepickerInstance.showDatepicker.bind(input.datepickerInstance);
+                input.datepickerInstance.showDatepicker = function() {
+                    if (approvedModalIsClosing) return;
+                    origShow();
+                };
+                input._dpPatched = true;
+            }
+        });
+    }
+
+    // Patch datepickers after DOMContentLoaded (when they are initialized)
+    document.addEventListener('DOMContentLoaded', function() {
+        setTimeout(patchDatepickers, 100);
+    });
+})();
 
 // Sync business type fees (trade only)
 function syncBusinessTypeFees() {

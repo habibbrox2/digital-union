@@ -241,7 +241,7 @@
                                 </div>
                                 <div class="col-md-4">
                                     <label class="form-label small fw-semibold">নাম (বাংলা) <span class="text-danger">*</span></label>
-                                    <input type="text" id="modal_approver_name_bn" name="approver_name_bn" class="form-control form-control-sm" placeholder="বাংলা নাম লিখুন" autocomplete="name" required>
+                                    <input type="text" id="modal_approver_name_bn" name="approver_name_bn" class="form-control form-control-sm" placeholder="বাংলা নাম লিখুন" autocomplete="name">
                                 </div>
                                 <div class="col-md-4">
                                     <label class="form-label small fw-semibold">নাম (ইংরেজি)</label>
@@ -256,7 +256,12 @@
                                     <input type="text" id="modal_approval_date" name="approval_date" class="form-control form-control-sm datepicker" placeholder="দিন-মাস-বছর নির্বাচন করুন" value="{{ "now"|date("d-m-Y") }}" required>
                                 </div>
                                 <div class="col-md-4">
-                                    <label class="form-label small fw-semibold">ইস্যু সময় <span class="text-danger">*</span></label>
+                                    <div class="d-flex align-items-center justify-content-between gap-2 mb-1">
+                                        <label class="form-label small fw-semibold mb-0">ইস্যু সময় <span class="text-danger">*</span></label>
+                                        <span id="modalIssueTimeLive" class="badge bg-light text-dark border" title="Current time (live)">
+                                            --:--:--
+                                        </span>
+                                    </div>
                                     <input type="time" id="modal_issue_time" name="issue_time" step="1" class="form-control form-control-sm" placeholder="সময় নির্বাচন করুন" value="{{ "now"|date("H:i") }}" >
                                 </div>
                                 <div class="col-md-4">

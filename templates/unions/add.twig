@@ -121,21 +121,22 @@
 
 {% block scripts %}
 <script>
-$(document).ready(function () {
+document.addEventListener('DOMContentLoaded', function () {
     // AJAX form submission with spinner
-    $('#unionForm').on('submit', function (e) {
-        e.preventDefault();
+    var unionForm = document.getElementById('unionForm');
+    if (unionForm) {
+        unionForm.addEventListener('submit', function (e) {
+            e.preventDefault();
 
-        const $form = $(this);
-        const btn = $form.find('button[type="submit"]')[0];
-        const restoreBtn = btn ? btnLoading(btn, 'সংরক্ষণ করা হচ্ছে...') : function(){};
+            var btn = unionForm.querySelector('button[type="submit"]');
+            var restoreBtn = btn ? btnLoading(btn, 'সংরক্ষণ করা হচ্ছে...') : function(){};
 
-        $.ajax({
-            url: window.location.href,
-            method: 'POST',
-            data: $form.serialize(),
-            dataType: 'json',
-            success: function (res) {
+            fetch(window.location.href, {
+                method: 'POST',
+                body: new FormData(unionForm),
+            })
+            .then(function(resp) { return resp.json(); })
+            .then(function (res) {
                 restoreBtn();
                 if (res.alert && res.success === false) {
                     Swal.fire(res.alert.title, res.alert.message, res.alert.type);
@@ -143,148 +144,140 @@ $(document).ready(function () {
                 if (res.success && res.redirect) {
                     window.location.href = res.redirect;
                 }
-            },
-            error: function (xhr) {
+            })
+            .catch(function (error) {
                 restoreBtn();
-                let msg = 'সার্ভারের সাথে সংযোগ ব্যর্থ';
-                try {
-                    const res = JSON.parse(xhr.responseText);
-                    msg = res.alert?.message || msg;
-                } catch(e) {}
-                Swal.fire('ত্রুটি', msg, 'error');
-            }
+                var msg = 'সার্ভারের সাথে সংযোগ ব্যর্থ';
+                if (error && error.text) {
+                    error.text().then(function(text) {
+                        try { var res = JSON.parse(text); msg = (res.alert && res.alert.message) || msg; } catch(e) {}
+                        Swal.fire('ত্রুটি', msg, 'error');
+                    });
+                } else {
+                    Swal.fire('ত্রুটি', msg, 'error');
+                }
+            });
         });
-    });
+    }
 
     const selectedDivision = "";
     const selectedDistrict = "";
     const selectedUpazila  = "";
 
-    $.ajax({
-        url: '/geo/getdata',
-        method: 'POST',
-        data: { geo_order: 0, parent_geo_id: 1 },
-        dataType: 'json',
-        success: function (divisions) {
-            populateDropdown('#division_en', divisions, selectedDivision);
-
-            const divisionId = divisions.find(d => d.name_en === selectedDivision)?.id;
-            if (!divisionId) return;
-
-            $.ajax({
-                url: '/geo/getdata',
-                method: 'POST',
-                data: { geo_order: 1, parent_geo_id: divisionId },
-                dataType: 'json',
-                success: function (districts) {
-                    populateDropdown('#district_en', districts, selectedDistrict);
-
-                    const districtId = districts.find(d => d.name_en === selectedDistrict)?.id;
-                    if (!districtId) return;
-
-                    $.ajax({
-                        url: '/geo/getdata',
-                        method: 'POST',
-                        data: { geo_order: 2, parent_geo_id: districtId },
-                        dataType: 'json',
-                        success: function (upazilas) {
-                            populateDropdown('#upazila_en', upazilas, selectedUpazila);
-                        }
-                    });
-                }
+    var fd0 = new FormData(); fd0.append('geo_order', '0'); fd0.append('parent_geo_id', '1');
+    fetch('/geo/getdata', { method: 'POST', body: fd0 })
+    .then(function(r) { return r.json(); })
+    .then(function (divisions) {
+        populateDropdown('#division_en', divisions, selectedDivision);
+        var divisionIdObj = divisions.find(function(d) { return d.name_en === selectedDivision; });
+        var divisionId = divisionIdObj ? divisionIdObj.id : null;
+        if (!divisionId) return;
+        var fd1 = new FormData(); fd1.append('geo_order', '1'); fd1.append('parent_geo_id', divisionId);
+        fetch('/geo/getdata', { method: 'POST', body: fd1 })
+        .then(function(r) { return r.json(); })
+        .then(function (districts) {
+            populateDropdown('#district_en', districts, selectedDistrict);
+            var districtIdObj = districts.find(function(d) { return d.name_en === selectedDistrict; });
+            var districtId = districtIdObj ? districtIdObj.id : null;
+            if (!districtId) return;
+            var fd2 = new FormData(); fd2.append('geo_order', '2'); fd2.append('parent_geo_id', districtId);
+            fetch('/geo/getdata', { method: 'POST', body: fd2 })
+            .then(function(r) { return r.json(); })
+            .then(function (upazilas) {
+                populateDropdown('#upazila_en', upazilas, selectedUpazila);
             });
-        },
-        error: function (error) {
-            console.error('Error fetching divisions', error);
-        }
+        });
+    })
+    .catch(function (error) {
+        console.error('Error fetching divisions', error);
     });
 
-    $('#division_en').on('change', function () {
-        const divisionId = $(this).find('option:selected').data('geo-id');
-        const bnName = $(this).find('option:selected').data('name-bn');
-        $('#division_name_bn').val(bnName);
-        $('#division_id').val(divisionId || '');
+    document.getElementById('division_en').addEventListener('change', function () {
+        const divisionId = this.options[this.selectedIndex].getAttribute('data-geo-id');
+        const bnName = this.options[this.selectedIndex].getAttribute('data-name-bn');
+        document.getElementById('division_name_bn').value = bnName;
+        document.getElementById('division_id').value = divisionId || '';
 
         if (!divisionId) return;
 
-        $.ajax({
-            url: '/geo/getdata',
-            method: 'POST',
-            data: { geo_order: 1, parent_geo_id: divisionId },
-            dataType: 'json',
-            success: function (districts) {
-                populateDropdown('#district_en', districts, '');
-                resetDropdown('#upazila_en');
-                $('#district_name_bn').val('');
-                $('#district_id').val('');
-                $('#upazila_name_bn').val('');
-                $('#upazila_id').val('');
-            }
+        var fd = new FormData(); fd.append('geo_order', '1'); fd.append('parent_geo_id', divisionId);
+        fetch('/geo/getdata', { method: 'POST', body: fd })
+        .then(function(r) { return r.json(); })
+        .then(function (districts) {
+            populateDropdown('#district_en', districts, '');
+            resetDropdown('#upazila_en');
+            document.getElementById('district_name_bn').value = '';
+            document.getElementById('district_id').value = '';
+            document.getElementById('upazila_name_bn').value = '';
+            document.getElementById('upazila_id').value = '';
         });
     });
 
-    $('#district_en').on('change', function () {
-        const districtId = $(this).find('option:selected').data('geo-id');
-        const bnName = $(this).find('option:selected').data('name-bn');
-        $('#district_name_bn').val(bnName);
-        $('#district_id').val(districtId || '');
+    document.getElementById('district_en').addEventListener('change', function () {
+        const districtId = this.options[this.selectedIndex].getAttribute('data-geo-id');
+        const bnName = this.options[this.selectedIndex].getAttribute('data-name-bn');
+        document.getElementById('district_name_bn').value = bnName;
+        document.getElementById('district_id').value = districtId || '';
 
         if (!districtId) return;
 
-        $.ajax({
-            url: '/geo/getdata',
-            method: 'POST',
-            data: { geo_order: 2, parent_geo_id: districtId },
-            dataType: 'json',
-            success: function (upazilas) {
-                populateDropdown('#upazila_en', upazilas, '');
-                $('#upazila_name_bn').val('');
-                $('#upazila_id').val('');
-            }
+        var fd = new FormData(); fd.append('geo_order', '2'); fd.append('parent_geo_id', districtId);
+        fetch('/geo/getdata', { method: 'POST', body: fd })
+        .then(function(r) { return r.json(); })
+        .then(function (upazilas) {
+            populateDropdown('#upazila_en', upazilas, '');
+            document.getElementById('upazila_name_bn').value = '';
+            document.getElementById('upazila_id').value = '';
         });
     });
 
-    $('#upazila_en').on('change', function () {
-        const upazilaId = $(this).find('option:selected').data('geo-id');
-        const bnName = $(this).find('option:selected').data('name-bn');
-        $('#upazila_name_bn').val(bnName);
-        $('#upazila_id').val(upazilaId || '');
+    document.getElementById('upazila_en').addEventListener('change', function () {
+        const upazilaId = this.options[this.selectedIndex].getAttribute('data-geo-id');
+        const bnName = this.options[this.selectedIndex].getAttribute('data-name-bn');
+        document.getElementById('upazila_name_bn').value = bnName;
+        document.getElementById('upazila_id').value = upazilaId || '';
     });
 
     function populateDropdown(selector, data, selectedValue) {
-        $(selector).empty().append('<option value="">Select</option>');
-        $.each(data, function (index, item) {
+        var el = document.querySelector(selector);
+        if (!el) return;
+        el.innerHTML = '<option value="">Select</option>';
+        data.forEach(function (item) {
             const isSelected = selectedValue === item.name_en ? 'selected' : '';
-            $(selector).append(`
-                <option value="${item.name_en}"
-                        data-geo-id="${item.id}"
-                        data-name-bn="${item.name_bn}"
-                        data-geo-code="${String(item.geo_code).substr(2)}"
-                        ${isSelected}>
-                    ${item.name_bn} (${item.name_en})
-                </option>
-            `);
+            var opt = document.createElement('option');
+            opt.value = item.name_en;
+            opt.setAttribute('data-geo-id', item.id);
+            opt.setAttribute('data-name-bn', item.name_bn);
+            opt.setAttribute('data-geo-code', String(item.geo_code).substr(2));
+            if (isSelected) opt.selected = true;
+            opt.textContent = item.name_bn + ' (' + item.name_en + ')';
+            var el = document.querySelector(selector);
+            if (el) el.appendChild(opt);
         });
 
         if (selectedValue) {
-            $(selector).val(selectedValue);
+            var selEl = document.querySelector(selector);
+            if (selEl) selEl.value = selectedValue;
             const bnName = data.find(d => d.name_en === selectedValue)?.name_bn || '';
             const geoId = data.find(d => d.name_en === selectedValue)?.id || '';
             if (selector === '#division_en') {
-                $('#division_name_bn').val(bnName);
-                $('#division_id').val(geoId);
+                document.getElementById('division_name_bn').value = bnName;
+                document.getElementById('division_id').value = geoId;
             } else if (selector === '#district_en') {
-                $('#district_name_bn').val(bnName);
-                $('#district_id').val(geoId);
+                document.getElementById('district_name_bn').value = bnName;
+                document.getElementById('district_id').value = geoId;
             } else if (selector === '#upazila_en') {
-                $('#upazila_name_bn').val(bnName);
-                $('#upazila_id').val(geoId);
+                document.getElementById('upazila_name_bn').value = bnName;
+                document.getElementById('upazila_id').value = geoId;
             }
         }
     }
 
     function resetDropdown(selector) {
-        $(selector).empty().append('<option value="">Select</option>');
+        var el = document.querySelector(selector);
+        if (el) {
+            el.innerHTML = '<option value="">Select</option>';
+        }
     }
 });
 </script>
