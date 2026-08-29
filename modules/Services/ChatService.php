@@ -14,7 +14,7 @@ class ChatService
 
     // Bump this whenever chat tables/columns change so the one-time
     // migration (autoMigrate) re-runs on the next request after deploy.
-    private const SCHEMA_VERSION = '3';
+    private const SCHEMA_VERSION = '4';
 
     // In-process guard: migration must run at most once per PHP process,
     // and only once per deployment (tracked via a system_settings flag).
@@ -24,12 +24,15 @@ class ChatService
     public const SESSION_TIMEOUT = 300;
 
     private ChatModel $chatModel;
+    private mysqli $mysqli;
     private string $rateLimitSalt;
     private string $sessionSecret;
 
     public function __construct(ChatModel $chatModel)
     {
         $this->chatModel = $chatModel;
+        global $mysqli;
+        $this->mysqli = $mysqli;
         $configuredSecret = $_ENV['CHAT_SESSION_SECRET'] ?? getenv('CHAT_SESSION_SECRET') ?: '';
         if (!is_string($configuredSecret) || strlen($configuredSecret) < 32) {
             error_log('[Chat] CHAT_SESSION_SECRET is missing or too short; using a temporary deployment fallback. Configure a 32+ character secret before production.');
@@ -101,7 +104,7 @@ class ChatService
     /**
      * Get or create a chat session. New sessions get an HMAC signature automatically.
      */
-    public function getOrCreateSession(string $sessionId, ?string $visitorName = null): array
+    public function getOrCreateSession(string $sessionId, ?string $visitorName = null, ?int $unionId = null): array
     {
         $session = $this->chatModel->getSession($sessionId);
 
@@ -114,7 +117,7 @@ class ChatService
         }
 
         $visitorName = $visitorName ?? '';
-        $insertId = $this->chatModel->createSession($sessionId, $visitorName);
+        $insertId = $this->chatModel->createSession($sessionId, $visitorName, $unionId);
 
         // Two browser requests can initialize the same session concurrently.
         // Reuse the winner instead of returning an unusable session response.
@@ -616,11 +619,6 @@ class ChatService
     public function sendOfflineEmailNotification(string $visitorName, string $message, string $sessionId): void
     {
         try {
-            // Only send if no admin is currently online
-            if ($this->checkAdminOnline()) {
-                return;
-            }
-
             $adminEmails = $this->chatModel->getAdminEmails();
             if (empty($adminEmails)) {
                 return;

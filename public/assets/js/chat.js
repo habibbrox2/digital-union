@@ -38,6 +38,7 @@
     expiredNoticeKey: 'chat_session_expired_notice',
     nameKey: 'chat_visitor_name',
     unionKey: 'chat_visitor_union',
+    unionIdKey: 'chat_visitor_union_id',
     vapidKeyUsed: 'chat_push_vapid_key_used',
     apiBase: '/api/chat',
     pageSize: 50,
@@ -56,6 +57,7 @@
     sessionSig: localStorage.getItem(CONFIG.sigKey) || '',
     visitorName: localStorage.getItem(CONFIG.nameKey) || '',
     visitorUnion: localStorage.getItem(CONFIG.unionKey) || '',
+    unionId: parseInt(localStorage.getItem(CONFIG.unionIdKey) || '0', 10) || 0,
     isOpen: false,
     lastMessageTime: null,
     lastMessageId: 0,
@@ -420,12 +422,14 @@
     state.sessionEstablished = false;
     state.visitorName = '';
     state.visitorUnion = '';
+    state.unionId = 0;
 
     // Persist to localStorage
     localStorage.setItem(CONFIG.sessionKey, state.sessionId);
     localStorage.removeItem(CONFIG.sigKey);
     localStorage.removeItem(CONFIG.nameKey);
     localStorage.removeItem(CONFIG.unionKey);
+    localStorage.removeItem(CONFIG.unionIdKey);
   }
 
   function showRegistrationInput() {
@@ -546,6 +550,10 @@
   }
 
   async function sendMessage(text) {
+    if (!state.visitorName || !state.unionId) {
+      showRegistrationInput();
+      throw new Error('Visitor registration is required before sending a message');
+    }
     if (!state.sessionId) {
       state.sessionId = generateId();
       localStorage.setItem(CONFIG.sessionKey, state.sessionId);
@@ -557,6 +565,7 @@
       message: text,
       visitor_name: state.visitorName || null,
       visitor_union_name: state.visitorUnion || null,
+      union_id: state.unionId || 0,
     };
 
     const result = await apiCall('POST', '/send', payload);
@@ -639,6 +648,7 @@
     if (state.sessionSig) formData.append('session_sig', state.sessionSig);
     if (state.visitorName) formData.append('visitor_name', state.visitorName);
     if (state.visitorUnion) formData.append('visitor_union_name', state.visitorUnion);
+    formData.append('union_id', String(state.unionId || 0));
 
     const res = await fetch(CONFIG.apiBase + '/upload', {
       method: 'POST',
@@ -827,13 +837,15 @@
 
   // showRegistrationForm() removed — registration fields are now inline in the input area
 
-  async function transitionToChat(name, union) {
+  async function transitionToChat(name, union, unionId) {
     // Save to state & localStorage
     state.visitorName = name;
     state.visitorUnion = union || '';
+    state.unionId = parseInt(unionId || 0, 10) || 0;
     state.sessionExpired = false;
     localStorage.setItem(CONFIG.nameKey, name);
     if (union) localStorage.setItem(CONFIG.unionKey, union);
+    if (state.unionId) localStorage.setItem(CONFIG.unionIdKey, String(state.unionId));
 
     // Fade out registration input area
     if (els.regInputArea) {
@@ -1735,7 +1747,7 @@
       }
 
       // If visitor hasn't provided name yet, show welcome + registration in input area
-      if (!state.visitorName) {
+      if (!state.visitorName || !state.unionId) {
         showWelcome();
         showRegistrationInput();
         updateUnreadBadge(0);
@@ -1806,6 +1818,10 @@
   // Handle Send
   // ========================
   async function handleSend() {
+    if (!state.visitorName || !state.unionId) {
+      showRegistrationInput();
+      return;
+    }
     if (state.sessionExpired) {
       state.sessionExpired = false;
       const expiredNotice = els.messages && els.messages.querySelector('.chat-expired-notice');
@@ -2307,13 +2323,17 @@
     regNameInput.maxLength = 50;
     regNameInput.placeholder = '\u0986\u09aa\u09a8\u09be\u09b0 \u09a8\u09be\u09ae *';
 
-    const regUnionInput = document.createElement('input');
-    regUnionInput.type = 'text';
+    const regUnionInput = document.createElement('select');
     regUnionInput.className = 'chat-reg-field';
     regUnionInput.id = 'chatRegUnion';
     regUnionInput.setAttribute('aria-label', '\u0986\u09aa\u09a8\u09be\u09b0 \u0987\u0989\u09a8\u09bf\u09af\u09bc\u09a8\u09c7\u09b0 \u09a8\u09be\u09ae');
-    regUnionInput.maxLength = 100;
-    regUnionInput.placeholder = '\u0986\u09aa\u09a8\u09be\u09b0 \u0987\u0989\u09a8\u09bf\u09af\u09bc\u09a8\u09c7\u09b0 \u09a8\u09be\u09ae (\u0990\u099a\u09cd\u099b\u09bf\u0995)';
+    regUnionInput.required = true;
+    regUnionInput.disabled = true;
+    regUnionInput.innerHTML = '<option value="">ইউনিয়ন নির্বাচন করুন *</option>';
+    fetch('/api/chat/unions').then(function(r){return r.json();}).then(function(data){
+      (data.data || []).forEach(function(u){ var o=document.createElement('option'); o.value=u.union_id; o.textContent=u.union_name_bn || u.union_name_en; o.dataset.name=u.union_name_bn || u.union_name_en; regUnionInput.appendChild(o); });
+      regUnionInput.disabled = false;
+    }).catch(function(){ regUnionInput.innerHTML = '<option value="">Union list unavailable</option>'; });
 
     const regStartBtn = document.createElement('button');
     regStartBtn.className = 'chat-reg-start-btn';
@@ -2322,6 +2342,7 @@
     function submitRegistration() {
       let name = regNameInput.value.trim();
       let union = regUnionInput.value.trim();
+      let unionId = parseInt(regUnionInput.value || '0', 10);
       if (!name) {
         regNameInput.focus();
         regNameInput.style.borderColor = '#e74c3c';
@@ -2330,7 +2351,8 @@
         }, 2000);
         return;
       }
-      transitionToChat(name, union);
+      if (!unionId) { regUnionInput.focus(); return; }
+      transitionToChat(name, regUnionInput.options[regUnionInput.selectedIndex].dataset.name || '', unionId);
     }
 
     regStartBtn.addEventListener('click', submitRegistration);
@@ -2721,6 +2743,11 @@
       }
 
       // Wait for the service worker (already registered by the template)
+      if (!navigator.serviceWorker) {
+        console.log('[Chat] Service Worker API unavailable (insecure context?)');
+        _pushBlocked = true;
+        return;
+      }
       const reg = await navigator.serviceWorker.ready;
 
       // Get Firebase Messaging instance

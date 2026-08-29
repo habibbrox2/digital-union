@@ -58,10 +58,10 @@ class ChatModel
         $result = $this->mysqli->query("
             SELECT email, name_en, name_bn
             FROM users
-            WHERE role_id IN (1, 2)
+            WHERE role_id = 1
             AND email IS NOT NULL
             AND email != ''
-            AND is_active = 1
+            AND status = 'active' AND is_deleted = 0
         ");
         if (!$result) return [];
 
@@ -92,6 +92,7 @@ class ChatModel
                 `session_sig` VARCHAR(72) DEFAULT NULL,
                 `visitor_name` VARCHAR(100) DEFAULT NULL,
                 `visitor_union_name` VARCHAR(150) NOT NULL DEFAULT '',
+                `union_id` INT UNSIGNED DEFAULT NULL,
                 `visitor_location` VARCHAR(120) NOT NULL DEFAULT '',
                 `visitor_device` VARCHAR(40) NOT NULL DEFAULT '',
                 `visitor_browser` VARCHAR(100) NOT NULL DEFAULT '',
@@ -171,18 +172,36 @@ class ChatModel
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
         ");
         $this->mysqli->query("
-            CREATE TABLE IF NOT EXISTS `chat_push_subscriptions` (
+            CREATE TABLE IF NOT EXISTS `fcm_tokens` (
                 `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
                 `session_id` VARCHAR(64) NOT NULL,
-                `endpoint` VARCHAR(500) NOT NULL,
-                `p256dh` VARCHAR(200) NOT NULL DEFAULT '',
-                `auth` VARCHAR(200) NOT NULL DEFAULT '',
+                `fcm_token` VARCHAR(512) NOT NULL,
+                `session_sig` VARCHAR(128) DEFAULT NULL,
+                `user_type` ENUM('visitor','admin') NOT NULL DEFAULT 'visitor',
+                `user_id` INT UNSIGNED DEFAULT NULL,
+                `device_info` JSON DEFAULT NULL,
+                `revoked_at` DATETIME DEFAULT NULL,
                 `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
                 `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-                UNIQUE KEY `uk_endpoint` (`endpoint`),
-                KEY `idx_session` (`session_id`)
+                UNIQUE KEY `uk_fcm_token` (`fcm_token`),
+                KEY `idx_session` (`session_id`),
+                KEY `idx_user` (`user_type`, `user_id`, `revoked_at`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
         ");
+        $this->mysqli->query("CREATE TABLE IF NOT EXISTS `chat_notification_log` (
+            `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY, `message_id` INT UNSIGNED DEFAULT NULL,
+            `session_id` VARCHAR(64) NOT NULL, `recipient_user_id` INT UNSIGNED DEFAULT NULL,
+            `channel` VARCHAR(20) NOT NULL, `status` VARCHAR(20) NOT NULL,
+            `provider_response` TEXT DEFAULT NULL, `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            KEY `idx_message` (`message_id`), KEY `idx_recipient` (`recipient_user_id`), KEY `idx_created` (`created_at`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+        $this->mysqli->query("CREATE TABLE IF NOT EXISTS `chat_push_subscriptions` (
+            `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY, `session_id` VARCHAR(64) NOT NULL,
+            `endpoint` VARCHAR(500) NOT NULL, `p256dh` VARCHAR(200) NOT NULL DEFAULT '',
+            `auth` VARCHAR(200) NOT NULL DEFAULT '', `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            UNIQUE KEY `uk_endpoint` (`endpoint`), KEY `idx_session` (`session_id`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
     }
 
     /**
@@ -192,6 +211,9 @@ class ChatModel
     {
         $checks = [
             ['table' => 'chat_sessions', 'column' => 'visitor_union_name', 'sql' => "ALTER TABLE chat_sessions ADD COLUMN `visitor_union_name` VARCHAR(150) NOT NULL DEFAULT '' AFTER `visitor_name`"],
+            ['table' => 'chat_sessions', 'column' => 'union_id', 'sql' => "ALTER TABLE chat_sessions ADD COLUMN `union_id` INT UNSIGNED DEFAULT NULL AFTER `visitor_union_name`"],
+            ['table' => 'fcm_tokens', 'column' => 'revoked_at', 'sql' => "ALTER TABLE fcm_tokens ADD COLUMN `revoked_at` DATETIME DEFAULT NULL AFTER `device_info`"],
+            ['table' => 'fcm_tokens', 'column' => 'device_info', 'sql' => "ALTER TABLE fcm_tokens ADD COLUMN `device_info` JSON DEFAULT NULL AFTER `user_id`"],
             ['table' => 'chat_sessions', 'column' => 'visitor_typing_at', 'sql' => "ALTER TABLE chat_sessions ADD COLUMN `visitor_typing_at` DATETIME DEFAULT NULL AFTER `status`"],
             ['table' => 'chat_sessions', 'column' => 'admin_typing_at', 'sql' => "ALTER TABLE chat_sessions ADD COLUMN `admin_typing_at` DATETIME DEFAULT NULL AFTER `visitor_typing_at`"],
             ['table' => 'chat_messages', 'column' => 'auto_reply', 'sql' => "ALTER TABLE chat_messages ADD COLUMN `auto_reply` TINYINT UNSIGNED NOT NULL DEFAULT 0 AFTER `is_read`"],
@@ -269,7 +291,7 @@ class ChatModel
      */
     public function getSession(string $sessionId): ?array
     {
-        $stmt = $this->mysqli->prepare("SELECT id, session_id, session_sig, visitor_name, visitor_union_name, visitor_location, visitor_device, visitor_browser, visitor_os, visitor_user_agent, status, visitor_typing_at, admin_typing_at, last_auto_reply_at, created_at, updated_at FROM chat_sessions WHERE session_id = ?");
+        $stmt = $this->mysqli->prepare("SELECT id, session_id, session_sig, visitor_name, visitor_union_name, union_id, visitor_location, visitor_device, visitor_browser, visitor_os, visitor_user_agent, status, visitor_typing_at, admin_typing_at, last_auto_reply_at, created_at, updated_at FROM chat_sessions WHERE session_id = ?");
         $stmt->bind_param("s", $sessionId);
         $stmt->execute();
         $result = $stmt->get_result();
@@ -278,13 +300,27 @@ class ChatModel
         return $row ?: null;
     }
 
+    public function getUserScope(int $userId): ?array
+    {
+        $stmt=$this->mysqli->prepare("SELECT user_id, role_id, union_id, status, is_deleted FROM users WHERE user_id=? LIMIT 1");
+        $stmt->bind_param("i",$userId); $stmt->execute(); $row=$stmt->get_result()->fetch_assoc(); $stmt->close(); return $row ?: null;
+    }
+
+    public function canUserAccessSession(int $userId, string $sessionId): bool
+    {
+        $scope=$this->getUserScope($userId); if(!$scope || $scope['status'] !== 'active' || $scope['is_deleted']) return false;
+        if((int)$scope['role_id'] === 1) return true;
+        $stmt=$this->mysqli->prepare("SELECT 1 FROM chat_sessions WHERE session_id=? AND union_id=? LIMIT 1");
+        $stmt->bind_param("si",$sessionId,$scope['union_id']); $stmt->execute(); $ok=(bool)$stmt->get_result()->fetch_assoc(); $stmt->close(); return $ok;
+    }
+
     /**
      * Create a new session.
      */
-    public function createSession(string $sessionId, string $visitorName): int
+    public function createSession(string $sessionId, string $visitorName, ?int $unionId = null): int
     {
-        $stmt = $this->mysqli->prepare("INSERT INTO chat_sessions (session_id, visitor_name, status, created_at, updated_at) VALUES (?, ?, 'active', NOW(), NOW())");
-        $stmt->bind_param("ss", $sessionId, $visitorName);
+        $stmt = $this->mysqli->prepare("INSERT INTO chat_sessions (session_id, visitor_name, union_id, status, created_at, updated_at) VALUES (?, ?, ?, 'active', NOW(), NOW())");
+        $stmt->bind_param("ssi", $sessionId, $visitorName, $unionId);
         $stmt->execute();
         $id = $stmt->insert_id;
         $stmt->close();
@@ -333,6 +369,26 @@ class ChatModel
         $stmt->bind_param("ss", $unionName, $sessionId);
         $stmt->execute();
         $stmt->close();
+    }
+
+    public function setSessionUnion(string $sessionId, int $unionId, string $unionName = ''): void
+    {
+        $stmt = $this->mysqli->prepare("UPDATE chat_sessions SET union_id = ?, visitor_union_name = ?, updated_at = NOW() WHERE session_id = ? AND (union_id IS NULL OR union_id = ?)");
+        $stmt->bind_param("issi", $unionId, $unionName, $sessionId, $unionId);
+        $stmt->execute(); $stmt->close();
+    }
+
+    public function getUnion(int $unionId): ?array
+    {
+        $stmt = $this->mysqli->prepare("SELECT union_id, union_name_bn, union_name_en FROM unions WHERE union_id = ? LIMIT 1");
+        $stmt->bind_param("i", $unionId); $stmt->execute(); $row = $stmt->get_result()->fetch_assoc(); $stmt->close();
+        return $row ?: null;
+    }
+
+    public function getPublicUnions(): array
+    {
+        $result = $this->mysqli->query("SELECT union_id, union_name_bn, union_name_en FROM unions ORDER BY union_name_bn, union_name_en");
+        $rows = []; if ($result) { while ($row = $result->fetch_assoc()) $rows[] = $row; $result->free(); } return $rows;
     }
 
     /** Store privacy-safe visitor metadata; raw IP/GPS is never persisted. */
@@ -684,7 +740,7 @@ class ChatModel
     /**
      * Get admin conversation list with last message and unread counts.
      */
-    public function getAdminConversations(int $offset, int $limit): array
+    public function getAdminConversations(int $offset, int $limit, ?int $unionId = null): array
     {
         $fetchLimit = $limit + 1;
         $sql = "
@@ -710,13 +766,14 @@ class ChatModel
                   AND cmv2.is_read = 0
                 GROUP BY cmv2.session_id
             ) cmv ON cmv.session_id = cs.session_id
+            WHERE (? IS NULL OR cs.union_id = ?)
             ORDER BY
                 CASE WHEN cs.status = 'active' THEN 0 ELSE 1 END,
                 COALESCE(cm.created_at, cs.created_at) DESC
             LIMIT ? OFFSET ?
         ";
         $stmt = $this->mysqli->prepare($sql);
-        $stmt->bind_param("ii", $fetchLimit, $offset);
+        $stmt->bind_param("iiii", $unionId, $unionId, $fetchLimit, $offset);
         $stmt->execute();
         $result = $stmt->get_result();
 
@@ -1162,12 +1219,11 @@ class ChatModel
     /**
      * Count total unread visitor messages across all sessions.
      */
-    public function countAllUnreadVisitorMessages(): int
+    public function countAllUnreadVisitorMessages(?int $unionId = null): int
     {
-        $result = $this->mysqli->query("SELECT COUNT(*) as cnt FROM chat_messages WHERE sender_type = 'visitor' AND admin_id IS NULL AND auto_reply = 0 AND is_read = 0");
-        if (!$result) return 0;
-        $row = $result->fetch_assoc();
-        $result->free();
+        if ($unionId === null) $result = $this->mysqli->query("SELECT COUNT(*) as cnt FROM chat_messages WHERE sender_type = 'visitor' AND admin_id IS NULL AND auto_reply = 0 AND is_read = 0");
+        else { $stmt=$this->mysqli->prepare("SELECT COUNT(*) as cnt FROM chat_messages cm JOIN chat_sessions cs ON cs.session_id=cm.session_id WHERE cm.sender_type='visitor' AND cm.admin_id IS NULL AND cm.auto_reply=0 AND cm.is_read=0 AND cs.union_id=?"); $stmt->bind_param('i',$unionId); $stmt->execute(); $result=$stmt->get_result(); }
+        if (!$result) return 0; $row = $result->fetch_assoc(); $result->free(); if (isset($stmt)) $stmt->close();
         return (int)($row['cnt'] ?? 0);
     }
 
@@ -1175,19 +1231,19 @@ class ChatModel
      * Get the latest unread visitor message with visitor name.
      * Used by admin notification system.
      */
-    public function getLatestUnreadVisitorMessage(): ?array
+    public function getLatestUnreadVisitorMessage(?int $unionId = null): ?array
     {
-        $result = $this->mysqli->query("
+        $sql = "
             SELECT cm.id, cm.message, cm.message_type, cm.session_id, cm.created_at, cs.visitor_name
             FROM chat_messages cm
             LEFT JOIN chat_sessions cs ON cm.session_id = cs.session_id
             WHERE cm.sender_type = 'visitor'
               AND cm.admin_id IS NULL
               AND cm.auto_reply = 0
-              AND cm.is_read = 0
+              AND cm.is_read = 0" . ($unionId === null ? '' : ' AND cs.union_id = ' . (int)$unionId) . "
             ORDER BY cm.created_at DESC, cm.id DESC
             LIMIT 1
-        ");
+        "; $result = $this->mysqli->query($sql);
         if (!$result) return null;
         $row = $result->fetch_assoc();
         $result->free();
@@ -1366,7 +1422,7 @@ class ChatModel
      */
     public function getFcmTokensBySession(string $sessionId): array
     {
-        $stmt = $this->mysqli->prepare("SELECT id, fcm_token, user_type FROM fcm_tokens WHERE session_id = ? AND fcm_token != ''");
+        $stmt = $this->mysqli->prepare("SELECT id, fcm_token, user_type FROM fcm_tokens WHERE session_id = ? AND revoked_at IS NULL AND fcm_token != ''");
         $stmt->bind_param("s", $sessionId);
         $stmt->execute();
         $result = $stmt->get_result();
@@ -1383,7 +1439,7 @@ class ChatModel
      */
     public function getAllAdminFcmTokens(): array
     {
-        $stmt = $this->mysqli->prepare("SELECT id, fcm_token, session_id FROM fcm_tokens WHERE user_type = 'admin' AND fcm_token != '' ORDER BY updated_at DESC");
+        $stmt = $this->mysqli->prepare("SELECT t.id, t.fcm_token, t.session_id, t.user_id FROM fcm_tokens t JOIN users u ON u.user_id=t.user_id WHERE t.user_type = 'admin' AND t.revoked_at IS NULL AND t.fcm_token != '' AND u.role_id=1 AND u.status='active' AND u.is_deleted=0 ORDER BY t.updated_at DESC");
         $stmt->execute();
         $result = $stmt->get_result();
         $rows = [];
@@ -1393,6 +1449,28 @@ class ChatModel
         $stmt->close();
         return $rows;
     }
+
+    public function getFcmTokensForUnion(int $unionId): array
+    {
+        $stmt = $this->mysqli->prepare("SELECT t.id, t.fcm_token, t.user_id FROM fcm_tokens t JOIN users u ON u.user_id=t.user_id WHERE t.user_type='admin' AND t.revoked_at IS NULL AND u.status='active' AND u.is_deleted=0 AND u.union_id=? AND u.role_id IN (2,3) AND t.fcm_token!=''");
+        $stmt->bind_param("i", $unionId); $stmt->execute(); $result=$stmt->get_result(); $rows=[]; while($row=$result->fetch_assoc()) $rows[]=$row; $stmt->close(); return $rows;
+    }
+
+    public function saveDeviceToken(string $sessionId, string $token, string $deviceInfo, ?int $userId): void
+    {
+        $type = 'admin'; $stmt=$this->mysqli->prepare("INSERT INTO fcm_tokens (session_id,fcm_token,user_type,user_id,device_info,revoked_at,created_at,updated_at) VALUES (?,?,?,?,?,NULL,NOW(),NOW()) ON DUPLICATE KEY UPDATE session_id=VALUES(session_id),user_type='admin',user_id=VALUES(user_id),device_info=VALUES(device_info),revoked_at=NULL,updated_at=NOW()");
+        $stmt->bind_param("sssis", $sessionId,$token,$type,$userId,$deviceInfo); $stmt->execute(); $stmt->close();
+    }
+
+    public function getUserDevices(int $userId): array
+    {
+        $stmt=$this->mysqli->prepare("SELECT id,fcm_token,device_info,created_at,updated_at,revoked_at FROM fcm_tokens WHERE user_type='admin' AND user_id=? AND revoked_at IS NULL ORDER BY updated_at DESC");
+        $stmt->bind_param("i",$userId); $stmt->execute(); $result=$stmt->get_result(); $rows=[]; while($row=$result->fetch_assoc()){ $row['device_info']=json_decode($row['device_info'] ?: '{}',true) ?: []; unset($row['fcm_token']); $rows[]=$row; } $stmt->close(); return $rows;
+    }
+
+    public function revokeDevice(int $userId, int $deviceId): void { $stmt=$this->mysqli->prepare("UPDATE fcm_tokens SET revoked_at=NOW() WHERE id=? AND user_id=? AND user_type='admin'"); $stmt->bind_param("ii",$deviceId,$userId); $stmt->execute(); $stmt->close(); }
+    public function revokeAllDevices(int $userId): void { $stmt=$this->mysqli->prepare("UPDATE fcm_tokens SET revoked_at=NOW() WHERE user_id=? AND user_type='admin' AND revoked_at IS NULL"); $stmt->bind_param("i",$userId); $stmt->execute(); $stmt->close(); }
+    public function logNotification(?int $messageId, string $sessionId, ?int $recipientId, string $channel, string $status, string $response=''): void { $stmt=$this->mysqli->prepare("INSERT INTO chat_notification_log (message_id,session_id,recipient_user_id,channel,status,provider_response) VALUES (?,?,?,?,?,?)"); $stmt->bind_param("isiiss",$messageId,$sessionId,$recipientId,$channel,$status,$response); $stmt->execute(); $stmt->close(); }
 
     /**
      * Delete an FCM token.

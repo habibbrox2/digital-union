@@ -26,6 +26,9 @@
                 <i class="fas fa-sync-alt"></i> রিফ্রেশ
                 <span class="admin-refresh-badge" id="refreshUnreadBadge" style="display:none;">0</span>
             </button>
+            <button type="button" class="admin-refresh-btn" id="enableAdminPush" title="Push notification চালু করুন">
+                <i class="fas fa-bell"></i> Push চালু করুন
+            </button>
         </div>
     </div>
 
@@ -213,22 +216,20 @@
         firebase.initializeApp(firebaseConfig);
     }
     let adminMessaging = null;
-    try {
-        adminMessaging = firebase.messaging();
-    } catch (e) {
-        console.warn('[Admin Chat] Firebase messaging init deferred:', e.message);
-    }
 
     let _adminFcmToken = null;
 
     // Register admin FCM token for receiving visitor message notifications
     async function registerAdminFcmToken() {
         try {
-            if (!adminMessaging) {
-                try { adminMessaging = firebase.messaging(); } catch (e) { return; }
+            if (!navigator.serviceWorker) {
+                console.log('[Admin Chat] Service Worker API unavailable (insecure context?)');
+                return;
             }
             const permission = await Notification.requestPermission();
-            if (permission !== 'granted') return;
+            if (permission !== 'granted') { updatePushButton(); return; }
+            await navigator.serviceWorker.ready;
+            if (!adminMessaging) adminMessaging = firebase.messaging();
 
             const token = await adminMessaging.getToken({
                 vapidKey: 'BEXZ3EoUslEvolRGpCkIN0BbDMPyEc0FsAej9yk9M_I9f-fIbI-yNS-r7IcnJ5MCzEjDZNVpymuX-3zmGzN8AHk'
@@ -243,15 +244,34 @@
                         'X-CSRF-TOKEN': csrf,
                         'X-Requested-With': 'XMLHttpRequest'
                     },
-                    body: JSON.stringify({ fcm_token: token })
+                    body: JSON.stringify({ fcm_token: token, device_info: { browser: navigator.userAgent, platform: navigator.platform } })
                 });
                 _adminFcmToken = token;
                 console.log('[Admin Chat] FCM token registered');
             }
         } catch (err) {
             console.error('[Admin Chat] FCM registration error:', err);
+            updatePushButton('error');
         }
     }
+
+    function updatePushButton(state) {
+        const button = document.getElementById('enableAdminPush');
+        if (!button || !('Notification' in window)) return;
+        if (Notification.permission === 'granted' && state !== 'error') {
+            button.innerHTML = '<i class="fas fa-check-circle"></i> Push চালু আছে';
+            button.disabled = true;
+        } else if (Notification.permission === 'denied') {
+            button.innerHTML = '<i class="fas fa-ban"></i> Browser settings থেকে চালু করুন';
+            button.disabled = true;
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        const button = document.getElementById('enableAdminPush');
+        if (button) button.addEventListener('click', function () { registerAdminFcmToken(); });
+        updatePushButton();
+    });
 
     // Register on page load
     if ('Notification' in window && Notification.permission === 'default') {
@@ -261,9 +281,10 @@
     }
 
     // Poll for token refresh every 6 hours
-    if (adminMessaging) {
     setInterval(async () => {
         try {
+            if (!navigator.serviceWorker) return;
+            if (!adminMessaging) adminMessaging = firebase.messaging();
             const newToken = await adminMessaging.getToken({
                 vapidKey: 'BEXZ3EoUslEvolRGpCkIN0BbDMPyEc0FsAej9yk9M_I9f-fIbI-yNS-r7IcnJ5MCzEjDZNVpymuX-3zmGzN8AHk'
             });
@@ -277,14 +298,13 @@
                         'X-CSRF-TOKEN': csrf,
                         'X-Requested-With': 'XMLHttpRequest'
                     },
-                    body: JSON.stringify({ fcm_token: newToken })
+                    body: JSON.stringify({ fcm_token: newToken, device_info: { browser: navigator.userAgent, platform: navigator.platform } })
                 });
             }
         } catch (err) {
             console.error('[Admin Chat] Token refresh check error:', err);
         }
     }, 6 * 60 * 60 * 1000);
-    } // end if (adminMessaging)
 
     let activeSessionId = null;
     let pendingFile = null;

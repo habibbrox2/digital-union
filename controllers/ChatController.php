@@ -45,6 +45,7 @@ $router->post('/api/chat/send', function () use ($chatService, $chatModel, $push
     $message = ChatService::sanitizeMessage($input['message'] ?? '');
     $visitorName = trim($input['visitor_name'] ?? '');
     $visitorUnionName = trim($input['visitor_union_name'] ?? '');
+    $unionId = (int)($input['union_id'] ?? 0);
 
     if (empty($sessionId)) {
         ChatService::jsonResponse(['status' => 'error', 'message' => 'Session ID is required'], 400);
@@ -54,6 +55,9 @@ $router->post('/api/chat/send', function () use ($chatService, $chatModel, $push
     }
     if (empty($message)) {
         ChatService::jsonResponse(['status' => 'error', 'message' => 'Message is required'], 400);
+    }
+    if ($unionId <= 0 || !$chatModel->getUnion($unionId)) {
+        ChatService::jsonResponse(['status' => 'error', 'message' => 'Valid union selection is required'], 400);
     }
     if (mb_strlen($message) > 500) {
         ChatService::jsonResponse(['status' => 'error', 'message' => 'Message too long (max 500 characters)'], 400);
@@ -73,7 +77,10 @@ $router->post('/api/chat/send', function () use ($chatService, $chatModel, $push
     }
 
     // Get or create session (new sessions get HMAC signature automatically)
-    $session = $chatService->getOrCreateSession( $sessionId, $visitorName);
+    $session = $chatService->getOrCreateSession( $sessionId, $visitorName, $unionId);
+    if (!empty($session['union_id']) && (int)$session['union_id'] !== $unionId) {
+        ChatService::jsonResponse(['status' => 'error', 'message' => 'Union cannot be changed for an existing conversation'], 409);
+    }
     $sessionSig = $session['session_sig'] ?? '';
     $chatModel->updateVisitorMetadata($sessionId, ChatService::getVisitorMetadata());
 
@@ -98,6 +105,7 @@ $router->post('/api/chat/send', function () use ($chatService, $chatModel, $push
     if (!empty($visitorUnionName)) {
         $chatModel->updateUnionName($sessionId, $visitorUnionName);
     }
+    $chatModel->setSessionUnion($sessionId, $unionId, $visitorUnionName);
 
     $messageId = $chatModel->insertMessage($sessionId, $message, 'visitor');
 
@@ -140,9 +148,12 @@ $router->post('/api/chat/send', function () use ($chatService, $chatModel, $push
         $visitorDisplayName . ': ' . mb_substr($message, 0, 100),
         ['session_id' => $sessionId, 'url' => '/chat/admin?session=' . $sessionId]
     );
+    $pushService->sendToUnion($unionId, 'নতুন ইউনিয়ন চ্যাট মেসেজ', ['session_id' => $sessionId, 'url' => '/chat/admin?session_id=' . $sessionId]);
+    $chatModel->logNotification($messageId, $sessionId, null, 'push', 'queued');
 
     // Send email notification to admins when no admin is online
     $chatService->sendOfflineEmailNotification($visitorDisplayName, $message, $sessionId);
+    $chatModel->logNotification($messageId, $sessionId, null, 'email', 'queued');
 
     ChatService::jsonResponse($response);
 });
@@ -163,9 +174,13 @@ $router->post('/api/chat/upload', function () use ($chatService, $chatModel, $pu
     $providedSig = $_POST['session_sig'] ?? '';
     $visitorName = trim($_POST['visitor_name'] ?? '');
     $visitorUnionName = trim($_POST['visitor_union_name'] ?? '');
+    $unionId = (int)($_POST['union_id'] ?? 0);
 
     if (empty($sessionId)) {
         ChatService::jsonResponse(['status' => 'error', 'message' => 'Session ID is required'], 400);
+    }
+    if ($unionId <= 0 || !$chatModel->getUnion($unionId)) {
+        ChatService::jsonResponse(['status' => 'error', 'message' => 'Valid union selection is required'], 400);
     }
 
     if (empty($_FILES['file']) || ($_FILES['file']['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
@@ -185,7 +200,10 @@ $router->post('/api/chat/upload', function () use ($chatService, $chatModel, $pu
     }
 
     // Create or get session (new sessions get an HMAC signature automatically)
-    $session = $chatService->getOrCreateSession( $sessionId, $visitorName);
+    $session = $chatService->getOrCreateSession( $sessionId, $visitorName, $unionId);
+    if (!empty($session['union_id']) && (int)$session['union_id'] !== $unionId) {
+        ChatService::jsonResponse(['status' => 'error', 'message' => 'Union cannot be changed for an existing conversation'], 409);
+    }
 
     // Existing sessions must prove ownership; never rotate a signature on bad input.
     if ($preExisting && !$chatService->verifySessionSig( $sessionId, $providedSig)) {
@@ -219,6 +237,7 @@ $router->post('/api/chat/upload', function () use ($chatService, $chatModel, $pu
     if (!empty($visitorUnionName)) {
         $chatModel->updateUnionName($sessionId, $visitorUnionName);
     }
+    $chatModel->setSessionUnion($sessionId, $unionId, $visitorUnionName);
     $fileData = $uploadResult['data'];
     $messageText = '[ফাইল] ' . ChatService::sanitizeMessage($fileData['file_name']);
 
@@ -237,9 +256,12 @@ $router->post('/api/chat/upload', function () use ($chatService, $chatModel, $pu
         $visitorDisplayName . ' একটি ফাইল পাঠিয়েছে',
         ['session_id' => $sessionId, 'url' => '/chat/admin?session=' . $sessionId]
     );
+    $pushService->sendToUnion($unionId, 'নতুন ইউনিয়ন চ্যাট ফাইল', ['session_id' => $sessionId, 'url' => '/chat/admin?session_id=' . $sessionId]);
+    $chatModel->logNotification($messageId, $sessionId, null, 'push', 'queued');
 
     // Send email notification to admins when no admin is online
     $chatService->sendOfflineEmailNotification($visitorDisplayName, $messageText, $sessionId);
+    $chatModel->logNotification($messageId, $sessionId, null, 'email', 'queued');
 
     ChatService::jsonResponse([
         'status' => 'success',
@@ -602,6 +624,10 @@ $router->post('/api/chat/push/fcm-admin-subscribe', function () use ($authServic
     $authService->requireLogin();
     $input = json_decode(file_get_contents('php://input'), true) ?? [];
     $fcmToken = trim((string)($input['fcm_token'] ?? ''));
+    $deviceInfo = json_encode($input['device_info'] ?? [
+        'browser' => $_SERVER['HTTP_USER_AGENT'] ?? 'Unknown browser',
+        'platform' => $_SERVER['HTTP_SEC_CH_UA_PLATFORM'] ?? 'Unknown platform',
+    ], JSON_UNESCAPED_UNICODE);
     $adminId = (int)($_SESSION['user_id'] ?? 0);
 
     if (empty($fcmToken) || strlen($fcmToken) < 10) {
@@ -610,11 +636,32 @@ $router->post('/api/chat/push/fcm-admin-subscribe', function () use ($authServic
 
     // Use a stable session ID for admin token management
     $adminSessionId = 'admin_' . $adminId;
-    $saved = $pushService->subscribeFcm($adminSessionId, $fcmToken, '', 'admin', $adminId);
+    $chatModel->saveDeviceToken($adminSessionId, $fcmToken, $deviceInfo, $adminId);
+    $saved = true;
     if (!$saved) {
         ChatService::jsonResponse(['status' => 'error', 'message' => 'Invalid FCM token'], 400);
     }
     ChatService::jsonResponse(['status' => 'success', 'message' => 'Admin FCM subscribed']);
+});
+
+$router->get('/api/chat/unions', function () use ($chatModel) {
+    ChatService::jsonResponse(['status' => 'success', 'data' => $chatModel->getPublicUnions()], 200, 'public, max-age=300');
+});
+
+$router->get('/api/chat/devices', function () use ($authService, $chatModel) {
+    $authService->requireLogin();
+    $userId = (int)$authService->getCurrentUserId();
+    ChatService::jsonResponse(['status' => 'success', 'data' => $chatModel->getUserDevices($userId)]);
+});
+
+$router->post('/api/chat/devices/revoke', function () use ($authService, $chatModel) {
+    $authService->requireLogin(); $input=json_decode(file_get_contents('php://input'),true)??[];
+    $deviceId=(int)($input['device_id']??0); if($deviceId<=0) ChatService::jsonResponse(['status'=>'error','message'=>'Device ID is required'],400);
+    $chatModel->revokeDevice((int)$authService->getCurrentUserId(),$deviceId); ChatService::jsonResponse(['status'=>'success']);
+});
+
+$router->post('/api/chat/devices/revoke-all', function () use ($authService, $chatModel) {
+    $authService->requireLogin(); $chatModel->revokeAllDevices((int)$authService->getCurrentUserId()); ChatService::jsonResponse(['status'=>'success']);
 });
 
 /**
@@ -662,8 +709,9 @@ $router->get('/api/chat/admin/conversations', function () use ($chatService, $ch
 
     $offset = max(0, (int)($_GET['offset'] ?? 0));
     $limit = max(1, min((int)($_GET['limit'] ?? 50), 100));
-
-    $result = $chatModel->getAdminConversations($offset, $limit);
+    $scope = $chatModel->getUserScope((int)$authService->getCurrentUserId());
+    $unionId = ($scope && (int)$scope['role_id'] !== 1) ? (int)$scope['union_id'] : null;
+    $result = $chatModel->getAdminConversations($offset, $limit, $unionId);
 
     ChatService::jsonResponse(['status' => 'success', 'data' => $result['data'], 'has_more' => $result['has_more']], 200, 'no-cache, private');
 });
@@ -673,6 +721,9 @@ $router->get('/api/chat/admin/conversations', function () use ($chatService, $ch
  */
 $router->get('/api/chat/admin/conversations/{session_id}', function ($sessionId) use ($chatService, $chatModel, $authService) {
     $authService->ensureCan('manage_chat');
+    if (!$chatModel->canUserAccessSession((int)$authService->getCurrentUserId(), $sessionId)) {
+        ChatService::jsonResponse(['status' => 'error', 'message' => 'Conversation access denied'], 403);
+    }
 
     $chatModel->markMessagesDelivered($sessionId, 'visitor');
     // Opening the admin conversation is the admin's seen/read action.
@@ -700,6 +751,12 @@ $router->post('/api/chat/admin/reply', function () use ($chatService, $mysqli, $
     }
     if (!$chatModel->sessionExists($sessionId)) {
         ChatService::jsonResponse(['status' => 'error', 'message' => 'Conversation not found'], 404);
+    }
+    if (!$chatModel->canUserAccessSession((int)$authService->getCurrentUserId(), $sessionId)) {
+        ChatService::jsonResponse(['status' => 'error', 'message' => 'Conversation access denied'], 403);
+    }
+    if (!$chatModel->canUserAccessSession((int)$authService->getCurrentUserId(), $sessionId)) {
+        ChatService::jsonResponse(['status' => 'error', 'message' => 'Conversation access denied'], 403);
     }
     if (mb_strlen($message) > 1000) {
         ChatService::jsonResponse(['status' => 'error', 'message' => 'Message too long (max 1000 characters)'], 400);
@@ -936,8 +993,10 @@ $router->get('/api/chat/admin/unread/total', function () use ($chatModel, $authS
     try {
         $authService->ensureCan('manage_chat');
 
-    // Live chat unread count
-    $liveCount = $chatModel->countAllUnreadVisitorMessages();
+    $scope = $chatModel->getUserScope((int)$authService->getCurrentUserId());
+    $unionId = ($scope && (int)$scope['role_id'] !== 1) ? (int)$scope['union_id'] : null;
+    // Live chat unread count, limited to the officer's union.
+    $liveCount = $chatModel->countAllUnreadVisitorMessages($unionId);
 
     // Offline message unread count
     $offlineCount = $chatService->countOfflineMessages(true);
@@ -946,7 +1005,7 @@ $router->get('/api/chat/admin/unread/total', function () use ($chatModel, $authS
     $total = $liveCount + $offlineCount;
 
     // Get latest unread live chat message info for the notification preview
-    $latestMsg = $chatModel->getLatestUnreadVisitorMessage();
+    $latestMsg = $chatModel->getLatestUnreadVisitorMessage($unionId);
 
     // Get latest unread offline message info for the notification preview
     $latestOfflineMsg = $chatService->getLatestOfflineMessage();
@@ -1139,6 +1198,7 @@ $router->get('/settings/chat', function () use ($chatModel, $twig, $authService)
         'title' => 'চ্যাট সেটিংস',
         'header_title' => '💬 চ্যাট উইজেট সেটিংস',
         'settings' => $settings,
+        'devices' => $chatModel->getUserDevices((int)$authService->getCurrentUserId()),
     ]);
 });
 

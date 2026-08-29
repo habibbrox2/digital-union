@@ -39,6 +39,26 @@ class AuthService
         return $_SESSION['user_id'] ?? null;
     }
 
+    public function requireLogin(): void
+    {
+        $this->getCurrentUserId();
+        if (empty($_SESSION['user_id'])) {
+            http_response_code(401);
+            header('Content-Type: application/json; charset=utf-8');
+            echo json_encode(['status'=>'error','message'=>'Authentication required'], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+    }
+
+    public function getUserData(bool $requireLogin = true): ?array
+    {
+        if ($requireLogin) $this->requireLogin();
+        $id = (int)($_SESSION['user_id'] ?? 0);
+        if (!$id) return null;
+        $stmt=$this->mysqli->prepare("SELECT u.user_id,u.union_id,u.username,u.email,u.name_bn,u.name_en,u.phone_number,u.role_id,u.designation,u.status,u.is_deleted,r.role_name FROM users u LEFT JOIN roles r ON r.role_id=u.role_id WHERE u.user_id=? AND u.is_deleted=0 LIMIT 1");
+        $stmt->bind_param("i",$id); $stmt->execute(); $row=$stmt->get_result()->fetch_assoc(); $stmt->close(); return $row ?: null;
+    }
+
     /**
      * Ensure the current user has the given permission (with optional module scope).
      * Redirects to login if not authenticated, exits with 403 if permission denied.

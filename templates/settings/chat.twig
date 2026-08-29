@@ -327,7 +327,31 @@
                 <i class="fas fa-save me-2"></i>সেটিংস সংরক্ষণ করুন
             </button>
         </div>
+        <div class="card shadow-sm mb-4" id="chatActiveDevices">
+            <div class="card-header bg-white d-flex align-items-center justify-content-between" style="border-left: 4px solid #008B8B;">
+                <h6 class="mb-0 fw-semibold"><i class="fas fa-laptop me-2" style="color:#008B8B"></i>Active devices</h6>
+                <button type="button" class="btn btn-sm btn-outline-danger" id="revokeAllChatDevices">সব device revoke</button>
+            </div>
+            <div class="card-body"><div class="small text-muted mb-3">এই user-এর যেসব browser/device-এ chat notification সক্রিয় আছে।</div>
+                <div id="chatDeviceList">
+                {% for device in devices|default([]) %}
+                    <div class="d-flex justify-content-between align-items-center border rounded p-2 mb-2">
+                        <div><strong>{{ device.device_info.browser|default('Browser')|e }}</strong><div class="small text-muted">{{ device.device_info.platform|default('Unknown device')|e }} · সর্বশেষ সক্রিয় {{ device.updated_at|e }}</div></div>
+                        <button type="button" class="btn btn-sm btn-outline-secondary revoke-chat-device" data-device-id="{{ device.id }}">Revoke</button>
+                    </div>
+                {% else %}<div class="text-muted small">কোনো active device পাওয়া যায়নি।</div>{% endfor %}
+                </div>
+            </div>
+        </div>
     </form>
+    <script>
+    (function(){
+      var csrf=(window.getCsrfToken?window.getCsrfToken():(document.querySelector('meta[name="csrf_token"]')||{}).content||'');
+      function post(url, body){ return fetch(url,{method:'POST',headers:{'Content-Type':'application/json','X-CSRF-TOKEN':csrf,'X-Requested-With':'XMLHttpRequest'},body:JSON.stringify(body||{})}).then(function(r){return r.json();}); }
+      document.querySelectorAll('.revoke-chat-device').forEach(function(btn){btn.addEventListener('click',function(){post('/api/chat/devices/revoke',{device_id:btn.dataset.deviceId}).then(function(){btn.closest('.d-flex').remove();});});});
+      var all=document.getElementById('revokeAllChatDevices'); if(all) all.addEventListener('click',function(){post('/api/chat/devices/revoke-all').then(function(){var list=document.getElementById('chatDeviceList'); if(list) list.innerHTML='<div class="text-muted small">কোনো active device পাওয়া যায়নি।</div>';});});
+    })();
+    </script>
 </div>
 {% endblock %}
 
