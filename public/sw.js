@@ -35,6 +35,8 @@ const ASSETS_TO_CACHE = [
   '/assets/js/chat.js',
   '/assets/js/sweetalertUtil.js',
   '/assets/images/icon/favicon.png',
+  '/assets/images/icon/icon-192x192.png',
+  '/assets/images/icon/icon-512x512.png',
   '/assets/images/union_logo.png',
   '/assets/images/dijital union logo.png',
   '/assets/images/apps/app1.png',

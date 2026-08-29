@@ -1,19 +1,20 @@
 :root {
-    --form-blue: #007bff;
-    --form-blue-dark: #007bff;
+    /* Form-specific tokens (reference main design tokens) */
+    --form-blue: var(--blue);
+    --form-blue-dark: var(--blue-hover);
     --form-text: #2f3a45;
     --form-muted: #7a8591;
-    --form-border: #e4e7eb;
+    --form-border: var(--border-light);
     --form-soft: #f7f8fa;
-    --form-danger: #ef4444;
+    --form-danger: var(--danger);
 
-    /* Design tokens */
-    --upload-blue: #1696e7;
-    --upload-blue-hover: #147cd1;
-    --instr-red: #d32f2f;
-    --label-dark: #111827;
-    --select-border: #d1d5db;
-    --card-bg: #d9d9d9;
+    /* Upload tokens */
+    --upload-blue: var(--accent);
+    --upload-blue-hover: var(--accent-hover);
+    --instr-red: var(--danger-dark);
+    --label-dark: var(--text-primary);
+    --select-border: var(--border-color);
+    --card-bg: var(--gray-200);
 }
 
 .form-page {

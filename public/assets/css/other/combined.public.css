@@ -2,6 +2,193 @@
 @import url('https://fonts.googleapis.com/css?family=Roboto:100,300,300i,400,500&subset=latin-ext');
 @import url('https://fonts.maateen.me/kalpurush/font.css');
 
+/* ================================================================
+   DESIGN TOKENS — Unified Color System
+   ================================================================
+   Single source of truth for all colors.
+   Usage: var(--primary), var(--danger), etc.
+   ================================================================ */
+:root {
+    /* ---- Primary Brand Colors ---- */
+    --primary: #008B8B;                    /* Main brand teal */
+    --primary-hover: #007A7A;              /* Darker on hover */
+    --primary-light: #00A8A8;              /* Lighter variant */
+    --primary-gradient: linear-gradient(135deg, #008B8B, #00A8A8);
+    --primary-rgb: 0, 139, 139;            /* For rgba() usage */
+
+    /* ---- Secondary Blue (Bootstrap-compatible) ---- */
+    --blue: #007bff;                       /* Links, info accents */
+    --blue-hover: #0069d9;                 /* Darker on hover */
+    --blue-light: #42B6F3;                 /* Scrollbar, light accents */
+    --blue-rgb: 0, 123, 255;              /* For rgba() usage */
+
+    /* ---- Accent Blue (Forms & Search) ---- */
+    --accent: #1696e7;                     /* Form buttons, search */
+    --accent-hover: #147cd1;               /* Darker on hover */
+    --accent-dark: #0f7bc4;                /* Even darker */
+
+    /* ---- Success (Green) ---- */
+    --success: #28a745;                    /* Bootstrap success */
+    --success-hover: #218838;              /* Darker on hover */
+    --success-light: #d4edda;              /* Light background */
+    --success-dark: #155724;               /* Dark text */
+
+    /* ---- Danger (Red) ---- */
+    --danger: #ef4444;                     /* Tailwind red-500 */
+    --danger-hover: #dc2626;               /* Darker on hover */
+    --danger-dark: #d32f2f;                /* Material red-700 */
+    --danger-light: #f8d7da;               /* Light background */
+    --danger-text: #721c24;                /* Dark text */
+
+    /* ---- Warning (Yellow) ---- */
+    --warning: #ffc107;                    /* Bootstrap warning */
+    --warning-light: #fff3cd;              /* Light background */
+    --warning-text: #856404;               /* Dark text */
+
+    /* ---- Info (Cyan) ---- */
+    --info: #17a2b8;                       /* Bootstrap info */
+    --info-light: #d1ecf1;                 /* Light background */
+    --info-text: #0c5460;                  /* Dark text */
+
+    /* ---- Neutrals (Grays) ---- */
+    --gray-50: #f8f9fa;
+    --gray-100: #f1f3f5;
+    --gray-200: #e9ecef;
+    --gray-300: #dee2e6;
+    --gray-400: #ced4da;
+    --gray-500: #adb5bd;
+    --gray-600: #6c757d;
+    --gray-700: #495057;
+    --gray-800: #343a40;
+    --gray-900: #212529;
+
+    /* ---- Text Colors ---- */
+    --text-primary: #212529;
+    --text-secondary: #6c757d;
+    --text-muted: #adb5bd;
+    --text-dark: #343a40;
+
+    /* ---- Background Colors ---- */
+    --bg-body: #f7f7f7;
+    --bg-white: #ffffff;
+    --bg-light: #f8f9fa;
+    --bg-card: #ffffff;
+
+    /* ---- Border Colors ---- */
+    --border-color: #dee2e6;
+    --border-light: #e9ecef;
+    --border-focus: var(--primary);
+
+    /* ---- Shadows ---- */
+    --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+    --shadow-md: 0 4px 12px rgba(0,0,0,0.1);
+    --shadow-lg: 0 8px 24px rgba(0,0,0,0.12);
+
+    /* ---- Typography ---- */
+    --font-bengali: 'Kalpurush', 'Noto Sans Bengali', 'SolaimanLipi', sans-serif;
+    --font-latin: 'Roboto', 'Segoe UI', sans-serif;
+    --font-base: var(--font-bengali);
+
+    /* ---- Spacing & Border Radius ---- */
+    --radius-sm: 4px;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --radius-xl: 16px;
+    --radius-pill: 999px;
+
+    /* ---- Transitions ---- */
+    --transition-fast: 0.15s ease;
+    --transition-base: 0.2s ease;
+    --transition-slow: 0.3s ease;
+}
+
+/* ================================================================
+   ACCESSIBILITY — Focus Visible & Reduced Motion
+   ================================================================ */
+
+/* Keyboard-only focus styles (not shown for mouse clicks) */
+:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+}
+
+/* Remove default outline for mouse users */
+:focus:not(:focus-visible) {
+    outline: none;
+}
+
+/* High-contrast focus for buttons */
+button:focus-visible,
+a:focus-visible,
+[role="button"]:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+    box-shadow: 0 0 0 4px rgba(var(--primary-rgb), 0.25);
+}
+
+/* Form field focus */
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 1px;
+}
+
+/* Skip to main content link (screen reader utility) */
+.skip-link {
+    position: absolute;
+    top: -100px;
+    left: 0;
+    background: var(--primary);
+    color: #fff;
+    padding: 8px 16px;
+    z-index: 100000;
+    font-weight: 600;
+    text-decoration: none;
+    border-radius: 0 0 var(--radius-sm) 0;
+    transition: top var(--transition-fast);
+}
+
+.skip-link:focus {
+    top: 0;
+}
+
+/* Reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+
+    /* Disable specific animations */
+    .chat-button.has-unread,
+    .chat-badge,
+    .chat-msg,
+    .chat-window,
+    .chat-typing span,
+    .popup,
+    .service-box:hover,
+    .service-box:hover img {
+        animation: none !important;
+        transform: none !important;
+    }
+}
+
+/* High contrast mode support */
+@media (forced-colors: active) {
+    :focus-visible {
+        outline: 2px solid CanvasText;
+    }
+
+    .btn {
+        border: 1px solid CanvasText;
+    }
+}
+
 /* --------- 1. Custom Scrollbar Style --------- */
 ::-webkit-scrollbar {
     width: 8px;
@@ -12,12 +199,12 @@
     border-radius: 10px;
 }
 ::-webkit-scrollbar-thumb {
-    background: #42B6F3;
+    background: var(--blue-light);
     border-radius: 10px;
     transition: background 0.3s ease;
 }
 ::-webkit-scrollbar-thumb:hover {
-    background: #007bff;
+    background: var(--blue);
 }
 
 /* --------- 2. Core Reset & Typography --------- */
@@ -34,12 +221,12 @@ body {
     padding: 0;
     width: 100%;
     height: 100%;
-    font-family: 'Kalpurush', 'Roboto', sans-serif !important;
+    font-family: var(--font-base) !important;
     font-size: 14px;
     font-weight: 400;
     line-height: 1.6em;
-    color: #656565;
-    background: #f7f7f7;
+    color: var(--text-secondary);
+    background: var(--bg-body);
 }
 
 .body-bg {
@@ -51,10 +238,10 @@ body {
 }
 
 
-p { margin-bottom: 1em; color: #656565; }
+p { margin-bottom: 1em; color: var(--text-secondary); }
 
 a {
-    color: #007bff;
+    color: var(--blue);
     text-decoration: none;
     transition: all 0.3s ease;
 }
@@ -72,30 +259,34 @@ input, select, textarea {
     font-family: inherit;
     font-size: inherit;
     padding: 0.5em;
-    border: 1px solid #ccc;
-    border-radius: 4px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
     width: 100%;
     margin-bottom: 1em;
 }
 
 input:focus, select:focus, textarea:focus {
-    border-color: #46a835;
+    border-color: var(--primary);
     outline: none;
-    box-shadow: 0 0 4px rgba(70,168,53,0.3);
+    box-shadow: 0 0 4px rgba(var(--primary-rgb), 0.3);
 }
 
-button {
-    all: revert;
+/* Reset only non-Bootstrap buttons to avoid breaking .btn classes */
+button:not([class*="btn"]) {
+    font-family: inherit;
+    font-size: inherit;
+    cursor: pointer;
+    background: transparent;
+    border: none;
+    padding: 0;
     appearance: auto;
 }
 
-/* Remove hover effects too */
-button:hover {
-    background-color: transparent;
-    opacity: 1;
+button:not([class*="btn"]):hover {
+    opacity: 0.8;
 }
 
-.search-btn { color: #00A5FF; font-family: 'Kalpurush', sans-serif; }
+.search-btn { color: var(--accent); font-family: var(--font-base); }
 .search-btn .search-btn-text { color: #fff; }
 
 /* --------- Header --------- */
@@ -164,16 +355,16 @@ section#page-body { margin-top: 90px; }
     max-width: 220px;
     background: #FFF;
     border-radius: 12px;
-    border: 1px solid #eee;
+    border: 1px solid var(--border-light);
     cursor: pointer;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    box-shadow: var(--shadow-sm);
     transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 
 .service-box:hover {
     transform: translateY(-8px);
-    box-shadow: 0 15px 30px rgba(0,0,0,0.1) !important;
-    border-color: #007bff !important;
+    box-shadow: var(--shadow-lg) !important;
+    border-color: var(--blue) !important;
 }
 
 .service-box .section-title {
@@ -234,7 +425,7 @@ section#page-body { margin-top: 90px; }
     height: 45px;
     border-radius: 50%;
     object-fit: cover;
-    border: 2px solid #007bff;
+    border: 2px solid var(--blue);
 }
 
 .user-name {
@@ -253,22 +444,22 @@ section#page-body { margin-top: 90px; }
 }
 
 .profile-name, .dc_name h4, .ddlg_name h4 {
-    color: #00A5FF;
-    font-family: 'Kalpurush', sans-serif;
+    color: var(--accent);
+    font-family: var(--font-base);
     line-height: 1.4;
 }
 
 .vertical-divider, .borderdc {
     width: 1px;
     height: 200px;
-    background-color: #e0e0e0;
+    background-color: var(--border-light);
 }
 
 /* --------- Footer --------- */
 footer {
     padding: 40px 15px;
     color: #fff;
-    background: #42B6F3;
+    background: var(--primary);
 }
 
 .flex-center-li { display: flex; justify-content: center; align-items: center; }
@@ -278,8 +469,8 @@ footer {
 
 /* --------- Partners --------- */
 .partner-title {
-    border-bottom: 4px solid #4DBAF5;
-    font-family: 'Kalpurush', sans-serif;
+    border-bottom: 4px solid var(--primary-light);
+    font-family: var(--font-base);
     display: inline-block;
     padding-bottom: 5px;
 }
@@ -331,7 +522,7 @@ footer {
 }
 
 .carousel-indicators .active {
-    background-color: #0d6efd; /* Bootstrap primary */
+    background-color: var(--primary);
     width: 14px;
     height: 14px;
 }

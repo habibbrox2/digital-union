@@ -207,6 +207,13 @@ sub_keys.txt
 vapid_keys.txt
 .tmp.driveupload/
 
+# ============================================
+# Firebase & Google Cloud Credentials
+# ============================================
+config/*firebase*.json
+config/*-firebase-adminsdk-*.json
+*.firebase-adminsdk.json
+
 # Database backups
 *.sql
 !database_schema_email.sql

@@ -11,18 +11,19 @@
    CSS CUSTOM PROPERTIES
    ================================================================ */
 :root {
-  --primary-blue: #1696e7;
-  --primary-blue-dark: #0f7bc4;
-  --primary-blue-darker: #0c63a0;
-  --danger: #d32f2f;
-  --danger-light: #ef4444;
-  --border-color: #d1d5db;
-  --border-focus: #1696e7;
-  --text-primary: #111827;
-  --text-muted: #6b7280;
-  --gray-bg: #d9d9d9;
-  --white: #ffffff;
-  --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+  /* Search form tokens (reference main design tokens) */
+  --primary-blue: var(--accent);
+  --primary-blue-dark: var(--accent-dark);
+  --primary-blue-darker: var(--accent-dark);
+  --danger: var(--danger-dark);
+  --danger-light: var(--danger);
+  --border-color: var(--border-color);
+  --border-focus: var(--accent);
+  --text-primary: var(--text-primary);
+  --text-muted: var(--gray-500);
+  --gray-bg: var(--gray-200);
+  --white: var(--bg-white);
+  --shadow-sm: var(--shadow-sm);
   --shadow-md: 0 4px 12px rgba(0,0,0,0.1);
   --shadow-lg: 0 8px 24px rgba(0,0,0,0.12);
   --radius: 4px;

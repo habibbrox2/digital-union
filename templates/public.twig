@@ -11,9 +11,10 @@
     <link rel="manifest" href="/manifest.json">
     <meta name="theme-color" content="#008B8B">
     <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="স্মার্ট ইউপি">
-    <link rel="apple-touch-icon" href="/assets/images/icon/favicon.png">
+    <link rel="apple-touch-icon" href="/assets/images/icon/icon-192x192.png">
 
     <title>ক্যাশলেস স্মার্ট ইউপি, ঢাকা</title>
 
@@ -39,6 +40,9 @@
 </head>
 
 <body class="body-bg">
+    <!-- Skip to main content (accessibility) -->
+    <a href="#main-content" class="skip-link">মূল কনটেন্টে যান</a>
+    
     <div id="wrapper">
 
 
@@ -571,7 +575,7 @@
 // Global Base URL
 // ===============================
     var BASE_URL     = '{{ url|default("/") }}';
-    var BASE_API_URL = 'https://lgdhaka.com/';
+    var BASE_API_URL = 'https://lgdhaka.com';
 
 document.addEventListener('DOMContentLoaded', function() {
 

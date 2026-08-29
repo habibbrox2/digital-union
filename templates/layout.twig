@@ -77,6 +77,9 @@
 </head>
 
 <body class="{% if not is_logged_in %}body-bg{% endif %}">
+    <!-- Skip to main content (accessibility) -->
+    <a href="#main-content" class="skip-link">মূল কনটেন্টে যান</a>
+    
     {% include 'components/sweetAlert.twig' %}
     
     <!-- Page Loading Spinner -->
