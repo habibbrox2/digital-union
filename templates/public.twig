@@ -556,17 +556,21 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging-compat.js"></script>
 <script>
-    const firebaseConfig = {
-        apiKey: "AIzaSyBdNqFdh0DZ3Zz-iztHL2uGtoYZDLzhdyw",
-        authDomain: "digi-union-lgdhaka.firebaseapp.com",
-        projectId: "digi-union-lgdhaka",
-        storageBucket: "digi-union-lgdhaka.firebasestorage.app",
-        messagingSenderId: "599628365980",
-        appId: "1:599628365980:web:e90cefbce2c52ccf036d59"
-    };
-    if (!firebase.apps.length) {
-        firebase.initializeApp(firebaseConfig);
-    }
+    // Initialize Firebase for FCM — config fetched from server (no hardcoded keys)
+    (async function() {
+        try {
+            const res = await fetch('/api/chat/push/config');
+            const data = await res.json();
+            if (data.status === 'success' && data.data.enabled && data.data.config && data.data.config.apiKey) {
+                if (!firebase.apps.length) {
+                    firebase.initializeApp(data.data.config);
+                }
+                window.__chatVapidKey = data.data.vapid_key || '';
+            }
+        } catch (e) {
+            console.warn('[Chat] Could not load Firebase config:', e);
+        }
+    })();
 </script>
 <script src="{{ url }}/assets/js/chat.js?t={{ "now"|date("Hiss") }}"></script>
 

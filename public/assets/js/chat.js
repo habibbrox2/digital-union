@@ -1908,6 +1908,7 @@
     chat_placeholder: '\u09ac\u09be\u09b0\u09cd\u09a4\u09be \u09b2\u09bf\u0996\u09c1\u09a8...',
     chat_name_placeholder: '\u0986\u09aa\u09a8\u09be\u09b0 \u09a8\u09be\u09ae (\u0990\u099a\u09cd\u099b\u09bf\u0995)',
     chat_sound_enabled: '1',
+    chat_visitor_push_enabled: '1',
   };
 
   async function fetchSettings() {
@@ -1921,19 +1922,9 @@
   }
 
   function isOffline() {
-    if (state.adminOnline === false) return true;
-    if (widgetSettings.chat_offline_enabled !== '1') return false;
-    const now = new Date();
-    const currentMinutes = now.getHours() * 60 + now.getMinutes();
-    const startParts = (widgetSettings.chat_offline_start || '17:00').split(':');
-    const endParts = (widgetSettings.chat_offline_end || '09:00').split(':');
-    const startMinutes = parseInt(startParts[0]) * 60 + parseInt(startParts[1]);
-    const endMinutes = parseInt(endParts[0]) * 60 + parseInt(endParts[1]);
-    if (startMinutes < endMinutes) {
-      return currentMinutes >= startMinutes && currentMinutes < endMinutes;
-    } else {
-      return currentMinutes >= startMinutes || currentMinutes < endMinutes;
-    }
+    // Offline mode disabled — always allow live chat so visitors can
+    // message admins at any time like a real-time messenger.
+    return false;
   }
 
   // ========================
@@ -2282,6 +2273,32 @@
     fileInput.setAttribute('aria-label', '\u09ab\u09be\u0987\u09b2 \u0986\u09aa\u09b2\u09cb\u09a1');
     fileInput.setAttribute('accept', 'image/jpeg,image/png,image/gif,image/webp,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,.txt,.csv,.zip');
     toolbar.appendChild(fileInput);
+
+    // Notification opt-in button (only visible when permission not yet granted)
+    if ('Notification' in window && Notification.permission === 'default' && widgetSettings.chat_visitor_push_enabled === '1') {
+      const notifBtn = document.createElement('button');
+      notifBtn.type = 'button';
+      notifBtn.className = 'chat-tool-btn';
+      notifBtn.id = 'chatNotifBtn';
+      notifBtn.setAttribute('title', '\u09a8\u09cb\u099f\u09bf\u09ab\u09bf\u0995\u09c7\u09b6\u09a8 \u099a\u09be\u09b2\u09c1 \u0995\u09b0\u09c1\u09a8');
+      notifBtn.innerHTML = '<i class="fas fa-bell" style="color:#ffc107;"></i>';
+      notifBtn.addEventListener('click', async function() {
+        try {
+          const perm = await Notification.requestPermission();
+          if (perm === 'granted') {
+            notifBtn.innerHTML = '<i class="fas fa-bell" style="color:#198754;"></i>';
+            notifBtn.disabled = true;
+            notifBtn.title = '\u09a8\u09cb\u099f\u09bf\u09ab\u09bf\u0995\u09c7\u09b6\u09a8 \u09b8\u0995\u09cd\u09b0\u09bf\u09af\u09bc \u0986\u099b\u09c7';
+            _pushBlocked = false;
+            _pushInited = false;
+            maybeSubscribePush();
+          }
+        } catch (e) {
+          console.warn('[Chat] Notification permission request failed:', e);
+        }
+      });
+      toolbar.appendChild(notifBtn);
+    }
 
     inputWrapper.appendChild(toolbar);
 
@@ -2753,18 +2770,17 @@
       // Get Firebase Messaging instance
       const messaging = firebase.messaging();
 
-      // Request notification permission
-      const permission = await Notification.requestPermission();
-      if (permission !== 'granted') {
-        console.log('[Chat] Notification permission denied');
-        _pushBlocked = true;
+      // Only subscribe if permission already granted — never auto-prompt
+      if (Notification.permission !== 'granted') {
+        console.log('[Chat] Notification permission not granted (status: ' + Notification.permission + '), skipping push subscription');
         return;
       }
 
-      // Get FCM token
-      const token = await messaging.getToken({
-        vapidKey: 'BEXZ3EoUslEvolRGpCkIN0BbDMPyEc0FsAej9yk9M_I9f-fIbI-yNS-r7IcnJ5MCzEjDZNVpymuX-3zmGzN8AHk'
-      });
+      // Get FCM token — use server-provided VAPID key (no hardcoded key)
+      const vapidKey = window.__chatVapidKey || '';
+      const tokenOptions = {};
+      if (vapidKey) tokenOptions.vapidKey = vapidKey;
+      const token = await messaging.getToken(tokenOptions);
 
       if (token) {
         console.log('[Chat] FCM Token:', token);
@@ -2782,9 +2798,9 @@
         // Poll for token refresh every 6 hours
         setInterval(async () => {
           try {
-            const newToken = await messaging.getToken({
-              vapidKey: 'BEXZ3EoUslEvolRGpCkIN0BbDMPyEc0FsAej9yk9M_I9f-fIbI-yNS-r7IcnJ5MCzEjDZNVpymuX-3zmGzN8AHk'
-            });
+            const refreshOptions = {};
+            if (vapidKey) refreshOptions.vapidKey = vapidKey;
+            const newToken = await messaging.getToken(refreshOptions);
             if (newToken && newToken !== _fcmToken) {
               console.log('[Chat] FCM Token refreshed:', newToken);
               _fcmToken = newToken;
@@ -2846,7 +2862,7 @@
   // ========================
   async function init() {
     if (window.location.pathname.indexOf('/chat/admin') === 0) return;
-    if (window.location.pathname.indexOf('/settings/chat') === 0) return;
+    if (window.location.pathname.indexOf('/chat/settings') === 0) return;
 
     // A session id without its signature is stale/corrupt. Do not keep
     // polling a known-invalid session; force a clean registration instead.

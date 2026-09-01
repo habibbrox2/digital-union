@@ -343,6 +343,59 @@
                 </div>
             </div>
         </div>
+
+        <!-- Push Notification Debug Panel -->
+        <div class="card shadow-sm mb-4" id="pushDebugPanel">
+            <div class="card-header bg-white d-flex align-items-center justify-content-between" style="border-left: 4px solid #6f42c1;">
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-bug me-2" style="color: #6f42c1;"></i>
+                    <h6 class="mb-0 fw-semibold">পুশ নোটিফিকেশন ডিবাগ</h6>
+                </div>
+                <button type="button" class="btn btn-sm btn-outline-secondary" id="refreshDebugBtn">
+                    <i class="fas fa-sync-alt"></i> রিফ্রেশ
+                </button>
+            </div>
+            <div class="card-body">
+                <div class="row g-3" id="debugStatusGrid">
+                    <div class="col-md-3">
+                        <div class="border rounded p-3 text-center" id="debugPermission">
+                            <div class="small text-muted mb-1">Permission Status</div>
+                            <div class="fw-bold" id="debugPermissionValue">লোড হচ্ছে...</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="border rounded p-3 text-center" id="debugSW">
+                            <div class="small text-muted mb-1">Service Worker</div>
+                            <div class="fw-bold" id="debugSWValue">লোড হচ্ছে...</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="border rounded p-3 text-center" id="debugFirebase">
+                            <div class="small text-muted mb-1">Firebase SDK</div>
+                            <div class="fw-bold" id="debugFirebaseValue">লোড হচ্ছে...</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="border rounded p-3 text-center" id="debugToken">
+                            <div class="small text-muted mb-1">FCM Token</div>
+                            <div class="fw-bold" id="debugTokenValue">লোড হচ্ছে...</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <div class="small text-muted mb-2"><i class="fas fa-info-circle me-1"></i>বিস্তারিত তথ্য:</div>
+                    <pre id="debugDetails" style="background: #f8f9fa; padding: 12px; border-radius: 6px; font-size: 12px; max-height: 200px; overflow-y: auto; margin: 0;">লোড হচ্ছে...</pre>
+                </div>
+                <div class="mt-3 d-flex gap-2">
+                    <button type="button" class="btn btn-sm btn-outline-primary" id="testNotifBtn">
+                        <i class="fas fa-paper-plane me-1"></i>টেস্ট নোটিফিকেশন পাঠান
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-warning" id="resetPermBtn">
+                        <i class="fas fa-undo me-1"></i>পারমিশন রিসেট গাইড
+                    </button>
+                </div>
+            </div>
+        </div>
     </form>
     <script>
     (function(){
@@ -350,6 +403,89 @@
       function post(url, body){ return fetch(url,{method:'POST',headers:{'Content-Type':'application/json','X-CSRF-TOKEN':csrf,'X-Requested-With':'XMLHttpRequest'},body:JSON.stringify(body||{})}).then(function(r){return r.json();}); }
       document.querySelectorAll('.revoke-chat-device').forEach(function(btn){btn.addEventListener('click',function(){post('/api/chat/devices/revoke',{device_id:btn.dataset.deviceId}).then(function(){btn.closest('.d-flex').remove();});});});
       var all=document.getElementById('revokeAllChatDevices'); if(all) all.addEventListener('click',function(){post('/api/chat/devices/revoke-all').then(function(){var list=document.getElementById('chatDeviceList'); if(list) list.innerHTML='<div class="text-muted small">কোনো active device পাওয়া যায়নি।</div>';});});
+
+      // ================================
+      // Push Debug Panel
+      // ================================
+      function refreshDebugPanel() {
+        var details = {};
+        // 1. Permission
+        var perm = "N/A"; var permColor = "#6c757d";
+        if ("Notification" in window) {
+          perm = Notification.permission;
+          if (perm === "granted") { permColor = "#198754"; }
+          else if (perm === "denied") { permColor = "#dc3545"; }
+          else { permColor = "#ffc107"; }
+        }
+        document.getElementById("debugPermissionValue").textContent = perm;
+        document.getElementById("debugPermissionValue").style.color = permColor;
+        document.getElementById("debugPermission").style.borderColor = permColor;
+        details.permission = perm;
+        // 2. Service Worker
+        var swState = "নেই"; var swColor = "#dc3545";
+        if ("serviceWorker" in navigator) {
+          if (navigator.serviceWorker.controller) {
+            swState = "সক্রিয় (" + navigator.serviceWorker.controller.scope + ")";
+            swColor = "#198754";
+          } else { swState = "নিষ্ক্রিয়"; swColor = "#ffc107"; }
+        }
+        document.getElementById("debugSWValue").textContent = swState;
+        document.getElementById("debugSWValue").style.color = swColor;
+        document.getElementById("debugSW").style.borderColor = swColor;
+        details.serviceWorker = swState;
+        // 3. Firebase SDK
+        var fbState = "লোড হয়নি"; var fbColor = "#dc3545";
+        if (typeof firebase !== "undefined" && typeof firebase.messaging === "function") {
+          if (firebase.apps && firebase.apps.length > 0) {
+            fbState = "সক্রিয় (project: " + firebase.apps[0].options.projectId + ")";
+            fbColor = "#198754";
+          } else { fbState = "লোড হয়েছে, ইনিশিয়ালাইজ হয়নি"; fbColor = "#ffc107"; }
+        }
+        document.getElementById("debugFirebaseValue").textContent = fbState;
+        document.getElementById("debugFirebaseValue").style.color = fbColor;
+        document.getElementById("debugFirebase").style.borderColor = fbColor;
+        details.firebase = fbState;
+        // 4. FCM Token
+        var tokenEl = document.getElementById("debugTokenValue");
+        var tokenBox = document.getElementById("debugToken");
+        if (perm === "granted" && typeof firebase !== "undefined" && firebase.messaging) {
+          try {
+            var messaging = firebase.messaging();
+            messaging.getToken({ vapidKey: window.__chatVapidKey || "" }).then(function(token) {
+              if (token) { tokenEl.textContent = token.substring(0, 20) + "..."; tokenEl.style.color = "#198754"; tokenBox.style.borderColor = "#198754"; }
+              else { tokenEl.textContent = "টোকেন নেই"; tokenEl.style.color = "#ffc107"; }
+            }).catch(function(err) { tokenEl.textContent = "Error: " + err.message; tokenEl.style.color = "#dc3545"; });
+          } catch(e) { tokenEl.textContent = "Error: " + e.message; tokenEl.style.color = "#dc3545"; }
+        } else { tokenEl.textContent = "পারমিশন প্রয়োজন"; tokenEl.style.color = "#6c757d"; }
+        // 5. Details
+        details.isSecureContext = window.isSecureContext;
+        details.protocol = window.location.protocol;
+        details.platform = navigator.platform;
+        document.getElementById("debugDetails").textContent = JSON.stringify(details, null, 2);
+      }
+      refreshDebugPanel();
+      var refreshBtn = document.getElementById("refreshDebugBtn");
+      if (refreshBtn) refreshBtn.addEventListener("click", refreshDebugPanel);
+      // Test notification
+      var testBtn = document.getElementById("testNotifBtn");
+      if (testBtn) {
+        testBtn.addEventListener("click", async function() {
+          testBtn.disabled = true; testBtn.innerHTML = "<i class="fas fa-spinner fa-spin me-1"></i>পাঠাচ্ছে...";
+          try {
+            var res = await fetch("/api/chat/admin/push/test", { method: "POST", headers: { "Content-Type": "application/json", "X-CSRF-TOKEN": csrf, "X-Requested-With": "XMLHttpRequest" }, body: JSON.stringify({}) });
+            var result = await res.json();
+            if (typeof Swal !== "undefined") Swal.fire({ icon: result.status === "success" ? "success" : "error", title: result.status === "success" ? "সফল" : "ত্রুটি", text: result.message || "টেস্ট নোটিফিকেশন", timer: 3000, showConfirmButton: false });
+          } catch (e) { if (typeof Swal !== "undefined") Swal.fire({ icon: "error", title: "ত্রুটি", text: "সার্ভার ত্রুটি" }); }
+          finally { testBtn.disabled = false; testBtn.innerHTML = "<i class="fas fa-paper-plane me-1"></i>টেস্ট নোটিফিকেশন পাঠান"; }
+        });
+      }
+      // Reset permission guide
+      var resetBtn = document.getElementById("resetPermBtn");
+      if (resetBtn) {
+        resetBtn.addEventListener("click", function() {
+          if (typeof Swal !== "undefined") Swal.fire({ title: "পারমিশন রিসেট করুন", html: "<div style=text-align:left><p><strong>Chrome:</strong></p><ol><li>chrome://settings/content/notifications</li><li>সাইট খুঁজে Reset permissions</li></ol><p><strong>Firefox:</strong></p><ol><li>about:preferences#privacy</li><li>Notifications → Settings</li><li>সাইট মুছে ফেলুন</li></ol></div>", icon: "info", confirmButtonText: "বুঝেছি" });
+        });
+      }
     })();
     </script>
 </div>

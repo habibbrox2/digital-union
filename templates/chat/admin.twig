@@ -202,22 +202,32 @@
 (function() {
     'use strict';
 
-    // Initialize Firebase for FCM admin notifications
-    const firebaseConfig = {
-        apiKey: "AIzaSyBdNqFdh0DZ3Zz-iztHL2uGtoYZDLzhdyw",
-        authDomain: "digi-union-lgdhaka.firebaseapp.com",
-        projectId: "digi-union-lgdhaka",
-        storageBucket: "digi-union-lgdhaka.firebasestorage.app",
-        messagingSenderId: "599628365980",
-        appId: "1:599628365980:web:e90cefbce2c52ccf036d59"
-    };
-
-    if (!firebase.apps.length) {
-        firebase.initializeApp(firebaseConfig);
-    }
     let adminMessaging = null;
-
     let _adminFcmToken = null;
+    let _firebaseConfig = null;
+    let _vapidKey = '';
+
+    // Fetch Firebase config from server (no hardcoded keys)
+    async function loadFirebaseConfig() {
+        try {
+            const res = await fetch('/api/chat/push/config');
+            const data = await res.json();
+            if (data.status === 'success' && data.data.enabled && data.data.config) {
+                _firebaseConfig = data.data.config;
+                _vapidKey = data.data.vapid_key || '';
+                return true;
+            }
+        } catch (err) {
+            console.error('[Admin Chat] Failed to load Firebase config:', err);
+        }
+        return false;
+    }
+
+    async function initFirebase() {
+        if (_firebaseConfig && !firebase.apps.length) {
+            firebase.initializeApp(_firebaseConfig);
+        }
+    }
 
     // Register admin FCM token for receiving visitor message notifications
     async function registerAdminFcmToken() {
@@ -226,14 +236,49 @@
                 console.log('[Admin Chat] Service Worker API unavailable (insecure context?)');
                 return;
             }
-            const permission = await Notification.requestPermission();
-            if (permission !== 'granted') { updatePushButton(); return; }
+
+            // Load Firebase config from server if not loaded yet
+            if (!_firebaseConfig) {
+                const loaded = await loadFirebaseConfig();
+                if (!loaded) {
+                    console.log('[Admin Chat] Firebase not configured');
+                    return;
+                }
+            }
+
+            await initFirebase();
+
+            // Register service worker if not already active
+            if (!navigator.serviceWorker.controller) {
+                try {
+                    await navigator.serviceWorker.register('/firebase-messaging-sw.js', { scope: '/' });
+                    console.log('[Admin Chat] Service worker registered');
+                } catch (swErr) {
+                    console.warn('[Admin Chat] SW registration failed, trying sw.js:', swErr);
+                    try {
+                        await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+                    } catch (swErr2) {
+                        console.error('[Admin Chat] Both SW registrations failed:', swErr2);
+                        return;
+                    }
+                }
+            }
+
+            // Only prompt if permission is default (not yet decided)
+            if (Notification.permission === 'default') {
+                const permission = await Notification.requestPermission();
+                if (permission !== 'granted') { updatePushButton(); return; }
+            } else if (Notification.permission !== 'granted') {
+                updatePushButton();
+                return;
+            }
+
             await navigator.serviceWorker.ready;
             if (!adminMessaging) adminMessaging = firebase.messaging();
 
-            const token = await adminMessaging.getToken({
-                vapidKey: 'BEXZ3EoUslEvolRGpCkIN0BbDMPyEc0FsAej9yk9M_I9f-fIbI-yNS-r7IcnJ5MCzEjDZNVpymuX-3zmGzN8AHk'
-            });
+            const tokenOptions = {};
+            if (_vapidKey) tokenOptions.vapidKey = _vapidKey;
+            const token = await adminMessaging.getToken(tokenOptions);
 
             if (token) {
                 const csrf = window.getCsrfToken ? window.getCsrfToken() : (document.querySelector('meta[name="csrf_token"]')?.content || '');
@@ -284,10 +329,11 @@
     setInterval(async () => {
         try {
             if (!navigator.serviceWorker) return;
+            if (!_firebaseConfig) return;
             if (!adminMessaging) adminMessaging = firebase.messaging();
-            const newToken = await adminMessaging.getToken({
-                vapidKey: 'BEXZ3EoUslEvolRGpCkIN0BbDMPyEc0FsAej9yk9M_I9f-fIbI-yNS-r7IcnJ5MCzEjDZNVpymuX-3zmGzN8AHk'
-            });
+            const tokenOptions = {};
+            if (_vapidKey) tokenOptions.vapidKey = _vapidKey;
+            const newToken = await adminMessaging.getToken(tokenOptions);
             if (newToken && newToken !== _adminFcmToken) {
                 _adminFcmToken = newToken;
                 const csrf = window.getCsrfToken ? window.getCsrfToken() : (document.querySelector('meta[name="csrf_token"]')?.content || '');
@@ -1338,7 +1384,7 @@
 
     function renderCannedResponses(filter) {
         if (!allCannedResponses || allCannedResponses.length === 0) {
-            cannedResults.innerHTML = '<div class="canned-no-results">কোনো কুইক রিপ্লাই নেই<br><small>/settings/chat/canned এ তৈরি করুন</small></div>';
+            cannedResults.innerHTML = '<div class="canned-no-results">কোনো কুইক রিপ্লাই নেই<br><small>/chat/settings/canned এ তৈরি করুন</small></div>';
             return;
         }
 

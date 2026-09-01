@@ -225,5 +225,49 @@
 </script>
 
 <script src="{{ url }}/assets/script.js?t={{ "now"|date("Hiss") }}"></script>
+
+{# ✅ Live Chat Widget for Login Page #}
+<style>
+    /* CSS variables required by chat.css (normally provided by combined.public.css / admin.css) */
+    :root {
+        --primary: #008B8B;
+        --primary-hover: #007A7A;
+        --primary-light: #00A8A8;
+        --primary-gradient: linear-gradient(135deg, #008B8B, #00A8A8);
+        --primary-rgb: 0, 139, 139;
+        --success: #28a745;
+        --success-hover: #218838;
+        --success-light: #d4edda;
+        --success-dark: #155724;
+        --danger: #ef4444;
+        --danger-hover: #dc2626;
+        --danger-light: #f8d7da;
+        --danger-text: #721c24;
+        --text-secondary: #6c757d;
+        --text-muted: #adb5bd;
+    }
+</style>
+<link rel="stylesheet" href="{{ url }}/assets/css/chat.css?t={{ "now"|date("Hiss") }}">
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging-compat.js"></script>
+<script>
+    // Initialize Firebase for FCM — config fetched from server (no hardcoded keys)
+    (async function() {
+        try {
+            const res = await fetch('/api/chat/push/config');
+            const data = await res.json();
+            if (data.status === 'success' && data.data.enabled && data.data.config && data.data.config.apiKey) {
+                if (!firebase.apps.length) {
+                    firebase.initializeApp(data.data.config);
+                }
+                window.__chatVapidKey = data.data.vapid_key || '';
+            }
+        } catch (e) {
+            console.warn('[Chat] Could not load Firebase config:', e);
+        }
+    })();
+</script>
+<script src="{{ url }}/assets/js/chat.js?t={{ "now"|date("Hiss") }}"></script>
+
 </body>
 </html>

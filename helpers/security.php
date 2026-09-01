@@ -38,14 +38,9 @@ if (!function_exists('verify_password')) {
 
 // ==================== VALIDATION ====================
 
-if (!function_exists('validateURL')) {
-    function validateURL($url) {
-        if (empty($url)) {
-            return false;
-        }
-        return filter_var($url, FILTER_VALIDATE_URL) !== false;
-    }
-}
+// NOTE: validateURL() is defined in helpers/validator.php with the data-array
+// signature used by the Validator class and validateBatch().
+// For direct single-URL validation, use filter_var($url, FILTER_VALIDATE_URL).
 
 if (!function_exists('validatePassword')) {
     function validatePassword($password) {

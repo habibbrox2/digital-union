@@ -14,7 +14,7 @@ class ChatService
 
     // Bump this whenever chat tables/columns change so the one-time
     // migration (autoMigrate) re-runs on the next request after deploy.
-    private const SCHEMA_VERSION = '4';
+    private const SCHEMA_VERSION = '5';
 
     // In-process guard: migration must run at most once per PHP process,
     // and only once per deployment (tracked via a system_settings flag).
@@ -624,7 +624,6 @@ class ChatService
                 return;
             }
 
-            $emailService = new EmailService($this->mysqli);
             $chatUrl = (defined('SITE_URL') ? SITE_URL : '') . '/chat/admin?session=' . $sessionId;
             $shortMessage = mb_substr($message, 0, 200);
             $timestamp = (new DateTime())->format('d M Y, h:i A');
@@ -656,9 +655,19 @@ class ChatService
 </body>
 </html>";
 
+            // Queue emails asynchronously instead of sending synchronously
+            $emailQueue = new EmailQueueService($this->mysqli);
             foreach ($adminEmails as $admin) {
-                $emailService->sendEmail($admin['email'], $subject, $body);
+                $emailQueue->queue(
+                    $admin['email'],
+                    $subject,
+                    $body,
+                    ['recipient_name' => $admin['name']]
+                );
             }
+
+            // Log the email notification
+            $this->chatModel->logNotification(null, $sessionId, null, 'email', 'queued');
 
         } catch (\Throwable $e) {
             error_log('[Chat] Offline email notification failed: ' . $e->getMessage());

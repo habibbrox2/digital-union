@@ -195,6 +195,45 @@ class ChatModel
             `provider_response` TEXT DEFAULT NULL, `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
             KEY `idx_message` (`message_id`), KEY `idx_recipient` (`recipient_user_id`), KEY `idx_created` (`created_at`)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+        $this->mysqli->query("CREATE TABLE IF NOT EXISTS `chat_notification_log_v2` (
+            `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            `message_id` INT UNSIGNED DEFAULT NULL,
+            `session_id` VARCHAR(64) NOT NULL,
+            `recipient_user_id` INT UNSIGNED DEFAULT NULL,
+            `recipient_email` VARCHAR(255) DEFAULT NULL,
+            `channel` ENUM('push','email','sms','in_app') NOT NULL,
+            `provider` VARCHAR(50) NOT NULL DEFAULT 'unknown',
+            `status` ENUM('queued','sent','delivered','failed','invalid_token','expired') NOT NULL DEFAULT 'queued',
+            `provider_response` TEXT DEFAULT NULL,
+            `provider_message_id` VARCHAR(255) DEFAULT NULL,
+            `retry_count` TINYINT UNSIGNED NOT NULL DEFAULT 0,
+            `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            KEY `idx_message` (`message_id`),
+            KEY `idx_recipient` (`recipient_user_id`),
+            KEY `idx_status` (`status`),
+            KEY `idx_created` (`created_at`),
+            KEY `idx_session_channel` (`session_id`, `channel`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+        $this->mysqli->query("CREATE TABLE IF NOT EXISTS `chat_email_queue` (
+            `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            `recipient_email` VARCHAR(255) NOT NULL,
+            `recipient_name` VARCHAR(150) NOT NULL DEFAULT '',
+            `subject` VARCHAR(500) NOT NULL,
+            `body` TEXT NOT NULL,
+            `template` VARCHAR(100) DEFAULT NULL,
+            `template_data` JSON DEFAULT NULL,
+            `status` ENUM('queued','processing','sent','failed','cancelled') NOT NULL DEFAULT 'queued',
+            `attempts` TINYINT UNSIGNED NOT NULL DEFAULT 0,
+            `max_attempts` TINYINT UNSIGNED NOT NULL DEFAULT 3,
+            `last_error` TEXT DEFAULT NULL,
+            `scheduled_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            `sent_at` DATETIME DEFAULT NULL,
+            `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            KEY `idx_status_scheduled` (`status`, `scheduled_at`),
+            KEY `idx_created` (`created_at`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
         $this->mysqli->query("CREATE TABLE IF NOT EXISTS `chat_push_subscriptions` (
             `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY, `session_id` VARCHAR(64) NOT NULL,
             `endpoint` VARCHAR(500) NOT NULL, `p256dh` VARCHAR(200) NOT NULL DEFAULT '',
@@ -319,8 +358,13 @@ class ChatModel
      */
     public function createSession(string $sessionId, string $visitorName, ?int $unionId = null): int
     {
-        $stmt = $this->mysqli->prepare("INSERT INTO chat_sessions (session_id, visitor_name, union_id, status, created_at, updated_at) VALUES (?, ?, ?, 'active', NOW(), NOW())");
-        $stmt->bind_param("ssi", $sessionId, $visitorName, $unionId);
+        if ($unionId !== null) {
+            $stmt = $this->mysqli->prepare("INSERT INTO chat_sessions (session_id, visitor_name, union_id, status, created_at, updated_at) VALUES (?, ?, ?, 'active', NOW(), NOW())");
+            $stmt->bind_param("ssi", $sessionId, $visitorName, $unionId);
+        } else {
+            $stmt = $this->mysqli->prepare("INSERT INTO chat_sessions (session_id, visitor_name, status, created_at, updated_at) VALUES (?, ?, 'active', NOW(), NOW())");
+            $stmt->bind_param("ss", $sessionId, $visitorName);
+        }
         $stmt->execute();
         $id = $stmt->insert_id;
         $stmt->close();
@@ -766,14 +810,21 @@ class ChatModel
                   AND cmv2.is_read = 0
                 GROUP BY cmv2.session_id
             ) cmv ON cmv.session_id = cs.session_id
-            WHERE (? IS NULL OR cs.union_id = ?)
+            %s
             ORDER BY
                 CASE WHEN cs.status = 'active' THEN 0 ELSE 1 END,
                 COALESCE(cm.created_at, cs.created_at) DESC
             LIMIT ? OFFSET ?
         ";
-        $stmt = $this->mysqli->prepare($sql);
-        $stmt->bind_param("iiii", $unionId, $unionId, $fetchLimit, $offset);
+        if ($unionId !== null) {
+            $sql = sprintf($sql, 'WHERE cs.union_id = ?');
+            $stmt = $this->mysqli->prepare($sql);
+            $stmt->bind_param("iii", $unionId, $fetchLimit, $offset);
+        } else {
+            $sql = sprintf($sql, '');
+            $stmt = $this->mysqli->prepare($sql);
+            $stmt->bind_param("ii", $fetchLimit, $offset);
+        }
         $stmt->execute();
         $result = $stmt->get_result();
 
@@ -1458,8 +1509,15 @@ class ChatModel
 
     public function saveDeviceToken(string $sessionId, string $token, string $deviceInfo, ?int $userId): void
     {
-        $type = 'admin'; $stmt=$this->mysqli->prepare("INSERT INTO fcm_tokens (session_id,fcm_token,user_type,user_id,device_info,revoked_at,created_at,updated_at) VALUES (?,?,?,?,?,NULL,NOW(),NOW()) ON DUPLICATE KEY UPDATE session_id=VALUES(session_id),user_type='admin',user_id=VALUES(user_id),device_info=VALUES(device_info),revoked_at=NULL,updated_at=NOW()");
-        $stmt->bind_param("sssis", $sessionId,$token,$type,$userId,$deviceInfo); $stmt->execute(); $stmt->close();
+        $type = 'admin';
+        if ($userId !== null) {
+            $stmt = $this->mysqli->prepare("INSERT INTO fcm_tokens (session_id,fcm_token,user_type,user_id,device_info,revoked_at,created_at,updated_at) VALUES (?,?,?,?,?,NULL,NOW(),NOW()) ON DUPLICATE KEY UPDATE session_id=VALUES(session_id),user_type='admin',user_id=VALUES(user_id),device_info=VALUES(device_info),revoked_at=NULL,updated_at=NOW()");
+            $stmt->bind_param("sssis", $sessionId, $token, $type, $userId, $deviceInfo);
+        } else {
+            $stmt = $this->mysqli->prepare("INSERT INTO fcm_tokens (session_id,fcm_token,user_type,user_id,device_info,revoked_at,created_at,updated_at) VALUES (?,?,?,NULL,?,NULL,NOW(),NOW()) ON DUPLICATE KEY UPDATE session_id=VALUES(session_id),user_type='admin',user_id=NULL,device_info=VALUES(device_info),revoked_at=NULL,updated_at=NOW()");
+            $stmt->bind_param("ssss", $sessionId, $token, $type, $deviceInfo);
+        }
+        $stmt->execute(); $stmt->close();
     }
 
     public function getUserDevices(int $userId): array
@@ -1470,7 +1528,20 @@ class ChatModel
 
     public function revokeDevice(int $userId, int $deviceId): void { $stmt=$this->mysqli->prepare("UPDATE fcm_tokens SET revoked_at=NOW() WHERE id=? AND user_id=? AND user_type='admin'"); $stmt->bind_param("ii",$deviceId,$userId); $stmt->execute(); $stmt->close(); }
     public function revokeAllDevices(int $userId): void { $stmt=$this->mysqli->prepare("UPDATE fcm_tokens SET revoked_at=NOW() WHERE user_id=? AND user_type='admin' AND revoked_at IS NULL"); $stmt->bind_param("i",$userId); $stmt->execute(); $stmt->close(); }
-    public function logNotification(?int $messageId, string $sessionId, ?int $recipientId, string $channel, string $status, string $response=''): void { $stmt=$this->mysqli->prepare("INSERT INTO chat_notification_log (message_id,session_id,recipient_user_id,channel,status,provider_response) VALUES (?,?,?,?,?,?)"); $stmt->bind_param("isiiss",$messageId,$sessionId,$recipientId,$channel,$status,$response); $stmt->execute(); $stmt->close(); }
+    public function logNotification(?int $messageId, string $sessionId, ?int $recipientId, string $channel, string $status, string $response=''): void {
+        // Log to both v1 (legacy) and v2 (enhanced) tables for backward compatibility
+        $stmt=$this->mysqli->prepare("INSERT INTO chat_notification_log (message_id,session_id,recipient_user_id,channel,status,provider_response) VALUES (?,?,?,?,?,?)");
+        $stmt->bind_param("isiiss",$messageId,$sessionId,$recipientId,$channel,$status,$response);
+        $stmt->execute();
+        $stmt->close();
+
+        // Also log to v2 with per-recipient tracking
+        $provider = $channel === 'push' ? 'fcm' : ($channel === 'email' ? 'smtp' : 'unknown');
+        $stmt2=$this->mysqli->prepare("INSERT INTO chat_notification_log_v2 (message_id,session_id,recipient_user_id,channel,provider,status,provider_response) VALUES (?,?,?,?,?,?,?)");
+        $stmt2->bind_param("isiisss", $messageId, $sessionId, $recipientId, $channel, $provider, $status, $response);
+        $stmt2->execute();
+        $stmt2->close();
+    }
 
     /**
      * Delete an FCM token.
@@ -1518,5 +1589,83 @@ class ChatModel
         $affected = $stmt->affected_rows;
         $stmt->close();
         return $affected;
+    }
+
+    // ================================================================
+    // NOTIFICATION LOG CLEANUP
+    // ================================================================
+
+    /**
+     * Clean up old notification log entries (v1 and v2).
+     */
+    public function cleanNotificationLogs(int $days = 90): int
+    {
+        $total = 0;
+
+        // Clean v1 logs
+        $stmt = $this->mysqli->prepare("DELETE FROM chat_notification_log WHERE created_at < DATE_SUB(NOW(), INTERVAL ? DAY)");
+        $stmt->bind_param("i", $days);
+        $stmt->execute();
+        $total += $stmt->affected_rows;
+        $stmt->close();
+
+        // Clean v2 logs
+        $stmt = $this->mysqli->prepare("DELETE FROM chat_notification_log_v2 WHERE created_at < DATE_SUB(NOW(), INTERVAL ? DAY)");
+        $stmt->bind_param("i", $days);
+        $stmt->execute();
+        $total += $stmt->affected_rows;
+        $stmt->close();
+
+        return $total;
+    }
+
+    // ================================================================
+    // EMAIL QUEUE CLEANUP
+    // ================================================================
+
+    /**
+     * Clean up old email queue entries.
+     */
+    public function cleanEmailQueue(int $days = 30): int
+    {
+        $stmt = $this->mysqli->prepare("DELETE FROM chat_email_queue WHERE status IN ('sent', 'cancelled', 'failed') AND created_at < DATE_SUB(NOW(), INTERVAL ? DAY)");
+        $stmt->bind_param("i", $days);
+        $stmt->execute();
+        $count = $stmt->affected_rows;
+        $stmt->close();
+        return $count;
+    }
+
+    // ================================================================
+    // COMPREHENSIVE CLEANUP
+    // ================================================================
+
+    /**
+     * Run all cleanup tasks: sessions, tokens, logs, email queue.
+     *
+     * @return array Summary of cleaned items
+     */
+    public function runFullCleanup(): array
+    {
+        $result = [];
+
+        // 1. Old closed session messages (>90 days)
+        $cutoff90 = date('Y-m-d H:i:s', strtotime('-90 days'));
+        $result['old_session_messages'] = $this->deleteOldClosedSessionMessages($cutoff90);
+        $result['old_sessions'] = $this->deleteOldClosedSessions($cutoff90);
+
+        // 2. Expired FCM tokens (>30 days)
+        $result['expired_fcm_tokens'] = $this->cleanExpiredFcmTokens();
+
+        // 3. Old notification logs (>90 days)
+        $result['old_notification_logs'] = $this->cleanNotificationLogs(90);
+
+        // 4. Old email queue entries (>30 days)
+        $result['old_email_queue'] = $this->cleanEmailQueue(30);
+
+        // 5. Old rate limits (>1 hour)
+        $this->cleanRateLimits();
+
+        return $result;
     }
 }

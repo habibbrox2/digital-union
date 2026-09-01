@@ -37,27 +37,28 @@ class PushService
     /**
      * Get the Firebase client config for the frontend.
      * Returns an array with apiKey, projectId, etc.
+     * Reads from env/config instead of hardcoded values.
      */
     public function getFirebaseClientConfig(): array
     {
-        return [
-            'apiKey' => 'AIzaSyBdNqFdh0DZ3Zz-iztHL2uGtoYZDLzhdyw',
-            'authDomain' => 'digi-union-lgdhaka.firebaseapp.com',
-            'projectId' => 'digi-union-lgdhaka',
-            'storageBucket' => 'digi-union-lgdhaka.firebasestorage.app',
-            'messagingSenderId' => '599628365980',
-            'appId' => '1:599628365980:web:e90cefbce2c52ccf036d59',
-        ];
+        if (!function_exists('getFirebaseConfig')) {
+            require_once __DIR__ . '/../../config/firebase.php';
+        }
+        $config = getFirebaseConfig();
+        return $config['web_config'] ?? [];
     }
 
     /**
      * Get the VAPID public key for FCM web push (still needed for web push with FCM).
+     * Reads from env/config instead of hardcoded values.
      */
     public function getVapidPublicKey(): string
     {
-        // FCM uses its own VAPID key derived from the service account.
-        // For web push, we return the key pair the user provided.
-        return 'BEXZ3EoUslEvolRGpCkIN0BbDMPyEc0FsAej9yk9M_I9f-fIbI-yNS-r7IcnJ5MCzEjDZNVpymuX-3zmGzN8AHk';
+        if (!function_exists('getFirebaseConfig')) {
+            require_once __DIR__ . '/../../config/firebase.php';
+        }
+        $config = getFirebaseConfig();
+        return $config['vapid_key'] ?? '';
     }
 
     /**
@@ -109,6 +110,21 @@ class PushService
         $fcmTokens = array_column($tokens, 'fcm_token');
         $result = sendFcmMulticast($fcmTokens, $title, 'নতুন লাইভ চ্যাট মেসেজ এসেছে', $data);
 
+        // Log per-recipient results
+        foreach ($tokens as $tokenEntry) {
+            $token = $tokenEntry['fcm_token'];
+            $isInvalid = in_array($token, $result['invalid_tokens'] ?? [], true);
+            $status = $isInvalid ? 'invalid_token' : ($result['success'] > 0 ? 'sent' : 'failed');
+            $this->chatModel->logNotification(
+                $data['message_id'] ?? null,
+                $sessionId,
+                null,
+                'push',
+                $status,
+                json_encode(['token_hash' => md5($token), 'success' => $result['success'], 'failure' => $result['failure']])
+            );
+        }
+
         // Prune invalid tokens
         if (!empty($result['invalid_tokens'])) {
             $this->chatModel->deleteInvalidFcmTokens($result['invalid_tokens']);
@@ -144,6 +160,22 @@ class PushService
 
         $fcmTokens = array_column($tokens, 'fcm_token');
         $result = sendFcmMulticast($fcmTokens, $title, $body, $data);
+
+        // Log per-recipient results
+        foreach ($tokens as $tokenEntry) {
+            $token = $tokenEntry['fcm_token'];
+            $userId = $tokenEntry['user_id'] ?? null;
+            $isInvalid = in_array($token, $result['invalid_tokens'] ?? [], true);
+            $status = $isInvalid ? 'invalid_token' : ($result['success'] > 0 ? 'sent' : 'failed');
+            $this->chatModel->logNotification(
+                $data['message_id'] ?? null,
+                $data['session_id'] ?? 'admin',
+                $userId,
+                'push',
+                $status,
+                json_encode(['token_hash' => md5($token), 'success' => $result['success'], 'failure' => $result['failure']])
+            );
+        }
 
         // Prune invalid tokens
         if (!empty($result['invalid_tokens'])) {

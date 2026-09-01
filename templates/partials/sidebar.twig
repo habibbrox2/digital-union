@@ -31,10 +31,18 @@
 
         {# ===== Live Chat ===== #}
         {% if is_superadmin or can('manage_chat') %}
-        <li>
-            <a href="/chat/admin" title="লাইভ চ্যাট ও অফলাইন বার্তা" data-search="লাইভ চ্যাট chat বার্তা live">
+        <li class="menu-item">
+            <a href="#" class="submenu-toggle" title="লাইভ চ্যাট" data-search="লাইভ চ্যাট chat live">
                 <i class="fas fa-comment-dots"></i><span class="nav-text">লাইভ চ্যাট</span>
+                <i class="fas fa-chevron-down float-end"></i>
             </a>
+            <ul class="submenu">
+                <li><a href="/chat/admin" title="চ্যাট পরিচালনা" data-search="চ্যাট admin পরিচালনা"><i class="fas fa-headset"></i> চ্যাট পরিচালনা</a></li>
+                {% if is_superadmin or can('manage_settings') %}
+                    <li><a href="/chat/settings" title="চ্যাট সেটিংস" data-search="চ্যাট chat settings সেটিংস"><i class="fas fa-cog"></i> চ্যাট সেটিংস</a></li>
+                    <li><a href="/chat/settings/canned" title="কুইক রিপ্লাই" data-search="কুইক quick রিপ্লাই reply canned"><i class="fas fa-bolt"></i> কুইক রিপ্লাই</a></li>
+                {% endif %}
+            </ul>
         </li>
         {% endif %}
 
@@ -130,8 +138,7 @@
                         {% endif %}
                         <li><a href="/settings/business-types" title="ব্যবসা ধরণ" data-search="ব্যবসা business ধরণ type"><i class="fas fa-briefcase"></i> ব্যবসা ধরণ</a></li>
                         <li><a href="/settings/ownership-types" title="মালিকানা ধরণ" data-search="মালিকানা ownership ধরণ"><i class="fas fa-users"></i> মালিকানা ধরণ</a></li>
-                        <li><a href="/settings/chat" title="চ্যাট সেটিংস" data-search="চ্যাট chat settings সেটিংস"><i class="fas fa-comment-dots"></i> চ্যাট সেটিংস</a></li>
-                        <li><a href="/settings/chat/canned" title="কুইক রিপ্লাই" data-search="কুইক quick রিপ্লাই reply canned"><i class="fas fa-bolt"></i> কুইক রিপ্লাই</a></li>
+
                         <li><a href="/settings/extra-fields" title="অতিরিক্ত ইনপুট" data-search="অতিরিক্ত extra fields ইনপুট"><i class="fas fa-layer-group"></i> অতিরিক্ত ইনপুট</a></li>
                         {% if is_superadmin %}
                             <li><a href="/settings/geo" title="জিও লোকেশন" data-search="জিও geo location লোকেশন"><i class="fas fa-globe"></i> জিও লোকেশন</a></li>

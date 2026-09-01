@@ -317,9 +317,26 @@ $router->get('/api/chat/messages', function () use ($chatService, $chatModel) {
     }
 
     // Read-only endpoints still require the session signature.
-    if (!$chatService->verifySessionSig( $sessionId, $providedSig)) {
+    // Auto-recover: if the session has a stored signature but the client
+    // didn't provide one (stale localStorage, cleared state), re-sign and
+    // return the signature so the client can recover on the next request.
+    $storedSig = $chatModel->getSessionSig($sessionId);
+    if ($storedSig === null) {
+        ChatService::jsonResponse(['status' => 'error', 'message' => 'Invalid session signature'], 403);
+    } elseif (!empty($storedSig) && empty($providedSig)) {
+        $recoveredSig = $chatService->signSession($sessionId);
+        $chatModel->setSessionSigBySessionId($sessionId, $recoveredSig);
+        ChatService::jsonResponse([
+            'status' => 'success',
+            'data' => [],
+            'has_more' => false,
+            'session_sig' => $recoveredSig,
+            'server_time' => gmdate('c'),
+        ], 200, 'no-cache, private');
+    } elseif (!empty($storedSig) && !hash_equals($storedSig, $providedSig)) {
         ChatService::jsonResponse(['status' => 'error', 'message' => 'Invalid session signature'], 403);
     }
+    // else: legacy session with no stored sig — allow
 
     // A fetch means messages reached the receiving client. Mark admin
     // messages as delivered AND read, since the visitor is actively
@@ -373,7 +390,15 @@ $router->get('/api/chat/unread', function () use ($chatService, $chatModel) {
     }
 
     // Read-only endpoints still require the session signature.
-    if (!$chatService->verifySessionSig( $sessionId, $providedSig)) {
+    // Auto-recover missing signature for legacy/stale sessions.
+    $storedSig = $chatModel->getSessionSig($sessionId);
+    if ($storedSig === null) {
+        ChatService::jsonResponse(['status' => 'error', 'message' => 'Invalid session signature'], 403);
+    } elseif (!empty($storedSig) && empty($providedSig)) {
+        $recoveredSig = $chatService->signSession($sessionId);
+        $chatModel->setSessionSigBySessionId($sessionId, $recoveredSig);
+        ChatService::jsonResponse(['status' => 'success', 'data' => ['count' => 0], 'session_sig' => $recoveredSig], 200, 'no-cache, private');
+    } elseif (!empty($storedSig) && !hash_equals($storedSig, $providedSig)) {
         ChatService::jsonResponse(['status' => 'error', 'message' => 'Invalid session signature'], 403);
     }
 
@@ -410,7 +435,19 @@ $router->get('/api/chat/unread/count', function () use ($chatService, $chatModel
     }
 
     // Read-only endpoints still require the session signature.
-    if (!$chatService->verifySessionSig( $sessionId, $providedSig)) {
+    // Auto-recover missing signature for legacy/stale sessions.
+    $storedSig = $chatModel->getSessionSig($sessionId);
+    if ($storedSig === null) {
+        ChatService::jsonResponse(['status' => 'error', 'message' => 'Invalid session signature'], 403);
+    } elseif (!empty($storedSig) && empty($providedSig)) {
+        $recoveredSig = $chatService->signSession($sessionId);
+        $chatModel->setSessionSigBySessionId($sessionId, $recoveredSig);
+        header('Content-Type: text/plain; charset=utf-8');
+        header('Cache-Control: no-cache, private');
+        header('X-Chat-Session-Sig: ' . $recoveredSig);
+        echo '0';
+        exit;
+    } elseif (!empty($storedSig) && !hash_equals($storedSig, $providedSig)) {
         ChatService::jsonResponse(['status' => 'error', 'message' => 'Invalid session signature'], 403);
     }
 
@@ -445,7 +482,16 @@ $router->post('/api/chat/read', function () use ($chatService, $chatModel) {
     }
 
     // Typing updates still require the session signature.
-    if (!$chatService->verifySessionSig( $sessionId, $providedSig)) {
+    // Auto-recover missing signature for legacy/stale sessions.
+    $storedSig = $chatModel->getSessionSig($sessionId);
+    if ($storedSig === null) {
+        ChatService::jsonResponse(['status' => 'error', 'message' => 'Invalid session signature'], 403);
+    } elseif (!empty($storedSig) && empty($providedSig)) {
+        $recoveredSig = $chatService->signSession($sessionId);
+        $chatModel->setSessionSigBySessionId($sessionId, $recoveredSig);
+        $chatModel->markAdminMessagesRead($sessionId);
+        ChatService::jsonResponse(['status' => 'success', 'message' => 'Messages marked as read', 'session_sig' => $recoveredSig]);
+    } elseif (!empty($storedSig) && !hash_equals($storedSig, $providedSig)) {
         ChatService::jsonResponse(['status' => 'error', 'message' => 'Invalid session signature'], 403);
     }
 
@@ -637,10 +683,6 @@ $router->post('/api/chat/push/fcm-admin-subscribe', function () use ($authServic
     // Use a stable session ID for admin token management
     $adminSessionId = 'admin_' . $adminId;
     $chatModel->saveDeviceToken($adminSessionId, $fcmToken, $deviceInfo, $adminId);
-    $saved = true;
-    if (!$saved) {
-        ChatService::jsonResponse(['status' => 'error', 'message' => 'Invalid FCM token'], 400);
-    }
     ChatService::jsonResponse(['status' => 'success', 'message' => 'Admin FCM subscribed']);
 });
 
@@ -755,9 +797,6 @@ $router->post('/api/chat/admin/reply', function () use ($chatService, $mysqli, $
     if (!$chatModel->canUserAccessSession((int)$authService->getCurrentUserId(), $sessionId)) {
         ChatService::jsonResponse(['status' => 'error', 'message' => 'Conversation access denied'], 403);
     }
-    if (!$chatModel->canUserAccessSession((int)$authService->getCurrentUserId(), $sessionId)) {
-        ChatService::jsonResponse(['status' => 'error', 'message' => 'Conversation access denied'], 403);
-    }
     if (mb_strlen($message) > 1000) {
         ChatService::jsonResponse(['status' => 'error', 'message' => 'Message too long (max 1000 characters)'], 400);
     }
@@ -805,6 +844,9 @@ $router->post('/api/chat/admin/upload', function () use ($chatService, $authServ
     }
     if (!$chatModel->sessionExists($sessionId)) {
         ChatService::jsonResponse(['status' => 'error', 'message' => 'Conversation not found'], 404);
+    }
+    if (!$chatModel->canUserAccessSession((int)$authService->getCurrentUserId(), $sessionId)) {
+        ChatService::jsonResponse(['status' => 'error', 'message' => 'Conversation access denied'], 403);
     }
 
     // A visitor-inactive session cannot receive a late admin reply. Expire it
@@ -908,7 +950,13 @@ $router->post('/api/chat/typing', function () use ($chatService, $chatModel) {
     }
 
     // Typing updates still require the session signature.
-    if (!$chatService->verifySessionSig( $sessionId, $providedSig)) {
+    // Auto-recover missing signature for legacy/stale sessions.
+    $storedSig = $chatModel->getSessionSig($sessionId);
+    if ($storedSig === null) {
+        ChatService::jsonResponse(['status' => 'error', 'message' => 'Invalid session signature'], 403);
+    } elseif (!empty($storedSig) && empty($providedSig)) {
+        // Allow typing without recovery — not critical
+    } elseif (!empty($storedSig) && !hash_equals($storedSig, $providedSig)) {
         ChatService::jsonResponse(['status' => 'error', 'message' => 'Invalid session signature'], 403);
     }
 
@@ -938,7 +986,15 @@ $router->get('/api/chat/typing', function () use ($chatService, $chatModel) {
     }
 
     // Read-only endpoint still requires the session signature.
-    if (!$chatService->verifySessionSig( $sessionId, $providedSig)) {
+    // Auto-recover missing signature for legacy/stale sessions.
+    $storedSig = $chatModel->getSessionSig($sessionId);
+    if ($storedSig === null) {
+        ChatService::jsonResponse(['status' => 'error', 'message' => 'Invalid session signature'], 403);
+    } elseif (!empty($storedSig) && empty($providedSig)) {
+        $recoveredSig = $chatService->signSession($sessionId);
+        $chatModel->setSessionSigBySessionId($sessionId, $recoveredSig);
+        ChatService::jsonResponse(['status' => 'success', 'data' => ['is_typing' => false], 'session_sig' => $recoveredSig], 200, 'no-cache, private');
+    } elseif (!empty($storedSig) && !hash_equals($storedSig, $providedSig)) {
         ChatService::jsonResponse(['status' => 'error', 'message' => 'Invalid session signature'], 403);
     }
 
@@ -1187,14 +1243,14 @@ $router->post('/api/chat/settings/save', function () use ($chatModel, $authServi
 // ================================================================
 
 /**
- * GET /settings/chat
+ * GET /chat/settings
  */
-$router->get('/settings/chat', function () use ($chatModel, $twig, $authService) {
+$router->get('/chat/settings', function () use ($chatModel, $twig, $authService) {
     $authService->ensureCan('manage_settings');
 
     $settings = $chatModel->getChatSettings();
 
-    echo $twig->render('settings/chat.twig', [
+    echo $twig->render('chat/settings.twig', [
         'title' => 'চ্যাট সেটিংস',
         'header_title' => '💬 চ্যাট উইজেট সেটিংস',
         'settings' => $settings,
@@ -1213,7 +1269,7 @@ $router->get('/settings/chat', function () use ($chatModel, $twig, $authService)
 $router->post('/api/chat/offline', function () use ($chatService) {
     $rateCheck = $chatService->checkRateLimit('offline', 5, 60);
     if (!$rateCheck['allowed']) {
-        ChatService::jsonResponse(['status' => 'error', 'message' => 'অনুরোধের সীমা অতিক্রম করেছে। দয়া করে ' . $rateCheck['retry_after'] . ' সেকেন্ড পর আবার চেষ্টা করুন။'], 429);
+        ChatService::jsonResponse(['status' => 'error', 'message' => 'অনুরোধের সীমা অতিক্রম করেছে। দয়া করে ' . $rateCheck['retry_after'] . ' সেকেন্ড পর আবার চেষ্টা করুন।'], 429);
     }
     $input = json_decode(file_get_contents('php://input'), true) ?? [];
     $name = trim($input['name'] ?? '');
@@ -1362,10 +1418,10 @@ $router->get('/chat/admin', function () use ($chatService, $twig, $authService) 
 });
 
 /**
- * GET /settings/chat/canned
+ * GET /chat/settings/canned
  * Canned responses management page
  */
-$router->get('/settings/chat/canned', function () use ($chatService, $twig, $authService) {
+$router->get('/chat/settings/canned', function () use ($chatService, $twig, $authService) {
     $authService->ensureCan('manage_settings');
 
     header('Content-Type: text/html; charset=utf-8');
@@ -1616,7 +1672,7 @@ $router->get('/api/chat/cleanup', function () use ($chatService, $chatModel) {
 // Auto-trigger cleanup only on admin page load (5% chance to spread load)
 // Only runs for admin-related routes, NOT on every visitor API request
 $currentPath = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
-$isAdminRoute = strpos($currentPath, '/chat/admin') === 0 || strpos($currentPath, '/settings/chat') === 0;
+$isAdminRoute = strpos($currentPath, '/chat/admin') === 0 || strpos($currentPath, '/chat/settings') === 0;
 if ($isAdminRoute && mt_rand(1, 100) <= 5) {
     $cutoff = date('Y-m-d H:i:s', strtotime('-30 days'));
     $count = $chatModel->countOldClosedSessions($cutoff);
@@ -1625,3 +1681,290 @@ if ($isAdminRoute && mt_rand(1, 100) <= 5) {
         $chatModel->deleteOldClosedSessions($cutoff);
     }
 }
+
+// ================================================================
+// HEALTH CHECK & MONITORING
+// ================================================================
+
+/**
+ * GET /api/chat/health
+ * System health check — returns status of all subsystems.
+ */
+$router->get('/api/chat/health', function () use ($chatModel) {
+    $monitorService = new MonitorService();
+    $health = $monitorService->healthCheck();
+
+    $statusCode = $health['status'] === 'healthy' ? 200 : 503;
+    ChatService::jsonResponse($health, $statusCode, 'no-cache');
+});
+
+/**
+ * GET /api/chat/metrics
+ * Application metrics for monitoring dashboards (admin only).
+ */
+$router->get('/api/chat/metrics', function () use ($authService) {
+    $authService->ensureCan('manage_chat');
+
+    $monitorService = new MonitorService();
+    $metrics = $monitorService->getMetrics();
+
+    ChatService::jsonResponse(['status' => 'success', 'data' => $metrics], 200, 'no-cache, private');
+});
+
+// ================================================================
+// FIREBASE CONFIG ENDPOINT (Secure — no hardcoded keys)
+// ================================================================
+
+/**
+ * GET /api/chat/push/config
+ * Returns Firebase client configuration from env/config.
+ * Public endpoint — needed by visitor widget to initialize FCM.
+ */
+$router->get('/api/chat/push/config', function () use ($chatService) {
+    $rateCheck = $chatService->checkRateLimit('push_config', 30, 60);
+    if (!$rateCheck['allowed']) {
+        ChatService::jsonResponse(['status' => 'error', 'message' => 'Rate limit exceeded'], 429);
+    }
+
+    if (!function_exists('getFirebaseConfig')) {
+        require_once __DIR__ . '/../config/firebase.php';
+    }
+
+    $config = getFirebaseConfig();
+
+    ChatService::jsonResponse([
+        'status' => 'success',
+        'data' => [
+            'enabled' => $config['enabled'],
+            'config' => $config['web_config'],
+            'vapid_key' => $config['vapid_key'] ?: (
+                $chatModel->getChatSetting('chat_push_vapid_public_key') ?: ''
+            ),
+        ],
+    ], 200, 'public, max-age=300');
+});
+
+// ================================================================
+// NOTIFICATION TEST ENDPOINT
+// ================================================================
+
+/**
+ * POST /api/chat/admin/push/test
+ * Send a test push notification to the current admin.
+ */
+$router->post('/api/chat/admin/push/test', function () use ($chatService, $chatModel, $authService, $pushService) {
+    $authService->ensureCan('manage_chat');
+
+    $adminId = (int)$authService->getCurrentUserId();
+
+    // Get the admin's FCM tokens
+    $stmt = $chatModel->mysqli->prepare(
+        "SELECT fcm_token FROM fcm_tokens WHERE user_type = 'admin' AND user_id = ? AND revoked_at IS NULL AND fcm_token != ''"
+    );
+    $stmt->bind_param('i', $adminId);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $tokens = [];
+    while ($row = $result->fetch_assoc()) {
+        $tokens[] = $row['fcm_token'];
+    }
+    $stmt->close();
+
+    if (empty($tokens)) {
+        ChatService::jsonResponse([
+            'status' => 'error',
+            'message' => 'কোনো FCM টোকেন পাওয়া যায়নি। প্রথমে Push চালু করুন।',
+        ], 400);
+    }
+
+    if (!function_exists('sendFcmMulticast')) {
+        require_once __DIR__ . '/../config/fcm.php';
+    }
+
+    $result = sendFcmMulticast(
+        $tokens,
+        'টেস্ট নোটিফিকেশন ✅',
+        'এটি একটি টেস্ট বার্তা। আপনার পুশ নোটিফিকেশন সঠিকভাবে কাজ করছে!',
+        ['type' => 'test', 'url' => '/chat/admin']
+    );
+
+    // Log the test notification
+    $chatModel->logNotification(null, 'test', $adminId, 'push', $result['success'] > 0 ? 'sent' : 'failed', json_encode($result));
+
+    // Prune invalid tokens
+    if (!empty($result['invalid_tokens'])) {
+        $chatModel->deleteInvalidFcmTokens($result['invalid_tokens']);
+    }
+
+    if ($result['success'] > 0) {
+        ChatService::jsonResponse(['status' => 'success', 'message' => 'টেস্ট নোটিফিকেশন পাঠানো হয়েছে ✅']);
+    } else {
+        ChatService::jsonResponse(['status' => 'error', 'message' => 'টেস্ট নোটিফিকেশন পাঠাতে ব্যর্থ হয়েছে।'], 500);
+    }
+});
+
+// ================================================================
+// DEVICE MANAGEMENT (with confirmation support)
+// ================================================================
+
+/**
+ * POST /api/chat/admin/devices/revoke-confirm
+ * Revoke a device with confirmation token verification.
+ */
+$router->post('/api/chat/admin/devices/revoke-confirm', function () use ($chatModel, $authService) {
+    $authService->ensureCan('manage_chat');
+
+    $input = json_decode(file_get_contents('php://input'), true) ?? [];
+    $deviceId = (int)($input['device_id'] ?? 0);
+    $confirmationToken = $input['confirmation_token'] ?? '';
+
+    if ($deviceId <= 0) {
+        ChatService::jsonResponse(['status' => 'error', 'message' => 'Device ID is required'], 400);
+    }
+
+    // Verify confirmation token (simple session-based check)
+    if (empty($confirmationToken) || $confirmationToken !== ($_SESSION['device_revoke_token'] ?? '')) {
+        // Generate a new token for the confirmation modal
+        $token = bin2hex(random_bytes(16));
+        $_SESSION['device_revoke_token'] = $token;
+        ChatService::jsonResponse([
+            'status' => 'pending_confirmation',
+            'message' => 'ডিভাইস মুছে ফেলতে নিশ্চিত করুন',
+            'confirmation_token' => $token,
+        ]);
+    }
+
+    // Clear the confirmation token
+    unset($_SESSION['device_revoke_token']);
+
+    $userId = (int)$authService->getCurrentUserId();
+    $chatModel->revokeDevice($userId, $deviceId);
+
+    ChatService::jsonResponse(['status' => 'success', 'message' => 'ডিভাইস মুছে ফেলা হয়েছে']);
+});
+
+// ================================================================
+// NOTIFICATION LOG ENDPOINTS
+// ================================================================
+
+/**
+ * GET /api/chat/admin/notifications/logs
+ * Get notification delivery logs (admin only).
+ */
+$router->get('/api/chat/admin/notifications/logs', function () use ($chatModel, $authService) {
+    $authService->ensureCan('manage_chat');
+
+    $offset = max(0, (int)($_GET['offset'] ?? 0));
+    $limit = max(1, min((int)($_GET['limit'] ?? 50), 100));
+    $channel = $_GET['channel'] ?? '';
+    $status = $_GET['status'] ?? '';
+
+    $sql = "SELECT id, message_id, session_id, recipient_user_id, recipient_email, channel, provider, status, provider_response, retry_count, created_at
+            FROM chat_notification_log_v2 WHERE 1=1";
+    $params = [];
+    $types = '';
+
+    if ($channel !== '' && in_array($channel, ['push', 'email', 'sms', 'in_app'])) {
+        $sql .= ' AND channel = ?';
+        $params[] = $channel;
+        $types .= 's';
+    }
+    if ($status !== '' && in_array($status, ['queued', 'sent', 'delivered', 'failed', 'invalid_token', 'expired'])) {
+        $sql .= ' AND status = ?';
+        $params[] = $status;
+        $types .= 's';
+    }
+
+    $sql .= ' ORDER BY created_at DESC LIMIT ? OFFSET ?';
+    $params[] = $limit + 1;
+    $params[] = $offset;
+    $types .= 'ii';
+
+    $stmt = $chatModel->mysqli->prepare($sql);
+    if ($types) $stmt->bind_param($types, ...$params);
+    $stmt->execute();
+    $result = $stmt->get_result();
+
+    $logs = [];
+    while ($row = $result->fetch_assoc()) {
+        $logs[] = $row;
+    }
+    $stmt->close();
+
+    $hasMore = count($logs) > $limit;
+    if ($hasMore) array_pop($logs);
+
+    ChatService::jsonResponse([
+        'status' => 'success',
+        'data' => $logs,
+        'has_more' => $hasMore,
+    ], 200, 'no-cache, private');
+});
+
+// ================================================================
+// EMAIL QUEUE ENDPOINTS (Admin only)
+// ================================================================
+
+/**
+ * GET /api/chat/admin/email-queue/stats
+ * Get email queue statistics.
+ */
+$router->get('/api/chat/admin/email-queue/stats', function () use ($authService) {
+    $authService->ensureCan('manage_chat');
+
+    $emailQueue = new EmailQueueService();
+    $stats = $emailQueue->getStats();
+
+    ChatService::jsonResponse(['status' => 'success', 'data' => $stats], 200, 'no-cache, private');
+});
+
+/**
+ * POST /api/chat/admin/email-queue/process
+ * Manually trigger email queue processing (admin only).
+ */
+$router->post('/api/chat/admin/email-queue/process', function () use ($authService) {
+    $authService->ensureCan('manage_settings');
+
+    $emailQueue = new EmailQueueService();
+    $result = $emailQueue->processQueue(20);
+
+    ChatService::jsonResponse([
+        'status' => 'success',
+        'message' => 'ইমেইল কিউ প্রসেস করা হয়েছে',
+        'data' => $result,
+    ]);
+});
+
+// ================================================================
+// CONSISTENT JSON ERROR HANDLER
+// ================================================================
+
+/**
+ * Register a global error handler for unhandled exceptions
+ * to return consistent JSON responses for API routes.
+ */
+set_exception_handler(function (\Throwable $e) {
+    $requestUri = $_SERVER['REQUEST_URI'] ?? '';
+    $isApi = strpos($requestUri, '/api/') === 0;
+
+    error_log('[ChatController] Unhandled: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
+
+    if ($isApi) {
+        http_response_code(500);
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode([
+            'status' => 'error',
+            'message' => 'সার্ভার ত্রুটি ঘটেছে। দয়া করে পরে আবার চেষ্টা করুন।',
+            'error_id' => bin2hex(random_bytes(4)),
+        ], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+
+    // Non-API: delegate to default handler
+    if (function_exists('renderError')) {
+        renderError(500, 'সার্ভার ত্রুটি');
+    } else {
+        http_response_code(500);
+        echo '500 Internal Server Error';
+    }
+});

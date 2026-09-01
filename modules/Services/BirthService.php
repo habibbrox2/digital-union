@@ -59,11 +59,10 @@ class BirthService
             throw new \Exception('নাম ও জন্মতারিখ প্রদান বাধ্যতামূলক।');
         }
 
-        // Convert date format if needed
-        $bd = \DateTime::createFromFormat('d-m-Y', $data['birth_date']);
-        if ($bd) {
-            $data['birth_date'] = $bd->format('Y-m-d');
-        }
+        // Normalize date fields to MySQL DATE format (accepts DD-MM-YYYY, YYYY-MM-DD, etc.)
+        $data['birth_date']           = normalizeDateToMysql($data['birth_date']);
+        $data['date_of_registration'] = normalizeDateToMysql($data['date_of_registration']);
+        $data['date_of_issuance']     = normalizeDateToMysql($data['date_of_issuance']);
 
         // Generate date words
         $dateWords = dateToWords($data['birth_date']);
@@ -125,11 +124,10 @@ class BirthService
             throw new \Exception('নাম ও মৃত্যুর তারিখ বাধ্যতামূলক।');
         }
 
-        // Convert date format if needed
-        $dd = \DateTime::createFromFormat('d-m-Y', $data['death_date']);
-        if ($dd) {
-            $data['death_date'] = $dd->format('Y-m-d');
-        }
+        // Normalize date fields to MySQL DATE format (accepts DD-MM-YYYY, YYYY-MM-DD, etc.)
+        $data['death_date']            = normalizeDateToMysql($data['death_date']);
+        $data['date_of_registration']  = normalizeDateToMysql($data['date_of_registration']);
+        $data['date_of_issuance']      = normalizeDateToMysql($data['date_of_issuance']);
 
         if ($id > 0) {
             $updated = $this->birthModel->update($id, $data);
