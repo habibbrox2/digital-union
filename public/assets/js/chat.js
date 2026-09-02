@@ -2678,6 +2678,7 @@
   let _pushInited = false;
   let _pushBlocked = false;
   let _fcmToken = null;
+  let _pushRefreshTimer = null;
 
   function openPushDb() {
     return new Promise(function (resolve, reject) {
@@ -2796,7 +2797,8 @@
         _pushInited = true;
 
         // Poll for token refresh every 6 hours
-        setInterval(async () => {
+        if (_pushRefreshTimer) clearInterval(_pushRefreshTimer);
+        _pushRefreshTimer = setInterval(async () => {
           try {
             const refreshOptions = {};
             if (vapidKey) refreshOptions.vapidKey = vapidKey;
@@ -2852,6 +2854,10 @@
 
     pushDbClearSession().catch(function () {});
 
+    if (_pushRefreshTimer) {
+      clearInterval(_pushRefreshTimer);
+      _pushRefreshTimer = null;
+    }
     _pushInited = false;
     _fcmToken = null;
     try { localStorage.removeItem(CONFIG.vapidKeyUsed); } catch (e) {}

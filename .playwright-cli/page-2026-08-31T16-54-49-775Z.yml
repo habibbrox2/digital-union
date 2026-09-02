@@ -1,0 +1,29 @@
+- generic [ref=e3]:
+  - img "Smart Union Logo" [ref=e5]
+  - generic [ref=e6]:
+    - generic [ref=e7]: ইউজারনেম বা ইমেইল
+    - generic [ref=e8]:
+      - generic [ref=e9]: 
+      - textbox "ইউজারনেম বা ইমেইল" [active] [ref=e11]:
+        - /placeholder: আপনার ইউজারনেম বা ইমেইল লিখুন
+  - generic [ref=e12]:
+    - generic [ref=e13]: পাসওয়ার্ড
+    - generic [ref=e14]:
+      - generic [ref=e15]: 
+      - textbox "পাসওয়ার্ড" [ref=e17]:
+        - /placeholder: আপনার পাসওয়ার্ড লিখুন
+      - button "" [ref=e18] [cursor=pointer]
+  - generic [ref=e20]:
+    - checkbox "মনে রাখুন" [ref=e21] [cursor=pointer]
+    - generic [ref=e22] [cursor=pointer]: মনে রাখুন
+  - button " লগইন করুন" [ref=e23] [cursor=pointer]:
+    - generic [ref=e24]: 
+    - text: লগইন করুন
+  - link " পাসওয়ার্ড ভুলে গেছেন?" [ref=e25] [cursor=pointer]:
+    - /url: /password-reset
+    - generic [ref=e26]: 
+    - text: পাসওয়ার্ড ভুলে গেছেন?
+  - link " হোম পেজ" [ref=e27] [cursor=pointer]:
+    - /url: /
+    - generic [ref=e28]: 
+    - text: হোম পেজ

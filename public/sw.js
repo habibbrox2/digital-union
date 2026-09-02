@@ -5,24 +5,24 @@
    (PushService/FCM) and displays them even when the tab is closed.
    ============================================================ */
 
-// Import Firebase scripts for FCM
-importScripts('https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js');
-importScripts('https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging-compat.js');
+// Import Firebase scripts for FCM (latest stable)
+importScripts('https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js');
+importScripts('https://www.gstatic.com/firebasejs/10.14.1/firebase-messaging-compat.js');
 
 // Initialize Firebase
 const firebaseConfig = {
-    apiKey: "AIzaSyBdNqFdh0DZ3Zz-iztHL2uGtoYZDLzhdyw",
-    authDomain: "digi-union-lgdhaka.firebaseapp.com",
-    projectId: "digi-union-lgdhaka",
-    storageBucket: "digi-union-lgdhaka.firebasestorage.app",
+    apiKey:            "AIzaSyBdNqFdh0DZ3Zz-iztHL2uGtoYZDLzhdyw",
+    authDomain:        "digi-union-lgdhaka.firebaseapp.com",
+    projectId:         "digi-union-lgdhaka",
+    storageBucket:     "digi-union-lgdhaka.firebasestorage.app",
     messagingSenderId: "599628365980",
-    appId: "1:599628365980:web:e90cefbce2c52ccf036d59"
+    appId:             "1:599628365980:web:e90cefbce2c52ccf036d59"
 };
 
 firebase.initializeApp(firebaseConfig);
 const messaging = firebase.messaging();
 
-const CACHE_NAME = 'smart-up-cache-v2';
+const CACHE_NAME = 'smart-up-cache-v3';
 const OFFLINE_URL = '/offline.html';
 const PUSH_CACHE = 'chat-push-v1';
 
@@ -93,10 +93,10 @@ self.addEventListener('fetch', (event) => {
 messaging.onBackgroundMessage((payload) => {
   console.log('[SW] FCM background message:', payload);
 
-  const title = payload.notification?.title || 'নতুন বার্তা';
-  const body = payload.notification?.body || '';
-  const url = payload.data?.url || payload.fcmOptions?.link || '/chat/admin';
-  const sessionId = payload.data?.session_id || '';
+  const title = (payload.notification && payload.notification.title) || 'নতুন বার্তা';
+  const body = (payload.notification && payload.notification.body) || '';
+  const url = (payload.data && payload.data.url) || (payload.fcmOptions && payload.fcmOptions.link) || '/chat/admin';
+  const sessionId = (payload.data && payload.data.session_id) || '';
 
   const notificationOptions = {
     body: body,
@@ -122,20 +122,13 @@ self.addEventListener('notificationclick', (event) => {
 
   event.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+      // Focus an existing tab if it's already open
       for (const client of clientList) {
-        if ('focus' in client) {
-          const p = Promise.resolve();
-          try {
-            if ('navigate' in client && client.url !== urlToOpen) {
-              return Promise.resolve(client.navigate(urlToOpen)).then(() => client.focus());
-            }
-          } catch (e) {}
-          try {
-            return Promise.resolve(client.focus());
-          } catch (e) {}
-          return p;
+        if (client.url === urlToOpen && 'focus' in client) {
+          return client.focus();
         }
       }
+      // Otherwise open a new tab
       if (self.clients.openWindow) {
         return self.clients.openWindow(urlToOpen);
       }
@@ -156,4 +149,3 @@ self.addEventListener('message', (event) => {
     self.skipWaiting();
   }
 });
-

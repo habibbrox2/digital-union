@@ -671,10 +671,10 @@ class ChatModel
     {
         if ($adminId !== null) {
             $stmt = $this->mysqli->prepare("INSERT INTO chat_messages (session_id, message, message_type, file_url, file_name, file_size, file_type, sender_type, admin_id, is_read, delivered_at, read_at, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, NULL, NULL, NOW())");
-            $stmt->bind_param("sssssssii", $sessionId, $message, $messageType, $fileUrl, $fileName, $fileSize, $fileType, $senderType, $adminId);
+            $stmt->bind_param("ssssssssi", $sessionId, $message, $messageType, $fileUrl, $fileName, $fileSize, $fileType, $senderType, $adminId);
         } else {
             $stmt = $this->mysqli->prepare("INSERT INTO chat_messages (session_id, message, message_type, file_url, file_name, file_size, file_type, sender_type, is_read, delivered_at, read_at, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, NULL, NULL, NOW())");
-            $stmt->bind_param("sssssssi", $sessionId, $message, $messageType, $fileUrl, $fileName, $fileSize, $fileType, $senderType);
+            $stmt->bind_param("ssssssss", $sessionId, $message, $messageType, $fileUrl, $fileName, $fileSize, $fileType, $senderType);
         }
         $stmt->execute();
         $id = $stmt->insert_id;

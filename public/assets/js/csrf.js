@@ -54,8 +54,9 @@
     const originalOpen = XMLHttpRequest.prototype.open;
     const originalSend = XMLHttpRequest.prototype.send;
 
-    XMLHttpRequest.prototype.open = function (method) {
+    XMLHttpRequest.prototype.open = function (method, url) {
         this.__csrfMethod = method;
+        this.__csrfUrl = url;
         return originalOpen.apply(this, arguments);
     };
 
@@ -63,7 +64,19 @@
         const token  = getCsrfToken();
         const method = (this.__csrfMethod || 'GET').toUpperCase();
 
+        // Only add CSRF headers to same-origin requests. External APIs
+        // (Firebase, Google, etc.) reject requests with custom headers
+        // because their CORS policy does not list them.
+        let isSameOrigin = true;
+        try {
+            const url = this.__csrfUrl || '';
+            if (url && /^https?:\/\//i.test(url)) {
+                isSameOrigin = url.startsWith(window.location.origin);
+            }
+        } catch (e) {}
+
         if (
+            isSameOrigin &&
             token &&
             ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)
         ) {
@@ -83,10 +96,21 @@
     window.fetch = function (input, init = {}) {
         const token = getCsrfToken();
         const method = (init.method || 'GET').toUpperCase();
-    
-        if (token && ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
+
+        // Only add CSRF headers to same-origin requests. External APIs
+        // (Firebase, Google, etc.) reject requests with custom headers
+        // because their CORS policy does not list them.
+        let isSameOrigin = true;
+        try {
+            const url = typeof input === 'string' ? input : (input instanceof Request ? input.url : '');
+            if (url && /^https?:\/\//i.test(url)) {
+                isSameOrigin = url.startsWith(window.location.origin);
+            }
+        } catch (e) {}
+
+        if (isSameOrigin && token && ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
             init.headers = init.headers || {};
-            
+
             // Headers version
             if (init.headers instanceof Headers) {
                 init.headers.set('X-CSRF-TOKEN', token);

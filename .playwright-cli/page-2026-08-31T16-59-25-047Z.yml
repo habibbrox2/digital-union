@@ -1,0 +1,370 @@
+- generic [active] [ref=e1]:
+  - link "মূল কনটেন্টে যান" [ref=e2] [cursor=pointer]:
+    - /url: "#main-content"
+  - generic [ref=e3]:
+    - banner [ref=e4]:
+      - generic [ref=e6]:
+        - generic [ref=e7]:
+          - link "Logo":
+            - /url: https://lgdhaka.co
+            - img "Logo" [ref=e8] [cursor=pointer]
+        - heading "স্মার্ট ইউপি, ঢাকা" [level=3] [ref=e10]
+        - link "লগইন" [ref=e12] [cursor=pointer]:
+          - /url: /login
+    - generic [ref=e13]:
+      - generic [ref=e18]:
+        - button [ref=e19] [cursor=pointer]
+        - button [ref=e20] [cursor=pointer]
+        - button [ref=e21] [cursor=pointer]
+        - button [ref=e22] [cursor=pointer]
+        - button [ref=e23] [cursor=pointer]
+        - button [ref=e24] [cursor=pointer]
+      - generic [ref=e29]:
+        - heading "সিটিজেন আইডি ও ইউপি ট্যাক্স যাচাই" [level=4] [ref=e31]
+        - generic [ref=e33]:
+          - generic [ref=e34]:
+            - generic [ref=e35]: জেলা
+            - combobox [disabled] [ref=e37]:
+              - option "কুমিল্লা"
+              - option "ফেনী"
+              - option "ব্রাহ্মণবাড়িয়া"
+              - option "রাঙ্গামাটি"
+              - option "নোয়াখালী"
+              - option "চাঁদপুর"
+              - option "লক্ষ্মীপুর"
+              - option "চট্টগ্রাম"
+              - option "কক্সবাজার"
+              - option "বান্দরবান"
+              - option "সিরাজগঞ্জ"
+              - option "পাবনা"
+              - option "বগুড়া"
+              - option "রাজশাহী"
+              - option "নাটোর"
+              - option "জয়পুরহাট"
+              - option "চাঁপাইনবাবগঞ্জ"
+              - option "নওগাঁ"
+              - option "যশোর"
+              - option "সাতক্ষীরা"
+              - option "মেহেরপুর"
+              - option "নড়াইল"
+              - option "চুয়াডাঙ্গা"
+              - option "কুষ্টিয়া"
+              - option "মাগুরা"
+              - option "খুলনা"
+              - option "বাগেরহাট"
+              - option "ঝিনাইদহ"
+              - option "ঝালকাঠি"
+              - option "পটুয়াখালী"
+              - option "পিরোজপুর"
+              - option "বরিশাল"
+              - option "ভোলা"
+              - option "বরগুনা"
+              - option "সিলেট"
+              - option "মৌলভীবাজার"
+              - option "হবিগঞ্জ"
+              - option "সুনামগঞ্জ"
+              - option "নরসিংদী"
+              - option "গাজীপুর"
+              - option "শরীয়তপুর"
+              - option "নারায়ণগঞ্জ"
+              - option "টাঙ্গাইল"
+              - option "কিশোরগঞ্জ"
+              - option "মানিকগঞ্জ"
+              - option "ঢাকা" [selected]
+              - option "মুন্সিগঞ্জ"
+              - option "রাজবাড়ী"
+              - option "মাদারীপুর"
+              - option "গোপালগঞ্জ"
+              - option "ফরিদপুর"
+              - option "পঞ্চগড়"
+              - option "দিনাজপুর"
+              - option "লালমনিরহাট"
+              - option "নীলফামারী"
+              - option "গাইবান্ধা"
+              - option "ঠাকুরগাঁও"
+              - option "রংপুর"
+              - option "কুড়িগ্রাম"
+              - option "শেরপুর"
+              - option "ময়মনসিংহ"
+              - option "জামালপুর"
+              - option "নেত্রকোণা"
+              - option "খাগড়াছড়ি"
+              - option "খাগড়াছড়ি"
+              - option "তুরাগ"
+            - generic [ref=e38]: উপজেলা
+            - combobox [ref=e40]:
+              - option "চিহ্নিত করুন" [selected]
+          - generic [ref=e41]:
+            - generic [ref=e42]: ইউনিয়ন
+            - combobox [ref=e44]:
+              - option "চিহ্নিত করুন" [selected]
+            - generic [ref=e45]: ওয়ার্ড নং
+            - combobox [ref=e47]:
+              - option "চিহ্নিত করুন" [selected]
+          - generic [ref=e48]:
+            - generic [ref=e49]: মহল্লা
+            - combobox [ref=e51]:
+              - option "চিহ্নিত করুন" [selected]
+            - generic [ref=e52]: হোল্ডিং নং
+            - textbox "হোল্ডিং নং দিন..." [ref=e54]
+          - button "সার্চ করুন" [ref=e55] [cursor=pointer]
+      - generic [ref=e57]:
+        - generic [ref=e58]:
+          - heading "আবেদন ও সনদ যাচাই করুন" [level=4] [ref=e59]
+          - paragraph [ref=e60]: নোটঃ আবেদন যাচাইয়ের জন্য পিন নং অথবা সনদ যাচাইয়ের জন্য সনদ নং দিয়ে সার্চ করুন।
+        - generic [ref=e62]:
+          - generic [ref=e63]:
+            - generic [ref=e64]: ধরন
+            - combobox [ref=e65]:
+              - option "নির্বাচন করুন" [selected]
+              - option "আবেদন যাচাই"
+              - option "সনদ যাচাই"
+          - generic [ref=e66]:
+            - generic [ref=e67]: সনদের ধরন
+            - combobox [ref=e68]:
+              - option "নির্বাচন করুন" [selected]
+              - option "নাগরিক"
+              - option "অবিবাহিত"
+              - option "পূনঃবিবাহ না হওয়া"
+              - option "একই নামের প্রত্যয়ন"
+              - option "সনাতন ধর্ম অবলম্বি"
+              - option "প্রত্যয়ন পত্র"
+              - option "নদী ভাঙনের"
+              - option "চারিত্রিক"
+              - option "ভূমিহীন"
+              - option "বার্ষিক আয়ের প্রত্যয়ন"
+              - option "প্রতিবন্ধি"
+              - option "অনুমতি পত্র"
+              - option "ভোটার আইডি স্থানান্তর"
+              - option "নতুন ভোটার"
+              - option "ওয়ারিশ"
+              - option "পারিবারিক"
+              - option "ট্রেড লাইসেন্স"
+              - option "বিবাহিত"
+          - generic [ref=e69]:
+            - generic [ref=e70]: সার্চ বক্স
+            - textbox "এখানে সার্চ দিন..." [ref=e71]
+          - button "সার্চ করুন" [ref=e74] [cursor=pointer]
+      - generic [ref=e79]:
+        - heading "ইউনিয়ন পরিচিতি" [level=4] [ref=e81]
+        - generic [ref=e83]:
+          - link "চেয়ারম্যান" [ref=e85] [cursor=pointer]:
+            - /url: /chairman
+          - link "ইউপি প্রশাসনিক কর্মকর্তা" [ref=e90] [cursor=pointer]:
+            - /url: /secretary
+          - link "হিসাব সহকারী" [ref=e95] [cursor=pointer]:
+            - /url: /computer_operator
+          - link "মেম্বার" [ref=e100] [cursor=pointer]:
+            - /url: /member
+          - link "গ্রামপুলিশ" [ref=e105] [cursor=pointer]:
+            - /url: /village_police
+          - link "উদ্যোক্তা" [ref=e110] [cursor=pointer]:
+            - /url: /udc
+      - generic [ref=e116]:
+        - heading "ই-সেবা সমূহের আবেদন" [level=4] [ref=e118]
+        - generic [ref=e120]:
+          - link "নাগরিক সনদ নাগরিক সনদ" [ref=e122] [cursor=pointer]:
+            - /url: /apply/KqsYeJZsqYq-ClU69lZj7fbEtzderV8Vkt88a9R9eA-HJ-bxpb_Sz2MgJKTNH3yaBFeB7AQ0cFGFiREN6cIEfg
+            - generic [ref=e123]:
+              - img "নাগরিক সনদ" [ref=e124]
+              - generic [ref=e125]: নাগরিক সনদ
+          - link "ট্রেড লাইসেন্স ট্রেড লাইসেন্স" [ref=e127] [cursor=pointer]:
+            - /url: /apply/tSQ-B3GG9worzJsO4rYtLQAWO2jfznEp0tRPUMlAgnWpITZ6bPiGPEbburDHGPphoib500KJiaveMaiedIgKsg
+            - generic [ref=e128]:
+              - img "ট্রেড লাইসেন্স" [ref=e129]
+              - generic [ref=e130]: ট্রেড লাইসেন্স
+          - link "ওয়ারিশ সনদ ওয়ারিশ সনদ" [ref=e132] [cursor=pointer]:
+            - /url: /apply/oT0_dWphKxsiXiu4l1tpVlUZiY9UXFZ3gdkezivJOISJ6iVMh9GE8QLW8UYt_A7fYLxW5fLJ01oFd6If5Ffd-g
+            - generic [ref=e133]:
+              - img "ওয়ারিশ সনদ" [ref=e134]
+              - generic [ref=e135]: ওয়ারিশ সনদ
+          - link "চারিত্রিক সনদ চারিত্রিক সনদ" [ref=e137] [cursor=pointer]:
+            - /url: /apply/AW0_UNbo_fTAQXxOqdJJhGpKrweJhoXylZrCOVW17i1QdUeWadCeLqzIPXMT6kS9gRF7UIb71du_JAPW1iTzWA
+            - generic [ref=e138]:
+              - img "চারিত্রিক সনদ" [ref=e139]
+              - generic [ref=e140]: চারিত্রিক সনদ
+          - link "নতুন ভোটার নতুন ভোটার" [ref=e142] [cursor=pointer]:
+            - /url: /apply/hFbSnBq7kQVmfB3WB7WSHka-PxIgb7TvKJpHTz88ebX_JCnA0hbUP_zcKxwc5jq7uOdYtgtdA0O6-jJqj-coYg
+            - generic [ref=e143]:
+              - img "নতুন ভোটার" [ref=e144]
+              - generic [ref=e145]: নতুন ভোটার
+          - link "ভূমিহীন সনদ ভূমিহীন সনদ" [ref=e147] [cursor=pointer]:
+            - /url: /apply/ncmCFAaOR1-CdQjIOZ2mO24CimruKbrj9qg2sMLenpxq1YYeW7V0kUu1fyDXdXiOYdOdyPieal0PpJg1FGsAqw
+            - generic [ref=e148]:
+              - img "ভূমিহীন সনদ" [ref=e149]
+              - generic [ref=e150]: ভূমিহীন সনদ
+          - link "মৃত্যু প্রত্যয়ন মৃত্যু প্রত্যয়ন" [ref=e152] [cursor=pointer]:
+            - /url: /apply/j5T7UzoIFd0ExNJCA2xaNqCCudAyIV6jDNtX03t609lTYq9l-662EVZrNAJIemFgfF5j5yEmGsB8mSYe7P4h0Q
+            - generic [ref=e153]:
+              - img "মৃত্যু প্রত্যয়ন" [ref=e154]
+              - generic [ref=e155]: মৃত্যু প্রত্যয়ন
+          - link "বার্ষিক আয় বার্ষিক আয়" [ref=e157] [cursor=pointer]:
+            - /url: /apply/UrmXa7g0gK-dFcYmWln6VgWmTc-lJYubtNKqBybnVNrT4WXSt4KB6WvYazuvxk4He8XwANZW0kO99QowTJ8RqA
+            - generic [ref=e158]:
+              - img "বার্ষিক আয়" [ref=e159]
+              - generic [ref=e160]: বার্ষিক আয়
+          - link "অবিবাহিত সনদ অবিবাহিত সনদ" [ref=e162] [cursor=pointer]:
+            - /url: /apply/_X5pCXGtVGKJhUsA8gycXm9Ltr_WwyZX5q1LkBWqtVb5ANeB1t70KZqZzXkxWFwOESu4hpW5Ak0FBUd4BirNsw
+            - generic [ref=e163]:
+              - img "অবিবাহিত সনদ" [ref=e164]
+              - generic [ref=e165]: অবিবাহিত সনদ
+          - link "বিবাহিত সনদ বিবাহিত সনদ" [ref=e167] [cursor=pointer]:
+            - /url: /apply/lhpgQByT5B5pY3ynIDRJw4tujcIELHBu0UUtwcA2fA6yfGN6g_ipcKHECw54XB2j9BG6QemC1zc_Rz8TlrNq-Q
+            - generic [ref=e168]:
+              - img "বিবাহিত সনদ" [ref=e169]
+              - generic [ref=e170]: বিবাহিত সনদ
+          - link "একই নামের প্রত্যয়ন একই নামের প্রত্যয়ন" [ref=e172] [cursor=pointer]:
+            - /url: /apply/Qyl5TJcBiBDTd682qp5sAU_MHnH7zY7MXmIeKwjxCf5vbICWmuobAZiNcMtMiazjzVDts167uL1VyX4YUQVb_w
+            - generic [ref=e173]:
+              - img "একই নামের প্রত্যয়ন" [ref=e174]
+              - generic [ref=e175]: একই নামের প্রত্যয়ন
+          - link "পুনঃ বিবাহ না হওয়া সনদ পুনঃ বিবাহ না হওয়া সনদ" [ref=e177] [cursor=pointer]:
+            - /url: /apply/nH_YHw8HPoZHHegmQZj6Kj3b3BMuM3GtQnRi2_qbTDl0Wa0MfRAFN0uAjSU_DrapyFessxuro7b1qrj2Zvjglw
+            - generic [ref=e178]:
+              - img "পুনঃ বিবাহ না হওয়া সনদ" [ref=e179]
+              - generic [ref=e180]: পুনঃ বিবাহ না হওয়া সনদ
+          - link "প্রকৃত বাকঁ ও শ্রবন প্রতিবন্ধী প্রকৃত বাকঁ ও শ্রবন প্রতিবন্ধী" [ref=e182] [cursor=pointer]:
+            - /url: /apply/xaUOT2_exMbwIupSUtNdKsPUxAIrgmDHr77CdzyA--HycgRPtr5Gkddt-WSL2BZW9D-k1GsxiAGMEyaFsEpS-Q
+            - generic [ref=e183]:
+              - img "প্রকৃত বাকঁ ও শ্রবন প্রতিবন্ধী" [ref=e184]
+              - generic [ref=e185]: প্রকৃত বাকঁ ও শ্রবন প্রতিবন্ধী
+          - link "পারিবারিক সনদ পারিবারিক সনদ" [ref=e187] [cursor=pointer]:
+            - /url: /apply/S3ZtPYyVSvimjehgIzo0Eup0z3fsopiosP9lS-gDcYpDlwsRDDmW_aDppzMyHRbsHQDBIQ5njYYrUaVik3G4dg
+            - generic [ref=e188]:
+              - img "পারিবারিক সনদ" [ref=e189]
+              - generic [ref=e190]: পারিবারিক সনদ
+          - link "প্রত্যয়নপত্র প্রত্যয়নপত্র" [ref=e192] [cursor=pointer]:
+            - /url: /apply/c-MNK95H_kpys2Z4z-cUe4VIR4Eb_zMpbYLFkcJQJxdlKjygWTQMVXyS17-86M4UqMZj_FOdMqNZumR4EtkdPw
+            - generic [ref=e193]:
+              - img "প্রত্যয়নপত্র" [ref=e194]
+              - generic [ref=e195]: প্রত্যয়নপত্র
+          - link "অনুমতি পত্র অনুমতি পত্র" [ref=e197] [cursor=pointer]:
+            - /url: /apply/sg2tg6FTbcbPw0SqTxyAn0ITolluFkt_RGfsq6Hiwxjb-APhBxp7_GsMHF6yHIzQjF5w2e1pNXttHSmLCm3UaQ
+            - generic [ref=e198]:
+              - img "অনুমতি পত্র" [ref=e199]
+              - generic [ref=e200]: অনুমতি পত্র
+          - link "ভোটার স্থানান্তর ভোটার স্থানান্তর" [ref=e202] [cursor=pointer]:
+            - /url: /apply/E9BlpMcsdP2lJNVmSXCnxsHbaMj2K3-j4oYrEzTUG8FL0UKdQPFVYy5Z9ptAXfdCME6HylKzKGLuAM12hhf1lw
+            - generic [ref=e203]:
+              - img "ভোটার স্থানান্তর" [ref=e204]
+              - generic [ref=e205]: ভোটার স্থানান্তর
+          - link "রাস্তা খনন রাস্তা খনন" [ref=e207] [cursor=pointer]:
+            - /url: /apply/UBP4Z3E71n_awLGmebFMNXaoDrRV-r2Lj0mffaAvqJT9Fmk6Vpe1k9zx674EpoplOaYkccygaWCYPYRBieSgkg
+            - generic [ref=e208]:
+              - img "রাস্তা খনন" [ref=e209]
+              - generic [ref=e210]: রাস্তা খনন
+          - link "সনাতন ধর্ম সনাতন ধর্ম" [ref=e212] [cursor=pointer]:
+            - /url: /apply/l672JheUcFHqlXM8m20nSMrbQuKWC72h4oTINCE2l-HUCdFSpS8CcgHu2w5MPUcO_1Ay18qc1dDxmbXC1_zQQw
+            - generic [ref=e213]:
+              - img "সনাতন ধর্ম" [ref=e214]
+              - generic [ref=e215]: সনাতন ধর্ম
+          - link "নদী ভাঙন নদী ভাঙন" [ref=e217] [cursor=pointer]:
+            - /url: /apply/8tg7wLW4wgdxRV1Me4G6WYsACpTldyYkbEGnJKG7QyFjHc3hKmvbpvprsKczQ19aHhCkY1WZFtBeo5ohG5DDFw
+            - generic [ref=e218]:
+              - img "নদী ভাঙন" [ref=e219]
+              - generic [ref=e220]: নদী ভাঙন
+          - link "বয়স প্রত্যয়ন বয়স প্রত্যয়ন" [ref=e222] [cursor=pointer]:
+            - /url: /apply/0rD4QqEAyDEuZOilwjL_nFGZdeEjZUJwn9V5CZ2TAQmr_MXqJOA_Vmv49m-jjREXeOOcxBkmXFaZXjklafvJGShlICITkARnkxzMvMSgR7E
+            - generic [ref=e223]:
+              - img "বয়স প্রত্যয়ন" [ref=e224]
+              - generic [ref=e225]: বয়স প্রত্যয়ন
+          - link "প্রত্যয়ন (অন্যান্য) প্রত্যয়ন (অন্যান্য)" [ref=e227] [cursor=pointer]:
+            - /url: /apply/6LUvzRZ6yShDQsELR8p-N_T5sc2R_izhWG3Og65EPCerDcMbqm_A4s9rqCQh3LserkSke26v0fDc-Ol3zKiJ54X2zOkptyOqHpufkWIqRNk
+            - generic [ref=e228]:
+              - img "প্রত্যয়ন (অন্যান্য)" [ref=e229]
+              - generic [ref=e230]: প্রত্যয়ন (অন্যান্য)
+      - generic [ref=e233]:
+        - heading "সুবিধাসমূহ" [level=4] [ref=e235]
+        - generic [ref=e237]:
+          - generic [ref=e239]:
+            - img "অনলাইনে আবেদন ও সনদ যাচাই" [ref=e241]
+            - heading "অনলাইনে আবেদন ও সনদ যাচাই" [level=5] [ref=e242]
+          - generic [ref=e244]:
+            - img "সনদ বাংলা ও ইংরেজী প্রদান" [ref=e246]
+            - heading "সনদ বাংলা ও ইংরেজী প্রদান" [level=5] [ref=e247]
+          - generic [ref=e249]:
+            - img "সকল সনদ স্টোরেজ সুবিধা" [ref=e251]
+            - heading "সকল সনদ স্টোরেজ সুবিধা" [level=5] [ref=e252]
+          - generic [ref=e254]:
+            - img "সনদ তৈরীর এসএমএস প্রেরণ" [ref=e256]
+            - heading "সনদ তৈরীর এসএমএস প্রেরণ" [level=5] [ref=e257]
+          - generic [ref=e259]:
+            - img "মোবাইল অ্যাপসের মাধ্যমে আবেদন ও সনদ যাচাই" [ref=e261]
+            - heading "মোবাইল অ্যাপসের মাধ্যমে আবেদন ও সনদ যাচাই" [level=5] [ref=e262]
+          - generic [ref=e264]:
+            - img "বিশ্বের যে কোনো স্থান থেকে আবেদন ও সনদ যাচাই" [ref=e266]
+            - heading "বিশ্বের যে কোনো স্থান থেকে আবেদন ও সনদ যাচাই" [level=5] [ref=e267]
+          - generic [ref=e269]:
+            - img "প্রত্যয়নপত্র যাচাই সুবিধা" [ref=e271]
+            - heading "প্রত্যয়নপত্র যাচাই সুবিধা" [level=5] [ref=e272]
+          - generic [ref=e274]:
+            - img "ওয়ার্ড ভিত্তিক হোল্ডিং ট্যাক্স ব্যবস্থাপনা" [ref=e276]
+            - heading "ওয়ার্ড ভিত্তিক হোল্ডিং ট্যাক্স ব্যবস্থাপনা" [level=5] [ref=e277]
+          - generic [ref=e279]:
+            - img "ট্রেড লাইসেন্স রিনিউয়াল এসএমএস অ্যালার্ট" [ref=e281]
+            - heading "ট্রেড লাইসেন্স রিনিউয়াল এসএমএস অ্যালার্ট" [level=5] [ref=e282]
+          - generic [ref=e284]:
+            - img "হারানো সনদ সহজে প্রাপ্তি সুবিধা" [ref=e286]
+            - heading "হারানো সনদ সহজে প্রাপ্তি সুবিধা" [level=5] [ref=e287]
+          - generic [ref=e289]:
+            - img "আয়-ব্যয় ও অডিট রিপোর্ট ব্যবস্থাপনা" [ref=e291]
+            - heading "আয়-ব্যয় ও অডিট রিপোর্ট ব্যবস্থাপনা" [level=5] [ref=e292]
+          - generic [ref=e294]:
+            - img "সরকারের ডিজিটাল আর্কিটেকচার উপযোগী এবং উন্নত ডিজিটাল নিরাপত্তা ব্যবস্থা ও তথ্যের গোপনীয়তা রক্ষায়তা" [ref=e296]
+            - heading "সরকারের ডিজিটাল আর্কিটেকচার উপযোগী এবং উন্নত ডিজিটাল নিরাপত্তা ব্যবস্থা ও তথ্যের গোপনীয়তা রক্ষায়তা" [level=5] [ref=e297]
+      - generic [ref=e300]:
+        - generic [ref=e302]:
+          - heading "ঢাকা স্থানীয় সরকার প্রশাসন" [level=4] [ref=e304]
+          - generic [ref=e306]:
+            - generic [ref=e308]:
+              - img "তানভীর আহমেদ" [ref=e309]
+              - generic [ref=e310]:
+                - heading [level=5] [ref=e311]:
+                  - strong [ref=e312]: তানভীর আহমেদ
+                - paragraph [ref=e313]: জেলা প্রশাসক ও জেলা ম্যাজিস্ট্রেট, ঢাকা
+            - generic [ref=e317]:
+              - img "মোঃ ইকবাল হোসেন" [ref=e318]
+              - generic [ref=e319]:
+                - heading [level=5] [ref=e320]:
+                  - strong [ref=e321]: মোঃ ইকবাল হোসেন
+                - paragraph [ref=e322]: উপপরিচালক স্থানীয় সরকার, ঢাকা
+        - generic [ref=e324]:
+          - heading "ইউনিয়ন পরিষদ সেবা ব্যবস্থাপনা, ঢাকা" [level=4] [ref=e326]
+          - generic [ref=e328]:
+            - heading "স্মার্ট বাংলাদেশ বিনির্মাণে ঢাকা জেলার সকল ইউনিয়ন পরিষদকে ডিজিটাল সেবার আওতায় আনা হয়েছে। এর মাধ্যমে নাগরিকরা ঘরে বসেই বিভিন্ন সনদপত্র আবেদন এবং হোল্ডিং ট্যাক্স প্রদান করতে পারছেন।" [level=5] [ref=e330]
+            - img "ডিজিটাল ইউনিয়ন ছবি" [ref=e332]
+    - generic [ref=e335]:
+      - heading "মোবাইল অ্যাপ্লিকেশন" [level=4] [ref=e337]
+      - generic [ref=e338]:
+        - generic [ref=e340]:
+          - img "App Screen 1" [ref=e343]
+          - img "App Screen 2" [ref=e346]
+          - img "App Screen 3" [ref=e349]
+          - img "App Screen 4" [ref=e352]
+          - img "App Screen 5" [ref=e355]
+        - generic [ref=e357]:
+          - heading "ডাউনলোড করতে গুগল প্লেতে ক্লিক করুন" [level=5] [ref=e358]
+          - link [ref=e359] [cursor=pointer]:
+            - /url: https://play.google.com/store/apps/details?id=com.dhaka.smartUnion
+            - img "Google Play Store" [ref=e360]
+    - contentinfo [ref=e361]:
+      - generic [ref=e363]:
+        - generic [ref=e365]:
+          - img "Logo" [ref=e366]
+          - generic [ref=e367]:
+            - paragraph [ref=e368]: "পরিকল্পনা ও বাস্তবায়নে:"
+            - paragraph [ref=e369]: জেলা প্রশাসন, ঢাকা।
+        - generic [ref=e371]:
+          - img "Logo" [ref=e372]
+          - generic [ref=e373]:
+            - paragraph [ref=e374]: "ব্যবস্থাপনা ও তত্ত্বাবধানে:"
+            - paragraph [ref=e375]: জেলা প্রশাসন, ঢাকা।
+        - generic [ref=e377]:
+          - link [ref=e378] [cursor=pointer]:
+            - /url: http://innovationit.com.bd/
+            - img "Innovation IT" [ref=e379]
+          - generic [ref=e380]:
+            - paragraph [ref=e381]: "কারিগরি সহায়তায়:"
+            - paragraph [ref=e382]:
+              - link "ইনোভেশন আইটি" [ref=e383] [cursor=pointer]:
+                - /url: http://innovationit.com.bd/

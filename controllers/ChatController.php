@@ -803,7 +803,10 @@ $router->post('/api/chat/admin/reply', function () use ($chatService, $mysqli, $
 
     // Check if session is closed or timed out
     $session = $chatModel->getSession($sessionId);
-    if ($session !== null && (($session['status'] ?? 'active') !== 'active' || $chatService->isSessionTimedOut($sessionId))) {
+    if ($session === null) {
+        ChatService::jsonResponse(['status' => 'error', 'message' => 'Conversation not found'], 404);
+    }
+    if (($session['status'] ?? 'active') !== 'active' || $chatService->isSessionTimedOut($sessionId)) {
         $chatModel->expireSession($sessionId);
         ChatService::jsonResponse([
             'status' => 'error',
@@ -852,7 +855,10 @@ $router->post('/api/chat/admin/upload', function () use ($chatService, $authServ
     // A visitor-inactive session cannot receive a late admin reply. Expire it
     // and remove the old conversation before returning a fresh-session signal.
     $session = $chatModel->getSession($sessionId);
-    if ($session !== null && (($session['status'] ?? 'active') !== 'active' || $chatService->isSessionTimedOut($sessionId))) {
+    if ($session === null) {
+        ChatService::jsonResponse(['status' => 'error', 'message' => 'Conversation not found'], 404);
+    }
+    if (($session['status'] ?? 'active') !== 'active' || $chatService->isSessionTimedOut($sessionId)) {
         $chatModel->expireSession($sessionId);
         ChatService::jsonResponse([
             'status' => 'error',
@@ -1942,29 +1948,37 @@ $router->post('/api/chat/admin/email-queue/process', function () use ($authServi
 /**
  * Register a global error handler for unhandled exceptions
  * to return consistent JSON responses for API routes.
+ *
+ * Only installs if no exception handler is already registered, to avoid
+ * overwriting the application-level handler set by the bootstrap code.
  */
-set_exception_handler(function (\Throwable $e) {
-    $requestUri = $_SERVER['REQUEST_URI'] ?? '';
-    $isApi = strpos($requestUri, '/api/') === 0;
+$existingHandler = set_exception_handler(null);
+set_exception_handler($existingHandler);
 
-    error_log('[ChatController] Unhandled: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
+if ($existingHandler === null) {
+    set_exception_handler(function (\Throwable $e) {
+        $requestUri = $_SERVER['REQUEST_URI'] ?? '';
+        $isApi = strpos($requestUri, '/api/') === 0;
 
-    if ($isApi) {
-        http_response_code(500);
-        header('Content-Type: application/json; charset=utf-8');
-        echo json_encode([
-            'status' => 'error',
-            'message' => 'সার্ভার ত্রুটি ঘটেছে। দয়া করে পরে আবার চেষ্টা করুন।',
-            'error_id' => bin2hex(random_bytes(4)),
-        ], JSON_UNESCAPED_UNICODE);
-        exit;
-    }
+        error_log('[ChatController] Unhandled: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
 
-    // Non-API: delegate to default handler
-    if (function_exists('renderError')) {
-        renderError(500, 'সার্ভার ত্রুটি');
-    } else {
-        http_response_code(500);
-        echo '500 Internal Server Error';
-    }
-});
+        if ($isApi) {
+            http_response_code(500);
+            header('Content-Type: application/json; charset=utf-8');
+            echo json_encode([
+                'status' => 'error',
+                'message' => 'সার্ভার ত্রুটি ঘটেছে। দয়া করে পরে আবার চেষ্টা করুন।',
+                'error_id' => bin2hex(random_bytes(4)),
+            ], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+
+        // Non-API: delegate to default handler
+        if (function_exists('renderError')) {
+            renderError(500, 'সার্ভার ত্রুটি');
+        } else {
+            http_response_code(500);
+            echo '500 Internal Server Error';
+        }
+    });
+}

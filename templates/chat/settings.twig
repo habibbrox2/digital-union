@@ -330,7 +330,10 @@
         <div class="card shadow-sm mb-4" id="chatActiveDevices">
             <div class="card-header bg-white d-flex align-items-center justify-content-between" style="border-left: 4px solid #008B8B;">
                 <h6 class="mb-0 fw-semibold"><i class="fas fa-laptop me-2" style="color:#008B8B"></i>Active devices</h6>
-                <button type="button" class="btn btn-sm btn-outline-danger" id="revokeAllChatDevices">সব device revoke</button>
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-sm btn-success" id="enableSettingsPush"><i class="fas fa-bell me-1"></i>Enable Notifications</button>
+                    <button type="button" class="btn btn-sm btn-outline-danger" id="revokeAllChatDevices">সব device revoke</button>
+                </div>
             </div>
             <div class="card-body"><div class="small text-muted mb-3">এই user-এর যেসব browser/device-এ chat notification সক্রিয় আছে।</div>
                 <div id="chatDeviceList">
@@ -470,13 +473,13 @@
       var testBtn = document.getElementById("testNotifBtn");
       if (testBtn) {
         testBtn.addEventListener("click", async function() {
-          testBtn.disabled = true; testBtn.innerHTML = "<i class="fas fa-spinner fa-spin me-1"></i>পাঠাচ্ছে...";
+          testBtn.disabled = true; testBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>পাঠাচ্ছে...';
           try {
             var res = await fetch("/api/chat/admin/push/test", { method: "POST", headers: { "Content-Type": "application/json", "X-CSRF-TOKEN": csrf, "X-Requested-With": "XMLHttpRequest" }, body: JSON.stringify({}) });
             var result = await res.json();
             if (typeof Swal !== "undefined") Swal.fire({ icon: result.status === "success" ? "success" : "error", title: result.status === "success" ? "সফল" : "ত্রুটি", text: result.message || "টেস্ট নোটিফিকেশন", timer: 3000, showConfirmButton: false });
           } catch (e) { if (typeof Swal !== "undefined") Swal.fire({ icon: "error", title: "ত্রুটি", text: "সার্ভার ত্রুটি" }); }
-          finally { testBtn.disabled = false; testBtn.innerHTML = "<i class="fas fa-paper-plane me-1"></i>টেস্ট নোটিফিকেশন পাঠান"; }
+          finally { testBtn.disabled = false; testBtn.innerHTML = '<i class="fas fa-paper-plane me-1"></i>টেস্ট নোটিফিকেশন পাঠান'; }
         });
       }
       // Reset permission guide
@@ -492,6 +495,8 @@
 {% endblock %}
 
 {% block scripts %}
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-messaging-compat.js"></script>
 <script>
 (function() {
     // Initialize Bootstrap tooltips for admin-only badges
@@ -643,6 +648,145 @@
             }
         });
     }
+
+    // ================================
+    // Admin FCM Push Registration (Enable Notifications)
+    // ================================
+    let _settingsMessaging = null;
+    let _settingsFcmToken = null;
+    let _settingsFirebaseConfig = null;
+    let _settingsVapidKey = '';
+
+    async function loadSettingsFirebaseConfig() {
+        try {
+            const res = await fetch('/api/chat/push/config');
+            const data = await res.json();
+            if (data.status === 'success' && data.data.enabled && data.data.config) {
+                _settingsFirebaseConfig = data.data.config;
+                _settingsVapidKey = data.data.vapid_key || '';
+                return true;
+            }
+        } catch (err) {
+            console.error('[Settings] Failed to load Firebase config:', err);
+        }
+        return false;
+    }
+
+    async function initSettingsFirebase() {
+        if (_settingsFirebaseConfig && typeof firebase !== 'undefined' && !firebase.apps.length) {
+            firebase.initializeApp(_settingsFirebaseConfig);
+        }
+    }
+
+    async function registerSettingsPush() {
+        const btn = document.getElementById('enableSettingsPush');
+        if (!btn) return;
+
+        if (!('Notification' in window) || !navigator.serviceWorker) {
+            if (typeof Swal !== 'undefined') Swal.fire({ icon: 'warning', title: 'সমর্থিত নয়', text: 'আপনার ব্রাউজার পুশ নোটিফিকেশন সমর্থন করে না।' });
+            return;
+        }
+
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>লোড হচ্ছে...';
+
+        try {
+            // Load Firebase config from server
+            if (!_settingsFirebaseConfig) {
+                const loaded = await loadSettingsFirebaseConfig();
+                if (!loaded) {
+                    if (typeof Swal !== 'undefined') Swal.fire({ icon: 'error', title: 'ত্রুটি', text: 'Firebase কনফিগ লোড করা যায়নি। পুশ নোটিফিকেশন কনফিগার করা হয়নি।' });
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-bell me-1"></i>Enable Notifications';
+                    return;
+                }
+            }
+
+            await initSettingsFirebase();
+
+            // Register service worker if not already active
+            if (!navigator.serviceWorker.controller) {
+                try {
+                    await navigator.serviceWorker.register('/firebase-messaging-sw.js', { scope: '/' });
+                } catch (swErr) {
+                    try {
+                        await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+                    } catch (swErr2) {
+                        console.error('[Settings] Both SW registrations failed:', swErr2);
+                        btn.disabled = false;
+                        btn.innerHTML = '<i class="fas fa-bell me-1"></i>Enable Notifications';
+                        return;
+                    }
+                }
+            }
+
+            // Only prompt if permission is default
+            if (Notification.permission === 'default') {
+                const permission = await Notification.requestPermission();
+                if (permission !== 'granted') {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-bell me-1"></i>Enable Notifications';
+                    return;
+                }
+            } else if (Notification.permission !== 'granted') {
+                if (typeof Swal !== 'undefined') Swal.fire({ icon: 'warning', title: 'পারমিশন নেই', text: 'ব্রাউজার সেটিংস থেকে নোটিফিকেশন পারমিশন চালু করুন।' });
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-bell me-1"></i>Enable Notifications';
+                return;
+            }
+
+            await navigator.serviceWorker.ready;
+            if (!_settingsMessaging) _settingsMessaging = firebase.messaging();
+
+            const tokenOptions = {};
+            if (_settingsVapidKey) tokenOptions.vapidKey = _settingsVapidKey;
+            const token = await _settingsMessaging.getToken(tokenOptions);
+
+            if (token) {
+                const csrf = (window.getCsrfToken ? window.getCsrfToken() : '') || (document.querySelector('meta[name="csrf_token"]') || {}).content || '';
+                await fetch('/api/chat/push/fcm-admin-subscribe', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf, 'X-Requested-With': 'XMLHttpRequest' },
+                    body: JSON.stringify({ fcm_token: token, device_info: { browser: navigator.userAgent, platform: navigator.platform } })
+                });
+                _settingsFcmToken = token;
+                btn.innerHTML = '<i class="fas fa-check-circle me-1"></i>Push চালু আছে';
+                btn.classList.remove('btn-success');
+                btn.classList.add('btn-outline-success');
+                if (typeof Swal !== 'undefined') Swal.fire({ icon: 'success', title: 'সফল', text: 'পুশ নোটিফিকেশন চালু হয়েছে!', timer: 2000, showConfirmButton: false });
+                // Reload device list
+                location.reload();
+            } else {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-bell me-1"></i>Enable Notifications';
+            }
+        } catch (err) {
+            console.error('[Settings] Push registration error:', err);
+            if (typeof Swal !== 'undefined') Swal.fire({ icon: 'error', title: 'ত্রুটি', text: 'পুশ নোটিফিকেশন চালু করতে ব্যর্থ হয়েছে।' });
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-bell me-1"></i>Enable Notifications';
+        }
+    }
+
+    // Initialize the Enable Notifications button state
+    (function initEnablePushBtn() {
+        const btn = document.getElementById('enableSettingsPush');
+        if (!btn) return;
+        if (!('Notification' in window)) {
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-ban me-1"></i>সমর্থিত নয়';
+            return;
+        }
+        if (Notification.permission === 'granted') {
+            btn.innerHTML = '<i class="fas fa-check-circle me-1"></i>Push চালু আছে';
+            btn.classList.remove('btn-success');
+            btn.classList.add('btn-outline-success');
+        } else if (Notification.permission === 'denied') {
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-ban me-1"></i>ব্রাউজারে চালু করুন';
+        }
+        btn.addEventListener('click', registerSettingsPush);
+    })();
 })();
 </script>
 {% endblock %}
