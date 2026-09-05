@@ -46,7 +46,7 @@
             <!-- Citizen Certificate Section -->
             <table style="width:100%; border-color:lightgray; border-collapse:collapse; margin-top: 4.5pt;" cellpadding="0" cellspacing="0">
                 <tr>
-                    <td colspan="2" style="text-align:center; font-size:14pt; font-weight:bold; padding-bottom: 3.75pt">
+                    <td colspan="2" style="text-align:center; font-size:16pt; font-weight:bold; padding-bottom: 4pt">
                         <u>{{ certificate_type_bn }}</u>
                     </td>
                 </tr>
@@ -54,7 +54,7 @@
                     <td style="width: 75%;">
                         <table border="1" style="width: 450pt; border-color:lightgray; border-collapse:collapse;" cellpadding="0" cellspacing="0">
                             <tr>
-                                <td style="width:75pt; text-align:center; font-size:10.5pt;">সনদ নংঃ</td>
+                                <td style="width:75pt; font-size:10.5pt;">সনদ নং:</td>
                                 {% set sonod_number_bn = data.sonod_number | bn_number %}
                                 {% for digit in sonod_number_bn | split('') %}
                                     <td style="text-align:center; font-size:13.5pt; padding: 4.5pt; border: 0.75pt solid black;">{{ digit }}</td>

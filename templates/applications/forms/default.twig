@@ -339,16 +339,16 @@
         // ---------------- datepicker init ----------------
         function initDatepickers(root=document){
             root.querySelectorAll('.datepicker').forEach(input=>{
-                try {
-                    if (input.type !== 'date') {
-                        input.type = 'date';
-                    } else {
-                        input.placeholder = input.placeholder || 'দিন-মাস-বছর';
-                        input.setAttribute('inputmode','numeric');
-                    }
-                } catch(e) {
-                    input.placeholder = input.placeholder || 'দিন-মাস-বছর';
-                    input.setAttribute('inputmode','numeric');
+                // Keep these as text inputs: CompactDatepicker (vs-datepicker.js) needs a
+                // text input for its dd-mm-yyyy format/validation. Switching to type="date"
+                // replaced the custom datepicker with the native browser picker and broke it.
+                input.placeholder = input.placeholder || 'দিন-মাস-বছর';
+                input.setAttribute('inputmode','numeric');
+                // Extra-field date inputs are created after DOMContentLoaded, so
+                // vs-datepicker.js never attached an instance to them. Attach one now.
+                if (typeof CompactDatepicker === 'function' && !input.datepickerInstance) {
+                    const dp = new CompactDatepicker(input);
+                    input.datepickerInstance = dp;
                 }
             });
         }
