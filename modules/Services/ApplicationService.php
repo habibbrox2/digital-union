@@ -1395,6 +1395,10 @@ class ApplicationService
         }
 
         $application = $this->appManager->getApplication($applicationId, $unionId);
+        if (!$application) {
+            return ['status' => 'error', 'message' => 'Application not found.'];
+        }
+
         $certificateType = $application['certificate_type'] ?? 'application';
 
         $result = $this->appManager->rejectApplication($applicationId, $reason, $unionId, $certificateType);

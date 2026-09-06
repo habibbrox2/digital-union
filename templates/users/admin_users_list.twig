@@ -224,7 +224,12 @@
                                 {% endif %}
                             </td>
                             <td>
-                                {% if user.status == 'active' %}
+                                {% if user.is_deleted %}
+                                <span class="badge bg-secondary bg-opacity-10 text-secondary px-3 py-1 rounded-pill">
+                                    <span class="status-dot" style="display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: currentColor; margin-right: 4px;"></span>
+                                    মুছে ফেলা
+                                </span>
+                                {% elseif user.status == 'active' %}
                                 <span class="badge bg-success bg-opacity-10 text-success px-3 py-1 rounded-pill">
                                     <span class="status-dot" style="display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: currentColor; margin-right: 4px;"></span>
                                     সক্রিয়
@@ -232,7 +237,7 @@
                                 {% else %}
                                 <span class="badge bg-danger bg-opacity-10 text-danger px-3 py-1 rounded-pill">
                                     <span class="status-dot" style="display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: currentColor; margin-right: 4px;"></span>
-                                    নিষ্ক্রিয়
+                                    নিষ্ক্রিয়{% if user.status_note %} · {{ user.status_note|truncate(60) }}{% endif %}
                                 </span>
                                 {% endif %}
                             </td>

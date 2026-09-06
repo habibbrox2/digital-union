@@ -151,7 +151,7 @@ class UserModel {
             'username', 'email', 'name_bn', 'name_en', 'phone_number', 'address', 'bio',
             'designation', 'ward_no', 'language_preference', 'timezone',
             'is_email_notifications_enabled', 'is_sms_notifications_enabled',
-            'status', 'profile_picture_url', 'role_id', 'union_id',
+            'status', 'status_note', 'profile_picture_url', 'role_id', 'union_id',
             'password', 'last_password_change'
         ];
         
@@ -302,36 +302,66 @@ class UserModel {
     /**
      * Soft delete user
      */
-    public function softDelete($userId) {
-        $stmt = $this->mysqli->prepare(
-            "UPDATE {$this->table} 
-             SET is_deleted = 1, deleted_at = NOW(), status = 'inactive' 
-             WHERE user_id = ?"
-        );
-        $stmt->bind_param("i", $userId);
-        
+    public function softDelete($userId, $statusNote = null) {
+        $sql = "UPDATE {$this->table} 
+                 SET is_deleted = 1, deleted_at = NOW(), status = 'inactive'";
+        $params = [];
+        $types = '';
+
+        if ($statusNote !== null) {
+            $sql .= ", status_note = ?";
+            $params[] = $statusNote;
+            $types .= 's';
+        }
+
+        $sql .= " WHERE user_id = ?";
+        $params[] = $userId;
+        $types .= 'i';
+
+        $stmt = $this->mysqli->prepare($sql);
+        if (!$stmt) {
+            return ['success' => false, 'error' => $this->mysqli->error];
+        }
+
+        $stmt->bind_param($types, ...$params);
+
         if ($stmt->execute()) {
             return ['success' => true, 'message' => 'ব্যবহারকারী সফলভাবে মুছে ফেলা হয়েছে'];
         }
-        
+
         return ['success' => false, 'error' => $stmt->error];
     }
     
     /**
      * Restore user
      */
-    public function restore($userId) {
-        $stmt = $this->mysqli->prepare(
-            "UPDATE {$this->table} 
-             SET is_deleted = 0, deleted_at = NULL, status = 'active' 
-             WHERE user_id = ?"
-        );
-        $stmt->bind_param("i", $userId);
-        
+    public function restore($userId, $statusNote = null) {
+        $sql = "UPDATE {$this->table} 
+                 SET is_deleted = 0, deleted_at = NULL, status = 'active'";
+        $params = [];
+        $types = '';
+
+        if ($statusNote !== null) {
+            $sql .= ", status_note = ?";
+            $params[] = $statusNote;
+            $types .= 's';
+        }
+
+        $sql .= " WHERE user_id = ?";
+        $params[] = $userId;
+        $types .= 'i';
+
+        $stmt = $this->mysqli->prepare($sql);
+        if (!$stmt) {
+            return ['success' => false, 'error' => $this->mysqli->error];
+        }
+
+        $stmt->bind_param($types, ...$params);
+
         if ($stmt->execute()) {
             return ['success' => true, 'message' => 'ব্যবহারকারী পুনরুদ্ধার করা হয়েছে'];
         }
-        
+
         return ['success' => false, 'error' => $stmt->error];
     }
     

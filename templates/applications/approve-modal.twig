@@ -259,7 +259,7 @@
                                     <div class="d-flex align-items-center justify-content-between gap-2 mb-1">
                                         <label class="form-label small fw-semibold mb-0">ইস্যু সময় <span class="text-danger">*</span></label>
                                         <span id="modalIssueTimeLive" class="badge bg-light text-dark border" title="Current time (live)">
-                                            --:--:--
+                                            <span id="modalIssueTimeLiveClock">--:--:--</span>
                                         </span>
                                     </div>
                                     <input type="time" id="modal_issue_time" name="issue_time" step="1" class="form-control form-control-sm" placeholder="সময় নির্বাচন করুন" value="{{ "now"|date("H:i") }}" >
@@ -447,6 +447,27 @@
         </div>
     </div>
 </div>
+
+<!-- Live Clock for Issue Time -->
+<script>
+    (function () {
+        var liveClockEl = document.getElementById('modalIssueTimeLiveClock');
+        if (!liveClockEl) return;
+
+        function pad(n) { return n < 10 ? '0' + n : '' + n; }
+
+        function updateLiveClock() {
+            var now = new Date();
+            var h = pad(now.getHours());
+            var m = pad(now.getMinutes());
+            var s = pad(now.getSeconds());
+            liveClockEl.textContent = h + ':' + m + ':' + s;
+        }
+
+        updateLiveClock();
+        setInterval(updateLiveClock, 1000);
+    })();
+</script>
 
 <!-- ============================================================
      APPROVED MODAL - Shows after successful approval with certificate links

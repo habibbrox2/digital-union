@@ -125,6 +125,13 @@
                                 <option value="inactive" {% if profileData.status == 'inactive' %}selected{% endif %}>নিষ্ক্রিয়</option>
                             </select>
                         </div>
+                        {% if profileData.is_deleted or profileData.status == 'inactive' %}
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-semibold small text-secondary">কারণের নোট</label>
+                            <textarea class="form-control input-enhanced" name="status_note" rows="2" placeholder="যেমন: চলমান প্রজেক্টের কারণে সাময়িক নিষ্ক্রিয়">{{ profileData.status_note|default('') }}</textarea>
+                            <small class="text-muted">এটি শুধুমাত্র তথ্যের জন্য; লগইন ব্লক করে না।</small>
+                        </div>
+                        {% endif %}
                         <div class="col-md-4 mb-3">
                             <label class="form-label fw-semibold small text-secondary">ভাষা পছন্দ</label>
                             <select class="form-select input-enhanced" name="language_preference">
@@ -173,8 +180,14 @@
                     {% endif %}
                     <li class="d-flex justify-content-between py-2 border-bottom">
                         <span class="text-muted">অবস্থা:</span>
-                        {% if profileData.status == 'active' %}<span class="badge bg-success rounded-pill">সক্রিয়</span>{% else %}<span class="badge bg-danger rounded-pill">নিষ্ক্রিয়</span>{% endif %}
+                        {% if profileData.is_deleted %}<span class="badge bg-secondary rounded-pill">মুছে ফেলা</span>{% elseif profileData.status == 'active' %}<span class="badge bg-success rounded-pill">সক্রিয়</span>{% else %}<span class="badge bg-danger rounded-pill">নিষ্ক্রিয়</span>{% endif %}
                     </li>
+                    {% if profileData.is_deleted or profileData.status == 'inactive' %}
+                    <li class="d-flex justify-content-between py-2 border-bottom">
+                        <span class="text-muted">কারণ:</span>
+                        <span class="fw-medium text-break">{% if profileData.is_deleted %}মুছে ফেলা{% elseif profileData.status_note %}{{ profileData.status_note }}{% else %}নিষ্ক্রিয়{% endif %}</span>
+                    </li>
+                    {% endif %}
                     <li class="d-flex justify-content-between py-2"><span class="text-muted">যোগদান:</span><span class="fw-medium">{{ profileData.created_at|date('d-m-Y') }}</span></li>
                 </ul>
             </div>

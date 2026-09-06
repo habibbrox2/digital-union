@@ -55,7 +55,7 @@ class AuthService
         if ($requireLogin) $this->requireLogin();
         $id = (int)($_SESSION['user_id'] ?? 0);
         if (!$id) return null;
-        $stmt=$this->mysqli->prepare("SELECT u.user_id,u.union_id,u.username,u.email,u.name_bn,u.name_en,u.phone_number,u.role_id,u.designation,u.status,u.is_deleted,r.role_name FROM users u LEFT JOIN roles r ON r.role_id=u.role_id WHERE u.user_id=? AND u.is_deleted=0 LIMIT 1");
+        $stmt=$this->mysqli->prepare("SELECT u.user_id,u.union_id,u.username,u.email,u.name_bn,u.name_en,u.phone_number,u.role_id,u.designation,u.status,u.status_note,u.is_deleted,u.last_login,r.role_name FROM users u LEFT JOIN roles r ON r.role_id=u.role_id WHERE u.user_id=? AND u.is_deleted=0 LIMIT 1");
         $stmt->bind_param("i",$id); $stmt->execute(); $row=$stmt->get_result()->fetch_assoc(); $stmt->close(); return $row ?: null;
     }
 

@@ -279,8 +279,8 @@ document.addEventListener('DOMContentLoaded', function() {
     // ----------------- Auto-format birth date on input -----------------
     document.getElementById('warish_container').addEventListener('input', function(e) {
         if (!e.target.matches('input[name="member_birth_date[]"]')) return;
-        (function() {
-        var val = bnToEn(this.value);
+        var input = e.target;
+        var val = bnToEn(input.value);
 
         // Only auto-format if the input looks like it's being typed as a date
         // (all digits and dashes, no letters like 'y', 'b', etc.)
@@ -291,11 +291,11 @@ document.addEventListener('DOMContentLoaded', function() {
             if (digits.length > 2) formatted += '-' + digits.substring(2, 4);
             if (digits.length > 4) formatted += '-' + digits.substring(4, 8);
 
-            if (formatted !== this.value) {
-                var start = this.selectionStart;
-                this.value = formatted;
+            if (formatted !== input.value) {
+                var start = input.selectionStart;
+                input.value = formatted;
                 var newStart = start + (formatted.length - val.length);
-                this.setSelectionRange(newStart, newStart);
+                input.setSelectionRange(newStart, newStart);
             }
         }
     });

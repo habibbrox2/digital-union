@@ -521,6 +521,7 @@ $router->post('/users/{id}/edit', function ($id) use ($auth, $authService, $user
             'phone_number' => sanitize_input($_POST['phone_number'] ?? $existingUser['phone_number']),
             'address' => sanitize_input($_POST['address'] ?? $existingUser['address'] ?? ''),
             'status' => $_POST['status'] ?? $existingUser['status'],
+            'status_note' => sanitize_input($_POST['status_note'] ?? $existingUser['status_note'] ?? ''),
             'role_id' => (int)($_POST['role_id'] ?? $existingUser['role_id']),
             'union_id' => !empty($_POST['union_id']) ? (int)$_POST['union_id'] : null,
             'ward_no' => sanitize_input($_POST['ward_no'] ?? $existingUser['ward_no'] ?? ''),

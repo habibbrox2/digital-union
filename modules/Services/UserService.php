@@ -335,9 +335,9 @@ class UserService
         }
 
         if ($user['status'] === 'active') {
-            $this->userModel->deactivate($userId);
+            $this->userModel->deactivate($userId, 'প্রশাসক দ্বারা নিষ্ক্রিয় করা হয়েছে');
         } else {
-            $this->userModel->activate($userId);
+            $this->userModel->activate($userId, 'প্রশাসক দ্বারা সক্রিয় করা হয়েছে');
         }
 
         return [
@@ -359,14 +359,15 @@ class UserService
         }
 
         $affected = 0;
+        $note = $newStatus === 'active' ? 'প্রশাসক দ্বারা সক্রিয় করা হয়েছে' : 'প্রশাসক দ্বারা নিষ্ক্রিয় করা হয়েছে';
         foreach ($userIds as $uid) {
             $uid = (int)$uid;
             if (!$this->userModel->exists($uid)) continue;
 
             if ($newStatus === 'active') {
-                $r = $this->userModel->activate($uid);
+                $r = $this->userModel->activate($uid, $note);
             } else {
-                $r = $this->userModel->deactivate($uid);
+                $r = $this->userModel->deactivate($uid, $note);
             }
             if ($r['success']) $affected++;
         }

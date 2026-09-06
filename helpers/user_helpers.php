@@ -444,14 +444,15 @@ if (!function_exists('updateUserPassword')) {
 
 if (!function_exists('isUserAdmin')) {
     /**
-     * Check if user is admin (role_id > 1)
+     * Check if user is admin.
+     * Matches the app's RBAC semantics: role_id 1 (Super Admin) and 2 (Admin/Secretary) are admin-level.
      * 
      * @param int $userId User ID
-     * @return bool True if user is admin
+     * @return bool True if user is admin-level
      */
     function isUserAdmin($userId) {
         $user = getUserProfileById($userId);
-        return $user && (int)$user['role_id'] > 1;
+        return $user && (int)$user['role_id'] <= 2;
     }
 }
 

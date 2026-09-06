@@ -7,16 +7,35 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Hide loader when page is fully loaded
     if (pageLoader) {
+        const hidePageLoader = function (delay) {
+            setTimeout(function () {
+                pageLoader.classList.remove('visible');
+            }, delay || 0);
+        };
+
         // Hide immediately if already loaded, otherwise wait for load
         if (document.readyState === 'complete') {
             pageLoader.classList.remove('visible');
         } else {
+            // 'load' waits for EVERY subresource (fonts, CDNs, Firebase, chat...).
+            // If any of them is slow or hangs, 'load' never fires and the spinner
+            // spins forever on an already-usable page. So hide as soon as the DOM
+            // is parsed, and keep the 'load' handler only as a re-assertion.
+            if (document.readyState === 'interactive') {
+                hidePageLoader(350);
+            } else {
+                document.addEventListener('DOMContentLoaded', function () {
+                    hidePageLoader(350);
+                });
+            }
             window.addEventListener('load', function () {
-                setTimeout(function () {
-                    pageLoader.classList.remove('visible');
-                }, 350); // Brief delay for smooth transition
+                hidePageLoader(350);
             });
         }
+
+        // Hard cap: never keep the full-screen loader visible for more than
+        // 5 seconds, no matter what is still loading in the background.
+        hidePageLoader(5000);
 
         // Fallback: hide loader when user returns to this tab (handles edge cases
         // where the loader gets stuck, e.g. Ctrl+click, middle-click without
@@ -55,7 +74,14 @@ document.addEventListener('DOMContentLoaded', function () {
                 !link.closest('.header-dropdown-menu') &&
                 !link.closest('.submenu-toggle') &&
                 !link.closest('.sidebar-logo-link')) {
-                pageLoader.classList.add('visible');
+                // Defer check: other click handlers (e.g. preview modal, data-preview,
+                // AJAX links) may call preventDefault() — in that case no navigation
+                // happens, so the full-screen loader must not be shown.
+                setTimeout(function () {
+                    if (!e.defaultPrevented) {
+                        pageLoader.classList.add('visible');
+                    }
+                }, 0);
             }
         }
     });

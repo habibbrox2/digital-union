@@ -77,19 +77,17 @@ class AuthManager {
 
         // 🔒 Check if account is inactive (manually deactivated by admin)
         if (isset($user['status']) && $user['status'] === 'inactive') {
+            // Keep a clear admin-visible reason if one isn't already set.
+            if (empty($user['status_note']) || stripos($user['status_note'], 'নিষ্ক্রিয়') === false) {
+                $noteStmt = $this->mysqli->prepare("UPDATE users SET status_note = ? WHERE user_id = ?");
+                if ($noteStmt) {
+                    $noteStmt->bind_param("si", 'লগইন বিতর্কিত: অ্যাকাউন্ট নিষ্ক্রিয়', $user['user_id']);
+                    $noteStmt->execute();
+                    $noteStmt->close();
+                }
+            }
+
             return ['success' => false, 'message' => 'আপনার অ্যাকাউন্ট নিষ্ক্রিয় করা হয়েছে। অনুগ্রহ করে প্রশাসকের সাথে যোগাযোগ করুন।'];
-        }
-
-        // 🕐 Auto-deactivate if last login was more than 30 days ago (skip new users who never logged in)
-        $thirtyDaysAgo = date('Y-m-d H:i:s', strtotime('-30 days'));
-        $lastLogin = $user['last_login'] ?? null;
-        if ($lastLogin !== null && $lastLogin < $thirtyDaysAgo) {
-            $deactivateStmt = $this->mysqli->prepare("UPDATE users SET status = 'inactive' WHERE user_id = ?");
-            $deactivateStmt->bind_param("i", $user['user_id']);
-            $deactivateStmt->execute();
-            $deactivateStmt->close();
-
-            return ['success' => false, 'message' => 'আপনার অ্যাকাউন্ট ৩০ দিনের বেশি ব্যবহার করা হয়নি বলে নিষ্ক্রিয় করা হয়েছে। অনুগ্রহ করে প্রশাসকের সাথে যোগাযোগ করুন।'];
         }
 
         // ✅ Regenerate session ID to prevent session fixation
@@ -414,13 +412,20 @@ class AuthManager {
             return null;
         }
 
-        // Fetch user data with union info
+        // Fetch user data with union info (includes current status so session can't drift)
         $stmt = $this->mysqli->prepare("SELECT u.*, un.* FROM users u LEFT JOIN unions un ON u.union_id = un.union_id WHERE u.user_id = ?");
         $stmt->bind_param("i", $user_id);
         $stmt->execute();
         $result = $stmt->get_result();
         $user = $result->fetch_assoc();
         $stmt->close();
+
+        // If the account was deactivated after login, treat it as inactive now.
+        if ($user && isset($user['status']) && $user['status'] === 'inactive') {
+            $_SESSION['status'] = 'inactive';
+        } elseif ($user) {
+            $_SESSION['status'] = $user['status'] ?? 'active';
+        }
 
         if (!$user) {
             session_unset();

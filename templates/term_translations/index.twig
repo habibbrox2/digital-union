@@ -25,7 +25,7 @@
 
                 <form id="termForm">
                     <input type="hidden" name="id" id="id">
-                    <div id="responseMessage"></div>
+
 
                     <div class="mb-3">
                         <label for="slug" class="form-label">Slug</label>
@@ -239,8 +239,6 @@ function resetForm() {
 }
 
 function submitForm(formData) {
-    var msgEl = document.getElementById('responseMessage');
-
     fetch('/ajax/term_translations', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -249,21 +247,30 @@ function submitForm(formData) {
     .then(function(r) { return r.json(); })
     .then(function(res) {
         if (res.status === 'success') {
-            msgEl.innerHTML = '<div class="alert alert-success alert-dismissible fade show" role="alert">' +
-                escapeHtml(res.message) +
-                '<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button></div>';
             resetForm();
+            Swal.fire({
+                icon: 'success',
+                title: escapeHtml(res.message),
+                timer: 2000,
+                showConfirmButton: false,
+                toast: true,
+                position: 'top-end'
+            });
             loadTerms(currentPage);
         } else {
-            msgEl.innerHTML = '<div class="alert alert-danger alert-dismissible fade show" role="alert">' +
-                escapeHtml(res.message || 'কিছু ভুল হয়েছে!') +
-                '<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button></div>';
+            Swal.fire({
+                icon: 'error',
+                title: escapeHtml(res.message || 'কিছু ভুল হয়েছে!'),
+                confirmButtonText: 'ঠিক আছে'
+            });
         }
     })
     .catch(function() {
-        msgEl.innerHTML = '<div class="alert alert-danger alert-dismissible fade show" role="alert">' +
-            'সার্ভার ত্রুটি। অনুগ্রহ করে আবার চেষ্টা করুন।' +
-            '<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button></div>';
+        Swal.fire({
+            icon: 'error',
+            title: 'সার্ভার ত্রুটি। অনুগ্রহ করে আবার চেষ্টা করুন।',
+            confirmButtonText: 'ঠিক আছে'
+        });
     });
 }
 

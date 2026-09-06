@@ -186,6 +186,9 @@
             });
         }
 
+        {# For warish, do NOT auto-set applicant_name from name_bn via JS —
+           keep the server-side prefilled value (data.applicant_name) displayed. #}
+        {% if certificate_type != 'warish' %}
         // ---------------- Applicant Name Sync ----------------
         const nameBnField = document.getElementById('name_bn');
         const applicantNameField = document.getElementById('applicant_name');
@@ -218,6 +221,7 @@
             });
             syncApplicantName();
         }
+        {% endif %}
 
         // ---------------- Document Upload ----------------
         const container = document.getElementById('documents_container');

@@ -126,13 +126,15 @@
                             <small class="text-muted d-block mb-1">{{ 'স্থিতি' }}</small>
                             <div class="d-flex align-items-center gap-2 flex-wrap">
                                 <strong class="fs-6">
-                                    {% if profileData.status == 'active' %}
+                                    {% if profileData.is_deleted %}
+                                    <span class="badge bg-secondary">মুছে ফেলা</span>
+                                    {% elseif profileData.status == 'active' %}
                                     <span class="badge bg-success">সক্রিয়</span>
                                     {% else %}
                                     <span class="badge bg-danger">নিষ্ক্রিয়</span>
                                     {% endif %}
                                 </strong>
-                                {% if profileData.status == 'inactive' %}
+                                {% if profileData.is_deleted or profileData.status == 'inactive' %}
                                 <button type="button" class="btn btn-sm btn-success reactivate-user-btn"
                                         data-id="{{ profileData.user_id }}"
                                         data-username="{{ profileData.username }}">
@@ -140,6 +142,15 @@
                                 </button>
                                 {% endif %}
                             </div>
+                            <small class="text-muted d-block mt-2">
+                                {% if profileData.is_deleted %}
+                                    মুছে ফেলা: {{ profileData.deleted_at|date('d-m-Y H:i') }}{% if profileData.status_note %} — {{ profileData.status_note }}{% endif %}
+                                {% elseif profileData.status == 'inactive' %}
+                                    নিষ্ক্রিয়{% if profileData.status_note %}: {{ profileData.status_note }}{% endif %}
+                                {% else %}
+                                    সক্রিয়
+                                {% endif %}
+                            </small>
                         </div>
                     </div>
                 </div>

@@ -1342,10 +1342,17 @@ class ApplicationManager
         $reject_date = date('Y-m-d H:i:s');
         $this->conn->begin_transaction();
         try {
-            // Check if rejection already exists
-            $check_rejection_sql = "SELECT COUNT(*) FROM application_approvals WHERE application_id = ? AND approval_status = 'Rejected'";
+            // Check if rejection already exists (union-scoped when union_id is available)
+            $check_rejection_sql = "SELECT COUNT(*) FROM application_approvals WHERE application_id = ?";
+            $check_bind    = [$application_id];
+            $check_types   = 's';
+            if ($union_id !== null) {
+                $check_rejection_sql .= " AND union_id = ?";
+                $check_bind[]  = (int)$union_id;
+                $check_types  .= 'i';
+            }
             $stmt = $this->conn->prepare($check_rejection_sql);
-            $stmt->bind_param("s", $application_id);
+            $stmt->bind_param($check_types, ...$check_bind);
             $stmt->execute();
             $stmt->bind_result($rejection_count);
             $stmt->fetch();
@@ -1367,10 +1374,17 @@ class ApplicationManager
                 throw new Exception("Error inserting rejection record: " . $stmt->error);
             }
             $stmt->close();
-            // Update the status of the applicant in applications table
-            $sql_update = "UPDATE applications SET status = 'Rejected', issue_date = NOW() WHERE application_id = ? AND union_id = ?";
+            // Update the status of the applicant in applications table (union-scoped when union_id is available)
+            $sql_update = "UPDATE applications SET status = 'Rejected', issue_date = NOW() WHERE application_id = ?";
+            $update_bind    = [$application_id];
+            $update_types   = 's';
+            if ($union_id !== null) {
+                $sql_update .= " AND union_id = ?";
+                $update_bind[]  = (int)$union_id;
+                $update_types  .= 'i';
+            }
             $stmt = $this->conn->prepare($sql_update);
-            $stmt->bind_param("si", $application_id, $union_id);
+            $stmt->bind_param($update_types, ...$update_bind);
             if (!$stmt->execute()) {
                 throw new Exception("Error updating application status: " . $stmt->error);
             }
@@ -1386,9 +1400,16 @@ class ApplicationManager
     // union_id দিয়ে ফিল্টার শুধুমাত্র applications table-এ
     public function setApplicationOnHold($application_id, $note, $union_id)
     {
-        $sql = "UPDATE applications SET status = 'On Hold', hold_note = ?, hold_date = NOW() WHERE application_id = ? AND union_id = ?";
+        $sql = "UPDATE applications SET status = 'On Hold', hold_note = ?, hold_date = NOW() WHERE application_id = ?";
+        $params = [$note, $application_id];
+        $types  = 'si';
+        if ($union_id !== null) {
+            $sql .= " AND union_id = ?";
+            $params[]  = (int)$union_id;
+            $types    .= 'i';
+        }
         $stmt = $this->conn->prepare($sql);
-        $stmt->bind_param("ssi", $note, $application_id, $union_id);
+        $stmt->bind_param($types, ...$params);
         $result = $stmt->execute();
         $stmt->close();
 
@@ -1402,9 +1423,16 @@ class ApplicationManager
     // union_id দিয়ে ফিল্টার শুধুমাত্র applications table-এ
     public function reactivateApplication($application_id, $union_id)
     {
-        $sql = "UPDATE applications SET status = 'Active', hold_note = NULL, hold_date = NULL WHERE application_id = ? AND union_id = ?";
+        $sql = "UPDATE applications SET status = 'Active', hold_note = NULL, hold_date = NULL WHERE application_id = ?";
+        $params = [$application_id];
+        $types  = 's';
+        if ($union_id !== null) {
+            $sql .= " AND union_id = ?";
+            $params[]  = (int)$union_id;
+            $types    .= 'i';
+        }
         $stmt = $this->conn->prepare($sql);
-        $stmt->bind_param("si", $application_id, $union_id);
+        $stmt->bind_param($types, ...$params);
         $result = $stmt->execute();
         $stmt->close();
 
@@ -1429,7 +1457,8 @@ class ApplicationManager
         $params = [$sonod_number, $status, $application_id];
         $types = 'sss';
 
-        if ($union_id !== null) {
+        // union_id is optional so superadmin lookups / forced updates still work.
+        if ($union_id !== null && $union_id !== '') {
             $sql .= " AND union_id = ?";
             $params[] = $union_id;
             $types .= 'i';
