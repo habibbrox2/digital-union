@@ -123,7 +123,8 @@ $router->get('/birth/bdris/init', function() {
 $router->post('/birth/bdris/submit', function() {
     header('Content-Type: application/json; charset=utf-8');
     $ubrn = $_POST['ubrn'] ?? '';
-    $dob  = sanitize_input($_POST['birthdate'] ?? '');
+    // Input is DD-MM-YYYY; BDRIS requires YYYY-MM-DD
+    $dob  = normalizeDateToMysql(sanitize_input($_POST['birthdate'] ?? ''));
     $captcha = $_POST['captcha'] ?? '';
     $token = $_POST['server_token'] ?? '';
     $captcha_de_text = $_POST['captcha_de_text'] ?? '';

@@ -122,6 +122,7 @@
 	                           placeholder="20250000000000001" pattern="\d{17}" maxlength="17" required
 	                           value="{{ birth.registration_number ?? '' }}">
 	                    <div class="invalid-feedback">১৭ ডিজিটের রেজিস্ট্রেশন নম্বর দিন।</div>
+	                    <div class="form-text mt-1" id="registration_number_count">0 / 17 digits</div>
 	                </div>
 	
 	                <div class="col-md-4">
@@ -523,7 +524,7 @@
   }
 
   // ===================== CAPTCHA INIT =====================
-  async function initCaptcha() {
+  async function initCaptcha(preserveAlert = false) {
     try {
       const res = await fetch(BASE_URL + '/birth/bdris/init', { credentials: 'same-origin' });
       const j = await res.json();
@@ -535,7 +536,7 @@
       if(!ub.value) ub.value = '';
       if(!bd.value) bd.value = '';
       capIn.value = '';
-      clearAlert();
+      if (!preserveAlert) clearAlert();
     } catch(err) {
       console.error('Network error:', err);
       showAlert('⚠️ নেটওয়ার্ক ত্রুটি ঘটেছে।');
@@ -548,6 +549,8 @@
     const setVal = (id, val) => { const el = document.getElementById(id); if(el) el.value = val || ''; };
 
     setVal('registration_number', data.birth_registration_number_en);
+    const regCounterInput = document.getElementById('registration_number');
+    if (regCounterInput) regCounterInput.dispatchEvent(new Event('input', { bubbles: true }));
     setVal('date_of_registration', formatDateToDDMMYYYY(data.registration_date_en));
     setVal('date_of_issuance', formatDateToDDMMYYYY(data.issuance_date_en));
     setVal('birth_date', formatDateToDDMMYYYY(data.date_of_birth_en));
@@ -621,11 +624,13 @@
       } finally {
         verifyBtn.disabled = false;
         verifyBtn.innerHTML = '<i class="bi bi-check-circle me-1"></i> যাচাই';
+        // Auto-refresh captcha after every request so the correct image is always displayed
+        initCaptcha(true);
       }
     });
   }
 
-  if (refreshBtn) refreshBtn.addEventListener('click', initCaptcha);
+  if (refreshBtn) refreshBtn.addEventListener('click', () => initCaptcha());
   initCaptcha();
 
 })();
@@ -658,6 +663,23 @@ document.addEventListener('DOMContentLoaded', () => {
         {id:18,label:"MQRH",url:"https://bdris.gov.bd/certificate/verify?key=t4XrmK6bxfBNak+8YkVut37SDwjtIEmAp9ukukEHjL/E8NlGT/i1vlswjj++de+m"},
         {id:19,label:"ZIDIR",url:"https://bdris.gov.bd/certificate/verify?key=IXJ4ukq9GENXhP1RC83veooWrWFx6870razHrtcxxM1MwA9yP9wOazyzOMF5m4xO"}
     ];
+
+    // ===================== Registration Number Counter =====================
+    function updateRegistrationNumberCount() {
+        const input = document.getElementById('registration_number');
+        const counter = document.getElementById('registration_number_count');
+        if (!input || !counter) return;
+        const len = input.value.length;
+        counter.textContent = `${len} / 17 digits`;
+        counter.classList.toggle('text-success', len === 17);
+        counter.classList.toggle('text-muted', len !== 17);
+    }
+
+    const regNumInput = document.getElementById('registration_number');
+    if (regNumInput) {
+        regNumInput.addEventListener('input', updateRegistrationNumberCount);
+        updateRegistrationNumberCount();
+    }
 
     // ===================== Uppercase Fields =====================
     const uppercaseFields = [
