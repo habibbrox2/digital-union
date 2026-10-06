@@ -189,8 +189,6 @@ jobs:
             .env.*
             .git*
             .github*
-            composer.json
-            composer.lock
             README.md
             .gitignore
             config/*firebase*.json
