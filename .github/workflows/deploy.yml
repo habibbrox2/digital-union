@@ -61,6 +61,8 @@ jobs:
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || github.event_name == 'workflow_dispatch'
     environment: production
+    env:
+      SSH_HOST: ${{ secrets.SSH_HOST }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -76,10 +78,9 @@ jobs:
         run: composer install --no-interaction --prefer-dist --optimize-autoloader --no-dev
 
       - name: Create .env from secrets
-        run: |
-          cat > .env << 'EOF'
-${{ secrets.ENV_FILE }}
-EOF
+        env:
+          ENV_FILE: ${{ secrets.ENV_FILE }}
+        run: printf '%s' "$ENV_FILE" > .env
 
       - name: Create Firebase service account from secret
         run: |
@@ -123,7 +124,7 @@ EOF
             .editorconfig
 
       - name: Run post-deploy commands via SSH
-        if: secrets.SSH_HOST != ''
+        if: env.SSH_HOST != ''
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SSH_HOST }}
