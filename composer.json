@@ -1,4 +1,7 @@
 {
+    "name": "habibbrox2/digital-union",
+    "description": "Local Government Digital Union Management System for municipal certificates and digital services in Dhaka, Bangladesh.",
+    "license": "MIT",
     "require": {
         "twig/twig": "^3.8",
         "mpdf/mpdf": "^8.2",
