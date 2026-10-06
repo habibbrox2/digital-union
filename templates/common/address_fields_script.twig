@@ -19,6 +19,11 @@ document.addEventListener('DOMContentLoaded', function () {
         return div.innerHTML;
     }
 
+    var BN_DIGITS = ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯'];
+    function toBengaliDigits(str) {
+        return String(str).replace(/[0-9]/g, function(d) { return BN_DIGITS[+d]; });
+    }
+
     function postOfficeDropdownFor(input) {
         var wrapper = input && input.closest ? input.closest('.autocomplete-wrapper') : null;
         return wrapper ? wrapper.querySelector('.autocomplete-dropdown') : null;
@@ -501,15 +506,9 @@ document.addEventListener('DOMContentLoaded', function () {
         lis.forEach(function(li) {
             var en = (li.dataset.en || '').toLowerCase();
             var bn = (li.dataset.bn || '').toLowerCase();
-            var match = false;
-            if (isEnglishField) {
-                match = !searchVal || en.includes(searchVal);
-            } else if (isBengaliField) {
-                match = !searchVal || bn.includes(searchVal) || (!bn && en.includes(searchVal));
-            } else {
-                // Default: search in both
-                match = !searchVal || en.includes(searchVal) || bn.includes(searchVal);
-            }
+            // Cross-language search: a hit in either name matches, while the row
+            // still renders only in the language of the focused field.
+            var match = !searchVal || en.includes(searchVal) || bn.includes(searchVal);
             li.style.display = match ? '' : 'none';
             if (!match) return;
             visibleCount++;
@@ -531,7 +530,7 @@ document.addEventListener('DOMContentLoaded', function () {
             }
             if (isBengaliField) {
                 li.innerHTML = '<span class="postoffice-name">' +
-                    escapeAttr((bnName || enName) + postCode) + '</span>';
+                    escapeAttr((bnName || enName) + toBengaliDigits(postCode)) + '</span>';
             } else if (isEnglishField) {
                 li.innerHTML = '<span class="postoffice-name">' +
                     escapeAttr(enName + postCode) + '</span>';
@@ -541,6 +540,12 @@ document.addEventListener('DOMContentLoaded', function () {
                     (bnName ? '<span class="postoffice-bn">' + escapeAttr(bnName) + '</span>' : '');
             }
         });
+
+        // A blur within the last 200ms must not hide a list we just opened
+        if (dropdown._hideTimer) {
+            clearTimeout(dropdown._hideTimer);
+            dropdown._hideTimer = null;
+        }
 
         // Keep only one post-office dropdown open inside the same address row
         var row = input.closest('.row');
@@ -584,8 +589,9 @@ document.addEventListener('DOMContentLoaded', function () {
             if (!wrapper) return;
             var dropdown = wrapper.querySelector('.autocomplete-dropdown');
             if (!dropdown) return;
-            setTimeout(function() {
+            dropdown._hideTimer = setTimeout(function() {
                 dropdown.classList.remove('show');
+                dropdown._hideTimer = null;
             }, 200);
         }
     }, true);// Keyboard navigation
