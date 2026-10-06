@@ -79,7 +79,7 @@ jobs:
         run: |
           cat > .env << 'EOF'
 ${{ secrets.ENV_FILE }}
-          EOF
+EOF
 
       - name: Create Firebase service account from secret
         run: |
