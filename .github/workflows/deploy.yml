@@ -115,6 +115,7 @@ jobs:
             config/*-serviceaccount*.json
             storage/logs/**
             storage/cache/**
+            vendor/**/.github/**
             vendor/**/.git*
             vendor/**/tests/**
             vendor/**/Test/**
