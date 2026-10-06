@@ -202,7 +202,6 @@ jobs:
             vendor/**/.github/**
             vendor/**/.git*
             vendor/**/tests/**
-            vendor/**/Test/**
             tests/**
             phpunit*
             *.md
