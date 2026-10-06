@@ -41,6 +41,15 @@
     if (window.__applicationDetailsModalInit) return;
     window.__applicationDetailsModalInit = true;
 
+    // Global capture-phase error delegation: hides any dynamically
+    // created image that fails to load (replaces inline onerror).
+    document.addEventListener('error', function (e) {
+        var t = e.target;
+        if (t && t.tagName === 'IMG' && t.hasAttribute('data-hide-on-error')) {
+            t.style.display = 'none';
+        }
+    }, true);
+
     function escHtml(v) {
         return String(v == null ? '' : v)
             .replace(/&/g, '&amp;')
@@ -96,7 +105,7 @@
             photoHtml = '<div class="text-center mb-3">' +
                 '<img src="' + escHtml(photoSrc) + '" alt="Applicant Photo" ' +
                 'style="width:100px;height:100px;object-fit:cover;border-radius:8px;border:2px solid #dee2e6;" ' +
-                'onerror="this.style.display=\'none\'">' +
+                'data-hide-on-error="1">' +
                 '</div>';
         }
 

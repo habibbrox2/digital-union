@@ -47,26 +47,42 @@ if (empty($tradeApps)) {
 $testApp = $tradeApps[0];
 $appId = $testApp['application_id'];
 
-echo "\n=== 2. Check Current Business Meta ===\n";
-$stmt = $mysqli->prepare("SELECT license_fee, vat_amount, occupation_tax, income_tax, signboard_tax, surcharge, total_fee, business_type_id, fiscal_year FROM business_meta WHERE application_id = ?");
+echo "\n=== 2. Snapshot Current Business Meta (before) ===\n";
+$stmt = $mysqli->prepare("SELECT * FROM business_meta WHERE application_id = ?");
 $stmt->bind_param('s', $appId);
 $stmt->execute();
-$meta = $stmt->get_result()->fetch_assoc();
+$metaBefore = $stmt->get_result()->fetch_assoc();
 $stmt->close();
 
-if ($meta) {
-    echo "  License Fee: {$meta['license_fee']}\n";
-    echo "  VAT: {$meta['vat_amount']}\n";
-    echo "  Occupation Tax: {$meta['occupation_tax']}\n";
-    echo "  Business Type ID: {$meta['business_type_id']}\n";
-    echo "  Fiscal Year: {$meta['fiscal_year']}\n";
+if ($metaBefore) {
+    echo "  License Fee: {$metaBefore['license_fee']}\n";
+    echo "  Business Name BN: {$metaBefore['business_name_bn']}\n";
+    echo "  Business Type ID: {$metaBefore['business_type_id']}\n";
+    echo "  Fiscal Year: {$metaBefore['fiscal_year']}\n";
 } else {
-    echo "  No business meta found. Creating...\n";
-    $mysqli->query("INSERT INTO business_meta (application_id, license_fee, vat_amount, occupation_tax, business_type_id) VALUES ('$appId', 100, 15, 50, 1)");
-    echo "  Created with license_fee=100\n";
+    echo "  No business meta row for this application (that's fine — business_meta must stay absent).\n";
 }
 
-echo "\n=== 3. Test Fee Update Endpoint ===\n";
+// Business type to test with: the application's own type, else the first row
+$btId = (int)($metaBefore['business_type_id'] ?? 0);
+if (!$btId) {
+    $btRes = $mysqli->query("SELECT id FROM business_type ORDER BY id ASC LIMIT 1");
+    $btId = (int)($btRes->fetch_assoc()['id'] ?? 0);
+}
+if (!$btId) {
+    echo "  No business_type rows exist — cannot run test.\n";
+    exit(1);
+}
+
+$stmt = $mysqli->prepare("SELECT business_name_bn, business_name_en, license_fee, vat_amount, occupation_tax, income_tax, signboard_tax, surcharge FROM business_type WHERE id = ?");
+$stmt->bind_param('i', $btId);
+$stmt->execute();
+$btBefore = $stmt->get_result()->fetch_assoc();
+$stmt->close();
+echo "  Testing with business_type id={$btId} ({$btBefore['business_name_bn']})\n";
+echo "  Before fees: license={$btBefore['license_fee']}, vat={$btBefore['vat_amount']}, occ_tax={$btBefore['occupation_tax']}\n";
+
+echo "\n=== 3. Test Fee Update Endpoint (fees + business_type_id ONLY) ===\n";
 $_POST = [
     'license_fee' => '250',
     'vat_amount' => '37.50',
@@ -74,10 +90,7 @@ $_POST = [
     'income_tax' => '0',
     'signboard_tax' => '0',
     'surcharge' => '0',
-    'total_fee' => '362.50',
-    'fiscal_year' => '2025-2026',
-    'ownership_type_id' => '1',
-    'business_type_id' => '1',
+    'business_type_id' => (string)$btId,
 ];
 
 // Simulate the updateTradeFees method
@@ -91,39 +104,42 @@ $appManager = new ApplicationManager($mysqli);
 $service = new ApplicationService($mysqli, $appManager);
 
 $result = $service->updateTradeFees($appId, $_POST, 1);
-echo "  Result: " . json_encode($result) . "\n";
+echo "  Result: " . json_encode($result, JSON_UNESCAPED_UNICODE) . "\n";
 
-echo "\n=== 4. Verify Updated Business Meta ===\n";
-$stmt = $mysqli->prepare("SELECT license_fee, vat_amount, occupation_tax, total_fee, fiscal_year FROM business_meta WHERE application_id = ?");
+echo "\n=== 4. Verify business_meta is UNCHANGED ===\n";
+$stmt = $mysqli->prepare("SELECT * FROM business_meta WHERE application_id = ?");
 $stmt->bind_param('s', $appId);
 $stmt->execute();
-$updated = $stmt->get_result()->fetch_assoc();
+$metaAfter = $stmt->get_result()->fetch_assoc();
 $stmt->close();
 
-if ($updated) {
-    echo "  License Fee: {$updated['license_fee']} (expected: 250)\n";
-    echo "  VAT: {$updated['vat_amount']} (expected: 37.50)\n";
-    echo "  Occupation Tax: {$updated['occupation_tax']} (expected: 75)\n";
-    echo "  Total Fee: {$updated['total_fee']} (expected: 362.50)\n";
-    echo "  Fiscal Year: {$updated['fiscal_year']} (expected: 2025-2026)\n";
-    
-    $pass = ($updated['license_fee'] == 250 && $updated['occupation_tax'] == 75);
-    echo "\n  " . ($pass ? "✅ business_meta UPDATE PASSED" : "❌ business_meta UPDATE FAILED") . "\n";
+$metaUnchanged = ($metaBefore === $metaAfter);
+if ($metaBefore === null && $metaAfter === null) {
+    $metaUnchanged = true; // absent before and after — correct
+}
+echo ($metaUnchanged ? "  ✅ business_meta row unchanged (business name intact)" : "  ❌ business_meta row CHANGED — regression!") . "\n";
+if (!$metaUnchanged) {
+    foreach ($metaBefore as $k => $v) {
+        if (($metaAfter[$k] ?? null) !== $v) {
+            echo "    Diff '{$k}': '{$v}' -> '" . ($metaAfter[$k] ?? '(null)') . "'\n";
+        }
+    }
 }
 
-echo "\n=== 5. Verify Business Type Table Synced ===\n";
-$btRes = $mysqli->query("SELECT license_fee, vat_amount, occupation_tax FROM business_type WHERE id = 1");
-$bt = $btRes->fetch_assoc();
-if ($bt) {
-    echo "  License Fee: {$bt['license_fee']} (expected: 250)\n";
-    echo "  VAT: {$bt['vat_amount']} (expected: 37.50)\n";
-    echo "  Occupation Tax: {$bt['occupation_tax']} (expected: 75)\n";
-    
-    $pass2 = ($bt['license_fee'] == 250 && $bt['occupation_tax'] == 75);
-    echo "\n  " . ($pass2 ? "✅ business_type SYNC PASSED" : "❌ business_type SYNC FAILED") . "\n";
-} else {
-    echo "  No business_type with id=1 found\n";
-}
+echo "\n=== 5. Verify business_type fee columns updated, name untouched ===\n";
+$stmt = $mysqli->prepare("SELECT business_name_bn, business_name_en, license_fee, vat_amount, occupation_tax, income_tax, signboard_tax, surcharge FROM business_type WHERE id = ?");
+$stmt->bind_param('i', $btId);
+$stmt->execute();
+$btAfter = $stmt->get_result()->fetch_assoc();
+$stmt->close();
+
+$pass2 = ($btAfter['license_fee'] == 250 && $btAfter['occupation_tax'] == 75);
+$nameUnchanged = ($btAfter['business_name_bn'] === $btBefore['business_name_bn'] && $btAfter['business_name_en'] === $btBefore['business_name_en']);
+echo "  License Fee: {$btAfter['license_fee']} (expected: 250)\n";
+echo "  VAT: {$btAfter['vat_amount']} (expected: 37.50)\n";
+echo "  Occupation Tax: {$btAfter['occupation_tax']} (expected: 75)\n";
+echo ($pass2 ? "  ✅ business_type FEES updated" : "  ❌ business_type fees NOT updated") . "\n";
+echo ($nameUnchanged ? "  ✅ business_type names untouched" : "  ❌ business_type names changed — regression!") . "\n";
 
 echo "\n=== 6. Test Endpoint via HTTP ===\n";
 // Simulate POST request

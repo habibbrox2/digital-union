@@ -393,6 +393,20 @@ $router->get('/api/v2/geo/unions/{upazila_id}', function($upazila_id = null) use
     echo json_encode($unions);
 });
 
+// GET /api/v2/geo/post-offices/{upazila_id} — list post offices for an upazila (via first union)
+$router->get('/api/v2/geo/post-offices/{upazila_id}', function($upazila_id = null) use ($geoService) {
+    header('Content-Type: application/json; charset=utf-8');
+    
+    $upazilaId = (int)($upazila_id ?: 0);
+    if ($upazilaId <= 0) {
+        echo json_encode(['status' => 'error', 'message' => 'Invalid upazila ID']);
+        return;
+    }
+    
+    $result = $geoService->getPostOfficesByUpazila($upazilaId);
+    echo json_encode($result);
+});
+
 // ================================================================
 // POST / GET : Post Offices by Union
 // ================================================================

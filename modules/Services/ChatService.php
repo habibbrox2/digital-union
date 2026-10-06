@@ -14,7 +14,10 @@ class ChatService
 
     // Bump this whenever chat tables/columns change so the one-time
     // migration (autoMigrate) re-runs on the next request after deploy.
-    private const SCHEMA_VERSION = '5';
+    // Version 6 adds chat_sessions.union_id for union-scoped admin inboxes.
+    // Bumping this forces the idempotent column check on deployments that had
+    // already recorded the previous schema version without that column.
+    private const SCHEMA_VERSION = '6';
 
     // In-process guard: migration must run at most once per PHP process,
     // and only once per deployment (tracked via a system_settings flag).

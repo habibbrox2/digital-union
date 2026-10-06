@@ -21,8 +21,6 @@
                         'district_bn': 'district',
                         'upazila_en': 'upazila_id',
                         'upazila_bn': 'upazila',
-                        'union_en': 'union_id',
-                        'union_bn': 'union',
                         'postoffice_en': 'postoffice_en',
                         'postoffice_bn': 'postoffice_bn'
                     };
@@ -45,12 +43,7 @@
                             if (upaEl) { upaEl.value = addr['upazila_en']; upaEl.dispatchEvent(new Event('change')); }
                         }, 500);
                     }
-                    if (addr['union_en']) {
-                        setTimeout(function() {
-                            var unionEl = document.getElementById('{{ prefix }}_union_id');
-                            if (unionEl) { unionEl.value = addr['union_en']; unionEl.dispatchEvent(new Event('change')); }
-                        }, 1000);
-                    }
+
                 })
                 .catch(function(err) {
                     console.error('Address fetch error:', err);
@@ -166,28 +159,7 @@
         </div>
     </div>
 
-    {# === Union (EN select + BN text) === #}
-    <div class="row align-items-center mb-3">
-        <div class="{{ govt_label }}">
-            <label for="{{ prefix }}_union_id" class="form-label mb-0">ইউনিয়ন (ইংরেজিতে) <span class="text-danger">*</span></label>
-        </div>
-        <div class="{{ govt_input }}">
-            <select name="{{ prefix }}_union_en" id="{{ prefix }}_union_id" class="form-control"
-                    data-selected="{{ data[prefix~'_union_en']|default('') }}">
-                <option value="">ইউনিয়ন নির্বাচন করুন</option>
-            </select>
-        </div>
-        <div class="{{ govt_label }}">
-            <label for="{{ prefix }}_union" class="form-label mb-0">ইউনিয়ন (বাংলায়)</label>
-        </div>
-        <div class="{{ govt_input }}">
-            <input type="text" name="{{ prefix }}_union_bn" id="{{ prefix }}_union" class="form-control"
-                   placeholder="স্বয়ংক্রিয়ভাবে পূরণ হবে"
-                   value="{{ data[prefix~'_union_bn']|default('') }}">
-        </div>
-    </div>
-
-    {# === Post Office (EN autocomplete + BN text) === #}
+    {# === Post Office (EN autocomplete + BN autocomplete) === #}
     <div class="row align-items-center mb-3">
         <div class="{{ govt_label }}">
             <label for="{{ prefix }}_postoffice_en" class="form-label mb-0">পোষ্ট অফিস (ইংরেজিতে)</label>
@@ -204,9 +176,12 @@
             <label for="{{ prefix }}_postoffice_bn" class="form-label mb-0">পোষ্ট অফিস (বাংলায়) <span class="text-danger">*</span></label>
         </div>
         <div class="{{ govt_input }}">
-            <input type="text" name="{{ prefix }}_postoffice_bn" id="{{ prefix }}_postoffice_bn"
-                   class="form-control bangla" placeholder="পোষ্ট অফিসের নাম লিখুন" required
-                   value="{{ data[prefix~'_postoffice_bn']|default('') }}">
+            <div class="autocomplete-wrapper">
+                <input type="text" name="{{ prefix }}_postoffice_bn" id="{{ prefix }}_postoffice_bn"
+                       class="form-control bangla" placeholder="পোষ্ট অফিসের নাম লিখুন" required
+                       value="{{ data[prefix~'_postoffice_bn']|default('') }}" autocomplete="off">
+                <ul class="autocomplete-dropdown postoffice-dropdown" id="{{ prefix }}_postoffice_list_bn"></ul>
+            </div>
         </div>
     </div>
 

@@ -229,6 +229,34 @@ table.warish-table td {
                 </tr>
                 {% endif %}
 
+
+			{% if data.birth_id or data.nid or data.passport_no %}
+			
+			<tr>
+			    <td class="info-label">
+			        {% if data.birth_id %}
+			            মৃত্যু নিবন্ধন নং
+			        {% elseif data.nid %}
+			            ন্যাশনাল আইডি নং
+			        {% else %}
+			            পার্সপোট নং
+			        {% endif %}
+			    </td>
+			    <td colspan="3">
+			        :
+			        {% if data.birth_id %}
+			            {{ data.birth_id | bn_number }}
+			        {% elseif data.nid %}
+			            {{ data.nid | bn_number }}
+			        {% elseif data.passport_no %}
+			            {{ data.passport_no | bn_number }}
+			        {% endif %}
+			    </td>
+			</tr>
+			{% endif %}
+
+
+
                 <tr>
                     <td class="info-label">স্থায়ী ঠিকানা</td>
                     <td colspan="3">: গ্রাম/মহল্লা : {{ data.present_village_bn }}, রাস্তা/ব্লক/সেক্টর : {{ data.present_rbs_bn }}, ওয়ার্ড : {{ data.present_ward_no|bn }},<br>

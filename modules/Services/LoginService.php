@@ -50,7 +50,7 @@ class LoginService
     {
         $username = sanitize_input($input['username'] ?? '');
         $password = $input['password'] ?? '';
-        $redirect = sanitize_input($input['redirect'] ?? '/dashboard');
+        $redirect = $this->sanitizeRedirect($input['redirect'] ?? '/dashboard');
 
         if (empty($username) || empty($password)) {
             return [
@@ -67,6 +67,46 @@ class LoginService
             'message' => $result['message'],
             'redirect' => $result['success'] ? $redirect : null,
         ];
+    }
+
+    /**
+     * Ensure the redirect URL is a local path to prevent open redirect attacks.
+     * Rejects external URLs, protocol-relative URLs, and non-http schemes
+     * (e.g. javascript:, data:, ftp:).
+     */
+    private function sanitizeRedirect(string $redirect): string
+    {
+        if (empty($redirect)) {
+            return '/dashboard';
+        }
+
+        if (parse_url($redirect, PHP_URL_SCHEME) !== null) {
+            $parsed = parse_url($redirect);
+            $scheme = strtolower($parsed['scheme'] ?? '');
+
+            if (!in_array($scheme, ['http', 'https'], true)) {
+                return '/dashboard';
+            }
+
+            $host = $parsed['host'] ?? '';
+            $currentHost = $_SERVER['HTTP_HOST'] ?? '';
+
+            if ($host !== '' && $host !== $currentHost) {
+                return '/dashboard';
+            }
+
+            return ($parsed['path'] ?? '/') . (!empty($parsed['query']) ? '?' . $parsed['query'] : '');
+        }
+
+        if (strpos($redirect, '/') !== 0) {
+            return '/dashboard';
+        }
+
+        if (strpos($redirect, '//') === 0) {
+            return '/dashboard';
+        }
+
+        return $redirect;
     }
 
     /**

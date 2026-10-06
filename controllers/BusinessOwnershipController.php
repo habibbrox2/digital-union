@@ -138,6 +138,53 @@ $router->post('/settings/business-types/delete/{id}', function($id) use ($busine
     }
 });
 
+// POST : Edit business type form submission
+$router->post('/settings/business-types/edit/{id}', function($id) use ($twig, $businessOwnership, $authService, $auth) {
+    $authService->ensureCan('manage_settings');
+    header('Content-Type: application/json');
+
+    try {
+        $typeId = (int)$id;
+
+        $userData = $auth->getUserData(false);
+        $isSuperAdmin = $userData && !empty($userData['is_superadmin']);
+        $userUnionId = !$isSuperAdmin && $userData ? (int)($userData['union_id'] ?? 0) : 0;
+
+        $existing = $businessOwnership->getBusinessTypeById($typeId);
+        if (!$existing) {
+            throw new Exception('ব্যবসার ধরণ খুঁজে পাওয়া যায়নি।');
+        }
+        if (!$isSuperAdmin && $userUnionId > 0 && (int)$existing['union_id'] !== $userUnionId) {
+            throw new Exception('আপনার এই ব্যবসার ধরণ সম্পাদনা করার অনুমতি নেই।');
+        }
+
+        $data = [
+            'business_name_bn' => sanitize_input($_POST['business_name_bn'] ?? ''),
+            'business_name_en' => sanitize_input($_POST['business_name_en'] ?? ''),
+            'license_fee' => (float)($_POST['license_fee'] ?? 0),
+            'vat_amount' => (float)($_POST['vat_amount'] ?? 0),
+            'occupation_tax' => (float)($_POST['occupation_tax'] ?? 0),
+            'income_tax' => (float)($_POST['income_tax'] ?? 0),
+            'signboard_tax' => (float)($_POST['signboard_tax'] ?? 0),
+            'surcharge' => (float)($_POST['surcharge'] ?? 0),
+            'union_id' => (int)$existing['union_id'],
+        ];
+
+        if (empty($data['business_name_bn'])) {
+            throw new Exception('ব্যবসার নাম (বাংলা) প্রয়োজন।');
+        }
+
+        $result = $businessOwnership->updateBusinessType($typeId, $data);
+        if ($result['status'] !== 'success') {
+            throw new Exception($result['message']);
+        }
+
+        echo json_encode(['status' => 'success', 'message' => 'ব্যবসার ধরণ সফলভাবে হালনাগাদ হয়েছে।']);
+    } catch (Exception $e) {
+        echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
+    }
+});
+
 // GET : Edit business type form
 $router->get('/settings/business-types/edit/{id}', function($id) use ($twig, $businessOwnership, $authService, $auth) {
     $authService->ensureCan('manage_settings');

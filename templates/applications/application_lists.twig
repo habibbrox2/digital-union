@@ -614,7 +614,7 @@ document.addEventListener('DOMContentLoaded', function () {
     function getActionButtons(application) {
         let buttons = "<div class='d-flex flex-wrap justify-content-center gap-1'>";
         let type = '{{ go_url |e('js') }}'; 
-        buttons += `<button type="button" class="btn btn-info btn-sm me-1" title="বিস্তারিত দেখুন" onclick="openApplicationDetails('${type}', '${application.application_id}')">
+        buttons += `<button type="button" class="btn btn-info btn-sm me-1" title="বিস্তারিত দেখুন" data-app-type="${type}" data-app-id="${application.application_id}">
                 <i class="fas fa-eye"></i></button>
             <a href="/applications/${type}/edit/${application.application_id}" class="btn btn-warning btn-sm me-1" title="সম্পাদনা করুন">
                 <i class="fas fa-pencil-alt"></i></a>`;
@@ -1482,7 +1482,7 @@ function populateApproveModal(result, certType) {
             const ext = name.split('.').pop().toLowerCase();
             const isImg = ['jpg','jpeg','png','gif','webp'].includes(ext);
             if (isImg) {
-                docsHtml += `<a href="/${doc}" target="_blank" class="badge bg-light text-dark border text-decoration-none p-2"><img src="/${doc}" style="height:30px;border-radius:4px;" onerror="this.style.display='none'"> ${name}</a>`;
+                docsHtml += `<a href="/${doc}" target="_blank" class="badge bg-light text-dark border text-decoration-none p-2"><img src="/${doc}" style="height:30px;border-radius:4px;" data-hide-on-error="1"> ${name}</a>`;
             } else {
                 docsHtml += `<a href="/${doc}" target="_blank" class="badge bg-light text-dark border text-decoration-none p-2"><i class="bi bi-file-earmark me-1"></i>${name}</a>`;
             }

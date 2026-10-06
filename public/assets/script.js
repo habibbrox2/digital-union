@@ -110,128 +110,150 @@ document.addEventListener('DOMContentLoaded', function () {
     /* ================= Sidebar Toggle & Hover ================= */
 
     const sidebarBtn = document.getElementById('sidebar');
+    const sidebarEdgeFab = document.getElementById('sidebarEdgeFab');
     const sidebarNav = document.querySelector('nav.sidebar');
     const SIDEBAR_STATE_KEY = 'sidebar_collapsed';
 
+    /* The sidebar has two modes, exactly as the CSS breakpoints describe:
+       >= 769px is a collapsible rail, below that it is an overlay drawer.
+       matchMedia() is used (instead of innerWidth) so the JS follows the same
+       breakpoint as the stylesheet on every device, zoom level and split view. */
+    const sidebarDesktopMQ = window.matchMedia('(min-width: 769px)');
+    const prefersReducedMotionMQ = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+    function isDesktop() {
+        return sidebarDesktopMQ.matches;
+    }
+
+    function isMobile() {
+        return !sidebarDesktopMQ.matches;
+    }
+
+    /** Animation duration in ms — 0 when the user asked for reduced motion. */
+    function motionDuration(ms) {
+        return prefersReducedMotionMQ.matches ? 0 : ms;
+    }
+
     /**
-     * Save sidebar collapsed state to localStorage.
+     * The trailing chevron of a submenu toggle (never the leading menu icon).
      */
-    function saveSidebarState(collapsed) {
+    function getChevron(element) {
+        if (!element) return null;
+        return element.querySelector('.float-end.fas, .float-end.fa-chevron-down, .float-end.fa-chevron-up');
+    }
+
+    /**
+     * Remember the desktop sidebar preference so it survives a page reload.
+     * @param {boolean} pinned - true when the sidebar is open on desktop
+     */
+    function saveSidebarState(pinned) {
         try {
-            if (collapsed) {
-                localStorage.setItem(SIDEBAR_STATE_KEY, 'true');
-            } else {
-                localStorage.removeItem(SIDEBAR_STATE_KEY);
-            }
+            localStorage.setItem(SIDEBAR_STATE_KEY, pinned ? 'pinned' : 'collapsed');
         } catch (e) {
             // localStorage may not be available (private browsing, etc.)
         }
     }
 
     /**
-     * Load sidebar collapsed state from localStorage.
+     * Read the saved desktop preference.
+     * @returns {?boolean} true = pinned open, false = collapsed, null = nothing saved yet
      */
     function loadSidebarState() {
         try {
-            return localStorage.getItem(SIDEBAR_STATE_KEY) === 'true';
-        } catch (e) {
+            const saved = localStorage.getItem(SIDEBAR_STATE_KEY);
+            if (saved === null) return null;
+            if (saved === 'pinned') return true;
+            // 'true' is the legacy value written by the previous version (collapsed)
             return false;
+        } catch (e) {
+            return null;
         }
     }
 
     /**
      * Set the sidebar to collapsed or expanded state (desktop only).
+     * Expanded and pinned are kept in sync here so the toggle button, the edge
+     * handle and the tooltips can never disagree about the current state.
      * @param {boolean} collapsed - true to collapse, false to expand
-     * @param {boolean} [updateIcon=true] - whether to update the toggle button icon
+     * @param {boolean} [updateIcon=true] - update the toggle button icon/label
+     * @param {boolean} [persist=true] - save the preference to localStorage
      */
-    function setSidebarCollapsed(collapsed, updateIcon) {
+    function setSidebarCollapsed(collapsed, updateIcon, persist) {
         if (updateIcon === undefined) updateIcon = true;
-        if (!sidebarNav) return;
-        const isDesktop = window.innerWidth >= 769;
-        if (!isDesktop) return;
+        if (persist === undefined) persist = true;
+        if (!sidebarNav || !isDesktop()) return;
 
         sidebarNav.classList.toggle('collapsed', collapsed);
         document.body.classList.toggle('sidebar-collapsed', collapsed);
+        document.body.classList.toggle('sidebar-pinned', !collapsed);
 
-        if (updateIcon && sidebarBtn) {
-            const icon = sidebarBtn.querySelector('i');
-            if (icon) {
-                icon.className = collapsed ? 'fas fa-bars' : 'fas fa-xmark';
-            }
-        }
-
-        saveSidebarState(collapsed);
+        if (persist) saveSidebarState(!collapsed);
+        if (updateIcon) updateToggleIcons();
     }
 
     /**
-     * Toggle the sidebar between collapsed and expanded.
-     * On desktop: click toggles the pinned open/closed state (sidebar stays
-     *   open until toggled closed again). Hover still previews-expands when
-     *   not pinned.
-     * On mobile: opens/closes as overlay.
+     * Open/close the sidebar as an overlay drawer (mobile only).
+     * @param {boolean} open
+     */
+    function setSidebarOpen(open) {
+        if (!sidebarNav) return;
+        sidebarNav.classList.toggle('open', open);
+        // Reset any leftover inline transform from an interrupted swipe
+        sidebarNav.style.transform = '';
+        sidebarNav.style.transition = '';
+        // Stop the page behind the drawer from scrolling on touch devices
+        document.body.classList.toggle('sidebar-open-mobile', open && isMobile());
+        updateToggleIcons();
+    }
+
+    /**
+     * Toggle the sidebar: pinned open/closed on desktop, drawer on mobile.
      */
     function toggleSidebar() {
         if (!sidebarNav) return;
-        const isDesktop = window.innerWidth >= 769;
 
-        if (isDesktop) {
-            const isPinned = document.body.classList.contains('sidebar-pinned');
-            if (isPinned) {
-                // Currently open (pinned) -> close
-                document.body.classList.remove('sidebar-pinned');
-                setSidebarCollapsed(true);
-            } else {
-                // Currently collapsed -> open and lock (pin)
-                document.body.classList.add('sidebar-pinned');
-                setSidebarCollapsed(false);
-            }
+        if (isDesktop()) {
+            setSidebarCollapsed(!document.body.classList.contains('sidebar-collapsed'));
         } else {
-            sidebarNav.classList.toggle('open');
-
-            const icon = sidebarBtn ? sidebarBtn.querySelector('i') : null;
-            if (icon) {
-                icon.className = sidebarNav.classList.contains('open') ? 'fas fa-xmark' : 'fas fa-bars';
-            }
+            setSidebarOpen(!sidebarNav.classList.contains('open'));
         }
     }
 
-    /**
-     * Desktop hover behaviour — expand on hover, collapse on leave (unless pinned).
-     */
-    function initSidebarHover() {
+    /* Update toggle button + edge FAB icons/labels based on current state */
+    function updateToggleIcons() {
         if (!sidebarNav) return;
 
-        let hoverTimer = null;
+        // Desktop: expanded == pinned. Mobile: the drawer class decides.
+        const isOpen = isDesktop()
+            ? document.body.classList.contains('sidebar-pinned')
+            : sidebarNav.classList.contains('open');
 
-        sidebarNav.addEventListener('mouseenter', function () {
-            if (window.innerWidth <= 768) return;
-            clearTimeout(hoverTimer);
-            // If not pinned, expand on hover (don't update toggle icon)
-            if (!document.body.classList.contains('sidebar-pinned')) {
-                setSidebarCollapsed(false, false);
+        if (sidebarBtn) {
+            const icon = sidebarBtn.querySelector('i');
+            if (icon) {
+                icon.className = isOpen ? 'fas fa-xmark' : 'fas fa-bars';
             }
-        });
+            sidebarBtn.title = isOpen ? 'সাইডবার বন্ধ করুন (Ctrl+B)' : 'সাইডবার খুলুন (Ctrl+B)';
+            sidebarBtn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+        }
 
-        sidebarNav.addEventListener('mouseleave', function () {
-            if (window.innerWidth <= 768) return;
-            clearTimeout(hoverTimer);
-            // Collapse after a short delay, unless pinned (don't update toggle icon)
-            if (!document.body.classList.contains('sidebar-pinned')) {
-                hoverTimer = setTimeout(function () {
-                    setSidebarCollapsed(true, false);
-                }, 300);
+        if (sidebarEdgeFab) {
+            const icon = sidebarEdgeFab.querySelector('i');
+            if (icon) {
+                icon.className = isOpen ? 'fas fa-chevron-left' : 'fas fa-chevron-right';
             }
-        });
+            sidebarEdgeFab.title = isOpen ? 'সাইডবার বন্ধ করুন' : 'সাইডবার খুলুন';
+            sidebarEdgeFab.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+        }
     }
 
-    // Default: sidebar starts collapsed on desktop
+    // Sidebar no longer auto-expands on hover — stays collapsed until clicked.
+    // On desktop the saved preference is restored (collapsed by default).
     if (sidebarNav) {
-        const isDesktop = window.innerWidth >= 769;
-        if (isDesktop) {
-            // Always start collapsed — disregard saved expanded state
-            setSidebarCollapsed(true);
+        if (isDesktop()) {
+            setSidebarCollapsed(!loadSidebarState(), true, false);
         }
-        initSidebarHover();
+        updateToggleIcons();
     }
 
     if (sidebarBtn) {
@@ -241,115 +263,192 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // Re-check sidebar state on resize (e.g. going from desktop to mobile and back)
-    let resizeTimeout;
-    window.addEventListener('resize', function () {
-        clearTimeout(resizeTimeout);
-        resizeTimeout = setTimeout(function () {
-            if (!sidebarNav) return;
-            const isDesktop = window.innerWidth >= 769;
-            if (isDesktop) {
-                const isPinned = document.body.classList.contains('sidebar-pinned');
-                if (isPinned) {
-                    // Restore pinned expansion
-                    setSidebarCollapsed(false);
-                } else {
-                    // Collapse back on resize to desktop
-                    setSidebarCollapsed(true);
-                }
-            } else {
-                // On mobile, remove collapsed/desktop-only classes
-                sidebarNav.classList.remove('collapsed');
-                document.body.classList.remove('sidebar-collapsed');
-                document.body.classList.remove('sidebar-pinned');
-            }
-        }, 200);
-    });
+    if (sidebarEdgeFab) {
+        sidebarEdgeFab.addEventListener('click', function (e) {
+            e.stopPropagation();
+            toggleSidebar();
+        });
+    }
+
+    // Rebuild the sidebar state whenever the 769px breakpoint is crossed
+    // (window resize, device rotation, browser zoom, split-screen, devtools).
+    function handleSidebarBreakpointChange() {
+        if (!sidebarNav) return;
+
+        if (isDesktop()) {
+            // Leaving drawer mode: drop overlay state, restore the saved preference
+            sidebarNav.classList.remove('open');
+            sidebarNav.style.transform = '';
+            sidebarNav.style.transition = '';
+            document.body.classList.remove('sidebar-open-mobile');
+            setSidebarCollapsed(!loadSidebarState(), true, false);
+        } else {
+            // Leaving rail mode: clear every desktop-only class/transform
+            sidebarNav.classList.remove('collapsed', 'open');
+            sidebarNav.style.transform = '';
+            sidebarNav.style.transition = '';
+            document.body.classList.remove('sidebar-collapsed', 'sidebar-pinned', 'sidebar-open-mobile');
+        }
+
+        updateToggleIcons();
+    }
+
+    if (typeof sidebarDesktopMQ.addEventListener === 'function') {
+        sidebarDesktopMQ.addEventListener('change', handleSidebarBreakpointChange);
+    } else if (typeof sidebarDesktopMQ.addListener === 'function') {
+        // Safari < 14
+        sidebarDesktopMQ.addListener(handleSidebarBreakpointChange);
+    }
 
     /* ================= Sidebar Search ================= */
 
     const sidebarSearch = document.getElementById('sidebarSearch');
     const sidebarSearchClear = document.getElementById('sidebarSearchClear');
 
+    /**
+     * Open/close a submenu and keep its toggle (class, aria-expanded, chevron)
+     * in sync. Always writes an explicit display value so a leftover animated
+     * `height: 0` from slideUp() can never hide the menu again.
+     */
+    function setSubmenuOpen(toggle, submenu, open) {
+        if (!submenu) return;
+        submenu.style.height = '';
+        submenu.classList.toggle('open', open);
+        submenu.style.display = open ? 'block' : 'none';
+
+        if (toggle) {
+            toggle.classList.toggle('active', open);
+            toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+        }
+
+        const chevron = getChevron(toggle);
+        if (chevron) {
+            chevron.classList.toggle('fa-chevron-up', open);
+            chevron.classList.toggle('fa-chevron-down', !open);
+        }
+    }
+
+    /* Remember which submenus were open before searching, so clearing the
+       query restores the real navigation state instead of flattening it. */
+    let preSearchSubmenus = null;
+
+    function snapshotSidebarSubmenus() {
+        if (!sidebarNav) return;
+        preSearchSubmenus = [];
+        sidebarNav.querySelectorAll('.submenu').forEach(function (submenu) {
+            const ownerLi = submenu.parentElement;
+            preSearchSubmenus.push({
+                submenu: submenu,
+                toggle: ownerLi ? ownerLi.querySelector(':scope > a.submenu-toggle') : null,
+                open: submenu.classList.contains('open')
+            });
+        });
+    }
+
+    function restoreSidebarSubmenus() {
+        if (!preSearchSubmenus) return;
+        preSearchSubmenus.forEach(function (entry) {
+            setSubmenuOpen(entry.toggle, entry.submenu, entry.open);
+        });
+        preSearchSubmenus = null;
+    }
+
+    function filterSidebarMenu(rawQuery) {
+        const sidebarUl = sidebarNav ? sidebarNav.querySelector('.sidebar-nav') : null;
+        if (!sidebarUl) return;
+
+        // Every whitespace separated word must appear somewhere in the entry
+        // ("সনদ নাগরিক" then finds the নাগরিক সনদ item).
+        const tokens = rawQuery.toLowerCase().split(/\s+/).filter(Boolean);
+
+        if (!tokens.length) {
+            sidebarUl.querySelectorAll('.sidebar-hidden').forEach(function (el) {
+                el.classList.remove('sidebar-hidden');
+            });
+            restoreSidebarSubmenus();
+            return;
+        }
+
+        if (!preSearchSubmenus) snapshotSidebarSubmenus();
+
+        const linkMatches = function (link) {
+            const haystack = ((link.getAttribute('data-search') || '') + ' ' + (link.textContent || '')).toLowerCase();
+            return tokens.every(function (token) {
+                return haystack.indexOf(token) !== -1;
+            });
+        };
+
+        // 1) Hide every non-matching entry, at every nesting level
+        const navItems = sidebarUl.querySelectorAll('li');
+        navItems.forEach(function (li) {
+            const link = li.querySelector(':scope > a');
+            li.dataset.sidebarSearchMatch = (link && linkMatches(link)) ? '1' : '0';
+        });
+
+        // 2) Keep visible every parent of a matching entry, so a hit nested
+        //    inside a closed submenu is still reachable after auto-opening.
+        navItems.forEach(function (li) {
+            if (li.dataset.sidebarSearchMatch !== '1') return;
+            let parent = li.parentElement;
+            while (parent && parent !== sidebarUl) {
+                if (parent.tagName === 'LI') parent.dataset.sidebarSearchMatch = '1';
+                parent = parent.parentElement;
+            }
+        });
+
+        navItems.forEach(function (li) {
+            li.classList.toggle('sidebar-hidden', li.dataset.sidebarSearchMatch !== '1');
+            delete li.dataset.sidebarSearchMatch;
+        });
+
+        // Section headings only make sense while browsing the full menu
+        sidebarUl.querySelectorAll(':scope > li.sidebar-section-label').forEach(function (label) {
+            label.classList.add('sidebar-hidden');
+        });
+
+        // 3) Auto-open exactly the submenus that now contain a visible entry
+        sidebarUl.querySelectorAll('.submenu').forEach(function (submenu) {
+            const hasVisibleEntry = Array.prototype.some.call(submenu.children, function (child) {
+                return child.tagName === 'LI' && !child.classList.contains('sidebar-hidden');
+            });
+
+            const ownerLi = submenu.parentElement;
+            const toggle = ownerLi ? ownerLi.querySelector(':scope > a.submenu-toggle') : null;
+            setSubmenuOpen(toggle, submenu, hasVisibleEntry);
+        });
+    }
+
     if (sidebarSearch) {
         sidebarSearch.addEventListener('input', function () {
-            const query = this.value.trim().toLowerCase();
-            const sidebarUl = sidebarNav ? sidebarNav.querySelector('.sidebar-nav') : null;
-            if (!sidebarUl) return;
+            const query = this.value.trim();
 
             // Show/hide clear button
             if (sidebarSearchClear) {
                 sidebarSearchClear.style.display = query.length > 0 ? 'block' : 'none';
             }
 
-            const menuItems = sidebarUl.querySelectorAll(':scope > li');
-
-            menuItems.forEach(function (item) {
-                // Skip section labels
-                if (item.classList.contains('sidebar-section-label')) {
-                    if (query.length === 0) {
-                        item.classList.remove('sidebar-hidden');
-                    } else {
-                        item.classList.add('sidebar-hidden');
-                    }
-                    return;
-                }
-
-                const link = item.querySelector(':scope > a');
-                if (!link) return;
-
-                const searchText = (link.getAttribute('data-search') || '') + ' ' + (link.textContent || '');
-                const matches = query.length === 0 || searchText.toLowerCase().indexOf(query) !== -1;
-
-                // Also check submenu items
-                let submenuMatch = false;
-                const submenu = item.querySelector(':scope > ul.submenu');
-                if (submenu) {
-                    const subLinks = submenu.querySelectorAll('a');
-                    subLinks.forEach(function (subLink) {
-                        const subSearch = (subLink.getAttribute('data-search') || '') + ' ' + (subLink.textContent || '');
-                        if (query.length > 0 && subSearch.toLowerCase().indexOf(query) !== -1) {
-                            submenuMatch = true;
-                        }
-                    });
-                }
-
-                if (query.length === 0) {
-                    // Reset: show all items
-                    item.classList.remove('sidebar-hidden');
-                    if (submenu) {
-                        submenu.classList.remove('open');
-                        submenu.style.display = '';
-                    }
-                } else if (matches || submenuMatch) {
-                    item.classList.remove('sidebar-hidden');
-                    // Auto-open matching submenus
-                    if (submenu && submenuMatch && !matches) {
-                        submenu.classList.add('open');
-                        submenu.style.display = 'block';
-                        const toggle = link;
-                        if (toggle && toggle.classList.contains('submenu-toggle')) {
-                            toggle.classList.add('active');
-                            const icon = toggle.querySelector('.fas.fa-chevron-down');
-                            if (icon) icon.classList.replace('fa-chevron-down', 'fa-chevron-up');
-                        }
-                    }
-                } else {
-                    item.classList.add('sidebar-hidden');
-                }
-            });
+            filterSidebarMenu(query);
         });
 
         // Focus search on Ctrl+K / Cmd+K
         document.addEventListener('keydown', function (e) {
             if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
                 e.preventDefault();
-                // Expand sidebar first if collapsed
-                if (sidebarNav && document.body.classList.contains('sidebar-collapsed')) {
+
+                // The search box lives inside the sidebar, so the sidebar has to
+                // be visible first — on mobile that means opening the drawer.
+                if (isDesktop()) {
                     setSidebarCollapsed(false);
-                    document.body.classList.add('sidebar-pinned');
+                } else {
+                    setSidebarOpen(true);
                 }
-                sidebarSearch.focus();
+
+                // Wait for the drawer/rail transition before focusing, otherwise
+                // the input would be focused while still off-screen.
+                setTimeout(function () {
+                    sidebarSearch.focus();
+                    sidebarSearch.scrollIntoView({ block: 'nearest' });
+                }, isDesktop() ? 0 : 320);
             }
         });
     }
@@ -378,7 +477,7 @@ document.addEventListener('DOMContentLoaded', function () {
         // Escape — Close mobile sidebar, profile dropdown, or modals
         if (e.key === 'Escape') {
             // Close mobile sidebar overlay
-            if (sidebarNav && sidebarNav.classList.contains('open') && window.innerWidth <= 768) {
+            if (sidebarNav && sidebarNav.classList.contains('open') && isMobile()) {
                 closeSidebar();
                 e.preventDefault();
                 return;
@@ -401,113 +500,174 @@ document.addEventListener('DOMContentLoaded', function () {
         let touchStartY = 0;
         let swipeDeltaX = 0;
         let isSwiping = false;
+        let snapTimer = 0;
+
+        // A finger always wobbles a few pixels on a tap. Without a slop radius
+        // that wobble counted as a swipe: preventDefault() on touchmove then
+        // ate the click that opens submenus, and a slightly longer wobble
+        // dismissed the whole drawer. Only a deliberate drag past SWIPE_SLOP
+        // (clearly horizontal, to the left) starts the gesture.
+        const SWIPE_SLOP = 12;
+
+        const settleSwipe = function (nav) {
+            nav.style.transform = '';
+            nav.style.transition = '';
+        };
 
         sidebarNav.addEventListener('touchstart', function (e) {
-            if (window.innerWidth > 768) return;
+            if (!isMobile()) return;
             touchStartX = e.touches[0].clientX;
             touchStartY = e.touches[0].clientY;
             swipeDeltaX = 0;
             isSwiping = false;
+            // A new gesture supersedes any snap-back still animating.
+            clearTimeout(snapTimer);
         }, { passive: true });
 
         sidebarNav.addEventListener('touchmove', function (e) {
-            if (window.innerWidth > 768) return;
+            if (!isMobile()) return;
             if (!this.classList.contains('open')) return;
 
             const dx = e.touches[0].clientX - touchStartX;
             const dy = e.touches[0].clientY - touchStartY;
 
-            // Only drag if horizontal movement > vertical (prevent scroll conflicts)
-            if (Math.abs(dx) > Math.abs(dy) && dx < 0) {
+            if (!isSwiping) {
+                // Inside the slop radius: stay a tap, let the click through.
+                if (Math.abs(dx) < SWIPE_SLOP && Math.abs(dy) < SWIPE_SLOP) return;
+                // Past the slop, only a clear horizontal-left drag starts a
+                // swipe; vertical or ambiguous movement stays a scroll/tap.
+                if (!(Math.abs(dx) > Math.abs(dy) && dx < -SWIPE_SLOP)) return;
                 isSwiping = true;
-                swipeDeltaX = dx;
-
-                // Follow finger with slight resistance for natural feel
-                const translateX = Math.max(dx * 0.6, -this.offsetWidth);
                 this.style.transition = 'none';
-                this.style.transform = 'translateX(' + translateX + 'px)';
-
-                e.preventDefault();
             }
+
+            swipeDeltaX = dx;
+
+            // Follow finger with slight resistance for natural feel
+            const translateX = Math.max(dx * 0.6, -this.offsetWidth);
+            this.style.transform = 'translateX(' + translateX + 'px)';
+
+            e.preventDefault();
         }, { passive: false });
 
-        sidebarNav.addEventListener('touchend', function (e) {
-            if (window.innerWidth > 768) return;
+        sidebarNav.addEventListener('touchend', function () {
+            if (!isMobile()) return;
             if (!isSwiping) return;
 
+            const nav = this;
+            isSwiping = false;
             // Threshold: 80px or 25% of sidebar width
-            const threshold = Math.min(80, this.offsetWidth * 0.25);
+            const threshold = Math.min(80, nav.offsetWidth * 0.25);
 
+            clearTimeout(snapTimer);
             if (swipeDeltaX < -threshold) {
                 // Animate to fully closed, then hide
-                this.style.transition = 'transform 0.25s ease';
-                this.style.transform = 'translateX(-100%)';
-                setTimeout(function (nav) {
+                nav.style.transition = 'transform 0.25s ease';
+                nav.style.transform = 'translateX(-100%)';
+                snapTimer = setTimeout(function () {
                     closeSidebar();
-                    nav.style.transform = '';
-                    nav.style.transition = '';
-                }, 250, this);
+                    settleSwipe(nav);
+                }, 250);
             } else {
                 // Snap back to open position
-                this.style.transition = 'transform 0.2s ease';
-                this.style.transform = 'translateX(0)';
-                setTimeout(function (nav) {
-                    nav.style.transform = '';
-                    nav.style.transition = '';
-                }, 200, this);
+                nav.style.transition = 'transform 0.2s ease';
+                nav.style.transform = 'translateX(0)';
+                snapTimer = setTimeout(function () {
+                    settleSwipe(nav);
+                }, 200);
             }
+        }, { passive: true });
 
+        // A gesture interrupted by a system dialog, a call or the OS app
+        // switcher fires touchcancel and never touchend — without this the
+        // sidebar would stay stuck half-way off-screen.
+        sidebarNav.addEventListener('touchcancel', function () {
+            if (!isMobile()) return;
+            if (!isSwiping && !this.style.transform) return;
+            const nav = this;
             isSwiping = false;
+            clearTimeout(snapTimer);
+            nav.style.transition = 'transform 0.2s ease';
+            nav.style.transform = 'translateX(0)';
+            snapTimer = setTimeout(function () { settleSwipe(nav); }, 200);
         }, { passive: true });
     }
 
     /* ================= Submenu Toggle ================= */
 
-    document.querySelectorAll('.submenu-toggle').forEach(toggle => {
+    document.querySelectorAll('.submenu-toggle').forEach(function (toggle) {
+
         toggle.addEventListener('click', function (e) {
             e.preventDefault();
             e.stopPropagation();
+            toggleSubmenu(this);
+        });
 
-            const clickedMenu = this.nextElementSibling;
-
-            if (clickedMenu.style.display === 'block') {
-
-                if (isPageLoad) {
-                    clickedMenu.style.display = 'none';
-                } else {
-                    slideUp(clickedMenu, 300);
-                }
-
-                this.classList.remove('active');
-                this.querySelector('.fas')
-                    .classList.replace('fa-chevron-up', 'fa-chevron-down');
-
-                clickedMenu.querySelectorAll('.submenu').forEach(sub => {
-                    isPageLoad ? sub.style.display = 'none' : slideUp(sub, 300);
-                });
-
-                clickedMenu.querySelectorAll('.submenu-toggle').forEach(t => {
-                    t.classList.remove('active');
-                    t.querySelector('.fas')
-                        .classList.replace('fa-chevron-up', 'fa-chevron-down');
-                });
-
-            } else {
-
-                this.classList.add('active');
-                this.querySelector('.fas')
-                    .classList.replace('fa-chevron-down', 'fa-chevron-up');
-
-                isPageLoad ? clickedMenu.style.display = 'block' : slideDown(clickedMenu, 300);
-
-                this.parentElement.querySelectorAll(':scope > .submenu').forEach(sub => {
-                    if (sub !== clickedMenu) {
-                        isPageLoad ? sub.style.display = 'none' : slideUp(sub, 300);
-                    }
-                });
+        // Anchors only fire click on Enter, so keyboard users would never be
+        // able to open a submenu with Space.
+        toggle.addEventListener('keydown', function (e) {
+            if (e.key === ' ' || e.key === 'Spacebar' || e.key === 'Enter') {
+                e.preventDefault();
+                toggleSubmenu(this);
             }
         });
     });
+
+    function toggleSubmenu(toggle) {
+        const ownerLi = toggle.parentElement;
+        const clickedMenu = ownerLi ? ownerLi.querySelector(':scope > .submenu') : null;
+        if (!clickedMenu) return;
+
+        // A collapsed desktop rail hides every submenu with `display: none
+        // !important`, so clicking a category there looked completely dead.
+        // Expand the rail first and always reveal the requested submenu.
+        const wasCollapsedRail = isDesktop() && document.body.classList.contains('sidebar-collapsed');
+        if (wasCollapsedRail) setSidebarCollapsed(false);
+
+        // The `open` class is the single source of truth. While a close
+        // animation is still running the computed display is still 'block',
+        // so checking computed style here would make a fast second click
+        // close the menu again instead of re-opening it.
+        const isOpen = !wasCollapsedRail && clickedMenu.classList.contains('open');
+        const duration = motionDuration(300);
+        const chevron = getChevron(toggle);
+
+        if (isPageLoad) {
+            setSubmenuOpen(toggle, clickedMenu, !isOpen);
+        } else if (isOpen) {
+            slideUp(clickedMenu, duration);
+            toggle.classList.remove('active');
+            toggle.setAttribute('aria-expanded', 'false');
+            clickedMenu.classList.remove('open');
+            if (chevron) chevron.classList.replace('fa-chevron-up', 'fa-chevron-down');
+        } else {
+            slideDown(clickedMenu, duration);
+            toggle.classList.add('active');
+            toggle.setAttribute('aria-expanded', 'true');
+            clickedMenu.classList.add('open');
+            if (chevron) chevron.classList.replace('fa-chevron-down', 'fa-chevron-up');
+        }
+
+        // Collapse every nested submenu of the one we just toggled
+        clickedMenu.querySelectorAll('.submenu').forEach(function (sub) {
+            if (isPageLoad) sub.style.display = 'none';
+            else slideUp(sub, duration);
+        });
+
+        clickedMenu.querySelectorAll('.submenu-toggle').forEach(function (t) {
+            t.classList.remove('active');
+            t.setAttribute('aria-expanded', 'false');
+            const nestedChevron = getChevron(t);
+            if (nestedChevron) nestedChevron.classList.replace('fa-chevron-up', 'fa-chevron-down');
+        });
+
+        // Only one sibling submenu of the same item stays open
+        ownerLi.querySelectorAll(':scope > .submenu').forEach(function (sub) {
+            if (sub === clickedMenu) return;
+            if (isPageLoad) sub.style.display = 'none';
+            else slideUp(sub, duration);
+        });
+    }
 
     /* ================= Header Profile Dropdown ================= */
 
@@ -535,7 +695,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     document.addEventListener('click', function (e) {
         if (!e.target.closest('nav.sidebar') && !e.target.closest('#sidebar')) {
-            if (window.innerWidth <= 768) {
+            if (isMobile() && sidebarNav && sidebarNav.classList.contains('open')) {
                 closeSidebar();
             }
         }
@@ -549,32 +709,47 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
+    /**
+     * Close the mobile drawer and collapse every sidebar submenu.
+     * Scoped to the sidebar itself: `.submenu` is a generic class and other
+     * components on the page use it for their own dropdowns.
+     */
     function closeSidebar() {
-        if (sidebarNav) {
-            sidebarNav.classList.remove('open');
-            // On mobile, also reset any collapsed/pinned state that may have
-            // carried over from desktop resize, but DON'T save to localStorage
-            // so that the user's desktop preference is preserved.
-            if (window.innerWidth <= 768) {
-                sidebarNav.classList.remove('collapsed');
-                document.body.classList.remove('sidebar-collapsed');
-                document.body.classList.remove('sidebar-pinned');
-            }
-        }
-        if (sidebarBtn) {
-            const icon = sidebarBtn.querySelector('i');
-            if (icon) icon.className = 'fas fa-bars';
+        if (!sidebarNav) return;
+
+        sidebarNav.classList.remove('open');
+        // Clear anything left behind by an interrupted swipe
+        sidebarNav.style.transform = '';
+        sidebarNav.style.transition = '';
+        document.body.classList.remove('sidebar-open-mobile');
+
+        if (isMobile()) {
+            // Desktop-only classes must not survive in drawer mode, but the
+            // saved preference stays untouched so rotating back restores it.
+            sidebarNav.classList.remove('collapsed');
+            document.body.classList.remove('sidebar-collapsed');
         }
 
-        document.querySelectorAll('.submenu').forEach(menu => {
-            isPageLoad ? menu.style.display = 'none' : slideUp(menu, 300);
+        const duration = motionDuration(300);
+
+        sidebarNav.querySelectorAll('.submenu').forEach(function (menu) {
+            if (isPageLoad) {
+                menu.style.display = 'none';
+                menu.style.height = '';
+            } else {
+                slideUp(menu, duration);
+            }
+            menu.classList.remove('open');
         });
 
-        document.querySelectorAll('.submenu-toggle').forEach(t => {
+        sidebarNav.querySelectorAll('.submenu-toggle').forEach(function (t) {
             t.classList.remove('active');
-            const icon = t.querySelector('.fas');
+            t.setAttribute('aria-expanded', 'false');
+            const icon = getChevron(t);
             if (icon) icon.classList.replace('fa-chevron-up', 'fa-chevron-down');
         });
+
+        updateToggleIcons();
     }
 
     /* ================= Active Menu (Initial Load) ================= */
@@ -596,14 +771,15 @@ document.addEventListener('DOMContentLoaded', function () {
         let bestMatch = null;
 
         // Phase 1: Look for an exact match first (highest priority)
-        links.forEach(function (link) {
+        for (const link of links) {
             const href = link.getAttribute('href');
-            if (!href || href === '#' || href.indexOf('javascript:') === 0) return;
+            if (!href || href === '#' || href.indexOf('javascript:') === 0) continue;
             const normalizedHref = href.replace(/\/+$/, '') || '/';
             if (normalizedHref === currentPath) {
                 bestMatch = link;
+                break;
             }
-        });
+        }
 
         // Phase 2: If no exact match, use the longest prefix match
         // e.g. /applications/nagorik-sonod matches the parent toggle /applications
@@ -633,20 +809,8 @@ document.addEventListener('DOMContentLoaded', function () {
         let parent = bestMatch.closest('li');
         while (parent) {
             const submenu = parent.querySelector(':scope > ul.submenu');
-            if (submenu) {
-                submenu.style.display = 'block';
-                submenu.classList.add('open');
-            }
-
             const toggle = parent.querySelector(':scope > a.submenu-toggle');
-            if (toggle) {
-                toggle.classList.add('active');
-                const icon = toggle.querySelector('.fas');
-                if (icon) {
-                    icon.classList.remove('fa-chevron-down');
-                    icon.classList.add('fa-chevron-up');
-                }
-            }
+            if (submenu) setSubmenuOpen(toggle, submenu, true);
 
             parent = parent.parentElement ? parent.parentElement.closest('li') : null;
         }
@@ -707,19 +871,47 @@ function btnLoading(btn, loadingText) {
 /* ================= Old Helpers ================= */
 
 function slideUp(el, duration) {
+    // Cancel a pending animation timer, otherwise a quick close-then-open
+    // would still be hidden by the stale timer of the first animation.
+    clearTimeout(el._slideTimer);
+    // No animation (reduced motion): the rAF/timeout pair below would race
+    // at 0ms and could leave a stale inline height behind.
+    if (!duration) {
+        el.style.transition = '';
+        el.style.height = '';
+        el.style.display = 'none';
+        return;
+    }
     el.style.transition = `height ${duration}ms`;
     el.style.height = el.scrollHeight + 'px';
     requestAnimationFrame(() => el.style.height = '0');
-    setTimeout(() => el.style.display = 'none', duration);
+    el._slideTimer = setTimeout(() => {
+        el.style.display = 'none';
+        // Drop the animated height: a later `display: block` (menu search,
+        // activate-current-page) would otherwise reveal a zero-height menu.
+        el.style.height = '';
+        el.style.transition = '';
+    }, duration);
 }
 
 function slideDown(el, duration) {
+    clearTimeout(el._slideTimer);
+    if (!duration) {
+        el.style.transition = '';
+        el.style.height = '';
+        el.style.display = 'block';
+        return;
+    }
     el.style.display = 'block';
+    el.style.height = '';
     const height = el.scrollHeight;
     el.style.height = '0';
     el.style.transition = `height ${duration}ms`;
     requestAnimationFrame(() => el.style.height = height + 'px');
-    setTimeout(() => el.style.height = '', duration);
+    el._slideTimer = setTimeout(() => {
+        el.style.height = '';
+        el.style.transition = '';
+    }, duration);
 }
 
 

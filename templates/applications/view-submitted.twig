@@ -697,7 +697,8 @@
                                     {% else %}
                                         <button type="button"
                                                 class="d-flex align-items-center justify-content-center w-100 h-100 text-decoration-none document-icon-btn"
-                                                onclick="openPreview('{{ doc_path|e('js') }}', '{{ doc_path|split('/')|last|e('js') }}')">
+                                                data-preview-url="{{ doc_path|e('html_attr') }}"
+                                                data-preview-title="{{ doc_path|split('/')|last|e('html_attr') }}">
                                             <div class="document-icon-big">
                                                 <i class="bi bi-file-earmark-text"></i>
                                             </div>
@@ -708,7 +709,8 @@
                                     <span class="document-name" title="{{ doc_path|split('/')|last }}">{{ doc_path|split('/')|last }}</span>
                                     <div class="document-actions">
                                         <button type="button" class="btn btn-sm btn-outline-primary document-view-btn"
-                                                onclick="openPreview('{{ doc_path|e('js') }}', '{{ doc_path|split('/')|last|e('js') }}')">
+                                                data-preview-url="{{ doc_path|e('html_attr') }}"
+                                                data-preview-title="{{ doc_path|split('/')|last|e('html_attr') }}">
                                             <i class="bi bi-eye me-1"></i> View
                                         </button>
                                     </div>
@@ -836,6 +838,20 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    /* ===============================
+       Global click delegation for preview buttons (data-preview-url)
+       Replaces inline onclick="openPreview(...)" handlers.
+    =============================== */
+    document.addEventListener('click', function(e) {
+        const previewBtn = e.target.closest('[data-preview-url]');
+        if (!previewBtn) return;
+        if (typeof openPreview !== 'function') {
+            console.error('openPreview() is not available');
+            return;
+        }
+        openPreview(previewBtn.dataset.previewUrl, previewBtn.dataset.previewTitle || '');
+    });
+
     // IntersectionObserver for section animations
     const observer = new IntersectionObserver(function(entries) {
         entries.forEach(function(entry) {

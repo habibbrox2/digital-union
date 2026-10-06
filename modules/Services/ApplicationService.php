@@ -15,17 +15,20 @@ require_once __DIR__ . '/../../helpers/application_helpers.php';
 require_once __DIR__ . '/../../helpers/pdfGenarate.php';
 require_once __DIR__ . '/../../models/AuthManager.php';
 require_once __DIR__ . '/../../models/BusinessOwnershipType.php';
+require_once __DIR__ . '/GeoService.php';
 
 class ApplicationService
 {
     private mysqli $mysqli;
     private ApplicationManager $appManager;
     private ?UnionModel $unionModel = null;
+    private ?GeoService $geoService = null;
 
     public function __construct(mysqli $mysqli)
     {
         $this->mysqli = $mysqli;
         $this->appManager = new ApplicationManager($mysqli);
+        $this->geoService = new GeoService($mysqli);
     }
 
     public function getAppManager(): ApplicationManager
@@ -36,6 +39,76 @@ class ApplicationService
     // ================================================================
     // UNION HELPERS
     // ================================================================
+
+    /**
+     * Get first union by upazila ID (for auto-filling union when dropdown removed from form)
+     * Returns union_name_en and union_name_bn
+     */
+    private function getFirstUnionByUpazila(int $upazilaId): ?array
+    {
+        return $this->geoService->getFirstUnionByUpazila($upazilaId);
+    }
+
+    /**
+     * Resolve union fields for an address prefix (present/permanent/business)
+     * If union fields are provided in POST, use them; otherwise derive from upazila
+     * @param array $post Raw POST data
+     * @param string $prefix Address prefix (present, permanent, business)
+     * @return array ['union_en' => string, 'union_bn' => string]
+     */
+    private function resolveUnionFields(array $post, string $prefix): array
+    {
+        $unionEn = sanitize_input($post["{$prefix}_union_en"] ?? '');
+        $unionBn = sanitize_input($post["{$prefix}_union_bn"] ?? '');
+
+        // If union fields are provided, use them
+        if ($unionEn !== '' || $unionBn !== '') {
+            return ['union_en' => $unionEn, 'union_bn' => $unionBn];
+        }
+
+        // Otherwise derive from upazila
+        $upazilaEn = sanitize_input($post["{$prefix}_upazila_en"] ?? '');
+        $upazilaBn = sanitize_input($post["{$prefix}_upazila_bn"] ?? '');
+        
+        // Try to get upazila_id from POST (geo_location ID)
+        $upazilaId = isset($post["{$prefix}_upazila_id"]) ? (int)($post["{$prefix}_upazila_id"] ?? 0) : 0;
+        
+        // If we have upazila_id, use it directly
+        if ($upazilaId > 0) {
+            $union = $this->getFirstUnionByUpazila($upazilaId);
+            if ($union) {
+                return ['union_en' => $union['union_name_en'] ?? '', 'union_bn' => $union['union_name_bn'] ?? ''];
+            }
+        }
+        
+        // Fallback: try to get upazila by name from geo_location table
+        if ($upazilaEn !== '') {
+            $stmt = $this->mysqli->prepare("SELECT id FROM geo_location WHERE name_en = ? AND geo_order = 2 LIMIT 1");
+            $stmt->bind_param('s', $upazilaEn);
+            $stmt->execute();
+            $stmt->bind_result($foundId);
+            if ($stmt->fetch() && $foundId) {
+                $union = $this->getFirstUnionByUpazila((int)$foundId);
+                $stmt->close();
+                if ($union) {
+                    return ['union_en' => $union['union_name_en'] ?? '', 'union_bn' => $union['union_name_bn'] ?? ''];
+                }
+            }
+            $stmt->close();
+        }
+        
+        // Last resort: use session user's union
+        $userData = $this->getSessionUserData();
+        if (!empty($userData['union_id'])) {
+            $unionInfo = $this->getUnionInfo((int)$userData['union_id']);
+            $union = $unionInfo[0] ?? null;
+            if ($union) {
+                return ['union_en' => $union['union_name_en'] ?? '', 'union_bn' => $union['union_name_bn'] ?? ''];
+            }
+        }
+
+        return ['union_en' => '', 'union_bn' => ''];
+    }
 
     /**
      * Fetch union by ID (uses UnionModel to avoid duplicating SQL)
@@ -553,6 +626,10 @@ class ApplicationService
             return ['status' => 'error', 'message' => 'ইউনিয়ন নির্বাচন করুন। ইউনিয়ন কোড পাওয়া যায়নি।'];
         }
 
+        // --- Resolve union fields (auto-derive from upazila if not provided) ---
+        $presentUnion = $this->resolveUnionFields($post, 'present');
+        $permanentUnion = $this->resolveUnionFields($post, 'permanent');
+        
         // --- Create addresses ---
         $presentAddressId = sonod_address(
             'present',
@@ -566,8 +643,8 @@ class ApplicationService
             sanitize_input($post['present_district_bn'] ?? ''),
             sanitize_input($post['present_upazila_en'] ?? ''),
             sanitize_input($post['present_upazila_bn'] ?? ''),
-            sanitize_input($post['present_union_en'] ?? ''),
-            sanitize_input($post['present_union_bn'] ?? ''),
+            $presentUnion['union_en'],
+            $presentUnion['union_bn'],
             sanitize_input($post['present_postoffice_en'] ?? ''),
             sanitize_input($post['present_postoffice_bn'] ?? '')
         );
@@ -583,8 +660,8 @@ class ApplicationService
             sanitize_input($post['permanent_district_bn'] ?? ''),
             sanitize_input($post['permanent_upazila_en'] ?? ''),
             sanitize_input($post['permanent_upazila_bn'] ?? ''),
-            sanitize_input($post['permanent_union_en'] ?? ''),
-            sanitize_input($post['permanent_union_bn'] ?? ''),
+            $permanentUnion['union_en'],
+            $permanentUnion['union_bn'],
             sanitize_input($post['permanent_postoffice_en'] ?? ''),
             sanitize_input($post['permanent_postoffice_bn'] ?? '')
         );
@@ -706,6 +783,10 @@ class ApplicationService
             return ['status' => 'error', 'message' => 'Application not found'];
         }
 
+        // --- Resolve union fields (auto-derive from upazila if not provided) ---
+        $presentUnion = $this->resolveUnionFields($post, 'present');
+        $permanentUnion = $this->resolveUnionFields($post, 'permanent');
+
         // --- Build / update addresses (pass existing ID to trigger UPDATE) ---
         $presentAddressId = sonod_address(
             'present',
@@ -719,8 +800,8 @@ class ApplicationService
             sanitize_input($post['present_district_bn'] ?? ''),
             sanitize_input($post['present_upazila_en'] ?? ''),
             sanitize_input($post['present_upazila_bn'] ?? ''),
-            sanitize_input($post['present_union_en'] ?? ''),
-            sanitize_input($post['present_union_bn'] ?? ''),
+            $presentUnion['union_en'],
+            $presentUnion['union_bn'],
             sanitize_input($post['present_postoffice_en'] ?? ''),
             sanitize_input($post['present_postoffice_bn'] ?? ''),
             $application['present_address_id'] ?? null
@@ -737,8 +818,8 @@ class ApplicationService
             sanitize_input($post['permanent_district_bn'] ?? ''),
             sanitize_input($post['permanent_upazila_en'] ?? ''),
             sanitize_input($post['permanent_upazila_bn'] ?? ''),
-            sanitize_input($post['permanent_union_en'] ?? ''),
-            sanitize_input($post['permanent_union_bn'] ?? ''),
+            $permanentUnion['union_en'],
+            $permanentUnion['union_bn'],
             sanitize_input($post['permanent_postoffice_en'] ?? ''),
             sanitize_input($post['permanent_postoffice_bn'] ?? ''),
             $application['permanent_address_id'] ?? null
@@ -923,6 +1004,8 @@ class ApplicationService
      */
     private function insertTradeBusinessMeta(string $applicationId, array $post): void
     {
+        $businessUnion = $this->resolveUnionFields($post, 'business');
+        
         $businessAddressId = sonod_address(
             'business',
             sanitize_input($post['business_village_en'] ?? ''),
@@ -935,8 +1018,8 @@ class ApplicationService
             sanitize_input($post['business_district_bn'] ?? ''),
             sanitize_input($post['business_upazila_en'] ?? ''),
             sanitize_input($post['business_upazila_bn'] ?? ''),
-            sanitize_input($post['business_union_en'] ?? ''),
-            sanitize_input($post['business_union_bn'] ?? ''),
+            $businessUnion['union_en'],
+            $businessUnion['union_bn'],
             sanitize_input($post['business_postoffice_en'] ?? ''),
             sanitize_input($post['business_postoffice_bn'] ?? '')
         );
@@ -988,6 +1071,8 @@ class ApplicationService
         // applicant edit form does not carry them.
         $existingMeta = $this->appManager->getBusinessMetaByApplicationId($applicationId) ?: [];
 
+        $businessUnion = $this->resolveUnionFields($post, 'business');
+
         $businessAddressId = sonod_address(
             'business',
             sanitize_input($post['business_village_en'] ?? ''),
@@ -1000,8 +1085,8 @@ class ApplicationService
             sanitize_input($post['business_district_bn'] ?? ''),
             sanitize_input($post['business_upazila_en'] ?? ''),
             sanitize_input($post['business_upazila_bn'] ?? ''),
-            sanitize_input($post['business_union_en'] ?? ''),
-            sanitize_input($post['business_union_bn'] ?? ''),
+            $businessUnion['union_en'],
+            $businessUnion['union_bn'],
             sanitize_input($post['business_postoffice_en'] ?? ''),
             sanitize_input($post['business_postoffice_bn'] ?? '')
         );
@@ -1187,6 +1272,12 @@ class ApplicationService
 
             $isUpdate = isset($application['status']) && strtolower($application['status']) === 'approved';
 
+            $union = $this->getUnionById((int)$application['union_id']);
+            $rmo_code = $union['rmo_code'] ?? null;
+            if (empty($rmo_code)) {
+                $rmo_code = (string)random_int(1, 9);
+            }
+
             return [
                 'status'             => 'success',
                 'message'            => $isUpdate ? 'অনুমোদন সফলভাবে হালনাগাদ হয়েছে।' : 'আবেদন সফলভাবে অনুমোদিত হয়েছে।',
@@ -1194,6 +1285,8 @@ class ApplicationService
                 'sonod_number'       => $sonod_number,
                 'certificate_type'   => $certificate_type,
                 'certificate_type_bn' => $cert_type_bn,
+                'union_code'         => $union['union_code'] ?? null,
+                'rmo_code'           => $rmo_code,
             ];
         } catch (\Exception $e) {
             $this->mysqli->rollback();
@@ -1214,6 +1307,11 @@ class ApplicationService
     /**
      * Update trade business meta during approval.
      * Merges posted values with existing meta, calculates expiry_date from fiscal year.
+     *
+     * 🔒 The applicant's actual business name (business_name_bn/en) is NEVER
+     * overwritten here — it always stays whatever is already in business_meta.
+     * The business_type catalog only receives the FEE values (fee-only update),
+     * never names.
      */
     private function approveTradeBusinessMeta(string $applicationId, array $post, ?int $unionId = null): void
     {
@@ -1223,7 +1321,13 @@ class ApplicationService
         $hasExistingMeta = !empty($existingMeta);
         $existingMeta = $existingMeta ?: [];
 
+        $businessTypeId = isset($post['business_type_id']) && $post['business_type_id'] !== ''
+            ? (int)$post['business_type_id']
+            : ($existingMeta['business_type_id'] ?? null);
+
         $businessMetaData = [
+            // 🔒 Keep the applicant's real business name — never overwrite it
+            // with the business_type catalog name.
             'business_name_en'    => $existingMeta['business_name_en'] ?? '',
             'business_name_bn'    => $existingMeta['business_name_bn'] ?? '',
             'vat_id'              => $existingMeta['vat_id'] ?? '',
@@ -1239,7 +1343,7 @@ class ApplicationService
             'total_fee'           => isset($post['total_fee']) && $post['total_fee'] !== '' ? (float)$post['total_fee'] : ($existingMeta['total_fee'] ?? null),
             'fiscal_year'         => $fiscal_year ?: ($existingMeta['fiscal_year'] ?? null),
             'ownership_type_id'   => isset($post['ownership_type_id']) && $post['ownership_type_id'] !== '' ? (int)$post['ownership_type_id'] : ($existingMeta['ownership_type_id'] ?? null),
-            'business_type_id'    => isset($post['business_type_id']) && $post['business_type_id'] !== '' ? (int)$post['business_type_id'] : ($existingMeta['business_type_id'] ?? null),
+            'business_type_id'    => $businessTypeId,
         ];
 
         // Calculate expiry_date from fiscal_year
@@ -1267,23 +1371,21 @@ class ApplicationService
             throw new \Exception($msg);
         }
 
-        // Sync business_type table fees so future applications auto-fill
+        // Sync ONLY the fee columns of business_type so future applications
+        // auto-fill with these fees. The type catalog's names are untouched.
         $businessTypeId = $businessMetaData['business_type_id'] ?? null;
         if ($businessTypeId) {
             require_once __DIR__ . '/../../models/BusinessOwnershipType.php';
             $bot = new \BusinessOwnershipType($this->mysqli);
             $btData = [
-                'business_name_bn'  => $businessMetaData['business_name_bn'] ?? '',
-                'business_name_en'  => $businessMetaData['business_name_en'] ?? '',
                 'license_fee'       => $businessMetaData['license_fee'] ?? 0,
                 'vat_amount'        => $businessMetaData['vat_amount'] ?? 0,
                 'occupation_tax'    => $businessMetaData['occupation_tax'] ?? 0,
                 'income_tax'        => $businessMetaData['income_tax'] ?? 0,
                 'signboard_tax'     => $businessMetaData['signboard_tax'] ?? 0,
                 'surcharge'         => $businessMetaData['surcharge'] ?? 0,
-                'union_id'          => $unionId ?? 0,
             ];
-            $bot->updateBusinessType((int)$businessTypeId, $btData);
+            $bot->updateBusinessTypeFees((int)$businessTypeId, $btData);
         }
     }
 
@@ -1535,15 +1637,17 @@ class ApplicationService
      * @param string|null $certificateType  From twig globals
      * @param string|null $certificateTypeBn From twig globals
      * @return array Prepared data for template rendering
-     */
-
-    /**
-     * Update trade license fee information independently of approval flow.
+     */    /**
+     * Update ONLY the fee columns of the business_type table.
+     *
+     * The application's business_meta row (including the actual business name)
+     * is intentionally NOT touched — the approval page button sends fee fields
+     * plus business_type_id, and this method syncs those fees back to the
+     * business_type table so future applications auto-fill with them.
      */
     public function updateTradeFees(string $applicationId, array $post, ?int $unionId): array
     {
-        $lookupUnion = $unionId;
-        $application = $this->appManager->getApplication($applicationId, $lookupUnion);
+        $application = $this->appManager->getApplication($applicationId, $unionId);
         if (!$application) {
             return ['status' => 'error', 'message' => 'আবেদন পাওয়া যায়নি।'];
         }
@@ -1552,67 +1656,33 @@ class ApplicationService
             return ['status' => 'error', 'message' => 'শুধুমাত্র ট্রেড লাইসেন্সের ফি হালনাগাদ করা যায়।'];
         }
 
-        $fiscal_year = !empty($post['fiscal_year']) ? sanitize_input($post['fiscal_year']) : null;
-        $existingMeta = $this->appManager->getBusinessMetaByApplicationId($applicationId);
-        $hasExistingMeta = !empty($existingMeta);
-        $existingMeta = $existingMeta ?: [];
+        $businessTypeId = isset($post['business_type_id']) && $post['business_type_id'] !== ''
+            ? (int)$post['business_type_id']
+            : null;
 
-        $businessMetaData = [
-            'business_name_en'    => $existingMeta['business_name_en'] ?? '',
-            'business_name_bn'    => $existingMeta['business_name_bn'] ?? '',
-            'vat_id'              => $existingMeta['vat_id'] ?? '',
-            'tax_id'              => $existingMeta['tax_id'] ?? '',
-            'paid_up_capital'     => $existingMeta['paid_up_capital'] ?? 0,
-            'business_address_id' => $existingMeta['business_address_id'] ?? null,
-            'license_fee'         => isset($post['license_fee']) && $post['license_fee'] !== '' ? (float)$post['license_fee'] : ($existingMeta['license_fee'] ?? null),
-            'vat_amount'          => isset($post['vat_amount']) && $post['vat_amount'] !== '' ? (float)$post['vat_amount'] : ($existingMeta['vat_amount'] ?? null),
-            'occupation_tax'      => isset($post['occupation_tax']) && $post['occupation_tax'] !== '' ? (float)$post['occupation_tax'] : ($existingMeta['occupation_tax'] ?? null),
-            'income_tax'          => isset($post['income_tax']) && $post['income_tax'] !== '' ? (float)$post['income_tax'] : ($existingMeta['income_tax'] ?? null),
-            'signboard_tax'       => isset($post['signboard_tax']) && $post['signboard_tax'] !== '' ? (float)$post['signboard_tax'] : ($existingMeta['signboard_tax'] ?? null),
-            'surcharge'           => isset($post['surcharge']) && $post['surcharge'] !== '' ? (float)$post['surcharge'] : ($existingMeta['surcharge'] ?? null),
-            'total_fee'           => isset($post['total_fee']) && $post['total_fee'] !== '' ? (float)$post['total_fee'] : ($existingMeta['total_fee'] ?? null),
-            'fiscal_year'         => $fiscal_year ?: ($existingMeta['fiscal_year'] ?? null),
-            'ownership_type_id'   => isset($post['ownership_type_id']) && $post['ownership_type_id'] !== '' ? (int)$post['ownership_type_id'] : ($existingMeta['ownership_type_id'] ?? null),
-            'business_type_id'    => isset($post['business_type_id']) && $post['business_type_id'] !== '' ? (int)$post['business_type_id'] : ($existingMeta['business_type_id'] ?? null),
+        if (!$businessTypeId) {
+            return ['status' => 'error', 'message' => 'ব্যবসার ধরণ নির্বাচন করা নেই, তাই ফি হালনাগাদ করা যায়নি।'];
+        }
+
+        require_once __DIR__ . '/../../models/BusinessOwnershipType.php';
+        $bot = new \BusinessOwnershipType($this->mysqli);
+
+        // Only the fee columns of business_type are updated.
+        $btData = [
+            'license_fee'    => isset($post['license_fee']) && $post['license_fee'] !== '' ? (float)$post['license_fee'] : 0,
+            'vat_amount'     => isset($post['vat_amount']) && $post['vat_amount'] !== '' ? (float)$post['vat_amount'] : 0,
+            'occupation_tax' => isset($post['occupation_tax']) && $post['occupation_tax'] !== '' ? (float)$post['occupation_tax'] : 0,
+            'income_tax'     => isset($post['income_tax']) && $post['income_tax'] !== '' ? (float)$post['income_tax'] : 0,
+            'signboard_tax'  => isset($post['signboard_tax']) && $post['signboard_tax'] !== '' ? (float)$post['signboard_tax'] : 0,
+            'surcharge'      => isset($post['surcharge']) && $post['surcharge'] !== '' ? (float)$post['surcharge'] : 0,
+            'union_id'       => $unionId ?? 0,
         ];
 
-        if ($fiscal_year) {
-            $parts = explode('-', $fiscal_year);
-            $businessMetaData['expiry_date'] = isset($parts[1])
-                ? trim($parts[1]) . '-06-30'
-                : null;
-        } elseif (!empty($existingMeta['expiry_date'])) {
-            $businessMetaData['expiry_date'] = $existingMeta['expiry_date'];
-        }
+        $result = $bot->updateBusinessTypeFees((int)$businessTypeId, $btData);
 
-        $result = $hasExistingMeta
-            ? $this->appManager->updateBusinessMeta($applicationId, $businessMetaData)
-            : $this->appManager->insertBusinessMeta($applicationId, $businessMetaData);
-
-        $status = is_array($result) ? ($result['status'] ?? false) : (bool)$result;
-
-        if (!$status) {
-            $msg = is_array($result) ? ($result['message'] ?? 'Update failed') : 'Update failed';
+        if (($result['status'] ?? '') !== 'success') {
+            $msg = $result['message'] ?? 'Update failed';
             return ['status' => 'error', 'message' => $msg];
-        }
-
-        // 🔒 Also update business_type table fees so future applications auto-fill
-        $businessTypeId = $businessMetaData['business_type_id'] ?? null;
-        if ($businessTypeId) {
-            require_once __DIR__ . '/../../models/BusinessOwnershipType.php';
-            $bot = new \BusinessOwnershipType($this->mysqli);
-            $btData = [
-                'business_name_bn'  => $existingMeta['business_name_bn'] ?? '',
-                'business_name_en'  => $existingMeta['business_name_en'] ?? '',
-                'license_fee'       => $businessMetaData['license_fee'] ?? 0,
-                'vat_amount'        => $businessMetaData['vat_amount'] ?? 0,
-                'occupation_tax'    => $businessMetaData['occupation_tax'] ?? 0,
-                'income_tax'        => $businessMetaData['income_tax'] ?? 0,
-                'signboard_tax'     => $businessMetaData['signboard_tax'] ?? 0,
-                'surcharge'         => $businessMetaData['surcharge'] ?? 0,
-                'union_id'          => $unionId ?? 0,
-            ];
-            $bot->updateBusinessType((int)$businessTypeId, $btData);
         }
 
         return ['status' => 'success', 'message' => 'ফি তথ্য সফলভাবে হালনাগাদ হয়েছে।'];

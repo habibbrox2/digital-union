@@ -23,14 +23,9 @@ class AuthManager {
         }
     }
 
-    /**
-     * User login with credentials
-     */    public function login($usernameOrEmail, $password) {
-        // Build user's permission list using PermissionsManager (role-based)
-        require_once __DIR__ . '/PermissionsManager.php';
-        $permissionsManager = new PermissionsManager($this->mysqli);
-        
-        $stmt = $this->mysqli->prepare("SELECT user_id, username, email, password, union_id, role_id, status, last_login FROM users WHERE username = ? OR email = ?");
+    // User login with credentials
+    public function login($usernameOrEmail, $password) {
+        $stmt = $this->mysqli->prepare("SELECT user_id, username, email, password, union_id, role_id, status, last_login FROM users WHERE (username = ? OR email = ?) AND is_deleted = 0");
         $stmt->bind_param("ss", $usernameOrEmail, $usernameOrEmail);
         $stmt->execute();
         $result = $stmt->get_result();
@@ -62,8 +57,7 @@ class AuthManager {
         }
 
         if (!$user || !password_verify($password, $user['password'])) {
-            // 📧 Track failed login attempts for email alerts
-            if ($user && function_exists('trackFailedLoginAttempt')) {
+            if ($user) {
                 $this->trackFailedLoginAttempt($user['user_id'], $usernameOrEmail);
                 
                 // Check if alert should be sent (after 3+ attempts)
@@ -149,10 +143,8 @@ class AuthManager {
         // 📧 Clear failed login attempts on successful login
         $this->clearFailedLoginAttempts($user['user_id']);
 
-        // 📧 Track device login (optional - for new device alerts)
-        if (function_exists('trackDeviceLogin')) {
-            $this->trackDeviceLogin($user['user_id']);
-        }
+        // Track device login (optional - for new device alerts)
+        $this->trackDeviceLogin($user['user_id']);
 
         return ['success' => true, 'message' => 'সফলভাবে লগইন হয়েছে।'];
     }

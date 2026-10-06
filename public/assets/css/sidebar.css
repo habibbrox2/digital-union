@@ -1,0 +1,643 @@
+/* ================================================================
+   SIDEBAR — single source of truth
+   ================================================================
+   Consolidated from the sidebar rules that previously lived in BOTH
+   styles.css (legacy) and admin.css (teal redesign), where the two
+   files silently shadowed each other — admin.css loads last (see
+   layout.twig), so its base rules used to clobber styles.css's
+   mobile overrides.
+
+   Loaded AFTER both files, so the cascade in this file is final.
+
+   Layering contract (drawer mode, viewport <= 768px):
+       page header          100
+       sidebar backdrop    1090   (dimmed page, tap-to-close)
+       sidebar drawer      1100   (ALWAYS above its backdrop)
+       edge handle         1101
+   ================================================================ */
+
+.sidebar {
+    width: var(--sidebar-width);
+    height: 100vh;
+    position: fixed;
+    top: 0;
+    left: 0;
+    background: var(--sidebar-bg);
+    color: var(--white);
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    z-index: 1000;
+    box-shadow: 2px 0 12px rgba(0,0,0,0.12);
+    transition: width 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}/* Sidebar Section Labels */
+.sidebar .sidebar-section-label {
+    display: block;
+    padding: 12px 25px 4px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: rgba(255,255,255,0.4);
+    user-select: none;
+}
+
+body.sidebar-collapsed .sidebar .sidebar-section-label {
+    display: none;
+}
+
+.sidebar .sidebar-section-label.sidebar-section-label-bottom {
+    border-top: 1px solid rgba(255,255,255,0.1);
+    margin-top: 8px;
+    padding-top: 12px;
+}
+
+/* Sidebar Search Box */
+.sidebar .sidebar-search {
+    padding: 8px 12px;
+    flex-shrink: 0;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+
+.sidebar .sidebar-search-inner {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.sidebar .sidebar-search-icon {
+    position: absolute;
+    left: 10px;
+    color: rgba(255,255,255,0.4);
+    font-size: 12px;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+}
+
+.sidebar .sidebar-search-input {
+    width: 100%;
+    padding: 7px 30px 7px 30px;
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 6px;
+    background: rgba(255,255,255,0.08);
+    color: var(--white);
+    font-size: 13px;
+    outline: none;
+    transition: all 0.2s ease;
+}
+
+.sidebar .sidebar-search-input::placeholder {
+    color: rgba(255,255,255,0.35);
+}
+
+.sidebar .sidebar-search-input:focus {
+    background: rgba(255,255,255,0.12);
+    border-color: rgba(255,255,255,0.3);
+    box-shadow: 0 0 0 2px rgba(255,255,255,0.05);
+}
+
+.sidebar .sidebar-search-clear {
+    position: absolute;
+    right: 6px;
+    background: none;
+    border: none;
+    color: rgba(255,255,255,0.4);
+    cursor: pointer;
+    padding: 2px 4px;
+    font-size: 11px;
+    line-height: 1;
+    transition: color 0.15s ease;
+}
+
+.sidebar .sidebar-search-clear:hover {
+    color: var(--white);
+}
+
+body.sidebar-collapsed .sidebar .sidebar-search {
+    display: none;
+}
+
+/* Sidebar Header - Logo Area */
+.sidebar .sidebar-header {
+    padding: 0;
+    text-align: center;
+    background: rgba(0, 0, 0, 0.08);
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    flex-shrink: 0;
+}
+
+.sidebar .sidebar-logo-link {
+    display: block;
+    text-decoration: none;
+}
+
+.sidebar .sidebar-logo-area {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    height: 70px;
+    padding: 0 15px;
+    transition: padding 0.3s ease, gap 0.3s ease;
+}
+
+.sidebar .sidebar-logo {
+    height: 36px;
+    width: auto;
+    flex-shrink: 0;
+    transition: height 0.3s ease;
+}
+
+.sidebar .sidebar-logo-text {
+    color: var(--white);
+    font-size: 18px;
+    font-weight: 700;
+    white-space: nowrap;
+    transition: opacity 0.3s ease, width 0.3s ease;
+    overflow: hidden;
+}
+
+/* Sidebar Navigation Items */
+.sidebar ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    flex: 1;
+}
+
+.sidebar ul li a {
+    display: flex;
+    align-items: center;
+    height: 48px;
+    padding: 0 15px 0 25px;
+    color: rgba(255,255,255,0.9);
+    font-size: 18px;
+    border-left: 3px solid transparent;
+    transition: background 0.2s ease, padding 0.3s ease;
+    text-decoration: none;
+    white-space: nowrap;
+    overflow: hidden;
+    position: relative;
+}
+
+.sidebar ul li a i {
+    width: 24px;
+    text-align: center;
+    margin-right: 12px;
+    font-size: 16px;
+    color: var(--white);
+    flex-shrink: 0;
+    transition: margin-right 0.3s ease;
+}
+
+/* Nav text wrapper for smooth collapse */
+.sidebar ul li a .nav-text {
+    opacity: 1;
+    transition: opacity 0.2s ease, width 0.3s ease;
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+.sidebar ul li a:hover {
+    background: rgba(255,255,255,0.1);
+    color: var(--white);
+    border-left-color: rgba(255,255,255,0.4);
+}
+
+.sidebar ul li a.active {
+    background: rgba(255,255,255,0.12);
+    border-left-color: var(--white);
+}
+
+/* Submenu */
+.sidebar ul li .submenu {
+    display: none;
+    flex-direction: column;
+    background: rgba(0,0,0,0.08);
+    padding-left: 0;
+    border-left: 2px solid rgba(var(--primary-rgb), 0.3);
+    margin-left: 1rem;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+}
+
+.sidebar ul li .submenu.open {
+    display: block;
+}
+
+.sidebar ul li .submenu li a {
+    height: 40px;
+    padding: 10px 20px 10px 50px;
+    font-size: 15px;
+    border-left: none;
+}
+
+.sidebar ul li .submenu .submenu li a {
+    padding-left: 70px;
+    font-size: 14px;
+}
+
+/* Sidebar hidden items (search filter) — applies at every nesting level so
+   non-matching submenu entries disappear as well */
+.sidebar ul li.sidebar-hidden {
+    display: none !important;
+}
+
+/* Logout link */
+.sidebar .sidebar-logout-link:hover {
+    background: rgba(220, 53, 69, 0.15) !important;
+    border-left-color: #dc3545 !important;
+}
+
+.sidebar .sidebar-logout-link:hover i {
+    color: #dc3545 !important;
+}
+
+/* Tooltip for collapsed mode */
+body.sidebar-collapsed .sidebar ul li a[title] {
+    position: relative;
+}
+
+body.sidebar-collapsed .sidebar ul li a[title]:hover::after {
+    content: attr(title);
+    position: absolute;
+    left: calc(100% + 14px);
+    top: 50%;
+    transform: translateY(-50%);
+    background: #1e293b;
+    color: #fff;
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    white-space: nowrap;
+    z-index: 10001;
+    pointer-events: none;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+    margin-left: 0;
+    opacity: 0;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+body.sidebar-collapsed .sidebar ul li a[title]:hover::after {
+    opacity: 1;
+    transform: translateY(-50%);
+}
+
+body.sidebar-collapsed .sidebar ul li a[title]:hover::before {
+    content: '';
+    position: absolute;
+    left: calc(100% + 4px);
+    top: 50%;
+    transform: translateY(-50%);
+    border: 6px solid transparent;
+    border-right-color: #1e293b;
+    margin-left: 0;
+    z-index: 10000;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+body.sidebar-collapsed .sidebar ul li a[title]:hover::before {
+    opacity: 1;
+}
+
+.sidebar .sidebar-count-badge {
+    margin-left: auto;
+    border-radius: 999px;
+    font-weight: 700;
+    line-height: 1.2;
+    flex-shrink: 0;
+    background: rgba(255,255,255,0.15);
+    color: var(--white);
+    border: none;
+    font-size: 11px;
+    padding: 2px 8px;
+    min-width: 22px;
+    text-align: center;
+    transition: opacity 0.2s ease;
+}
+
+/* Submenu toggle arrow */
+.sidebar .submenu-toggle .fa-chevron-down {
+    margin-left: auto;
+    transition: transform 0.2s ease, opacity 0.3s ease;
+}
+
+/* Dynamic viewport height: 100vh includes the space hidden behind the mobile
+   browser chrome, which pushed the bottom menu entries out of reach. */
+@supports (height: 100dvh) {
+    .sidebar {
+        height: 100dvh !important;
+        max-height: 100dvh;
+    }
+}
+
+/* ================================================================
+   SIDEBAR BACKDROP - Dark overlay on mobile
+   ================================================================ */
+.sidebar-backdrop {
+    visibility: hidden;
+    opacity: 0;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 999;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.sidebar.open ~ .sidebar-backdrop {
+    visibility: visible;
+    opacity: 1;
+}
+
+/* Active Link Styles */
+.sidebar .active {
+    background: linear-gradient(90deg, rgba(var(--primary-rgb), 0.2) 0%, transparent 100%);
+    color: var(--white);
+    font-weight: 600;
+    border-left-color: var(--primary-color);
+}
+
+.sidebar .active i {
+    color: var(--primary-color);
+}
+
+.submenu-toggle {
+    cursor: pointer;
+}
+
+.sidebar ul li .submenu-toggle i.float-end {
+    margin-left: auto;
+    transition: transform var(--transition-normal);
+}
+
+.main-content header .sidebar-toggle {
+    background: rgba(255,255,255,0.12);
+    color: var(--white);
+    padding: 0.55rem 1rem;
+    border-radius: 12px;
+    border: 1px solid rgba(255,255,255,0.18);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.05rem;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    backdrop-filter: blur(6px);
+    min-width: 44px;
+    height: 44px;
+    gap: 8px;
+}
+
+.main-content header .sidebar-toggle:hover {
+    background: rgba(255,255,255,0.22);
+    transform: scale(1.06);
+    box-shadow: 0 4px 14px rgba(0,0,0,0.18);
+}
+
+/* Icon-only tooltip when collapsed */
+.main-content header .sidebar-toggle[title]::after {
+    content: attr(title);
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: #1e293b;
+    color: #fff;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+    z-index: 10002;
+}
+
+.main-content header .sidebar-toggle[title]:hover::after {
+    opacity: 1;
+}
+
+.main-content header .sidebar-toggle:active {
+    transform: scale(0.95);
+}
+
+header .sidebar-toggle:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.6);
+}
+
+@media (max-width: 768px) {
+    .sidebar {
+        left: -100%;
+        transition: left 0.3s ease;
+        z-index: 1100;
+    }
+
+    .sidebar-backdrop {
+        position: fixed;
+        inset: 0;
+        display: none;
+        background: rgba(15, 23, 42, 0.42);
+        z-index: 1090;
+    }
+
+    /* The backdrop directly follows the sidebar in the layout. */
+    .sidebar.open + .sidebar-backdrop {
+        display: block;
+    }
+
+    .sidebar.open {
+        left: 0;
+    }
+
+    /* Stop the page behind the open drawer from scrolling (the sidebar keeps
+       its own overflow-y: auto, so its long menu stays scrollable) */
+    body.sidebar-open-mobile {
+        overflow: hidden !important;
+    }
+}
+
+@media (min-width: 769px) {
+    .sidebar {
+        left: 0;
+}
+
+    /* ============================================================
+       COLLAPSED SIDEBAR - Icon Only Mode
+       Triggered by body.sidebar-collapsed
+       ============================================================ */
+
+    /* --- Sidebar container --- */
+body.sidebar-pinned .sidebar {
+    box-shadow: 2px 0 16px rgba(0,0,0,0.18);
+}
+
+body.sidebar-collapsed .sidebar {
+    width: 60px !important;
+}
+
+    /* --- Logo area --- */
+    body.sidebar-collapsed .sidebar .sidebar-header {
+        padding: 0;
+    }
+
+body.sidebar-collapsed .sidebar .sidebar-logo-area {
+    justify-content: center;
+    padding: 12px 4px;
+    gap: 0;
+}
+
+body.sidebar-collapsed .sidebar .sidebar-logo-text {
+    display: none;
+}
+
+body.sidebar-collapsed .sidebar .sidebar-logo {
+    height: 34px;
+    width: auto;
+    border-radius: 8px;
+    padding: 4px;
+    background: rgba(255,255,255,0.08);
+}
+
+    /* --- Navigation items --- */
+body.sidebar-collapsed .sidebar ul li a {
+    justify-content: center;
+    padding: 0 8px;
+    height: 48px;
+    border-radius: 10px;
+    margin: 3px 8px;
+    transition: background 0.2s ease, transform 0.15s ease;
+}
+
+body.sidebar-collapsed .sidebar ul li a:hover {
+    background: rgba(255,255,255,0.12);
+    transform: scale(1.05);
+}
+
+body.sidebar-collapsed .sidebar ul li a i {
+    margin-right: 0;
+    font-size: 18px;
+    width: 26px;
+    text-align: center;
+}
+
+    /* Hide nav text — display:none so it doesn't reserve layout space
+       (it's an inline element, so opacity/width won't collapse it) */
+    body.sidebar-collapsed .sidebar ul li a .nav-text {
+        display: none;
+    }
+
+    /* Hide badges */
+    body.sidebar-collapsed .sidebar .sidebar-count-badge {
+        display: none;
+    }
+
+    /* Hide chevron arrows on submenu toggles */
+    body.sidebar-collapsed .sidebar .submenu-toggle .fa-chevron-down {
+        display: none;
+    }
+
+    /* Hide all submenus */
+    body.sidebar-collapsed .sidebar .submenu {
+        display: none !important;
+    }
+
+    /* --- Active item indicator - smaller left border --- */
+    body.sidebar-collapsed .sidebar ul li a.active {
+        border-left-width: 2px;
+    }
+}
+
+/* Floating edge toggle — appears on left edge when sidebar is collapsed.
+   Kept OUTSIDE the desktop media query on purpose: inside it, the nested
+   `@media (max-width: 768px)` below meant "769px and up AND 768px and down",
+   which never matches — the handle then rendered as an unstyled sliver in the
+   mobile header. */
+.sidebar-edge-fab {
+    position: fixed;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%) translateX(-6px);
+    width: 32px;
+    height: 56px;
+    background: var(--sidebar-bg);
+    color: var(--white);
+    border: none;
+    border-radius: 0 8px 8px 0;
+    cursor: pointer;
+    z-index: 1101;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    box-shadow: 2px 2px 8px rgba(0,0,0,0.15);
+    transition: all 0.25s ease;
+    opacity: 0.85;
+}
+
+.sidebar-edge-fab:hover {
+    opacity: 1;
+    transform: translateY(-50%) translateX(0);
+    width: 40px;
+    box-shadow: 2px 4px 14px rgba(0,0,0,0.2);
+}
+
+.sidebar-edge-fab i {
+    transform: rotate(-90deg);
+    transition: transform 0.3s ease;
+}
+
+.sidebar-edge-fab:hover i {
+    transform: rotate(0deg);
+}
+
+body.sidebar-collapsed .sidebar-edge-fab {
+    display: flex;
+    left: 60px;
+    transform: translateY(-50%);
+}
+
+body.sidebar-pinned .sidebar-edge-fab {
+    display: none !important;
+}
+
+@media (max-width: 768px) {
+    .sidebar-edge-fab {
+        display: none !important;
+    }
+}
+
+    /* ============================================================
+       SIDEBAR CUSTOM SCROLLBAR
+       ============================================================ */
+    .sidebar::-webkit-scrollbar {
+        width: 4px;
+    }
+
+    .sidebar::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    .sidebar::-webkit-scrollbar-thumb {
+        background: rgba(255,255,255,0.2);
+        border-radius: 4px;
+        transition: background var(--transition-normal);
+    }
+
+    .sidebar::-webkit-scrollbar-thumb:hover {
+        background: rgba(255,255,255,0.35);
+    }
+
+    /* Firefox scrollbar */
+    .sidebar {
+        scrollbar-width: thin;
+        scrollbar-color: rgba(255,255,255,0.2) transparent;
+    }

@@ -222,12 +222,6 @@ document.addEventListener('DOMContentLoaded', function () {
             upazilaBn.value = addressData.upazila_bn;
             highlightPrefilled(upazilaBn);
         }
-        const unionBn = document.getElementById(prefix + '_union');
-        if (unionBn && addressData.union_bn) {
-            unionBn.value = addressData.union_bn;
-            highlightPrefilled(unionBn);
-        }
-
         // Cascading geo dropdowns
         fetchEditGeoData(1, 0, '#' + prefix + '_district_id', null, addressData.district_geo_id || addressData.district_en, function () {
             const districtSelect = document.getElementById(prefix + '_district_id');
@@ -235,33 +229,45 @@ document.addEventListener('DOMContentLoaded', function () {
             fetchEditGeoData(2, selectedDistrictId, '#' + prefix + '_upazila_id', null, addressData.upazila_geo_id || addressData.upazila_en, function () {
                 const upazilaSelect = document.getElementById(prefix + '_upazila_id');
                 const selectedUpazilaId = upazilaSelect?.selectedOptions[0]?.dataset?.geoId;
-                fetchEditGeoData(3, selectedUpazilaId, '#' + prefix + '_union_id', null, addressData.union_geo_id || addressData.union_en, function () {
-                    // Fill Bengali text fields from the selected dropdown options
-                    const distEl = document.getElementById(prefix + '_district');
-                    if (distEl) {
-                        const selectedDistrict = districtSelect?.selectedOptions[0]?.dataset?.nameBn || '';
-                        distEl.value = selectedDistrict;
-                    }
-                    const upaEl = document.getElementById(prefix + '_upazila');
-                    if (upaEl) {
-                        const selectedUpazila = upazilaSelect?.selectedOptions[0]?.dataset?.nameBn || '';
-                        upaEl.value = selectedUpazila;
-                    }
-                    const uniEl = document.getElementById(prefix + '_union');
-                    if (uniEl) {
-                        const selectedUnion = document.getElementById(prefix + '_union_id')?.selectedOptions[0]?.dataset?.nameBn || '';
-                        uniEl.value = selectedUnion;
-                    }
-                    const unionSelectEl = document.getElementById(prefix + '_union_id');
-                    const unionNameForPo = unionSelectEl?.selectedOptions[0]?.dataset?.nameEn || unionSelectEl?.value;
-                    window.postOfficeDebugLog('[post-office] update form prefill', {
+                var unionSelectEl = document.getElementById(prefix + '_union_id');
+                if (unionSelectEl) {
+                    fetchEditGeoData(3, selectedUpazilaId, '#' + prefix + '_union_id', null, addressData.union_geo_id || addressData.union_en, function () {
+                        // Fill Bengali text fields from the selected dropdown options
+                        const distEl = document.getElementById(prefix + '_district');
+                        if (distEl) {
+                            const selectedDistrict = districtSelect?.selectedOptions[0]?.dataset?.nameBn || '';
+                            distEl.value = selectedDistrict;
+                        }
+                        const upaEl = document.getElementById(prefix + '_upazila');
+                        if (upaEl) {
+                            const selectedUpazila = upazilaSelect?.selectedOptions[0]?.dataset?.nameBn || '';
+                            upaEl.value = selectedUpazila;
+                        }
+                        const uniEl = document.getElementById(prefix + '_union');
+                        if (uniEl) {
+                            const selectedUnion = unionSelectEl?.selectedOptions[0]?.dataset?.nameBn || '';
+                            uniEl.value = selectedUnion;
+                        }
+                        const unionNameForPo = unionSelectEl?.selectedOptions[0]?.dataset?.nameEn || unionSelectEl?.value;
+                        window.postOfficeDebugLog('[post-office] update form prefill', {
+                            prefix: prefix,
+                            unionNameForPo: unionNameForPo
+                        });
+                        if (unionNameForPo && typeof window.fetchPostOffices === 'function') {
+                            window.fetchPostOffices(unionNameForPo, '#' + prefix + '_postoffice_en', '#' + prefix + '_postoffice_bn');
+                        }
+                    });
+                } else {
+                    // Union dropdown removed — use union_en from address data for post office lookup
+                    var unionNameForPo = addressData.union_en || '';
+                    window.postOfficeDebugLog('[post-office] update form prefill (no union dropdown)', {
                         prefix: prefix,
                         unionNameForPo: unionNameForPo
                     });
                     if (unionNameForPo && typeof window.fetchPostOffices === 'function') {
                         window.fetchPostOffices(unionNameForPo, '#' + prefix + '_postoffice_en', '#' + prefix + '_postoffice_bn');
                     }
-                });
+                }
             });
         });
     }

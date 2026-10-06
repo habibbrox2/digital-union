@@ -151,13 +151,13 @@
 		            <div class="col-md-6">
 		                <label for="name_bn" class="form-label">নাম (Bengali) <span class="text-danger">*</span></label>
 		                <input type="text" id="name_bn" name="name_bn" class="form-control" placeholder="বাংলায় নাম লিখুন" required
-		                    value="{{ birth.name_bn ?? '' }}">
+		                    value="{{ (birth.name_bn ?? '')|replace({"'":'', '"':'', '&#039;':'', '&quot;':''}) }}">
 		                <div class="invalid-feedback">নাম লিখুন।</div>
 		            </div>
 		            <div class="col-md-6">
 		                <label for="name_en" class="form-label">Name (English) <span class="text-danger">*</span></label>
 		                <input type="text" id="name_en" name="name_en" class="form-control" placeholder="Enter name in English" required
-		                    value="{{ birth.name_en ?? '' }}">
+		                    value="{{ (birth.name_en ?? '')|replace({"'":'', '"':'', '&#039;':'', '&quot;':''}) }}">
 		                <div class="invalid-feedback">Name in English is required.</div>
 		            </div>
 		              <div class="col-md-6">
@@ -192,13 +192,13 @@
                             <div class="col-md-4">
                                 <label for="father_name_bn" class="form-label">পিতার নাম (Bengali) <span class="text-danger">*</span></label>
                                 <input type="text" id="father_name_bn" name="father_name_bn" class="form-control" placeholder="বাংলায় নাম লিখুন" required
-                                    value="{{ birth.father_name_bn ?? '' }}">
+                                    value="{{ (birth.father_name_bn ?? '')|replace({"'":'', '"':'', '&#039;':'', '&quot;':''}) }}">
                                 <div class="invalid-feedback">পিতার নাম দিন।</div>
                             </div>
                             <div class="col-md-4">
                                 <label for="father_name_en" class="form-label">Father's Name (EN) <span class="text-danger">*</span></label>
                                 <input type="text" id="father_name_en" name="father_name_en" class="form-control" placeholder="Enter father's name in English" required
-                                    value="{{ birth.father_name_en ?? '' }}">
+                                    value="{{ (birth.father_name_en ?? '')|replace({"'":'', '"':'', '&#039;':'', '&quot;':''}) }}">
                                 <div class="invalid-feedback">Father's name required.</div>
                             </div>
                             <div class="col-md-4">
@@ -211,13 +211,13 @@
                             <div class="col-md-4">
                                 <label for="mother_name_bn" class="form-label">মাতার নাম (Bengali) <span class="text-danger">*</span></label>
                                 <input type="text" id="mother_name_bn" name="mother_name_bn" class="form-control" placeholder="বাংলায় নাম লিখুন" required
-                                    value="{{ birth.mother_name_bn ?? '' }}">
+                                    value="{{ (birth.mother_name_bn ?? '')|replace({"'":'', '"':'', '&#039;':'', '&quot;':''}) }}">
                                 <div class="invalid-feedback">মাতার নাম দিন।</div>
                             </div>
                             <div class="col-md-4">
                                 <label for="mother_name_en" class="form-label">Mother's Name (EN) <span class="text-danger">*</span></label>
                                 <input type="text" id="mother_name_en" name="mother_name_en" class="form-control" placeholder="Enter mother's name in English" required
-                                    value="{{ birth.mother_name_en ?? '' }}">
+                                    value="{{ (birth.mother_name_en ?? '')|replace({"'":'', '"':'', '&#039;':'', '&quot;':''}) }}">
                                 <div class="invalid-feedback">Mother's name required.</div>
                             </div>
                             <div class="col-md-4">
@@ -298,7 +298,7 @@
             <div class="col-md-6">
                 <label for="office_name_en" class="form-label">Office Name (EN) <span class="text-danger">*</span></label>
                 <input type="text" id="office_name_en" name="office_name_en" class="form-control" placeholder="Office name in English" required
-                    value="{{ birth.office_name_en|default('')|trim }}">
+                    value="{{ (birth.office_name_en|default('')|trim)|replace({"'":'', '"':'', '&#039;':'', '&quot;':''}) }}">
                 <div class="invalid-feedback">Enter office name in English.</div>
             </div>
 
@@ -530,12 +530,12 @@
       const j = await res.json();
       if (!j.ok) return showAlert('⚠️ Captcha লোড করা যায়নি।');
 
-      serverTokenField.value = j.token || '';
-      captchaDeField.value = j.captcha_de_text || '';
-      if(captchaImg) captchaImg.src = j.captcha_data_uri || '';
-      if(!ub.value) ub.value = '';
-      if(!bd.value) bd.value = '';
-      capIn.value = '';
+      if (serverTokenField) serverTokenField.value = j.token || '';
+      if (captchaDeField) captchaDeField.value = j.captcha_de_text || '';
+      if (captchaImg) captchaImg.src = j.captcha_data_uri || '';
+      if (ub && !ub.value) ub.value = '';
+      if (bd && !bd.value) bd.value = '';
+      if (capIn) capIn.value = '';
       if (!preserveAlert) clearAlert();
     } catch(err) {
       console.error('Network error:', err);
@@ -546,7 +546,15 @@
   // ===================== PREFILL =====================
   function prefillForm(data) {
     if(!data) return;
-    const setVal = (id, val) => { const el = document.getElementById(id); if(el) el.value = val || ''; };
+    const setVal = (id, val) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      let v = String(val || '');
+      const temp = document.createElement('div');
+      temp.innerHTML = v;
+      v = ((temp.textContent || temp.innerText || '') + '').replace(/['"]/g, '');
+      el.value = v;
+    };
 
     setVal('registration_number', data.birth_registration_number_en);
     const regCounterInput = document.getElementById('registration_number');
@@ -631,7 +639,7 @@
   }
 
   if (refreshBtn) refreshBtn.addEventListener('click', () => initCaptcha());
-  initCaptcha();
+  if (frm) initCaptcha();
 
 })();
 </script>
@@ -692,6 +700,20 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll(uppercaseFields.join(',')).forEach(field => {
         field.addEventListener('input', () => {
             field.value = field.value.toUpperCase();
+        });
+    });
+
+    // ===================== Block Quotes in Name Fields =====================
+    const noQuoteFields = [
+        '#name_bn', '#name_en',
+        '#father_name_bn', '#father_name_en',
+        '#mother_name_bn', '#mother_name_en',
+        '#office_name_en'
+    ];
+
+    document.querySelectorAll(noQuoteFields.join(',')).forEach(field => {
+        field.addEventListener('input', () => {
+            field.value = field.value.replace(/['"]/g, '');
         });
     });
 

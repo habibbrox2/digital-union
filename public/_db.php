@@ -1738,7 +1738,7 @@ if (php_sapi_name() === 'cli') {
                 <h2>🖥️ সার্ভার ও ডাটাবেস তথ্য | Server Info</h2>
                 <div id="serverInfoContent">
                     <p style="color: var(--text-light); margin-bottom: 15px;">Click the button below to load server status.</p>
-                    <button onclick="loadServerInfo()" class="btn-view" style="background-color: var(--primary); color: white;">🔄 তথ্য দেখুন (Check Status)</button>
+                    <button data-action="loadServerInfo" class="btn-view" style="background-color: var(--primary); color: white;">🔄 তথ্য দেখুন (Check Status)</button>
                 </div>
             </div>
 
@@ -1749,7 +1749,7 @@ if (php_sapi_name() === 'cli') {
                 <div style="margin-bottom: 10px;">
                     <label style="display:inline-flex; align-items:center; gap:5px; cursor:pointer;"><input type="checkbox" id="disableFkSql"> Disable Foreign Key Checks</label>
                 </div>
-                <button onclick="runQuery()" class="btn-success" style="background-color: var(--primary);">▶️ রান কুয়েরি (Run Query)</button>
+                <button data-action="runQuery" class="btn-success" style="background-color: var(--primary);">▶️ রান কুয়েরি (Run Query)</button>
                 <div id="queryResult" style="margin-top:20px; overflow-x:auto;"></div>
             </div>
 
@@ -1757,8 +1757,8 @@ if (php_sapi_name() === 'cli') {
             <div class="section" style="margin-top: 24px;">
                 <h2>⚙️ টেবিল ম্যানেজমেন্ট</h2>
                 <div style="display: flex; gap: 10px; margin-bottom: 15px;">
-                    <input type="text" id="tableSearchInput" onkeyup="searchTable()" placeholder="🔍 টেবিল খুঁজুন... / Search tables..." style="flex-grow: 1; padding: 10px; border: 1px solid #ddd; border-radius: 5px;" autocomplete="off">
-                    <button onclick="openCreateTableModal()" class="btn-success" style="background-color: var(--success);">➕ নতুন টেবিল তৈরি করুন</button>
+                    <input type="text" id="tableSearchInput" placeholder="🔍 টেবিল খুঁজুন... / Search tables..." style="flex-grow: 1; padding: 10px; border: 1px solid #ddd; border-radius: 5px;" autocomplete="off">
+                    <button data-action="openCreateTableModal" class="btn-success" style="background-color: var(--success);">➕ নতুন টেবিল তৈরি করুন</button>
                 </div>
                 <table id="managementTable">
                     <thead>
@@ -1781,13 +1781,13 @@ if (php_sapi_name() === 'cli') {
                                 <td><?= $t['size_mb'] ?> MB</td>
                                 <td>
                                     <div class="action-buttons">
-                                        <button class="btn-view" onclick="viewTable('<?= htmlspecialchars($t['table_name'], ENT_QUOTES) ?>')" title="View Data">👁️</button>
-                                        <button class="btn-view" style="font-weight: bold;" onclick="toggleTableDetails('<?= htmlspecialchars($t['table_name'], ENT_QUOTES) ?>', this)" title="Expand Details">...</button>
-                                        <button class="btn-export" onclick="exportSingleTable('<?= htmlspecialchars($t['table_name'], ENT_QUOTES) ?>')" title="Export Table">📤</button>
-                                        <button class="btn-optimize" onclick="optimizeTable('<?= htmlspecialchars($t['table_name'], ENT_QUOTES) ?>')" title="Optimize Table">⚡</button>
-                                        <button class="btn-repair" onclick="repairTable('<?= htmlspecialchars($t['table_name'], ENT_QUOTES) ?>')" title="Repair Table">🔧</button>
-                                        <button class="btn-empty" onclick="emptyTableConfirm('<?= htmlspecialchars($t['table_name'], ENT_QUOTES) ?>')" title="Empty Table">🗑️</button>
-                                        <button class="btn-danger" onclick="dropTableConfirm('<?= htmlspecialchars($t['table_name'], ENT_QUOTES) ?>')" title="Drop Table">❌</button>
+                                        <button class="btn-view" data-action="viewTable" data-table="<?= htmlspecialchars($t['table_name'], ENT_QUOTES) ?>" title="View Data">👁️</button>
+                                        <button class="btn-view" style="font-weight: bold;" data-action="toggleTableDetails" data-table="<?= htmlspecialchars($t['table_name'], ENT_QUOTES) ?>" title="Expand Details">...</button>
+                                        <button class="btn-export" data-action="exportSingleTable" data-table="<?= htmlspecialchars($t['table_name'], ENT_QUOTES) ?>" title="Export Table">📤</button>
+                                        <button class="btn-optimize" data-action="optimizeTable" data-table="<?= htmlspecialchars($t['table_name'], ENT_QUOTES) ?>" title="Optimize Table">⚡</button>
+                                        <button class="btn-repair" data-action="repairTable" data-table="<?= htmlspecialchars($t['table_name'], ENT_QUOTES) ?>" title="Repair Table">🔧</button>
+                                        <button class="btn-empty" data-action="emptyTableConfirm" data-table="<?= htmlspecialchars($t['table_name'], ENT_QUOTES) ?>" title="Empty Table">🗑️</button>
+                                        <button class="btn-danger" data-action="dropTableConfirm" data-table="<?= htmlspecialchars($t['table_name'], ENT_QUOTES) ?>" title="Drop Table">❌</button>
                                     </div>
                                 </td>
                             </tr>
@@ -1802,7 +1802,7 @@ if (php_sapi_name() === 'cli') {
                 <div class="grid" style="grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 15px;">
                     <div class="form-group">
                         <label>টেবিল নির্বাচন করুন (Table)</label>
-                        <select id="srTable" onchange="loadSrColumns()">
+                        <select id="srTable" data-action="loadSrColumns">
                             <option value="">-- Select Table --</option>
                             <?php foreach ($tables as $t): ?>
                                 <option value="<?= htmlspecialchars($t['table_name']) ?>"><?= htmlspecialchars($t['table_name']) ?></option>
@@ -1820,7 +1820,7 @@ if (php_sapi_name() === 'cli') {
                     <div class="form-group"><label>খুঁজুন (Search)</label><input type="text" id="srSearch" placeholder="Text to find"></div>
                     <div class="form-group"><label>পরিবর্তন করুন (Replace)</label><input type="text" id="srReplace" placeholder="Replacement text"></div>
                 </div>
-                <button onclick="doSearchReplace()" class="btn-view" style="background-color: var(--warning); color: #000;">
+                <button data-action="doSearchReplace" class="btn-view" style="background-color: var(--warning); color: #000;">
                     🔄 পরিবর্তন করুন (Replace)
                 </button>
             </div>
@@ -1852,7 +1852,7 @@ if (php_sapi_name() === 'cli') {
                             <span>DROP TABLE স্টেটমেন্ট যোগ করুন</span>
                         </label>
                     </div>
-                    <button onclick="startExport()" id="exportBtn">🚀 এক্সপোর্ট শুরু করুন</button>
+                    <button data-action="startExport" id="exportBtn">🚀 এক্সপোর্ট শুরু করুন</button>
                     <div class="progress-container" id="progressContainer" style="margin-top:20px; display:none;">
                         <progress id="progress" value="0" max="100"></progress>
                         <div class="status" id="status" style="margin-top:10px; text-align:center; font-weight:bold; color:var(--primary);">প্রস্তুত...</div>
@@ -1872,7 +1872,7 @@ if (php_sapi_name() === 'cli') {
                             <span>DROP TABLE স্টেটমেন্ট যোগ করুন</span>
                         </label>
                     </div>
-                    <button onclick="confirmFullExport()" id="fullExportBtn">🚀 সম্পূর্ণ ডাটাবেস এক্সপোর্ট করুন</button>
+                    <button data-action="confirmFullExport" id="fullExportBtn">🚀 সম্পূর্ণ ডাটাবেস এক্সপোর্ট করুন</button>
                     <div class="progress-container" id="fullProgressContainer" style="margin-top:20px; display:none;">
                         <progress id="fullProgress" value="0" max="100"></progress>
                         <div class="status" id="fullStatus" style="margin-top:10px; text-align:center; font-weight:bold; color:var(--primary);">প্রস্তুত...</div>
@@ -1900,7 +1900,7 @@ if (php_sapi_name() === 'cli') {
                     </div>
                     <div class="button-group" style="display: flex; gap: 10px;">
                         <button type="submit" class="btn-success" style="background-color: var(--success);">⬆️ আপলোড ও ইমপোর্ট</button>
-                        <button type="button" onclick="previewImportUpload()" style="background-color: var(--secondary);">👁️ প্রিভিউ</button>
+                        <button type="button" data-action="previewImportUpload" style="background-color: var(--secondary);">👁️ প্রিভিউ</button>
                     </div>
                 </form>
             </div>
@@ -1910,10 +1910,10 @@ if (php_sapi_name() === 'cli') {
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
                     <h2>📂 সংরক্ষিত ব্যাকআপ ফাইল</h2>
                     <div>
-                        <button onclick="importSelectedBackups()" class="btn-view" style="background-color: var(--info); margin-right: 5px;">📥 নির্বাচিত ইমপোর্ট</button>
-                        <button onclick="deleteSelectedBackups()" class="btn-danger" style="margin-right: 5px;">🗑️ নির্বাচিত ডিলিট</button>
-                        <button onclick="importAllBackups()" class="btn-success" style="background-color: var(--success); margin-right: 5px;">📥 সব ইমপোর্ট</button>
-                        <button onclick="location.reload()">🔄 রিফ্রেশ</button>
+                        <button data-action="importSelectedBackups" class="btn-view" style="background-color: var(--info); margin-right: 5px;">📥 নির্বাচিত ইমপোর্ট</button>
+                        <button data-action="deleteSelectedBackups" class="btn-danger" style="margin-right: 5px;">🗑️ নির্বাচিত ডিলিট</button>
+                        <button data-action="importAllBackups" class="btn-success" style="background-color: var(--success); margin-right: 5px;">📥 সব ইমপোর্ট</button>
+                        <button data-action="reloadPage">🔄 রিফ্রেশ</button>
                     </div>
                 </div>
                 <div class="checkbox-group" style="margin-bottom: 15px; border-top: 1px solid var(--border); padding-top: 15px;">
@@ -1931,7 +1931,7 @@ if (php_sapi_name() === 'cli') {
                     <table>
                         <thead>
                             <tr>
-                                <th style="width: 40px; text-align: center;"><input type="checkbox" id="selectAll" onclick="toggleSelectAll(this)"></th>
+                                <th style="width: 40px; text-align: center;"><input type="checkbox" id="selectAll"></th>
                                 <th>#</th>
                                 <th>ফাইলের নাম</th>
                                 <th>সাইজ</th>
@@ -1949,10 +1949,10 @@ if (php_sapi_name() === 'cli') {
                                     <td><?= $file['size'] ?></td>
                                     <td><?= $file['date'] ?></td>
                                     <td>
-                                        <button class="btn-view" onclick="importBackup('<?= htmlspecialchars($file['name'], ENT_QUOTES) ?>')" style="background-color: var(--info); color: white;">📥 ইমপোর্ট</button>
-                                        <button class="btn-view" onclick="previewBackup('<?= htmlspecialchars($file['name'], ENT_QUOTES) ?>')">👁️ প্রিভিউ</button>
-                                        <button class="btn-optimize" onclick="downloadBackup('<?= htmlspecialchars($file['name'], ENT_QUOTES) ?>')">💾 ডাউনলোড</button>
-                                        <button class="btn-empty" onclick="deleteBackup('<?= htmlspecialchars($file['name'], ENT_QUOTES) ?>')">🗑️ ডিলিট</button>
+                                        <button class="btn-view" data-action="importBackup" data-file="<?= htmlspecialchars($file['name'], ENT_QUOTES) ?>" style="background-color: var(--info); color: white;">📥 ইমপোর্ট</button>
+                                        <button class="btn-view" data-action="previewBackup" data-file="<?= htmlspecialchars($file['name'], ENT_QUOTES) ?>">👁️ প্রিভিউ</button>
+                                        <button class="btn-optimize" data-action="downloadBackup" data-file="<?= htmlspecialchars($file['name'], ENT_QUOTES) ?>">💾 ডাউনলোড</button>
+                                        <button class="btn-empty" data-action="deleteBackup" data-file="<?= htmlspecialchars($file['name'], ENT_QUOTES) ?>">🗑️ ডিলিট</button>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>
@@ -1967,7 +1967,7 @@ if (php_sapi_name() === 'cli') {
             <div class="section" style="margin-top: 24px;">
                 <h2>📊 ডাটাবেস স্কিমা ডায়াগ্রাম | Database Schema Diagram</h2>
                 <div style="margin-bottom: 15px;">
-                    <button onclick="loadSchemaDiagram()">🔄 ডায়াগ্রাম লোড করুন</button>
+                    <button data-action="loadSchemaDiagram">🔄 ডায়াগ্রাম লোড করুন</button>
                     <span id="diagramStatus" style="margin-left: 10px; color: #666;"></span>
                 </div>
                 <div id="diagramContainer" style="overflow: auto; border: 1px solid #e9ecef; border-radius: 8px; background: white; padding: 20px; min-height: 400px; text-align: center;">
@@ -1983,7 +1983,7 @@ if (php_sapi_name() === 'cli') {
         <div class="modal-content">
             <div class="modal-header">
                 <h2 id="modalTableName">টেবিল ডাটা</h2>
-                <span class="close" onclick="document.getElementById('viewTableModal').style.display='none'">&times;</span>
+                <span class="close" data-close-modal="viewTableModal">&times;</span>
             </div>
             <div class="modal-body">
                 <div id="tableDataContainer"></div>
@@ -1997,7 +1997,7 @@ if (php_sapi_name() === 'cli') {
         <div class="modal-content">
             <div class="modal-header">
                 <h2 id="modalPreviewFileName">SQL প্রিভিউ</h2>
-                <span class="close" onclick="document.getElementById('previewSqlModal').style.display='none'">&times;</span>
+                <span class="close" data-close-modal="previewSqlModal">&times;</span>
             </div>
             <div class="modal-body">
                 <p>এই ফাইল থেকে প্রথম কয়েকটি কোয়েরি নিচে দেখানো হলো। (This is a preview of the first few queries from the file.)</p>
@@ -2013,7 +2013,7 @@ if (php_sapi_name() === 'cli') {
         <div class="modal-content" style="max-width: 500px;">
             <div class="modal-header">
                 <h2 id="confirmModalTitle">নিশ্চিত করুন | Confirmation</h2>
-                <span class="close" onclick="document.getElementById('confirmModal').style.display='none'">&times;</span>
+                <span class="close" data-close-modal="confirmModal">&times;</span>
             </div>
             <div class="modal-body">
                 <p id="confirmModalMessage" style="font-size: 1.1rem;"></p>
@@ -2030,7 +2030,7 @@ if (php_sapi_name() === 'cli') {
         <div class="modal-content" style="max-width: 500px;">
             <div class="modal-header">
                 <h2>সম্পূর্ণ ডাটাবেস এক্সপোর্ট</h2>
-                <span class="close" onclick="document.getElementById('fullExportModal').style.display='none'">&times;</span>
+                <span class="close" data-close-modal="fullExportModal">&times;</span>
             </div>
             <div class="modal-body">
                 <p>আপনি কিভাবে ডাটাবেস এক্সপোর্ট করতে চান?</p>
@@ -2039,7 +2039,7 @@ if (php_sapi_name() === 'cli') {
                     <label class="checkbox-item"><input type="radio" name="export_mode" value="single"><span>একটি একক ফাইল (সম্পূর্ণ ডাটাবেস)</span></label>
                 </div>
             </div>
-            <div class="modal-footer"><button onclick="document.getElementById('fullExportModal').style.display='none'" style="background-color: var(--secondary);">বাতিল</button><button onclick="executeFullExportChoice()" style="background-color: var(--primary);">এক্সপোর্ট করুন</button></div>
+            <div class="modal-footer"><button data-close-modal="fullExportModal" style="background-color: var(--secondary);">বাতিল</button><button data-action="executeFullExportChoice" style="background-color: var(--primary);">এক্সপোর্ট করুন</button></div>
         </div>
     </div>
 
@@ -2048,9 +2048,9 @@ if (php_sapi_name() === 'cli') {
         <div class="modal-content" style="max-width: 900px;">
             <div class="modal-header">
                 <h2>➕ নতুন টেবিল তৈরি করুন | Create New Table</h2>
-                <span class="close" onclick="document.getElementById('createTableModal').style.display='none'">&times;</span>
+                <span class="close" data-close-modal="createTableModal">&times;</span>
             </div>
-            <form id="createTableForm" onsubmit="event.preventDefault(); submitCreateTable();">
+            <form id="createTableForm">
                 <div class="modal-body">
                     <div class="form-group">
                         <label for="newTableName">টেবিলের নাম | Table Name</label>
@@ -2059,10 +2059,10 @@ if (php_sapi_name() === 'cli') {
                     <hr style="margin: 20px 0;">
                     <h4>কলাম | Columns</h4>
                     <div id="columnsContainer"></div>
-                    <button type="button" onclick="addColumnToModal()" style="margin-top: 10px; background-color: var(--secondary);">➕ কলাম যোগ করুন | Add Column</button>
+                    <button type="button" data-action="addColumnToModal" style="margin-top: 10px; background-color: var(--secondary);">➕ কলাম যোগ করুন | Add Column</button>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" onclick="document.getElementById('createTableModal').style.display='none'" style="background-color: var(--secondary);">বাতিল | Cancel</button>
+                    <button type="button" data-close-modal="createTableModal" style="background-color: var(--secondary);">বাতিল | Cancel</button>
                     <button type="submit" style="background-color: var(--success);">তৈরি করুন | Create Table</button>
                 </div>
             </form>
@@ -2174,13 +2174,13 @@ if (php_sapi_name() === 'cli') {
                 html += row('Connection Status', '<span style="color:var(--success); font-weight:bold;">Connected ✅</span>');
                 html += row('DB Stats', res.db_stat);
                 html += '</table>';
-                html += '<div style="margin-top:15px;"><button onclick="loadServerInfo()">🔄 রিফ্রেশ (Refresh)</button></div>';
+                html += '<div style="margin-top:15px;"><button data-action="loadServerInfo">🔄 রিফ্রেশ (Refresh)</button></div>';
 
                 document.getElementById('serverInfoContent').innerHTML = html;
                 showMessage('Server info loaded', 'success');
             } catch (e) {
                 toggleLoading(false);
-                document.getElementById('serverInfoContent').innerHTML = `<p style="color:red; font-weight:bold;">Connection Failed ❌</p><p>Error: ${e.message}</p><button onclick="loadServerInfo()">Retry</button>`;
+                document.getElementById('serverInfoContent').innerHTML = `<p style="color:red; font-weight:bold;">Connection Failed ❌</p><p>Error: ${e.message}</p><button data-action="loadServerInfo">Retry</button>`;
                 showMessage('Error loading server info', 'error');
             }
         }
@@ -2612,8 +2612,8 @@ if (php_sapi_name() === 'cli') {
                 // Build table HTML
                 let html = '<div style="margin-bottom:15px; display:flex; gap:10px;">';
                 html += `<input type="text" id="modalSearchInput" value="${result.search}" placeholder="Search in table..." style="flex:1; padding:8px; border:1px solid #ddd; border-radius:4px;">`;
-                html += `<button onclick="viewTable('${tableName}', 1, document.getElementById('modalSearchInput').value, '${result.sort}', '${result.order}')" style="padding:8px 15px;">Search</button>`;
-                html += `<button onclick="viewTable('${tableName}', 1, '', '', 'ASC')" style="padding:8px 15px; background:#6c757d;">Reset</button>`;
+                html += `<button data-action="viewTableSearch" style="padding:8px 15px;">Search</button>`;
+                html += `<button data-action="viewTableReset" data-table="${tableName}" style="padding:8px 15px; background:#6c757d;">Reset</button>`;
                 html += '</div>';
 
                 html += '<div style="overflow-x: auto;"><table>';
@@ -2623,7 +2623,7 @@ if (php_sapi_name() === 'cli') {
                 result.columns.forEach(col => {
                     let sortIcon = result.sort === col.Field ? (result.order === 'ASC' ? ' ▲' : ' ▼') : '';
                     let nextOrder = result.sort === col.Field && result.order === 'ASC' ? 'DESC' : 'ASC';
-                    html += `<th style="cursor:pointer;" onclick="viewTable('${tableName}', 1, '${result.search}', '${col.Field}', '${nextOrder}')">${col.Field}${sortIcon}<br><small style="font-weight: normal; opacity: 0.8;">${col.Type}</small></th>`;
+                    html += `<th style="cursor:pointer;" data-action="viewTableSort" data-sort-field="${col.Field}" data-next-order="${nextOrder}">${col.Field}${sortIcon}<br><small style="font-weight: normal; opacity: 0.8;">${col.Type}</small></th>`;
                 });
                 html += '</tr></thead>';
 
@@ -2649,9 +2649,9 @@ if (php_sapi_name() === 'cli') {
                 // Build pagination
                 let paginationHTML = '';
                 if (result.totalPages > 1) {
-                    paginationHTML += `<button onclick="viewTable(currentViewTable, ${Math.max(1, page - 1)}, currentSearch, currentSort, currentOrder)" ${page === 1 ? 'disabled' : ''}>« পূর্ববর্তী | Previous</button>`;
+                    paginationHTML += `<button data-action="viewTablePage" data-page="${Math.max(1, page - 1)}" ${page === 1 ? 'disabled' : ''}>« পূর্ববর্তী | Previous</button>`;
                     paginationHTML += `<span>পৃষ্ঠা ${page} / ${result.totalPages} | Page ${page} of ${result.totalPages}</span>`;
-                    paginationHTML += `<button onclick="viewTable(currentViewTable, ${Math.min(result.totalPages, page + 1)}, currentSearch, currentSort, currentOrder)" ${page === result.totalPages ? 'disabled' : ''}>পরবর্তী | Next »</button>`;
+                    paginationHTML += `<button data-action="viewTablePage" data-page="${Math.min(result.totalPages, page + 1)}" ${page === result.totalPages ? 'disabled' : ''}>পরবর্তী | Next »</button>`;
                 } else {
                     paginationHTML = `<span>মোট ${result.totalRows} টি সারি | Total ${result.totalRows} rows</span>`;
                 }
@@ -2906,7 +2906,7 @@ if (php_sapi_name() === 'cli') {
                 <input type="text" name="col_default[]" placeholder="Default" value="${default_val}" style="flex: 1.5;">
                 <select name="col_index[]" style="flex: 1.5;">${indexOptions}</select>
                 <label style="display:flex; align-items:center; gap: 5px; flex: 0.5;"><input type="checkbox" name="col_ai[]" ${is_ai ? 'checked' : ''}> A_I</label>
-                <button type="button" onclick="this.parentElement.remove()" class="btn-danger" style="padding: 5px 10px;">-</button>
+                <button type="button" data-action="removeColumnRow" class="btn-danger" style="padding: 5px 10px;">-</button>
             `;
             container.appendChild(columnRow);
         }
@@ -3182,6 +3182,93 @@ if (php_sapi_name() === 'cli') {
                     showMessage('Error: ' + e.message, 'error');
                 }
             }, 'Confirm Replace', 'Replace', 'var(--warning)');
+        }
+
+        /* ================================================================
+           Event bindings (replaces all inline onclick/onchange/onsubmit)
+        ================================================================ */
+
+        // Global click delegation for data-action buttons
+        document.addEventListener('click', function(e) {
+            // Close-modal buttons (data-close-modal)
+            const closeBtn = e.target.closest('[data-close-modal]');
+            if (closeBtn) {
+                const modal = document.getElementById(closeBtn.dataset.closeModal);
+                if (modal) modal.style.display = 'none';
+                return;
+            }
+
+            // Remove column row button inside create-table modal
+            if (e.target.closest('[data-action="removeColumnRow"]')) {
+                e.target.closest('[data-action="removeColumnRow"]').parentElement.remove();
+                return;
+            }
+
+            // Generic data-action dispatch
+            const btn = e.target.closest('[data-action]');
+            if (!btn) return;
+            const actions = {
+                loadServerInfo: () => loadServerInfo(),
+                runQuery: () => runQuery(),
+                openCreateTableModal: () => openCreateTableModal(),
+                viewTable: () => viewTable(btn.dataset.table, 1, '', '', 'ASC'),
+                viewTableSearch: () => viewTable(currentViewTable, 1, document.getElementById('modalSearchInput')?.value || '', currentSort, currentOrder),
+                viewTableReset: () => viewTable(btn.dataset.table || currentViewTable, 1, '', '', 'ASC'),
+                viewTableSort: () => viewTable(currentViewTable, 1, currentSearch, btn.dataset.sortField, btn.dataset.nextOrder),
+                viewTablePage: () => viewTable(currentViewTable, parseInt(btn.dataset.page, 10) || 1, currentSearch, currentSort, currentOrder),
+                toggleTableDetails: () => toggleTableDetails(btn.dataset.table, btn),
+                exportSingleTable: () => exportSingleTable(btn.dataset.table),
+                optimizeTable: () => optimizeTable(btn.dataset.table),
+                repairTable: () => repairTable(btn.dataset.table),
+                emptyTableConfirm: () => emptyTableConfirm(btn.dataset.table),
+                dropTableConfirm: () => dropTableConfirm(btn.dataset.table),
+                doSearchReplace: () => doSearchReplace(),
+                startExport: () => startExport(),
+                confirmFullExport: () => confirmFullExport(),
+                previewImportUpload: () => previewImportUpload(),
+                importSelectedBackups: () => importSelectedBackups(),
+                deleteSelectedBackups: () => deleteSelectedBackups(),
+                importAllBackups: () => importAllBackups(),
+                reloadPage: () => location.reload(),
+                importBackup: () => importBackup(btn.dataset.file),
+                previewBackup: () => previewBackup(btn.dataset.file),
+                downloadBackup: () => downloadBackup(btn.dataset.file),
+                deleteBackup: () => deleteBackup(btn.dataset.file),
+                loadSchemaDiagram: () => loadSchemaDiagram(),
+                executeFullExportChoice: () => executeFullExportChoice(),
+                addColumnToModal: () => addColumnToModal()
+            };
+            const fn = actions[btn.dataset.action];
+            if (typeof fn === 'function') fn();
+        });
+
+        // Table search input (replaces inline onkeyup)
+        const tableSearchInput = document.getElementById('tableSearchInput');
+        if (tableSearchInput) {
+            tableSearchInput.addEventListener('keyup', searchTable);
+        }
+
+        // Search & Replace table select (replaces inline onchange)
+        const srTable = document.getElementById('srTable');
+        if (srTable) {
+            srTable.addEventListener('change', loadSrColumns);
+        }
+
+        // Select-all checkbox (replaces inline onclick)
+        const selectAllCheckbox = document.getElementById('selectAll');
+        if (selectAllCheckbox) {
+            selectAllCheckbox.addEventListener('click', function() {
+                toggleSelectAll(this);
+            });
+        }
+
+        // Create table form (replaces inline onsubmit)
+        const createTableForm = document.getElementById('createTableForm');
+        if (createTableForm) {
+            createTableForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                submitCreateTable();
+            });
         }
     </script>
 </body>

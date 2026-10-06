@@ -38,7 +38,8 @@
                         <div class="row align-items-center">
                             <div class="col-auto">
                                 <div class="position-relative">
-                                    <img id="approveModalPhoto" src="" alt="আবেদনকারীর ছবি" class="approve-modal-photo" onerror="this.src='/assets/images/default-user.png'">
+                                    <img id="approveModalPhoto" src="" alt="আবেদনকারীর ছবি" class="approve-modal-photo"
+                                         data-fallback-src="/assets/images/default-user.png">
                                 </div>
                             </div>
                             <div class="col">
@@ -451,6 +452,17 @@
 <!-- Live Clock for Issue Time -->
 <script>
     (function () {
+        // Image error fallback (replaces inline onerror)
+        var photo = document.getElementById('approveModalPhoto');
+        if (photo) {
+            photo.addEventListener('error', function() {
+                var fallback = photo.dataset.fallbackSrc;
+                if (fallback && photo.src.indexOf(fallback) === -1) {
+                    photo.src = fallback;
+                }
+            });
+        }
+
         var liveClockEl = document.getElementById('modalIssueTimeLiveClock');
         if (!liveClockEl) return;
 

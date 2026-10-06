@@ -125,7 +125,8 @@
                     <div class="person-card-inner row g-3 align-items-center">
                         <div class="col-auto">
                             <div class="person-image-wrap">
-                                <img src="{{ person.image }}" alt="{{ person.name ?: 'Chairman' }}" class="person-image" onerror="this.src='{{ url }}/assets/images/default.png'">
+                                <img src="{{ person.image }}" alt="{{ person.name ?: 'Chairman' }}" class="person-image"
+                                     data-fallback-src="{{ url }}/assets/images/default.png">
                             </div>
                         </div>
                         <div class="col">
@@ -216,6 +217,35 @@
     </div>
 
 <script src="{{ url }}/assets/js/csrf.js?t={{ "now"|date("Hiss") }}"></script>
+
+<!-- Global image error fallback (replaces inline onerror) -->
+<script>
+(function() {
+    'use strict';
+    var FALLBACK = '/assets/images/default.png';
+    function bindFallback(img) {
+        if (img.dataset.fallbackBound) return;
+        img.dataset.fallbackBound = '1';
+        img.addEventListener('error', function() {
+            var fallback = img.dataset.fallbackSrc || FALLBACK;
+            if (img.src.indexOf(fallback) !== -1) return; // avoid loop
+            img.src = fallback;
+        });
+    }
+    // Images already broken before this script runs
+    document.querySelectorAll('img.person-image').forEach(bindFallback);
+    // Any future images added dynamically
+    document.addEventListener('error', function(e) {
+        var t = e.target;
+        if (t && t.tagName === 'IMG' && t.classList.contains('person-image')) {
+            bindFallback(t);
+            if (t.complete && t.naturalWidth === 0) {
+                t.dispatchEvent(new Event('error'));
+            }
+        }
+    }, true);
+})();
+</script>
 
 <!-- PWA Service Worker Registration -->
 <script>

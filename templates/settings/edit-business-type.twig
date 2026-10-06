@@ -50,7 +50,7 @@
             </h5>
         </div>
 
-        <form method="POST">
+        <form method="POST" id="editBusinessTypeForm" action="/settings/business-types/edit/{{ businessType.id }}">
             <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
             <input type="hidden" name="id" value="{{ businessType.id }}">
 
@@ -128,7 +128,7 @@
             </div>
 
             <div class="d-flex gap-2 mt-4 pt-3 border-top">
-                <button type="submit" class="btn btn-primary rounded-pill px-4 shadow-sm">
+                <button type="submit" class="btn btn-primary rounded-pill px-4 shadow-sm" id="saveBtn">
                     <i class="bi bi-check-circle me-1"></i> আপডেট করুন
                 </button>
                 <a href="{{ previous_url }}" class="btn btn-outline-secondary rounded-pill px-4">
@@ -138,6 +138,58 @@
         </form>
     </div>
 </div>
+
+<script>
+(function() {
+    'use strict';
+    const form = document.getElementById('editBusinessTypeForm');
+    const saveBtn = document.getElementById('saveBtn');
+    if (!form) return;
+
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        saveBtn.disabled = true;
+        saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> সংরক্ষণ হচ্ছে...';
+
+        const fd = new URLSearchParams(new FormData(form));
+        fetch(form.action, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: fd.toString()
+        })
+        .then(r => r.json())
+        .then(res => {
+            saveBtn.disabled = false;
+            saveBtn.innerHTML = '<i class="bi bi-check-circle me-1"></i> আপডেট করুন';
+            if (res.status === 'success') {
+                const alert = document.createElement('div');
+                alert.className = 'alert alert-success modern-alert d-flex align-items-center gap-2 mb-4';
+                alert.innerHTML = '<i class="bi bi-check-circle-fill fs-5"></i><span>' + res.message + '</span>';
+                form.parentNode.insertBefore(alert, form);
+                setTimeout(() => alert.remove(), 5000);
+            } else {
+                const alert = document.createElement('div');
+                alert.className = 'alert alert-danger modern-alert d-flex align-items-center gap-2 mb-4';
+                alert.innerHTML = '<i class="bi bi-exclamation-triangle-fill fs-5"></i><span>' + res.message + '</span>';
+                form.parentNode.insertBefore(alert, form);
+                setTimeout(() => alert.remove(), 5000);
+            }
+        })
+        .catch(err => {
+            saveBtn.disabled = false;
+            saveBtn.innerHTML = '<i class="bi bi-check-circle me-1"></i> আপডেট করুন';
+            const alert = document.createElement('div');
+            alert.className = 'alert alert-danger modern-alert d-flex align-items-center gap-2 mb-4';
+            alert.innerHTML = '<i class="bi bi-exclamation-triangle-fill fs-5"></i><span>সংযোগে সমস্যা হয়েছে</span>';
+            form.parentNode.insertBefore(alert, form);
+            setTimeout(() => alert.remove(), 5000);
+        });
+    });
+})();
+</script>
 
 <style>
 /* Re-use same input group focus styling from listing page */

@@ -33,6 +33,7 @@
     <link rel="stylesheet" href="{{ url }}/assets/styles.css?t={{ "now"|date("Hi") }}">
     <link rel="stylesheet" href="{{ url }}/assets/navbar.css?t={{ "now"|date("Hi") }}">
     <link rel="stylesheet" href="{{ url }}/assets/css/admin.css?t={{ "now"|date("Hi") }}">
+    <link rel="stylesheet" href="{{ url }}/assets/css/sidebar.css?t={{ "now"|date("Hi") }}">
     {% block styles %}{% endblock %}
 
     <style>
@@ -127,7 +128,8 @@
                             <i class="fas fa-sign-out-alt"></i> লগআউট
                         </a>
                     </div>
-                    <button type="button" class="sidebar-toggle" id="sidebar" title="সাইডবার খুলুন/বন্ধ করুন" aria-label="Toggle sidebar"><i class="fas fa-bars"></i></button>
+                    <button type="button" class="sidebar-toggle" id="sidebar" title="সাইডবার খুলুন/বন্ধ করুন (Ctrl+B)" aria-label="Toggle sidebar"><i class="fas fa-bars"></i></button>
+                    <button type="button" class="sidebar-edge-fab" id="sidebarEdgeFab" title="সাইডবার খুলুন" aria-label="Open sidebar"><i class="fas fa-chevron-right"></i></button>
                 </div>
             </header>
 

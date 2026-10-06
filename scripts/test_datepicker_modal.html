@@ -108,13 +108,13 @@
 
         <div class="card mb-4">
             <div class="card-body">
-                <button class="btn btn-primary btn-lg" onclick="openTestModal()">
+                <button class="btn btn-primary btn-lg" data-action="open-test-modal">
                     📅 Open Approve Modal
                 </button>
-                <button class="btn btn-warning btn-lg ms-2" onclick="runDestroyTests()">
+                <button class="btn btn-warning btn-lg ms-2" data-action="run-destroy-tests">
                     🧹 Test destroy() Cleanup
                 </button>
-                <button class="btn btn-outline-secondary btn-lg ms-2" onclick="resetTests()">
+                <button class="btn btn-outline-secondary btn-lg ms-2" data-action="reset-tests">
                     🔄 Reset Tests
                 </button>
             </div>
@@ -148,8 +148,8 @@
                         </div>
                     </div>
                     <div class="mt-3">
-                        <button type="button" class="btn btn-success" onclick="approveAndClose()">Approve & Close</button>
-                        <button type="button" class="btn btn-outline-danger ms-2" onclick="closeViaBackdrop()">Close via Backdrop</button>
+                        <button type="button" class="btn btn-success" data-action="approve-and-close">Approve & Close</button>
+                        <button type="button" class="btn btn-outline-danger ms-2" data-action="close-via-backdrop">Close via Backdrop</button>
                     </div>
                 </div>
             </div>
@@ -676,6 +676,19 @@
         const modal = bootstrap.Modal.getInstance(approveModalEl);
         if (modal) modal.hide();
     }
+
+    // Wire buttons via addEventListener (replaces inline onclick)
+    document.addEventListener('click', function(e) {
+        const actionBtn = e.target.closest('[data-action]');
+        if (!actionBtn) return;
+        switch (actionBtn.dataset.action) {
+            case 'open-test-modal':    openTestModal(); break;
+            case 'run-destroy-tests':  runDestroyTests(); break;
+            case 'reset-tests':        resetTests(); break;
+            case 'approve-and-close':  approveAndClose(); break;
+            case 'close-via-backdrop': closeViaBackdrop(); break;
+        }
+    });
     </script>
 </body>
 </html>

@@ -200,7 +200,7 @@
 
 {# === Update Fee Button === #}
 <div class="mt-3">
-    <button type="button" id="updateFeesBtn" class="btn btn-outline-primary btn-sm" onclick="updateTradeFees()">
+    <button type="button" id="updateFeesBtn" class="btn btn-outline-primary btn-sm">
         <i class="bi bi-save me-1"></i> ফি তথ্য হালনাগাদ করুন
     </button>
     <span id="feeUpdateStatus" class="ms-2 small"></span>
@@ -219,7 +219,7 @@ function updateTradeFees() {
     const certType = document.getElementById('certificate_type')?.value || '';
     const appId = document.getElementById('application_id')?.value || '';
 
-    const fields = ['license_fee','vat_amount','occupation_tax','income_tax','signboard_tax','surcharge','total_fee','fiscal_year','ownership_type_id','business_type_id'];
+    const fields = ['license_fee','vat_amount','occupation_tax','income_tax','signboard_tax','surcharge','business_type_id'];
     const fd = new URLSearchParams();
     fields.forEach(f => {
         const el = document.getElementById(f);
@@ -248,4 +248,12 @@ function updateTradeFees() {
         status.innerHTML = '<span class="text-danger">❌ সংযোগে সমস্যা হয়েছে</span>';
     });
 }
+
+(function() {
+    'use strict';
+    const btn = document.getElementById('updateFeesBtn');
+    if (btn) {
+        btn.addEventListener('click', updateTradeFees);
+    }
+})();
 </script>

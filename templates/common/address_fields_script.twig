@@ -1,6 +1,10 @@
 {# common/address_fields_script.twig — Geo-loading, autocomplete, address copy script (include once per page) #}
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+    // This partial is included once per address block, so bind everything only once
+    if (window.__addressFieldsScriptBound) return;
+    window.__addressFieldsScriptBound = true;
+
     var prefixes = ['business', 'present', 'permanent'];
     window.postOfficeDebug = window.postOfficeDebug ?? true;
     window.postOfficeDebugLog = window.postOfficeDebugLog || function () {
@@ -13,6 +17,69 @@ document.addEventListener('DOMContentLoaded', function () {
         var div = document.createElement('div');
         div.textContent = str;
         return div.innerHTML;
+    }
+
+    function postOfficeDropdownFor(input) {
+        var wrapper = input && input.closest ? input.closest('.autocomplete-wrapper') : null;
+        return wrapper ? wrapper.querySelector('.autocomplete-dropdown') : null;
+    }
+
+    function clearPostOfficeDropdown(input) {
+        var dropdown = postOfficeDropdownFor(input);
+        if (!dropdown) return;
+        dropdown.innerHTML = '';
+        dropdown.classList.remove('show');
+        dropdown._bnMap = {};
+        dropdown._items = [];
+    }
+
+    // Render post-office items into one dropdown. The selection handler is bound
+    // here (once per item) so it never stacks up on repeated focus/click.
+    function fillPostOfficeDropdown(dropdown, input, items, map) {
+        if (!dropdown || !input) return;
+        dropdown.innerHTML = '';
+        dropdown.classList.remove('show');
+        dropdown._bnMap = map || {};
+        dropdown._items = items || [];
+
+        (items || []).forEach(function(item) {
+            var enName = item.en_name || '';
+            var bnName = item.bn_name || '';
+            var postCode = item.post_code ? '-' + item.post_code : '';
+
+            var li = document.createElement('li');
+            li.dataset.en = enName;
+            li.dataset.bn = bnName;
+            li.dataset.postcode = postCode;
+            li.innerHTML = '<span class="postoffice-name">' +
+                escapeAttr(enName + postCode) + '</span>' +
+                (bnName ? '<span class="postoffice-bn">' + escapeAttr(bnName) + '</span>' : '');
+
+            li.addEventListener('mousedown', function(e) {
+                e.preventDefault();
+                var isBengaliField = input.id && input.id.endsWith('_postoffice_bn');
+                input.value = isBengaliField ? (bnName || enName) : enName;
+
+                var prefix = (input.id || '').replace(/_postoffice_(en|bn)$/, '');
+                var enInput = document.getElementById(prefix + '_postoffice_en');
+                var bnInput = document.getElementById(prefix + '_postoffice_bn');
+                if (enInput) enInput.value = enName;
+                if (bnInput) bnInput.value = bnName || enName;
+                dropdown.classList.remove('show');
+                input.focus();
+            });
+
+            dropdown.appendChild(li);
+        });
+    }
+
+    // Fill the English and the Bengali post-office dropdowns of one address block
+    function fillPostOfficeDropdowns(prefix, items, map) {
+        ['_postoffice_en', '_postoffice_bn'].forEach(function(suffix) {
+            var input = document.getElementById(prefix + suffix);
+            if (!input) return;
+            fillPostOfficeDropdown(postOfficeDropdownFor(input), input, items, map);
+        });
     }
 
     window.isPrefixAvailable = window.isPrefixAvailable || function(prefix) {
@@ -165,6 +232,10 @@ document.addEventListener('DOMContentLoaded', function () {
                         unionIdEl.dispatchEvent(new Event('change'));
                     }
                 });
+                // If no union dropdown, load post offices based on upazila
+                if (!unionIdEl) {
+                    loadPostOfficesByUpazila(prefix, id);
+                }
             });
         }
 
@@ -207,21 +278,57 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
+    // Load post offices by upazila when union dropdown is not present
+    function loadPostOfficesByUpazila(prefix, upazilaId) {
+        fetch('/api/v2/geo/post-offices/' + upazilaId)
+        .then(function(resp) { return resp.json(); })
+        .then(function(res) {
+            if (!res || res.status !== 'success' || !res.data || !Array.isArray(res.data) || !res.data.length) {
+                console.log('No post offices found for upazila:', upazilaId);
+                return;
+            }
+            var input = document.getElementById(prefix + '_postoffice_en');
+            if (!input) return;
+
+            window.postOfficeDebugLog('[post-office] fetch by upazila', {
+                upazilaId: upazilaId,
+                prefix: prefix
+            });
+
+            var currentVal = String(input.value).trim().toLowerCase();
+            var map = {};
+
+            res.data.forEach(function(item) {
+                var enName = item.en_name || '';
+                if (enName) map[enName.trim().toLowerCase()] = item.bn_name || '';
+            });
+
+            // Fill both the English and the Bengali post-office dropdowns
+            fillPostOfficeDropdowns(prefix, res.data, map);
+
+            // Auto-fill BN if current value matches an option
+            if (currentVal && map[currentVal]) {
+                var bnInput = document.getElementById(prefix + '_postoffice_bn');
+                if (bnInput) bnInput.value = map[currentVal];
+            }
+        })
+        .catch(function(err) {
+            console.error('Post offices fetch error for upazila:', err);
+        });
+    }
+
     window.fetchPostOffices = window.fetchPostOffices || function(unionName, inputSelector, bnInputSelector) {
         if (!unionName) return;
         var input = document.querySelector(inputSelector);
         if (!input) return;
 
-        var wrapper = input.closest('.autocomplete-wrapper');
-        if (!wrapper) return;
-        var dropdown = wrapper.querySelector('.autocomplete-dropdown');
-        if (!dropdown) return;
+        var bnInput = bnInputSelector ? document.querySelector(bnInputSelector) : null;
+        var prefix = (input.id || '').replace(/_postoffice_(en|bn)$/, '');
 
-        // Clear previous items
-        dropdown.innerHTML = '';
-        dropdown.classList.remove('show');
-        dropdown._bnMap = {};
-        dropdown._items = [];
+        // Clear previous items while the request is in flight
+        clearPostOfficeDropdown(input);
+        clearPostOfficeDropdown(bnInput);
+
         window.postOfficeDebugLog('[post-office] fetch start', {
             unionName: unionName,
             inputSelector: inputSelector,
@@ -236,40 +343,22 @@ document.addEventListener('DOMContentLoaded', function () {
 
             var currentVal = String(input.value).trim().toLowerCase();
             var map = {};
-            var items = [];
 
             res.data.forEach(function(item) {
                 var enName = item.en_name || '';
                 if (enName) map[enName.trim().toLowerCase()] = item.bn_name || '';
-                items.push(item);
-
-                var li = document.createElement('li');
-                li.dataset.en = enName;
-                li.dataset.bn = item.bn_name || '';
-                li.innerHTML = '<span class="postoffice-name">' +
-                    escapeAttr(enName + (item.post_code ? '-' + item.post_code : '')) +
-                    '</span>' +
-                    (item.bn_name ? '<span class="postoffice-bn">' + escapeAttr(item.bn_name) + '</span>' : '');
-
-                li.addEventListener('mousedown', function(e) {
-                    e.preventDefault();
-                    input.value = li.dataset.en;
-                    var bnInput = document.querySelector(bnInputSelector);
-                    if (bnInput) bnInput.value = li.dataset.bn;
-                    dropdown.classList.remove('show');
-                    input.focus();
-                });
-
-                dropdown.appendChild(li);
             });
 
-            dropdown._bnMap = map;
-            dropdown._items = items;
+            if (prefix) {
+                // Fill both the English and the Bengali post-office dropdowns
+                fillPostOfficeDropdowns(prefix, res.data, map);
+            } else {
+                fillPostOfficeDropdown(postOfficeDropdownFor(input), input, res.data, map);
+            }
 
             // Auto-fill BN if current value matches an option
-            if (currentVal && map[currentVal]) {
-                var bnInput = document.querySelector(bnInputSelector);
-                if (bnInput) bnInput.value = map[currentVal];
+            if (currentVal && map[currentVal] && bnInput) {
+                bnInput.value = map[currentVal];
             }
         })
         .catch(function(err) {
@@ -330,8 +419,7 @@ document.addEventListener('DOMContentLoaded', function () {
         var fields = [
             'village_en', 'village_bn', 'rbs_en', 'rbs_bn',
             'holding_no', 'ward_no', 'postoffice_en', 'postoffice_bn',
-            'district_id', 'district', 'upazila_id', 'upazila',
-            'union_id', 'union'
+            'district_id', 'district', 'upazila_id', 'upazila'
         ];
         return fields.every(function(field) {
             var el1 = document.getElementById(prefix1 + '_' + field);
@@ -392,22 +480,68 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Custom Autocomplete Dropdown: show/filter on click/focus/input
     function showPostOfficeDropdown(input) {
-        var wrapper = input.closest('.autocomplete-wrapper');
-        if (!wrapper) return;
-        var dropdown = wrapper.querySelector('.autocomplete-dropdown');
+        var dropdown = postOfficeDropdownFor(input);
         if (!dropdown) return;
         var items = dropdown._items;
         if (!items || items.length === 0) return;
 
-        var val = input.value.toLowerCase();
+        // Show only the language of the focused field
+        var isEnglishField = input.id && input.id.endsWith('_postoffice_en');
+        var isBengaliField = input.id && input.id.endsWith('_postoffice_bn');
+        var searchVal = String(input.value || '').toLowerCase();
         var visibleCount = 0;
         var lis = dropdown.querySelectorAll('li');
         lis.forEach(function(li) {
             var en = (li.dataset.en || '').toLowerCase();
-            var match = !val || en.includes(val);
+            var bn = (li.dataset.bn || '').toLowerCase();
+            var match = false;
+            if (isEnglishField) {
+                match = !searchVal || en.includes(searchVal);
+            } else if (isBengaliField) {
+                match = !searchVal || bn.includes(searchVal) || (!bn && en.includes(searchVal));
+            } else {
+                // Default: search in both
+                match = !searchVal || en.includes(searchVal) || bn.includes(searchVal);
+            }
             li.style.display = match ? '' : 'none';
-            if (match) visibleCount++;
+            if (!match) return;
+            visibleCount++;
+
+            // Render the row in the language of the focused field only
+            var enName = li.dataset.en || '';
+            var bnName = li.dataset.bn || '';
+            var postCode = li.dataset.postcode;
+            if (postCode === undefined || postCode === null) {
+                postCode = '';
+                var nameSpan = li.querySelector('.postoffice-name');
+                if (nameSpan) {
+                    var fullText = nameSpan.textContent;
+                    var dashIndex = fullText.lastIndexOf('-');
+                    if (dashIndex > 0) {
+                        postCode = fullText.substring(dashIndex);
+                    }
+                }
+            }
+            if (isBengaliField) {
+                li.innerHTML = '<span class="postoffice-name">' +
+                    escapeAttr((bnName || enName) + postCode) + '</span>';
+            } else if (isEnglishField) {
+                li.innerHTML = '<span class="postoffice-name">' +
+                    escapeAttr(enName + postCode) + '</span>';
+            } else {
+                li.innerHTML = '<span class="postoffice-name">' +
+                    escapeAttr(enName + postCode) + '</span>' +
+                    (bnName ? '<span class="postoffice-bn">' + escapeAttr(bnName) + '</span>' : '');
+            }
         });
+
+        // Keep only one post-office dropdown open inside the same address row
+        var row = input.closest('.row');
+        if (row) {
+            row.querySelectorAll('.autocomplete-dropdown').forEach(function(other) {
+                if (other !== dropdown) other.classList.remove('show');
+            });
+        }
 
         if (visibleCount > 0) {
             dropdown.classList.add('show');
@@ -445,9 +579,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 dropdown.classList.remove('show');
             }, 200);
         }
-    }, true);
-
-    // Keyboard navigation
+    }, true);// Keyboard navigation
     document.addEventListener('keydown', function(e) {
         if (!e.target.matches || !e.target.matches('.autocomplete-wrapper input[type="text"]')) return;
 
@@ -455,6 +587,10 @@ document.addEventListener('DOMContentLoaded', function () {
         if (!wrapper) return;
         var dropdown = wrapper.querySelector('.autocomplete-dropdown');
         if (!dropdown || !dropdown.classList.contains('show')) return;
+
+        // Determine which language field is focused
+        var isEnglishField = e.target.id && e.target.id.endsWith('_postoffice_en');
+        var isBengaliField = e.target.id && e.target.id.endsWith('_postoffice_bn');
 
         var allLis = Array.from(dropdown.querySelectorAll('li')).filter(function(li) {
             return li.style.display !== 'none';
@@ -482,9 +618,16 @@ document.addEventListener('DOMContentLoaded', function () {
             if (idx >= 0 && idx < allLis.length) {
                 e.preventDefault();
                 var item = allLis[idx];
-                e.target.value = item.dataset.en;
+                // Set value based on which field is focused
+                if (isBengaliField) {
+                    e.target.value = item.dataset.bn;
+                } else {
+                    e.target.value = item.dataset.en;
+                }
                 var bnInput = wrapper.closest('.row').querySelector('[id$="_postoffice_bn"]');
+                var enInput = wrapper.closest('.row').querySelector('[id$="_postoffice_en"]');
                 if (bnInput) bnInput.value = item.dataset.bn;
+                if (enInput) enInput.value = item.dataset.en;
                 dropdown.classList.remove('show');
             }
         } else if (e.key === 'Escape') {

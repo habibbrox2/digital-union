@@ -122,8 +122,7 @@ $router->post('/login', function () use ($loginService) {
         header("Location: " . $result['redirect']);
     } else {
         errorAlert('ত্রুটি', $result['message']);
-        $redirectParam = $result['redirect'] !== '/dashboard' ? '?redirect=' . urlencode($result['redirect']) : '';
-        header("Location: /login" . $redirectParam);
+        header("Location: /login");
     }
     exit;
 });

@@ -242,9 +242,64 @@ class GeoService
         return $unions;
     }
 
+    /**
+     * Get first union by upazila ID (for auto-filling union when dropdown removed)
+     */
+    public function getFirstUnionByUpazila(int $upazilaId): ?array
+    {
+        $stmt = $this->mysqli->prepare(
+            "SELECT union_id, union_name_en, union_name_bn, union_code FROM unions WHERE upazila_id=? AND is_active=1 ORDER BY union_name_en ASC LIMIT 1"
+        );
+        $stmt->bind_param("i", $upazilaId);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $union = $result->fetch_assoc();
+        $stmt->close();
+        return $union ?: null;
+    }
+
     // ================================================================
     // POST OFFICE LOOKUPS
     // ================================================================
+
+    /**
+     * Get post offices by upazila ID (queries post_offices by upazila name)
+     */
+    public function getPostOfficesByUpazila(int $upazilaId): array
+    {
+        // Get upazila name from geo_location
+        $stmt = $this->mysqli->prepare("SELECT name_en FROM geo_location WHERE id = ? LIMIT 1");
+        $stmt->bind_param('i', $upazilaId);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $upazila = $result->fetch_assoc();
+        $stmt->close();
+
+        if (!$upazila || empty($upazila['name_en'])) {
+            return ['status' => 'error', 'message' => 'Upazila not found'];
+        }
+
+        $upazilaName = $upazila['name_en'];
+
+        // Query post_offices by upazila_name
+        $stmt = $this->mysqli->prepare(
+            "SELECT id, en_name, bn_name, post_code
+             FROM post_offices
+             WHERE LOWER(TRIM(upazila_name)) = LOWER(TRIM(?))
+             ORDER BY en_name"
+        );
+        $stmt->bind_param('s', $upazilaName);
+        $stmt->execute();
+        $result = $stmt->get_result();
+
+        $postOffices = [];
+        while ($row = $result->fetch_assoc()) {
+            $postOffices[] = $row;
+        }
+        $stmt->close();
+
+        return ['status' => 'success', 'data' => $postOffices];
+    }
 
     /**
      * Get post offices by union name or ID

@@ -143,6 +143,7 @@ build/
 # Testing & Coverage
 # ============================================
 .phpunit.result.cache
+.phpunit.cache/
 phpunit.xml
 .coverage/
 coverage/
@@ -192,12 +193,6 @@ temp/
 tmp/
 *.tmp
 
-# 🔒 Security: test/backdoor scripts (never deploy)
-public/_test_admin_session.php
-
-# Old/legacy config (should not be in production)
-_old/
-
 # ============================================
 # Chat: local scratch files & push keys (never commit VAPID private keys)
 # ============================================
@@ -207,13 +202,32 @@ sub_keys.txt
 vapid_keys.txt
 .tmp.driveupload/
 
-# ============================================
-# Firebase & Google Cloud Credentials
-# ============================================
-config/*firebase*.json
-config/*-firebase-adminsdk-*.json
-*.firebase-adminsdk.json
-
 # Database backups
 *.sql
 !database_schema_email.sql
+
+# ============================================
+# Local Cache & Tool Directories
+# ============================================
+.freebuff/
+.phpunit.cache/
+
+# ============================================
+# Secrets & Credentials (NEVER commit)
+# ============================================
+config/*firebase*.json
+config/*-adminsdk-*.json
+config/*-serviceaccount*.json
+config/*.pem
+config/*.key
+
+# ============================================
+# Local Database Directory
+# ============================================
+database/
+
+# ============================================
+# Temporary Test/Debug Files (never commit)
+# ============================================
+public/_test_admin_session.php
+scripts/postoffice_dropdown_harness.html

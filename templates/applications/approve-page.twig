@@ -314,7 +314,8 @@
                                     <span class="document-name" title="{{ doc_path | split('/') | last }}">{{ doc_path | split('/') | last }}</span>
                                     <div class="document-actions">
                                         <button type="button" class="btn btn-sm btn-outline-primary document-view-btn"
-                                                onclick="openPreview('{{ url }}/{{ doc_path|e('js') }}', '{{ doc_path|split('/')|last|e('js') }}')">
+                                                data-preview-url="{{ url }}/{{ doc_path|e('html_attr') }}"
+                                                data-preview-title="{{ doc_path|split('/')|last|e('html_attr') }}">
                                             <i class="bi bi-eye me-1"></i> দেখুন
                                         </button>
                                     </div>
@@ -420,8 +421,7 @@
                                     ওয়ার্ড নম্বর:
                                 </label>
                                 <select id="verifier_ward_select"
-                                        class="form-select form-select-sm shadow-sm"
-                                        onchange="document.getElementById('verifier_ward_no').value = this.value; document.getElementById('verifier_ward_no_display').value = this.value;">
+                                        class="form-select form-select-sm shadow-sm">
                                 </select>
                                 <input type="hidden" id="verifier_ward_no_display" value="">
                             </div>
@@ -544,8 +544,7 @@
                                     ওয়ার্ড নম্বর:
                                 </label>
                                 <select id="approver_ward_select"
-                                        class="form-select form-select-sm shadow-sm"
-                                        onchange="document.getElementById('approver_ward_no').value = this.value;">
+                                        class="form-select form-select-sm shadow-sm">
                                 </select>
                                 <input type="hidden" id="approver_ward_no_display" value="">
                             </div>
@@ -654,16 +653,6 @@
                         </div>
                     </div>
 
-                    {% if data.certificate_type == 'trade' %}
-                    <div class="row mt-3">
-                        <div class="col-12">
-                            <button type="button" id="syncTradeFeesBtn" class="btn btn-outline-info btn-sm" onclick="syncBusinessTypeFees()">
-                                <i class="bi bi-arrow-repeat me-1"></i> ব্যবসার ধরণের ফি সিঙ্ক করুন
-                            </button>
-                            <span id="syncFeesStatus" class="ms-2 small"></span>
-                        </div>
-                    </div>
-                    {% endif %}
                 </fieldset>
 
                 <hr class="my-5">
@@ -709,13 +698,15 @@
                                 <button type="button"
                                    class="btn btn-outline-success action-btn"
                                    title="সার্টিফিকেট দেখুন (বাংলা)"
-                                   onclick="openPreview('/application/{{ data.certificate_type }}/bangla/{{ data.sonod_number }}', 'সার্টিফিকেট (বাংলা)')">
+                                   data-preview-url="/application/{{ data.certificate_type }}/bangla/{{ data.sonod_number }}"
+                                   data-preview-title="সার্টিফিকেট (বাংলা)">
                                     <i class="bi bi-file-earmark-pdf me-1"></i> সার্টিফিকেট (বাংলা)
                                 </button>
                                 <button type="button"
                                    class="btn btn-outline-success action-btn"
                                    title="Certificate Preview (English)"
-                                   onclick="openPreview('/application/{{ data.certificate_type }}/english/{{ data.sonod_number }}', 'Certificate (English)')">
+                                   data-preview-url="/application/{{ data.certificate_type }}/english/{{ data.sonod_number }}"
+                                   data-preview-title="Certificate (English)">
                                     <i class="bi bi-file-earmark-pdf me-1"></i> Certificate (English)
                                 </button>
                             </div>
@@ -1994,6 +1985,41 @@
 document.addEventListener('DOMContentLoaded', () => {
 
     /* ===============================
+       Global click delegation for preview buttons (data-preview-url)
+       Replaces inline onclick="openPreview(...)" handlers.
+    =============================== */
+    document.addEventListener('click', (e) => {
+        const previewBtn = e.target.closest('[data-preview-url]');
+        if (!previewBtn) return;
+        if (typeof openPreview !== 'function') {
+            console.error('openPreview() is not available');
+            return;
+        }
+        openPreview(previewBtn.dataset.previewUrl, previewBtn.dataset.previewTitle || '');
+    });
+
+    /* ===============================
+       Verifier & Approver ward select sync (replaces inline onchange)
+    =============================== */
+    const verifierWardSelect = document.getElementById('verifier_ward_select');
+    if (verifierWardSelect) {
+        verifierWardSelect.addEventListener('change', function() {
+            const wardNo = document.getElementById('verifier_ward_no');
+            const wardNoDisplay = document.getElementById('verifier_ward_no_display');
+            if (wardNo) wardNo.value = this.value;
+            if (wardNoDisplay) wardNoDisplay.value = this.value;
+        });
+    }
+
+    const approverWardSelect = document.getElementById('approver_ward_select');
+    if (approverWardSelect) {
+        approverWardSelect.addEventListener('change', function() {
+            const wardNo = document.getElementById('approver_ward_no');
+            if (wardNo) wardNo.value = this.value;
+        });
+    }
+
+    /* ===============================
        Set Current Time for Issue Time Input (Real-time sync)
     =============================== */
     const issueTimeInput = document.getElementById('issue_time');
@@ -3192,50 +3218,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 })();
 
-// Sync business type fees (trade only)
-function syncBusinessTypeFees() {
-    const btn = document.getElementById('syncTradeFeesBtn');
-    const status = document.getElementById('syncFeesStatus');
-    if (!btn) return;
-
-    btn.disabled = true;
-    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> সিঙ্ক হচ্ছে...';
-    status.textContent = '';
-
-    const certType = document.getElementById('certificate_type')?.value || '';
-    const appId = document.getElementById('application_id')?.value || '';
-    const csrfToken = document.querySelector('input[name="csrf_token"]')?.value || '';
-
-    const fields = ['license_fee','vat_amount','occupation_tax','income_tax','signboard_tax','surcharge','total_fee','fiscal_year','ownership_type_id','business_type_id'];
-    const fd = new URLSearchParams();
-    fd.set('csrf_token', csrfToken);
-    fields.forEach(f => {
-        const el = document.getElementById(f);
-        if (el) fd.set(f, el.value);
-    });
-
-    fetch(`/applications/${certType}/update-fees/${appId}`, {
-        method: 'POST',
-        headers: {'Content-Type': 'application/x-www-form-urlencoded', 'X-Requested-With': 'XMLHttpRequest'},
-        body: fd.toString()
-    })
-    .then(r => r.json())
-    .then(res => {
-        btn.disabled = false;
-        btn.innerHTML = '<i class="bi bi-arrow-repeat me-1"></i> ব্যবসার ধরণের ফি সিঙ্ক করুন';
-        if (res.status === 'success') {
-            status.innerHTML = '<span class="text-success">✅ ' + res.message + '</span>';
-        } else {
-            status.innerHTML = '<span class="text-danger">❌ ' + res.message + '</span>';
-        }
-        setTimeout(() => { status.textContent = ''; }, 5000);
-    })
-    .catch(err => {
-        btn.disabled = false;
-        btn.innerHTML = '<i class="bi bi-arrow-repeat me-1"></i> ব্যবসার ধরণের ফি সিঙ্ক করুন';
-        status.innerHTML = '<span class="text-danger">❌ সংযোগে সমস্যা হয়েছে</span>';
-    });
-}
 </script>
 
 

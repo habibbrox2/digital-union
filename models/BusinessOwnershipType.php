@@ -233,11 +233,37 @@ class BusinessOwnershipType {
             $signboardTax, $surcharge,
             $unionId,
             $id
-        );
-        return $stmt->execute() ? [ 'status' => 'success', 'message' => 'Business type updated successfully.' ] :
+        );        return $stmt->execute() ? [ 'status' => 'success', 'message' => 'Business type updated successfully.' ] :
             [ 'status' => 'error', 'message' => $stmt->error ];
     }
 
+    /**
+     * Update ONLY the fee columns of a business_type row.
+     * Name, union_name and other columns are never touched.
+     */
+    public function updateBusinessTypeFees($id, $data) {
+        $query = "UPDATE business_type SET license_fee = ?, vat_amount = ?, occupation_tax = ?, income_tax = ?, signboard_tax = ?, surcharge = ? WHERE id = ?";
+        $stmt = $this->conn->prepare($query);
+        if (!$stmt) {
+            return ['status' => 'error', 'message' => 'Database prepare failed: ' . $this->conn->error];
+        }
+        $licenseFee      = (float)($data['license_fee'] ?? 0);
+        $vatAmount       = (float)($data['vat_amount'] ?? 0);
+        $occupationTax   = (float)($data['occupation_tax'] ?? 0);
+        $incomeTax       = (float)($data['income_tax'] ?? 0);
+        $signboardTax    = (float)($data['signboard_tax'] ?? 0);
+        $surcharge       = (float)($data['surcharge'] ?? 0);
+
+        $stmt->bind_param(
+            "ddddddi",
+            $licenseFee, $vatAmount,
+            $occupationTax, $incomeTax,
+            $signboardTax, $surcharge,
+            $id
+        );
+        return $stmt->execute() ? [ 'status' => 'success', 'message' => 'Business type fees updated successfully.' ] :
+            [ 'status' => 'error', 'message' => $stmt->error ];
+    }
 
     public function deleteBusinessType($id) {
         $stmt = $this->conn->prepare("DELETE FROM business_type WHERE id = ?");
