@@ -188,19 +188,10 @@ Vagrantfile
 Lockfile
 .lock
 
-# Temporary files
-temp/
-tmp/
-*.tmp
-
 # ============================================
-# Chat: local scratch files & push keys (never commit VAPID private keys)
+# Kilo Config (contains secrets)
 # ============================================
-nul
-*.keys.txt
-sub_keys.txt
-vapid_keys.txt
-.tmp.driveupload/
+.kilo/
 
 # Database backups
 *.sql
