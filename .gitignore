@@ -198,8 +198,10 @@ Lockfile
 # ============================================
 # Local Cache & Tool Directories
 # ============================================
+.agents/
 .freebuff/
 .phpunit.cache/
+.playwright-cli/
 
 # ============================================
 # Secrets & Credentials (NEVER commit)
