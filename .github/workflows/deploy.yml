@@ -1,0 +1,148 @@
+name: Deploy to Shared Hosting
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+          - production
+          - staging
+
+jobs:
+  test:
+    name: Test & Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: mbstring, pdo_mysql, json, curl, openssl, gd, zip, intl, bcmath
+          ini-values: memory_limit=256M
+          coverage: none
+
+      - name: Validate composer.json
+        run: composer validate --strict
+
+      - name: Cache Composer packages
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: ${{ runner.os }}-php-${{ hashFiles('**/composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-php-
+
+      - name: Install dependencies
+        run: composer install --no-interaction --prefer-dist --optimize-autoloader --no-dev
+
+      - name: Run PHP syntax check
+        run: |
+          find . -name "*.php" -not -path "./vendor/*" -not -path "./storage/*" -exec php -l {} \; | grep -v "No syntax errors" || true
+
+      - name: Check for debug code
+        run: |
+          if grep -r "var_dump\|die(\|dd(\|dump(\|print_r(" --include="*.php" . --exclude-dir=vendor --exclude-dir=storage; then
+            echo "Debug code found!"
+            exit 1
+          fi
+
+  deploy:
+    name: Deploy to Shared Hosting
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || github.event_name == 'workflow_dispatch'
+    environment: production
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: mbstring, pdo_mysql, json, curl, openssl, gd, zip, intl, bcmath
+          ini-values: memory_limit=256M
+
+      - name: Install production dependencies
+        run: composer install --no-interaction --prefer-dist --optimize-autoloader --no-dev
+
+      - name: Create .env from secrets
+        run: |
+          cat > .env << 'EOF'
+${{ secrets.ENV_FILE }}
+          EOF
+
+      - name: Create Firebase service account from secret
+        run: |
+          echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > config/digi-union-lgdhaka-firebase-adminsdk-fbsvc-39e5307dd4.json
+
+      - name: Set file permissions
+        run: |
+          chmod -R 755 .
+          chmod -R 775 storage public/uploads
+          find . -type f -name "*.php" -exec chmod 644 {} \;
+
+      - name: Deploy via SFTP
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_HOST }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          port: ${{ secrets.FTP_PORT }}
+          protocol: ${{ secrets.FTP_PROTOCOL }}
+          local-dir: ./
+          server-dir: ${{ secrets.FTP_REMOTE_DIR }}
+          exclude: |
+            .git*
+            .github*
+            .env*
+            composer.json
+            composer.lock
+            README.md
+            .gitignore
+            config/*firebase*.json
+            config/*-adminsdk-*.json
+            config/*-serviceaccount*.json
+            storage/logs/**
+            storage/cache/**
+            vendor/**/.git*
+            vendor/**/tests/**
+            vendor/**/Test/**
+            tests/**
+            phpunit*
+            *.md
+            .editorconfig
+
+      - name: Run post-deploy commands via SSH
+        if: secrets.SSH_HOST != ''
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SSH_PORT }}
+          script: |
+            cd ${{ secrets.SSH_REMOTE_DIR }}
+            php -r "require 'vendor/autoload.php'; echo 'Autoload OK';"
+            php -r "require 'config/firebase.php'; \$c = getFirebaseConfig(); echo 'FCM Config: ' . (\$c['enabled'] ? 'enabled' : 'disabled');"
+            find storage -type f -name "*.log" -delete 2>/dev/null || true
+            find storage -type d -empty -delete 2>/dev/null || true
+
+      - name: Notify deployment status
+        if: always()
+        run: |
+          if [ "${{ job.status }}" == "success" ]; then
+            echo "✅ Deployment successful!"
+          else
+            echo "❌ Deployment failed!"
+            exit 1
+          fi

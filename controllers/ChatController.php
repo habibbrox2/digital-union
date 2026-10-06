@@ -512,96 +512,8 @@ $router->get('/api/chat/faq', function () use ($chatModel) {
 });
 
 // ================================================================
-// WEB PUSH (PUSH API) ENDPOINTS
+// FCM PUSH ENDPOINTS
 // ================================================================
-
-/**
- * GET /api/chat/push/vapid-key
- * Public VAPID public key used by the visitor widget to subscribe.
- * Never cache: if the admin rotates keys, stale clients must pick the new
- * key immediately instead of subscribing with a dead key.
- */
-$router->get('/api/chat/push/vapid-key', function () use ($chatService, $pushService) {
-    $rateCheck = $chatService->checkRateLimit('push_vapid', 60, 60);
-    if (!$rateCheck['allowed']) {
-        ChatService::jsonResponse(['status' => 'error', 'message' => 'অনুরোধের সীমা অতিক্রম করেছে।'], 429);
-    }
-
-    $enabled = $pushService->isEnabled();
-    $configured = $enabled && $pushService->isConfigured();
-
-    ChatService::jsonResponse([
-        'status' => 'success',
-        'data' => [
-            'public_key' => $configured ? $pushService->getVapidPublicKey() : '',
-            'enabled' => $enabled,
-            'configured' => $configured,
-        ],
-    ], 200, 'no-cache');
-});
-
-/**
- * POST /api/chat/push/subscribe
- * Visitor stores a browser push subscription for their session.
- */
-$router->post('/api/chat/push/subscribe', function () use ($chatService, $chatModel, $pushService) {
-    $rateCheck = $chatService->checkRateLimit('push_subscribe', 10, 60);
-    if (!$rateCheck['allowed']) {
-        ChatService::jsonResponse(['status' => 'error', 'message' => 'অনুরোধের সীমা অতিক্রম করেছে।'], 429);
-    }
-    $input = json_decode(file_get_contents('php://input'), true) ?? [];
-    $sessionId = $input['session_id'] ?? '';
-    $providedSig = $input['session_sig'] ?? '';
-    $subscription = is_array($input['subscription'] ?? null) ? $input['subscription'] : [];
-
-    if (empty($sessionId) || !preg_match('/^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i', $sessionId)) {
-        ChatService::jsonResponse(['status' => 'error', 'message' => 'Session ID is required'], 400);
-    }
-    if (!$chatModel->sessionExists($sessionId)) {
-        ChatService::jsonResponse(['status' => 'success', 'message' => 'No active session']);
-    }
-    if (!$chatService->verifySessionSig($sessionId, $providedSig)) {
-        ChatService::jsonResponse(['status' => 'error', 'message' => 'Invalid session signature'], 403);
-    }
-
-    $endpoint = $subscription['endpoint'] ?? '';
-    $keys = is_array($subscription['keys'] ?? null) ? $subscription['keys'] : [];
-    $p256dh = $keys['p256dh'] ?? '';
-    $auth = $keys['auth'] ?? '';
-
-    // Legacy VAPID subscription — store endpoint as FCM token for backward compatibility
-    $saved = $pushService->subscribeFcm($sessionId, (string)$endpoint, $providedSig, 'visitor');
-    if (!$saved) {
-        ChatService::jsonResponse(['status' => 'error', 'message' => 'Invalid subscription'], 400);
-    }
-    ChatService::jsonResponse(['status' => 'success', 'message' => 'Subscribed']);
-});
-
-/**
- * POST /api/chat/push/unsubscribe
- * Visitor removes their push subscription.
- */
-$router->post('/api/chat/push/unsubscribe', function () use ($chatService, $chatModel, $pushService) {
-    $rateCheck = $chatService->checkRateLimit('push_unsubscribe', 10, 60);
-    if (!$rateCheck['allowed']) {
-        ChatService::jsonResponse(['status' => 'error', 'message' => 'অনুরোধের সীমা অতিক্রম করেছে।'], 429);
-    }
-    $input = json_decode(file_get_contents('php://input'), true) ?? [];
-    $sessionId = $input['session_id'] ?? '';
-    $providedSig = $input['session_sig'] ?? '';
-    $endpoint = trim((string)($input['endpoint'] ?? ''));
-
-    if (empty($sessionId) || empty($endpoint)) {
-        ChatService::jsonResponse(['status' => 'error', 'message' => 'Session ID and endpoint are required'], 400);
-    }
-    if ($chatModel->sessionExists($sessionId) && !$chatService->verifySessionSig($sessionId, $providedSig)) {
-        ChatService::jsonResponse(['status' => 'error', 'message' => 'Invalid session signature'], 403);
-    }
-
-    // Legacy VAPID unsubscribe — remove by endpoint/token
-    $pushService->unsubscribeFcm($endpoint);
-    ChatService::jsonResponse(['status' => 'success', 'message' => 'Unsubscribed']);
-});
 
 /**
  * POST /api/chat/push/fcm-subscribe
@@ -1748,6 +1660,122 @@ $router->get('/api/chat/push/config', function () use ($chatService) {
             ),
         ],
     ], 200, 'public, max-age=300');
+});
+
+/**
+ * GET /firebase-messaging-sw.js
+ * Dynamically generate Firebase Messaging Service Worker from config.
+ * This replaces the static public/firebase-messaging-sw.js with a dynamic version
+ * that uses the actual Firebase config from config/firebase.php.
+ */
+$router->get('/firebase-messaging-sw.js', function () use ($chatModel) {
+    if (!function_exists('getFirebaseConfig')) {
+        require_once __DIR__ . '/../config/firebase.php';
+    }
+
+    $config = getFirebaseConfig();
+    $webConfig = $config['web_config'] ?? [];
+
+    header('Content-Type: application/javascript; charset=utf-8');
+    header('Cache-Control: public, max-age=3600');
+    header('Service-Worker-Allowed: /');
+
+    $apiKey = $webConfig['apiKey'] ?? '';
+    $authDomain = $webConfig['authDomain'] ?? '';
+    $projectId = $config['project_id'] ?? '';
+    $storageBucket = $webConfig['storageBucket'] ?? '';
+    $messagingSenderId = $webConfig['messagingSenderId'] ?? '';
+    $appId = $webConfig['appId'] ?? '';
+    $measurementId = $webConfig['measurementId'] ?? '';
+
+    echo <<<JS
+/* ============================================================
+   Firebase Cloud Messaging Service Worker (Dynamic)
+   Generated from config/firebase.php — DO NOT EDIT MANUALLY
+   ============================================================ */
+
+// Import Firebase scripts for FCM (latest stable)
+importScripts('https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js');
+importScripts('https://www.gstatic.com/firebasejs/10.14.1/firebase-messaging-compat.js');
+
+// Initialize Firebase
+const firebaseConfig = {
+    apiKey:            "$apiKey",
+    authDomain:        "$authDomain",
+    projectId:         "$projectId",
+    storageBucket:     "$storageBucket",
+    messagingSenderId: "$messagingSenderId",
+    appId:             "$appId",
+    measurementId:     "$measurementId"
+};
+
+firebase.initializeApp(firebaseConfig);
+const messaging = firebase.messaging();
+
+// ============================================================
+// FCM Background Message Handler
+// ============================================================
+messaging.onBackgroundMessage((payload) => {
+  console.log('[FCM SW] Background message:', payload);
+
+  const title = (payload.notification && payload.notification.title) || 'নতুন বার্তা';
+  const body = (payload.notification && payload.notification.body) || '';
+  const url = (payload.data && payload.data.url) || (payload.fcmOptions && payload.fcmOptions.link) || '/chat/admin';
+  const sessionId = (payload.data && payload.data.session_id) || '';
+
+  const notificationOptions = {
+    body: body,
+    icon: '/assets/images/icon/favicon.png',
+    badge: '/assets/images/icon/favicon.png',
+    data: { url: url, session_id: sessionId },
+    tag: 'chat-notification-' + sessionId,
+    renotify: true,
+    silent: false
+  };
+
+  return self.registration.showNotification(title, notificationOptions);
+});
+
+// ============================================================
+// Notification click — open the chat
+// ============================================================
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+
+  const targetUrl = (event.notification.data && event.notification.data.url) || '/';
+  const urlToOpen = new URL(targetUrl, self.location.origin).href;
+
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+      // Focus an existing tab if it's already open
+      for (const client of clientList) {
+        if (client.url === urlToOpen && 'focus' in client) {
+          return client.focus();
+        }
+      }
+      // Otherwise open a new tab
+      if (self.clients.openWindow) {
+        return self.clients.openWindow(urlToOpen);
+      }
+    })
+  );
+});
+
+// ============================================================
+// Notification close — reserved for future analytics
+// ============================================================
+self.addEventListener('notificationclose', (event) => {});
+
+// ============================================================
+// Message handler — allow new SW to activate immediately
+// ============================================================
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
+});
+JS;
+    exit;
 });
 
 // ================================================================

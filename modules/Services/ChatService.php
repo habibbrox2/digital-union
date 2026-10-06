@@ -210,7 +210,7 @@ class ChatService
         $windowStart = intdiv(time(), $windowSeconds) * $windowSeconds;
         $window = (string)$windowStart;
 
-        $ipHash = md5($ip . $this->rateLimitSalt);
+        $ipHash = hash('sha256', $ip . $this->rateLimitSalt);
         $currentCount = $this->chatModel->getRateLimitCount($ipHash, $endpoint, $window);
 
         if ($currentCount !== null) {

@@ -108,7 +108,7 @@ class PushService
         }
 
         $fcmTokens = array_column($tokens, 'fcm_token');
-        $result = sendFcmMulticast($fcmTokens, $title, 'নতুন লাইভ চ্যাট মেসেজ এসেছে', $data);
+        $result = sendFcmMulticast($fcmTokens, $title, $body, $data);
 
         // Log per-recipient results
         foreach ($tokens as $tokenEntry) {
@@ -121,7 +121,7 @@ class PushService
                 null,
                 'push',
                 $status,
-                json_encode(['token_hash' => md5($token), 'success' => $result['success'], 'failure' => $result['failure']])
+                json_encode(['token_hash' => hash('sha256', $token), 'success' => $result['success'], 'failure' => $result['failure']])
             );
         }
 
@@ -173,7 +173,7 @@ class PushService
                 $userId,
                 'push',
                 $status,
-                json_encode(['token_hash' => md5($token), 'success' => $result['success'], 'failure' => $result['failure']])
+                json_encode(['token_hash' => hash('sha256', $token), 'success' => $result['success'], 'failure' => $result['failure']])
             );
         }
 
@@ -188,14 +188,14 @@ class PushService
     }
 
     /** Send a privacy-safe generic alert to union officials' devices. */
-    public function sendToUnion(int $unionId, string $title, array $data = []): void
+    public function sendToUnion(int $unionId, string $title, string $body = '', array $data = []): void
     {
         if (!$this->isEnabled()) return;
         if (!function_exists('sendFcmMulticast')) require_once __DIR__ . '/../../config/fcm.php';
         if (!function_exists('sendFcmMulticast')) return;
         $tokens = $this->chatModel->getFcmTokensForUnion($unionId);
         if (!$tokens) return;
-        $result = sendFcmMulticast(array_column($tokens, 'fcm_token'), $title, 'নতুন লাইভ চ্যাট মেসেজ এসেছে', $data);
+        $result = sendFcmMulticast(array_column($tokens, 'fcm_token'), $title, $body ?: 'নতুন লাইভ চ্যাট মেসেজ এসেছে', $data);
         if (!empty($result['invalid_tokens'])) $this->chatModel->deleteInvalidFcmTokens($result['invalid_tokens']);
         if ($result['failure'] > 0) error_log("[Push] Union {$unionId}: {$result['success']} success, {$result['failure']} failed");
     }

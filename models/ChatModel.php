@@ -234,13 +234,6 @@ class ChatModel
             KEY `idx_status_scheduled` (`status`, `scheduled_at`),
             KEY `idx_created` (`created_at`)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
-        $this->mysqli->query("CREATE TABLE IF NOT EXISTS `chat_push_subscriptions` (
-            `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY, `session_id` VARCHAR(64) NOT NULL,
-            `endpoint` VARCHAR(500) NOT NULL, `p256dh` VARCHAR(200) NOT NULL DEFAULT '',
-            `auth` VARCHAR(200) NOT NULL DEFAULT '', `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-            UNIQUE KEY `uk_endpoint` (`endpoint`), KEY `idx_session` (`session_id`)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
     }
 
     /**
@@ -495,9 +488,9 @@ class ChatModel
             }
             $update->close();
 
-            // Remove the visitor's browser push bindings so stale
+            // Remove the visitor's FCM tokens so stale
             // subscriptions never linger after the conversation is gone.
-            $this->deletePushSubscriptionsBySession($sessionId);
+            $this->deleteFcmTokensBySession($sessionId);
 
             $this->mysqli->commit();
         } catch (\Throwable $e) {
@@ -1369,67 +1362,6 @@ class ChatModel
     }
 
     // ================================================================
-    // PUSH SUBSCRIPTIONS (Web Push)
-    // ================================================================
-
-    /**
-     * Upsert a push subscription for a chat session (keyed by endpoint).
-     */
-    public function savePushSubscription(string $sessionId, string $endpoint, string $p256dh, string $auth): void
-    {
-        $stmt = $this->mysqli->prepare("
-            INSERT INTO chat_push_subscriptions (session_id, endpoint, p256dh, auth, created_at, updated_at)
-            VALUES (?, ?, ?, ?, NOW(), NOW())
-            ON DUPLICATE KEY UPDATE
-                session_id = VALUES(session_id),
-                p256dh = VALUES(p256dh),
-                auth = VALUES(auth),
-                updated_at = NOW()
-        ");
-        $stmt->bind_param("ssss", $sessionId, $endpoint, $p256dh, $auth);
-        $stmt->execute();
-        $stmt->close();
-    }
-
-    /**
-     * Get all push subscriptions for a chat session.
-     */
-    public function getPushSubscriptions(string $sessionId): array
-    {
-        $stmt = $this->mysqli->prepare("SELECT id, session_id, endpoint, p256dh, auth FROM chat_push_subscriptions WHERE session_id = ?");
-        $stmt->bind_param("s", $sessionId);
-        $stmt->execute();
-        $result = $stmt->get_result();
-        $rows = [];
-        while ($row = $result->fetch_assoc()) {
-            $rows[] = $row;
-        }
-        $stmt->close();
-        return $rows;
-    }
-
-    /**
-     * Delete a push subscription by endpoint.
-     */
-    public function deletePushSubscription(string $endpoint): void
-    {
-        $stmt = $this->mysqli->prepare("DELETE FROM chat_push_subscriptions WHERE endpoint = ?");
-        $stmt->bind_param("s", $endpoint);
-        $stmt->execute();
-        $stmt->close();
-    }
-
-    /**
-     * Delete all push subscriptions for a chat session.
-     */
-    public function deletePushSubscriptionsBySession(string $sessionId): void
-    {
-        $stmt = $this->mysqli->prepare("DELETE FROM chat_push_subscriptions WHERE session_id = ?");
-        $stmt->bind_param("s", $sessionId);
-        $stmt->execute();
-        $stmt->close();
-    }
-
     /**
      * Check if a file URL is referenced in any message.
      */
