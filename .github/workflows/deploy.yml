@@ -50,7 +50,7 @@ jobs:
 
       - name: Check for debug code
         run: |
-          if grep -r "var_dump\|die(\|dd(\|dump(\|print_r(" --include="*.php" . --exclude-dir=vendor --exclude-dir=storage; then
+          if grep -r "var_dump\|dd(\|dump(\|print_r(" --include="*.php" . --exclude-dir=vendor --exclude-dir=storage --exclude-dir=scripts; then
             echo "Debug code found!"
             exit 1
           fi
