@@ -71,6 +71,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
             dropdown.appendChild(li);
         });
+
+        // Data arrived while this box had focus: open the full list right away
+        if (document.activeElement === input) {
+            showPostOfficeDropdown(input, true);
+        }
     }
 
     // Fill the English and the Bengali post-office dropdowns of one address block
@@ -478,8 +483,10 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // Custom Autocomplete Dropdown: show/filter on click/focus/input
-    function showPostOfficeDropdown(input) {
+    // Custom Autocomplete Dropdown: show/filter on click/focus/input.
+    // showAll = true renders the complete list (used on focus/reopen);
+    // otherwise the list is filtered by the text currently typed.
+    function showPostOfficeDropdown(input, showAll) {
         var dropdown = postOfficeDropdownFor(input);
         if (!dropdown) return;
         var items = dropdown._items;
@@ -488,7 +495,7 @@ document.addEventListener('DOMContentLoaded', function () {
         // Show only the language of the focused field
         var isEnglishField = input.id && input.id.endsWith('_postoffice_en');
         var isBengaliField = input.id && input.id.endsWith('_postoffice_bn');
-        var searchVal = String(input.value || '').toLowerCase();
+        var searchVal = showAll ? '' : String(input.value || '').toLowerCase();
         var visibleCount = 0;
         var lis = dropdown.querySelectorAll('li');
         lis.forEach(function(li) {
@@ -552,13 +559,15 @@ document.addEventListener('DOMContentLoaded', function () {
 
     document.addEventListener('focus', function(e) {
         if (e.target.matches && e.target.matches('.autocomplete-wrapper input[type="text"]')) {
-            showPostOfficeDropdown(e.target);
+            showPostOfficeDropdown(e.target, true);
         }
     }, true);
 
     document.addEventListener('click', function(e) {
         if (e.target.matches && e.target.matches('.autocomplete-wrapper input[type="text"]')) {
-            showPostOfficeDropdown(e.target);
+            var dropdown = postOfficeDropdownFor(e.target);
+            if (dropdown && dropdown.classList.contains('show')) return;
+            showPostOfficeDropdown(e.target, true);
         }
     });
 

@@ -231,3 +231,4 @@ database/
 # ============================================
 public/_test_admin_session.php
 scripts/postoffice_dropdown_harness.html
+.tmp_addr_fields.js
