@@ -2,16 +2,14 @@
 # Environment & Configuration
 # ============================================
 .env
-.env.local
-.env.*.local
-.env.example.local
+.env.*
+!.env.example
 
 # ============================================
 # Dependencies
 # ============================================
 vendor/
 node_modules/
-composer.lock
 package-lock.json
 yarn.lock
 

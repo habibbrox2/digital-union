@@ -2,17 +2,24 @@ name: Deploy to Shared Hosting
 
 on:
   push:
-    branches: [main, master]
+    branches: [main]
   workflow_dispatch:
     inputs:
       environment:
-        description: 'Deployment environment'
+        description: Deployment environment
         required: true
-        default: 'production'
+        default: production
         type: choice
         options:
           - production
           - staging
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-${{ github.event.inputs.environment || 'production' }}
+  cancel-in-progress: false
 
 jobs:
   test:
@@ -30,7 +37,7 @@ jobs:
           ini-values: memory_limit=256M
           coverage: none
 
-      - name: Validate composer.json
+      - name: Validate Composer configuration
         run: composer validate --strict
 
       - name: Cache Composer packages
@@ -41,27 +48,57 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-php-
 
-      - name: Install dependencies
-        run: composer install --no-interaction --prefer-dist --optimize-autoloader --no-dev
+      - name: Install test dependencies
+        run: composer install --no-interaction --prefer-dist --optimize-autoloader
 
-      - name: Run PHP syntax check
+      - name: Lint PHP files
+        shell: bash
         run: |
-          find . -name "*.php" -not -path "./vendor/*" -not -path "./storage/*" -exec php -l {} \; | grep -v "No syntax errors" || true
+          set -euo pipefail
+          find . \
+            -type d \( -name .git -o -name vendor -o -name storage -o -name node_modules \) -prune -o \
+            -type f -name '*.php' -print0 |
+            xargs -0 -r -n 1 php -l
 
       - name: Check for debug code
+        shell: bash
         run: |
-          if grep -r "var_dump\|dd(\|dump(\|print_r(" --include="*.php" . --exclude-dir=vendor --exclude-dir=storage --exclude-dir=scripts; then
-            echo "Debug code found!"
+          set -euo pipefail
+          matches="$(
+            find . \
+              -type d \( -name .git -o -name vendor -o -name storage -o -name node_modules -o -name scripts \) -prune -o \
+              -type f -name '*.php' -print0 |
+              xargs -0 -r grep -nE '\b(var_dump|dd|dump|print_r)[[:space:]]*\(' || true
+          )"
+          if [[ -n "$matches" ]]; then
+            printf '%s\n' "$matches"
+            echo 'Debug code found.'
             exit 1
           fi
+
+      - name: Reject accidental environment files
+        shell: bash
+        run: |
+          set -euo pipefail
+          git ls-files --error-unmatch .env.example >/dev/null
+          env_files="$(find . -maxdepth 1 -type f -name '.env*' ! -name '.env.example' -print)"
+          if [[ -n "$env_files" ]]; then
+            printf 'Unexpected environment files found:\n%s\n' "$env_files"
+            exit 1
+          fi
+          echo 'Only the tracked .env.example template is present.'
+
+      - name: Report working tree status
+        run: git status --short
 
   deploy:
     name: Deploy to Shared Hosting
     needs: test
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || github.event_name == 'workflow_dispatch'
-    environment: production
+    environment:
+      name: ${{ github.event.inputs.environment || 'production' }}
     env:
+      DEPLOY_ENVIRONMENT: ${{ github.event.inputs.environment || 'production' }}
       SSH_HOST: ${{ secrets.SSH_HOST }}
     steps:
       - name: Checkout code
@@ -73,26 +110,68 @@ jobs:
           php-version: '8.2'
           extensions: mbstring, pdo_mysql, json, curl, openssl, gd, zip, intl, bcmath
           ini-values: memory_limit=256M
+          coverage: none
 
       - name: Install production dependencies
         run: composer install --no-interaction --prefer-dist --optimize-autoloader --no-dev
 
-      - name: Create .env from secrets
+      - name: Create runner environment file
         env:
           ENV_FILE: ${{ secrets.ENV_FILE }}
-        run: printf '%s' "$ENV_FILE" > .env
+        run: |
+          if [ -z "$ENV_FILE" ]; then
+            echo 'The ENV_FILE secret is required.'
+            exit 1
+          fi
+          printf '%s' "$ENV_FILE" > .env
+          chmod 600 .env
 
       - name: Create Firebase service account from secret
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
         run: |
-          echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > config/digi-union-lgdhaka-firebase-adminsdk-fbsvc-39e5307dd4.json
+          if [ -n "$FIREBASE_SERVICE_ACCOUNT" ]; then
+            printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > config/digi-union-lgdhaka-firebase-adminsdk-fbsvc-39e5307dd4.json
+          fi
+
+      - name: Remove development artifacts and runner-only logs/cache
+        shell: bash
+        run: |
+          rm -rf tests phpunit.xml phpunit.xml.dist .phpunit.cache
+          for dir in storage/logs storage/cache bootstrap/cache; do
+            if [ -d "$dir" ]; then
+              find "$dir" -type f -delete
+            fi
+          done
 
       - name: Set file permissions
         run: |
           chmod -R 755 .
           chmod -R 775 storage public/uploads
-          find . -type f -name "*.php" -exec chmod 644 {} \;
+          find . -type f -name '*.php' -exec chmod 644 {} \;
+          chmod 600 .env
 
-      - name: Deploy via SFTP
+      - name: Validate FTP deployment secrets
+        env:
+          FTP_HOST: ${{ secrets.FTP_HOST }}
+          FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
+          FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
+          FTP_PORT: ${{ secrets.FTP_PORT }}
+          FTP_PROTOCOL: ${{ secrets.FTP_PROTOCOL }}
+          FTP_REMOTE_DIR: ${{ secrets.FTP_REMOTE_DIR }}
+        run: |
+          missing=()
+          for name in FTP_HOST FTP_USERNAME FTP_PASSWORD FTP_PORT FTP_PROTOCOL FTP_REMOTE_DIR; do
+            if [ -z "${!name}" ]; then
+              missing+=("$name")
+            fi
+          done
+          if [ "${#missing[@]}" -gt 0 ]; then
+            printf 'Missing required FTP secret(s): %s\n' "${missing[*]}"
+            exit 1
+          fi
+
+      - name: Deploy via FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
           server: ${{ secrets.FTP_HOST }}
@@ -102,10 +181,14 @@ jobs:
           protocol: ${{ secrets.FTP_PROTOCOL }}
           local-dir: ./
           server-dir: ${{ secrets.FTP_REMOTE_DIR }}
+          dangerous-clean-slate: false
           exclude: |
+            **/.env
+            **/.env.*
+            .env
+            .env.*
             .git*
             .github*
-            .env*
             composer.json
             composer.lock
             README.md
@@ -115,6 +198,7 @@ jobs:
             config/*-serviceaccount*.json
             storage/logs/**
             storage/cache/**
+            vendor/**/.github
             vendor/**/.github/**
             vendor/**/.git*
             vendor/**/tests/**
@@ -124,27 +208,59 @@ jobs:
             *.md
             .editorconfig
 
-      - name: Run post-deploy commands via SSH
+      - name: Run post-deploy health checks via SSH
         if: env.SSH_HOST != ''
         uses: appleboy/ssh-action@v1.0.3
+        env:
+          SSH_REMOTE_DIR: ${{ secrets.SSH_REMOTE_DIR }}
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: ${{ secrets.SSH_PORT }}
+          envs: SSH_REMOTE_DIR
           script: |
-            cd ${{ secrets.SSH_REMOTE_DIR }}
-            php -r "require 'vendor/autoload.php'; echo 'Autoload OK';"
-            php -r "require 'config/firebase.php'; \$c = getFirebaseConfig(); echo 'FCM Config: ' . (\$c['enabled'] ? 'enabled' : 'disabled');"
-            find storage -type f -name "*.log" -delete 2>/dev/null || true
-            find storage -type d -empty -delete 2>/dev/null || true
+            set -eu
+            cd "$SSH_REMOTE_DIR"
+            php -v
+            php -r "require 'vendor/autoload.php'; echo 'Autoload OK' . PHP_EOL;"
+            if [ -f config/firebase.php ] && [ -f config/digi-union-lgdhaka-firebase-adminsdk-fbsvc-39e5307dd4.json ]; then
+              php -r "require 'config/firebase.php'; \$c = getFirebaseConfig(); echo 'FCM Config: ' . (\$c['enabled'] ? 'enabled' : 'disabled') . PHP_EOL;"
+            else
+              echo 'Firebase configuration not present; skipping Firebase check.'
+            fi
+            for dir in storage public/uploads; do
+              if [ ! -d "$dir" ] || [ ! -w "$dir" ]; then
+                echo "Required directory is missing or not writable: $dir"
+                exit 1
+              fi
+            done
+            for dir in storage/logs storage/cache bootstrap/cache; do
+              if [ -d "$dir" ] && [ ! -w "$dir" ]; then
+                echo "Directory is not writable: $dir"
+                exit 1
+              fi
+            done
+            if [ -d storage/logs ]; then
+              find storage/logs -type f -name '*.log' -mtime +14 -delete
+            fi
 
-      - name: Notify deployment status
+      - name: Report deployment result
         if: always()
+        env:
+          JOB_STATUS: ${{ job.status }}
+          DEPLOY_BRANCH: ${{ github.ref_name }}
+          DEPLOY_COMMIT: ${{ github.sha }}
         run: |
-          if [ "${{ job.status }}" == "success" ]; then
-            echo "✅ Deployment successful!"
+          {
+            echo "## Deployment $JOB_STATUS"
+            echo
+            echo "- Environment: $DEPLOY_ENVIRONMENT"
+            echo "- Branch: $DEPLOY_BRANCH"
+            echo "- Commit: \`$DEPLOY_COMMIT\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+          if [ "$JOB_STATUS" = success ]; then
+            echo 'Deployment completed successfully.'
           else
-            echo "❌ Deployment failed!"
-            exit 1
+            echo 'Deployment failed.'
           fi
