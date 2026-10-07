@@ -242,6 +242,13 @@ jobs:
               find storage/logs -type f -name '*.log' -mtime +14 -delete
             fi
 
+            echo 'Running database migrations...'
+            if [ -f scripts/run_migrations.php ]; then
+              php scripts/run_migrations.php
+            else
+              echo 'scripts/run_migrations.php not found; skipping migrations.'
+            fi
+
       - name: Report deployment result
         if: always()
         env:
