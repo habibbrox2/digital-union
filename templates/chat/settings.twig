@@ -428,7 +428,10 @@
         var swState = "নেই"; var swColor = "#dc3545";
         if ("serviceWorker" in navigator) {
           if (navigator.serviceWorker.controller) {
-            swState = "সক্রিয় (" + navigator.serviceWorker.controller.scope + ")";
+            // ServiceWorker has no .scope property (scope lives on the
+            // ServiceWorkerRegistration), so controller.scope always prints
+            // "undefined". Show the controlling script's path instead.
+            swState = "সক্রিয় (" + new URL(navigator.serviceWorker.controller.scriptURL).pathname + ")";
             swColor = "#198754";
           } else { swState = "নিষ্ক্রিয়"; swColor = "#ffc107"; }
         }
