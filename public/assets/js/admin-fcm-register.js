@@ -69,7 +69,6 @@
       if (!('Notification' in window) || !('serviceWorker' in navigator)) return;
       // Never prompt from a background script — prompting stays on /chat/admin.
       if (Notification.permission !== 'granted') return;
-      if (alreadyRegisteredRecently()) return;
 
       var cfgRes = await fetch(CONFIG_URL, { credentials: 'same-origin' });
       var cfgData = await cfgRes.json();
@@ -79,9 +78,15 @@
       }
 
       await ensureFirebaseLoaded();
+      // Initialize on every page load (cheap, never prompts) so any other
+      // code calling firebase.messaging() — e.g. the push debug panel on
+      // /chat/settings — always finds a registered app. The hourly throttle
+      // below only gates the token fetch + POST, not initialization.
       if (!window.firebase.apps.length) {
         window.firebase.initializeApp(cfgData.data.config);
       }
+
+      if (alreadyRegisteredRecently()) return;
 
       // Reuse an active service worker (e.g. the PWA sw.js); otherwise
       // register the dynamic FCM worker served by ChatController.

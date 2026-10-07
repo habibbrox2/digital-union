@@ -448,18 +448,46 @@
         document.getElementById("debugFirebaseValue").style.color = fbColor;
         document.getElementById("debugFirebase").style.borderColor = fbColor;
         details.firebase = fbState;
-        // 4. FCM Token
+        // 4. FCM Token — async: compat's messaging() throws "No Firebase App
+        // '[DEFAULT]' has been created" unless an app is registered first, so
+        // load the server config and initialize the app when needed.
         var tokenEl = document.getElementById("debugTokenValue");
         var tokenBox = document.getElementById("debugToken");
-        if (perm === "granted" && typeof firebase !== "undefined" && firebase.messaging) {
-          try {
-            var messaging = firebase.messaging();
-            messaging.getToken({ vapidKey: window.__chatVapidKey || "" }).then(function(token) {
+        if (perm !== "granted") {
+          tokenEl.textContent = "পারমিশন প্রয়োজন"; tokenEl.style.color = "#6c757d";
+        } else if (typeof firebase === "undefined" || typeof firebase.messaging !== "function") {
+          tokenEl.textContent = "Firebase SDK লোড হয়নি"; tokenEl.style.color = "#dc3545"; tokenBox.style.borderColor = "#dc3545";
+        } else {
+          (async function () {
+            try {
+              var cfg = await fetch("/api/chat/push/config", { cache: "no-store" }).then(function(r){ return r.json(); });
+              var cfgOk = !!(cfg && cfg.status === "success" && cfg.data && cfg.data.enabled && cfg.data.config && cfg.data.config.apiKey);
+              if (!firebase.apps.length) {
+                if (!cfgOk) {
+                  tokenEl.textContent = "FCM কনফিগ নেই"; tokenEl.style.color = "#ffc107"; tokenBox.style.borderColor = "#ffc107";
+                  return;
+                }
+                if (!firebase.apps.length) firebase.initializeApp(cfg.data.config);
+                // Repaint the Firebase SDK tile now that an app exists
+                var fbText = "সক্রিয় (project: " + firebase.apps[0].options.projectId + ")";
+                document.getElementById("debugFirebaseValue").textContent = fbText;
+                document.getElementById("debugFirebaseValue").style.color = "#198754";
+                document.getElementById("debugFirebase").style.borderColor = "#198754";
+                details.firebase = fbText;
+                document.getElementById("debugDetails").textContent = JSON.stringify(details, null, 2);
+              }
+              var messaging = firebase.messaging();
+              var tokenOpts = {};
+              var vapid = (cfgOk && cfg.data.vapid_key) || window.__chatVapidKey || "";
+              if (vapid) tokenOpts.vapidKey = vapid;
+              var token = await messaging.getToken(tokenOpts);
               if (token) { tokenEl.textContent = token.substring(0, 20) + "..."; tokenEl.style.color = "#198754"; tokenBox.style.borderColor = "#198754"; }
-              else { tokenEl.textContent = "টোকেন নেই"; tokenEl.style.color = "#ffc107"; }
-            }).catch(function(err) { tokenEl.textContent = "Error: " + err.message; tokenEl.style.color = "#dc3545"; });
-          } catch(e) { tokenEl.textContent = "Error: " + e.message; tokenEl.style.color = "#dc3545"; }
-        } else { tokenEl.textContent = "পারমিশন প্রয়োজন"; tokenEl.style.color = "#6c757d"; }
+              else { tokenEl.textContent = "টোকেন নেই"; tokenEl.style.color = "#ffc107"; tokenBox.style.borderColor = "#ffc107"; }
+            } catch (err) {
+              tokenEl.textContent = "Error: " + err.message; tokenEl.style.color = "#dc3545"; tokenBox.style.borderColor = "#dc3545";
+            }
+          })();
+        }
         // 5. Details
         details.isSecureContext = window.isSecureContext;
         details.protocol = window.location.protocol;
