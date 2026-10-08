@@ -87,14 +87,15 @@ class ApplicationService
             $stmt->bind_param('s', $upazilaEn);
             $stmt->execute();
             $stmt->bind_result($foundId);
-            if ($stmt->fetch() && $foundId) {
+            $foundUpazila = $stmt->fetch();
+            $stmt->close();
+
+            if ($foundUpazila && $foundId) {
                 $union = $this->getFirstUnionByUpazila((int)$foundId);
-                $stmt->close();
                 if ($union) {
                     return ['union_en' => $union['union_name_en'] ?? '', 'union_bn' => $union['union_name_bn'] ?? ''];
                 }
             }
-            $stmt->close();
         }
         
         // Last resort: use session user's union
