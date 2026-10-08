@@ -210,11 +210,7 @@ class MigrationService
                     // Remove comment lines and extract only DDL statements
                     $cleaned = $this->cleanSql($sql);
                     if (!empty($cleaned)) {
-                        $this->mysqli->multi_query($cleaned);
-                        // Consume all results
-                        while ($this->mysqli->more_results()) {
-                            $this->mysqli->next_result();
-                        }
+                        $this->executeMultiQuery($cleaned);
                     }
                 }
                 $this->markCompleted($migrationName);
@@ -259,10 +255,7 @@ class MigrationService
                 if ($sql !== false && trim($sql) !== '') {
                     $cleaned = $this->cleanSql($sql);
                     if (!empty($cleaned)) {
-                        $this->mysqli->multi_query($cleaned);
-                        while ($this->mysqli->more_results()) {
-                            $this->mysqli->next_result();
-                        }
+                        $this->executeMultiQuery($cleaned);
                     }
                 }
                 $this->markCompleted($migrationName);
@@ -271,6 +264,33 @@ class MigrationService
                 error_log("[Migration] Failed: $migrationName — " . $e->getMessage());
             }
         }
+    }
+
+    /**
+     * Execute a migration script and consume every result before advancing.
+     */
+    private function executeMultiQuery(string $sql): void
+    {
+        if (!$this->mysqli->multi_query($sql)) {
+            throw new \RuntimeException('Migration query failed: ' . $this->mysqli->error);
+        }
+
+        do {
+            $result = $this->mysqli->store_result();
+            if ($result instanceof \mysqli_result) {
+                $result->free();
+            } elseif ($this->mysqli->field_count > 0) {
+                throw new \RuntimeException('Migration result retrieval failed: ' . $this->mysqli->error);
+            }
+
+            if (!$this->mysqli->more_results()) {
+                return;
+            }
+
+            if (!$this->mysqli->next_result()) {
+                throw new \RuntimeException('Migration query failed: ' . $this->mysqli->error);
+            }
+        } while (true);
     }
     
     /**
