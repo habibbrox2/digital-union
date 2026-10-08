@@ -133,26 +133,6 @@ foreach (glob(__DIR__ . '/../config/*.php') as $file) {
 }
 
 // ----------------------------
-// 2a. Setup Migration Permissions (RBAC)
-// ----------------------------
-require_once __DIR__ . '/../helpers/migration_helper.php';
-if (function_exists('setupMigrationPermissions')) {
-    setupMigrationPermissions($GLOBALS['mysqli'] ?? null);
-}
-
-// ----------------------------
-// 2b. Auto-Run Database Migrations
-// ----------------------------
-if (isset($GLOBALS['mysqli']) && $GLOBALS['mysqli'] instanceof mysqli && !$GLOBALS['mysqli']->connect_error) {
-    try {
-        $migrationService = new MigrationService($GLOBALS['mysqli']);
-        $migrationService->run();
-    } catch (\Throwable $e) {
-        error_log('[Bootstrap] MigrationService failed: ' . $e->getMessage());
-    }
-}
-
-// ----------------------------
 // 3. Initialize Router
 // ----------------------------
 if (!class_exists('Router')) {
