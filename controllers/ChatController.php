@@ -148,7 +148,7 @@ $router->post('/api/chat/send', function () use ($chatService, $chatModel, $push
         $visitorDisplayName . ': ' . mb_substr($message, 0, 100),
         ['session_id' => $sessionId, 'url' => '/chat/admin?session=' . $sessionId]
     );
-    $pushService->sendToUnion($unionId, 'নতুন ইউনিয়ন চ্যাট মেসেজ', ['session_id' => $sessionId, 'url' => '/chat/admin?session_id=' . $sessionId]);
+    $pushService->sendToUnion($unionId, 'নতুন ইউনিয়ন চ্যাট মেসেজ', '', ['session_id' => $sessionId, 'url' => '/chat/admin?session_id=' . $sessionId]);
     $chatModel->logNotification($messageId, $sessionId, null, 'push', 'queued');
 
     // Send email notification to admins when no admin is online
@@ -256,7 +256,7 @@ $router->post('/api/chat/upload', function () use ($chatService, $chatModel, $pu
         $visitorDisplayName . ' একটি ফাইল পাঠিয়েছে',
         ['session_id' => $sessionId, 'url' => '/chat/admin?session=' . $sessionId]
     );
-    $pushService->sendToUnion($unionId, 'নতুন ইউনিয়ন চ্যাট ফাইল', ['session_id' => $sessionId, 'url' => '/chat/admin?session_id=' . $sessionId]);
+    $pushService->sendToUnion($unionId, 'নতুন ইউনিয়ন চ্যাট ফাইল', '', ['session_id' => $sessionId, 'url' => '/chat/admin?session_id=' . $sessionId]);
     $chatModel->logNotification($messageId, $sessionId, null, 'push', 'queued');
 
     // Send email notification to admins when no admin is online
