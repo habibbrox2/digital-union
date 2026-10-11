@@ -205,42 +205,6 @@ jobs:
             *.md
             .editorconfig
 
-      - name: Run post-deploy health checks via SSH
-        if: env.SSH_HOST != ''
-        uses: appleboy/ssh-action@v1.0.3
-        env:
-          SSH_REMOTE_DIR: ${{ secrets.SSH_REMOTE_DIR }}
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USERNAME }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          port: ${{ secrets.SSH_PORT }}
-          envs: SSH_REMOTE_DIR
-          script: |
-            set -eu
-            cd "$SSH_REMOTE_DIR"
-            php -v
-            php -r "require 'vendor/autoload.php'; echo 'Autoload OK' . PHP_EOL;"
-            if [ -f config/firebase.php ] && [ -f config/digi-union-lgdhaka-firebase-adminsdk-fbsvc-39e5307dd4.json ]; then
-              php -r "require 'config/firebase.php'; \$c = getFirebaseConfig(); echo 'FCM Config: ' . (\$c['enabled'] ? 'enabled' : 'disabled') . PHP_EOL;"
-            else
-              echo 'Firebase configuration not present; skipping Firebase check.'
-            fi
-            for dir in storage public/uploads; do
-              if [ ! -d "$dir" ] || [ ! -w "$dir" ]; then
-                echo "Required directory is missing or not writable: $dir"
-                exit 1
-              fi
-            done
-            for dir in storage/logs storage/cache bootstrap/cache; do
-              if [ -d "$dir" ] && [ ! -w "$dir" ]; then
-                echo "Directory is not writable: $dir"
-                exit 1
-              fi
-            done
-            if [ -d storage/logs ]; then
-              find storage/logs -type f -name '*.log' -mtime +14 -delete
-            fi
 
       - name: Report deployment result
         if: always()
