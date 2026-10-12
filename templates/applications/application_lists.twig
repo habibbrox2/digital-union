@@ -807,6 +807,13 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
+        // View details button (eye icon) - data-app-type + data-app-id
+        var detailsBtn = e.target.closest('[data-app-type][data-app-id]');
+        if (detailsBtn && typeof openApplicationDetails === 'function') {
+            openApplicationDetails(detailsBtn.dataset.appType, detailsBtn.dataset.appId);
+            return;
+        }
+
         var deleteBtn = e.target.closest('.deleteButton');
         if (deleteBtn) {
             handleDeleteButtonClick(deleteBtn);

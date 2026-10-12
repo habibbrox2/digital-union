@@ -423,13 +423,13 @@ class ChatService
     /**
      * Save an offline inquiry message to the database.
      */
-    public function saveOfflineMessage(string $name, string $message, ?string $phone = null, ?string $email = null): int
+    public function saveOfflineMessage(string $name, string $message, ?string $phone = null, ?string $email = null, ?int $unionId = null): int
     {
         $name = trim($name);
         $message = trim($message);
         $phone = $phone ? trim($phone) : null;
         $email = $email ? trim($email) : null;
-        return $this->chatModel->insertOfflineMessage($name, $phone, $email, $message);
+        return $this->chatModel->insertOfflineMessage($name, $phone, $email, $message, $unionId);
     }
 
     // ================================================================
@@ -438,26 +438,29 @@ class ChatService
 
     /**
      * Get offline messages with pagination.
+     * Optionally filter by union_id for union-scoped admins.
      */
-    public function getOfflineMessages(int $offset, int $limit): array
+    public function getOfflineMessages(int $offset, int $limit, ?int $unionId = null): array
     {
-        return $this->chatModel->getOfflineMessages($offset, $limit);
+        return $this->chatModel->getOfflineMessages($offset, $limit, $unionId);
     }
 
     /**
      * Count offline messages.
+     * Optionally filter by union_id for union-scoped admins.
      */
-    public function countOfflineMessages(bool $unreadOnly = false): int
+    public function countOfflineMessages(bool $unreadOnly = false, ?int $unionId = null): int
     {
-        return $this->chatModel->countOfflineMessages($unreadOnly);
+        return $this->chatModel->countOfflineMessages($unreadOnly, $unionId);
     }
 
     /**
      * Get the latest unread offline message.
+     * Optionally filter by union_id for union-scoped admins.
      */
-    public function getLatestOfflineMessage(): ?array
+    public function getLatestOfflineMessage(?int $unionId = null): ?array
     {
-        return $this->chatModel->getLatestOfflineMessage();
+        return $this->chatModel->getLatestOfflineMessage($unionId);
     }
 
     /**
@@ -502,18 +505,20 @@ class ChatService
 
     /**
      * Mark multiple offline messages as read.
+     * If unionId is provided, only messages belonging to that union are affected.
      */
-    public function batchMarkOfflineRead(array $ids): int
+    public function batchMarkOfflineRead(array $ids, ?int $unionId = null): int
     {
-        return $this->chatModel->batchMarkOfflineRead($ids);
+        return $this->chatModel->batchMarkOfflineRead($ids, $unionId);
     }
 
     /**
      * Delete multiple offline messages.
+     * If unionId is provided, only messages belonging to that union are affected.
      */
-    public function batchDeleteOfflineMessages(array $ids): int
+    public function batchDeleteOfflineMessages(array $ids, ?int $unionId = null): int
     {
-        return $this->chatModel->batchDeleteOfflineMessages($ids);
+        return $this->chatModel->batchDeleteOfflineMessages($ids, $unionId);
     }
 
     public static function handleFileUpload(array $file): array

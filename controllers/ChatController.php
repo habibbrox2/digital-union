@@ -867,14 +867,18 @@ $router->post('/api/chat/typing', function () use ($chatService, $chatModel) {
         ChatService::jsonResponse(['status' => 'success']);
     }
 
-    // Typing updates still require the session signature.
-    // Auto-recover missing signature for legacy/stale sessions.
+    // Typing updates require the session signature.
+    // No auto-recovery - signatures must be provided by the client.
     $storedSig = $chatModel->getSessionSig($sessionId);
     if ($storedSig === null) {
         ChatService::jsonResponse(['status' => 'error', 'message' => 'Invalid session signature'], 403);
-    } elseif (!empty($storedSig) && empty($providedSig)) {
-        // Allow typing without recovery — not critical
-    } elseif (!empty($storedSig) && !hash_equals($storedSig, $providedSig)) {
+    }
+    // Session has a stored signature - provided signature is REQUIRED
+    if (empty($providedSig)) {
+        ChatService::jsonResponse(['status' => 'error', 'message' => 'Session signature required'], 403);
+    }
+    // Constant-time comparison
+    if (!hash_equals($storedSig, $providedSig)) {
         ChatService::jsonResponse(['status' => 'error', 'message' => 'Invalid session signature'], 403);
     }
 
@@ -903,16 +907,18 @@ $router->get('/api/chat/typing', function () use ($chatService, $chatModel) {
         ChatService::jsonResponse(['status' => 'success', 'data' => ['is_typing' => false]]);
     }
 
-    // Read-only endpoint still requires the session signature.
-    // Auto-recover missing signature for legacy/stale sessions.
+    // Read-only endpoint requires valid session signature.
+    // No auto-recovery - signatures must be provided by the client.
     $storedSig = $chatModel->getSessionSig($sessionId);
     if ($storedSig === null) {
         ChatService::jsonResponse(['status' => 'error', 'message' => 'Invalid session signature'], 403);
-    } elseif (!empty($storedSig) && empty($providedSig)) {
-        $recoveredSig = $chatService->signSession($sessionId);
-        $chatModel->setSessionSigBySessionId($sessionId, $recoveredSig);
-        ChatService::jsonResponse(['status' => 'success', 'data' => ['is_typing' => false], 'session_sig' => $recoveredSig], 200, 'no-cache, private');
-    } elseif (!empty($storedSig) && !hash_equals($storedSig, $providedSig)) {
+    }
+    // Session has a stored signature - provided signature is REQUIRED
+    if (empty($providedSig)) {
+        ChatService::jsonResponse(['status' => 'error', 'message' => 'Session signature required'], 403);
+    }
+    // Constant-time comparison
+    if (!hash_equals($storedSig, $providedSig)) {
         ChatService::jsonResponse(['status' => 'error', 'message' => 'Invalid session signature'], 403);
     }
 
@@ -972,8 +978,8 @@ $router->get('/api/chat/admin/unread/total', function () use ($chatModel, $authS
     // Live chat unread count, limited to the officer's union.
     $liveCount = $chatModel->countAllUnreadVisitorMessages($unionId);
 
-    // Offline message unread count
-    $offlineCount = $chatService->countOfflineMessages(true);
+    // Offline message unread count (respect union scope)
+    $offlineCount = $chatService->countOfflineMessages(true, $unionId);
 
     // Combined total
     $total = $liveCount + $offlineCount;
@@ -981,8 +987,8 @@ $router->get('/api/chat/admin/unread/total', function () use ($chatModel, $authS
     // Get latest unread live chat message info for the notification preview
     $latestMsg = $chatModel->getLatestUnreadVisitorMessage($unionId);
 
-    // Get latest unread offline message info for the notification preview
-    $latestOfflineMsg = $chatService->getLatestOfflineMessage();
+    // Get latest unread offline message info for the notification preview (respect union scope)
+    $latestOfflineMsg = $chatService->getLatestOfflineMessage($unionId);
 
     // Get admin notification preference settings
     $allSettings = $chatModel->getChatSettings();
@@ -1194,6 +1200,7 @@ $router->post('/api/chat/offline', function () use ($chatService) {
     $phone = trim($input['phone'] ?? '');
     $email = trim($input['email'] ?? '');
     $message = trim($input['message'] ?? '');
+    $unionId = isset($input['union_id']) ? (int)$input['union_id'] : null;
 
     if (empty($name)) {
         ChatService::jsonResponse(['status' => 'error', 'message' => 'নাম প্রয়োজন'], 400);
@@ -1217,7 +1224,7 @@ $router->post('/api/chat/offline', function () use ($chatService) {
     $email = ChatService::sanitizeMessage($email);
     $message = ChatService::sanitizeMessage($message);
 
-    $insertId = $chatService->saveOfflineMessage($name, $message, $phone ?: null, $email ?: null);
+    $insertId = $chatService->saveOfflineMessage($name, $message, $phone ?: null, $email ?: null, $unionId ?: null);
 
     ChatService::jsonResponse([
         'status' => 'success',
@@ -1357,14 +1364,20 @@ $router->get('/chat/settings/canned', function () use ($chatService, $twig, $aut
 /**
  * GET /api/chat/admin/offline
  * List offline inquiry messages with pagination
+ * Union-scoped admins only see messages from their union.
  */
-$router->get('/api/chat/admin/offline', function () use ($chatService, $authService) {
+$router->get('/api/chat/admin/offline', function () use ($chatService, $chatModel, $authService) {
     $authService->ensureCan('manage_chat');
 
     $offset = max(0, (int)($_GET['offset'] ?? 0));
     $limit = max(1, min((int)($_GET['limit'] ?? 50), 100));
 
-    $result = $chatService->getOfflineMessages($offset, $limit);
+    // Determine union scope for the current admin
+    $currentUserId = (int)$authService->getCurrentUserId();
+    $scope = $chatModel->getUserScope($currentUserId);
+    $unionId = ($scope && (int)$scope['role_id'] !== 1) ? (int)$scope['union_id'] : null;
+
+    $result = $chatService->getOfflineMessages($offset, $limit, $unionId);
 
     ChatService::jsonResponse(['status' => 'success', 'data' => $result['data'], 'has_more' => $result['has_more']], 200, 'no-cache, private');
 });
@@ -1372,11 +1385,17 @@ $router->get('/api/chat/admin/offline', function () use ($chatService, $authServ
 /**
  * GET /api/chat/admin/offline/count
  * Count unread offline inquiry messages (returns raw integer)
+ * Union-scoped admins only count messages from their union.
  */
-$router->get('/api/chat/admin/offline/count', function () use ($chatService, $authService) {
+$router->get('/api/chat/admin/offline/count', function () use ($chatService, $chatModel, $authService) {
     $authService->ensureCan('manage_chat');
 
-    $count = $chatService->countOfflineMessages(true);
+    // Determine union scope for the current admin
+    $currentUserId = (int)$authService->getCurrentUserId();
+    $scope = $chatModel->getUserScope($currentUserId);
+    $unionId = ($scope && (int)$scope['role_id'] !== 1) ? (int)$scope['union_id'] : null;
+
+    $count = $chatService->countOfflineMessages(true, $unionId);
 
     header('Content-Type: text/plain; charset=utf-8');
     header('Cache-Control: no-cache, private');
@@ -1426,8 +1445,9 @@ $router->post('/api/chat/admin/offline/delete-all-read', function () use ($chatS
 /**
  * POST /api/chat/admin/offline/batch-read
  * Mark multiple offline messages as read by IDs
+ * Union-scoped admins can only operate on messages from their union.
  */
-$router->post('/api/chat/admin/offline/batch-read', function () use ($chatService, $authService) {
+$router->post('/api/chat/admin/offline/batch-read', function () use ($chatService, $chatModel, $authService) {
     $authService->ensureCan('manage_chat');
 
     $input = json_decode(file_get_contents('php://input'), true) ?? [];
@@ -1438,7 +1458,13 @@ $router->post('/api/chat/admin/offline/batch-read', function () use ($chatServic
     }
 
     $ids = array_map('intval', $ids);
-    $count = $chatService->batchMarkOfflineRead($ids);
+
+    // Determine union scope for the current admin
+    $currentUserId = (int)$authService->getCurrentUserId();
+    $scope = $chatModel->getUserScope($currentUserId);
+    $unionId = ($scope && (int)$scope['role_id'] !== 1) ? (int)$scope['union_id'] : null;
+
+    $count = $chatService->batchMarkOfflineRead($ids, $unionId);
 
     ChatService::jsonResponse(['status' => 'success', 'message' => 'নির্বাচিত বার্তা পঠিত হিসাবে চিহ্নিত করা হয়েছে', 'data' => ['marked_read' => $count]]);
 });
@@ -1446,8 +1472,9 @@ $router->post('/api/chat/admin/offline/batch-read', function () use ($chatServic
 /**
  * POST /api/chat/admin/offline/batch-delete
  * Delete multiple offline messages by IDs
+ * Union-scoped admins can only operate on messages from their union.
  */
-$router->post('/api/chat/admin/offline/batch-delete', function () use ($chatService, $authService) {
+$router->post('/api/chat/admin/offline/batch-delete', function () use ($chatService, $chatModel, $authService) {
     $authService->ensureCan('manage_chat');
 
     $input = json_decode(file_get_contents('php://input'), true) ?? [];
@@ -1458,7 +1485,13 @@ $router->post('/api/chat/admin/offline/batch-delete', function () use ($chatServ
     }
 
     $ids = array_map('intval', $ids);
-    $count = $chatService->batchDeleteOfflineMessages($ids);
+
+    // Determine union scope for the current admin
+    $currentUserId = (int)$authService->getCurrentUserId();
+    $scope = $chatModel->getUserScope($currentUserId);
+    $unionId = ($scope && (int)$scope['role_id'] !== 1) ? (int)$scope['union_id'] : null;
+
+    $count = $chatService->batchDeleteOfflineMessages($ids, $unionId);
 
     ChatService::jsonResponse(['status' => 'success', 'message' => 'নির্বাচিত বার্তা মুছে ফেলা হয়েছে', 'data' => ['deleted' => $count]]);
 });

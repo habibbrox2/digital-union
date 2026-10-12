@@ -1222,46 +1222,8 @@
   }
 
   // Typing sound state (prevents repeated playing on each poll cycle)
-  let _wasAdminTyping = false;
-
-  function playTypingSound() {
-    // Respect sound toggle
-    if (widgetSettings.chat_sound_enabled !== '1') return;
-    const ctx = getAudioContext();
-    if (!ctx) return;
-
-    try {
-      const now = ctx.currentTime;
-
-      // Short filtered noise burst for a natural keyboard click
-      const bufferSize = ctx.sampleRate * 0.04; // 40ms
-      const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
-      const data = buffer.getChannelData(0);
-      for (var i = 0; i < bufferSize; i++) {
-        data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (ctx.sampleRate * 0.008));
-      }
-      const noise = ctx.createBufferSource();
-      noise.buffer = buffer;
-
-      // Bandpass filter to shape the click
-      var filter = ctx.createBiquadFilter();
-      filter.type = 'bandpass';
-      filter.frequency.value = 1800;
-      filter.Q.value = 1.5;
-
-      var gain = ctx.createGain();
-      gain.gain.setValueAtTime(0.08, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
-
-      noise.connect(filter);
-      filter.connect(gain);
-      gain.connect(ctx.destination);
-      noise.start(now);
-      noise.stop(now + 0.04);
-    } catch (e) {
-      // Silently fail
-    }
-  }
+  // Now using shared ChatTypingSound utility
+  // let _wasAdminTyping = false; // Managed by ChatTypingSound
 
   async function checkAdminTyping() {
     if (!state.sessionId || !state.isOpen) return;
@@ -1280,23 +1242,29 @@
         const isTyping = !!data.data.is_typing;
 
         // Play typing sound when admin starts typing (transition from not typing to typing)
-        if (isTyping && !_wasAdminTyping) {
-          playTypingSound();
+        // Using shared utility - respects widgetSettings.chat_sound_enabled
+        if (window.ChatTypingSound) {
+          window.ChatTypingSound.checkAndPlayTypingSound('admin', isTyping, {
+            enabled: widgetSettings.chat_sound_enabled === '1'
+          });
         }
-        _wasAdminTyping = isTyping;
 
         if (els.typing) {
           els.typing.classList.toggle('visible', isTyping);
         }
       } else {
-        _wasAdminTyping = false;
+        if (window.ChatTypingSound) {
+          window.ChatTypingSound.resetTypingSoundState('admin');
+        }
       }
     } catch (e) {}
   }
 
   // Reset typing sound state when chat is closed
   function resetTypingSoundState() {
-    _wasAdminTyping = false;
+    if (window.ChatTypingSound) {
+      window.ChatTypingSound.resetTypingSoundState('admin');
+    }
   }
 
   // ========================

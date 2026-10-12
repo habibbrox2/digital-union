@@ -198,6 +198,7 @@
 {% block scripts %}
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-messaging-compat.js"></script>
+<script src="{{ url }}/assets/js/chat-typing-sound.js?t={{ "now"|date("Hiss") }}"></script>
 <script>
 (function() {
     'use strict';
@@ -1204,50 +1205,17 @@
         sendAdminTypingNotification();
     });
 
-    // Typing sound state
-    let _wasVisitorTyping = false;
-    let _typingAudioCtx = null;
-
-    function playTypingSound() {
-        try {
-            const AC = window.AudioContext || window.webkitAudioContext;
-            if (!AC) return;
-            if (!_typingAudioCtx) _typingAudioCtx = new AC();
-            const ctx = _typingAudioCtx;
-            const now = ctx.currentTime;
-
-            // Short filtered noise burst for a natural keyboard click
-            const bufferSize = Math.floor(ctx.sampleRate * 0.04);
-            const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
-            const data = buffer.getChannelData(0);
-            for (let i = 0; i < bufferSize; i++) {
-                data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (ctx.sampleRate * 0.008));
-            }
-            const noise = ctx.createBufferSource();
-            noise.buffer = buffer;
-
-            const filter = ctx.createBiquadFilter();
-            filter.type = 'bandpass';
-            filter.frequency.value = 1800;
-            filter.Q.value = 1.5;
-
-            const gain = ctx.createGain();
-            gain.gain.setValueAtTime(0.06, now);
-            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
-
-            noise.connect(filter);
-            filter.connect(gain);
-            gain.connect(ctx.destination);
-            noise.start(now);
-            noise.stop(now + 0.04);
-        } catch (e) {}
-    }
+    // Typing sound state - now managed by shared ChatTypingSound utility
+    // let _wasVisitorTyping = false; // Managed by ChatTypingSound
 
     function startTypingCheck() {
         if (typingCheckInterval) clearInterval(typingCheckInterval);
         let typingEl = document.getElementById('adminTypingIndicator');
         if (typingEl) typingEl.remove();
-        _wasVisitorTyping = false;
+        // Reset typing sound state for visitor side
+        if (window.ChatTypingSound) {
+            window.ChatTypingSound.resetTypingSoundState('visitor');
+        }
 
         if (activeSessionId) {
             typingCheckInterval = setInterval(function() {
@@ -1259,10 +1227,11 @@
                             const isTyping = !!data.data.is_typing;
 
                             // Play typing sound when visitor starts typing
-                            if (isTyping && !_wasVisitorTyping) {
-                                playTypingSound();
+                            if (window.ChatTypingSound) {
+                                window.ChatTypingSound.checkAndPlayTypingSound('visitor', isTyping, {
+                                    enabled: (typeof chatSettings !== 'undefined' && chatSettings.chat_sound_enabled === '1')
+                                });
                             }
-                            _wasVisitorTyping = isTyping;
 
                             if (isTyping) {
                                 let el = document.getElementById('adminTypingIndicator');
@@ -1281,7 +1250,9 @@
                                 if (el) el.remove();
                             }
                         } else {
-                            _wasVisitorTyping = false;
+                            if (window.ChatTypingSound) {
+                                window.ChatTypingSound.resetTypingSoundState('visitor');
+                            }
                             const el = document.getElementById('adminTypingIndicator');
                             if (el) el.remove();
                         }

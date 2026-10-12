@@ -167,7 +167,7 @@ $router->get('/application/{certificate_type}/bangla/{sonod_number}', function($
     ]);
 
     $htmlContent = $twig->render($template, $viewData);
-    $appService->makeCertificatePdf($htmlContent, $application['certificate_type'] . '_' . $application['sonod_number']);
+    $appService->makeCertificatePdf($htmlContent, $application['certificate_type'] . '_' . $application['sonod_number'] . '_bn');
 });
 
 // ================================================================
@@ -193,7 +193,7 @@ $router->get('/application/{certificate_type}/english/{sonod_number}', function(
     ]);
 
     $htmlContent = $twig->render($template, $viewData);
-    $appService->makeCertificatePdf($htmlContent, $application['certificate_type'] . '_' . $application['sonod_number']);
+    $appService->makeCertificatePdf($htmlContent, $application['certificate_type'] . '_' . $application['sonod_number'] . '_en');
 });
 
 // ================================================================
