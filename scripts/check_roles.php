@@ -1,5 +1,5 @@
 <?php
-require __DIR__ . '/../config/db.php';
+require __DIR__ . '/../config/db/db.php';
 global $mysqli;
 
 echo "--- Roles ---\n";

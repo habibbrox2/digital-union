@@ -1,9 +1,9 @@
 <?php
-// /config/db.php
+// /config/db/db.php
 
 
-    // Ensure config.php is loaded
-    require_once __DIR__ . '/config.php';
+    // Ensure config.php is loaded (one level up after folder restructuring)
+    require_once __DIR__ . '/../config.php';
     
     if (!isset($mysqli) || !($mysqli instanceof mysqli)) {
         $mysqli = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME);

@@ -1,5 +1,5 @@
 <?php
-require __DIR__ . '/../config/db.php';
+require __DIR__ . '/../config/db/db.php';
 require_once __DIR__ . '/../modules/Services/HomeService.php';
 global $mysqli;
 
