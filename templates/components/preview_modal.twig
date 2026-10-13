@@ -78,6 +78,20 @@
         if (!el) return;
         var url = el.getAttribute('data-preview');
         if (!url) return; // empty — let the element behave normally
+
+        // `data-preview` used to double as image-cropper.js's preview element
+        // ID on file inputs (e.g. data-preview="uploadPreviewImg"). Opening that
+        // would request /applications/<type>/edit/uploadPreviewImg → 404, and
+        // preventDefault() would cancel the file picker. The cropper now reads
+        // `data-crop-preview` instead, but form controls are still skipped here
+        // as a structural guard.
+        if (el.matches('input, select, textarea')) return;
+
+        // Reject only bare identifiers (element IDs like "uploadPreviewImg").
+        // Everything URL-shaped must pass — including legacy document paths
+        // stored without a leading slash ("uploads/documents/x.pdf").
+        if (/^[A-Za-z][A-Za-z0-9_-]*$/.test(url)) return;
+
         e.preventDefault();
         openPreview(url, el.getAttribute('data-preview-title') || 'প্রিভিউ');
     });

@@ -19,9 +19,17 @@
  *    data-crop-trigger      — CSS selector(s) for elements that open file picker
  *                             (e.g. "#uploadCardBtn, #uploadDropZone")
  *    data-crop-dropzone     — CSS selector for drag-and-drop zone element
- *    data-preview           — ID of <img> for preview
- *    data-preview-container — ID of preview wrapper div
+ *    data-crop-preview      — ID of <img> for preview
+ *    data-crop-preview-container — ID of preview wrapper div
  *    data-drop-zone         — ID of the drop zone (background area)
+ *
+ *  ─── Naming note ─────────────────────────────────────────────
+ *    The preview attributes are namespaced `data-crop-*` because
+ *    components/preview_modal.twig uses `data-preview` on links/buttons to
+ *    mean "URL to open in the preview modal". An unprefixed `data-preview` on
+ *    a file input collided with it (the element ID was opened as a URL → 404).
+ *    Legacy `data-preview` / `data-preview-container` are still read as a
+ *    fallback for older templates, but new markup must use `data-crop-*`.
  *
  *  ─── Example ─────────────────────────────────────────────────
  *
@@ -33,8 +41,8 @@
  *           data-crop-mode="signature"
  *           data-crop-trigger="#sigBtn, #sigDropZone"
  *           data-crop-dropzone="#sigDropZone"
- *           data-preview="sigPreviewImg"
- *           data-preview-container="sigPreviewContainer"
+ *           data-crop-preview="sigPreviewImg"
+ *           data-crop-preview-container="sigPreviewContainer"
  *           data-drop-zone="sigDropZone">
  *
  *  ─── Modes ────────────────────────────────────────────────────
@@ -497,8 +505,13 @@ const ImageCropper = (function () {
     // Use explicit triggers if provided, otherwise auto-discover
     var triggerSelector = input.getAttribute('data-crop-trigger') || '';
     var dropzoneSelector = input.getAttribute('data-crop-dropzone') || '';
-    var previewId = input.getAttribute('data-preview') || '';
-    var previewContainerId = input.getAttribute('data-preview-container') || '';
+    // Canonical: data-crop-preview / data-crop-preview-container.
+    // data-preview / data-preview-container are read only as a legacy
+    // fallback so older templates keep updating their preview image.
+    var previewId = input.getAttribute('data-crop-preview') ||
+      input.getAttribute('data-preview') || '';
+    var previewContainerId = input.getAttribute('data-crop-preview-container') ||
+      input.getAttribute('data-preview-container') || '';
     var dropZoneId = input.getAttribute('data-drop-zone') || '';
 
     // Auto-discover triggers if not specified
