@@ -3,14 +3,14 @@
 // Thin wrapper functions — all delegate to dedicated service classes in modules/Services/
 
 // Ensure all service classes are available
-require_once __DIR__ . '/../modules/Services/SanitizationService.php';
-require_once __DIR__ . '/../modules/Services/LocalizationService.php';
-require_once __DIR__ . '/../modules/Services/NumberGeneratorService.php';
-require_once __DIR__ . '/../modules/Services/FileUploadService.php';
-require_once __DIR__ . '/../modules/Services/FeeService.php';
-require_once __DIR__ . '/../modules/Services/UnionService.php';
-require_once __DIR__ . '/../modules/Services/SettingService.php';
-require_once __DIR__ . '/../modules/Services/AuthService.php';
+require_once __DIR__ . '/../../modules/Services/SanitizationService.php';
+require_once __DIR__ . '/../../modules/Services/LocalizationService.php';
+require_once __DIR__ . '/../../modules/Services/NumberGeneratorService.php';
+require_once __DIR__ . '/../../modules/Services/FileUploadService.php';
+require_once __DIR__ . '/../../modules/Services/FeeService.php';
+require_once __DIR__ . '/../../modules/Services/UnionService.php';
+require_once __DIR__ . '/../../modules/Services/SettingService.php';
+require_once __DIR__ . '/../../modules/Services/AuthService.php';
 
 if (!function_exists('sanitize_input')) {
     function sanitize_input($data = null) {

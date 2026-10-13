@@ -65,7 +65,7 @@ test("Bengali translation map covers this error",
 // ==============================
 echo "\n--- 2. showMessage() XSS Prevention ---\n";
 
-require_once __DIR__ . '/../config/functions.php';
+require_once __DIR__ . '/../config/helpers/helper_functions.php';
 
 // Capture output
 ob_start();

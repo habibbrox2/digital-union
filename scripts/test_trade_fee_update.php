@@ -98,7 +98,7 @@ require_once __DIR__ . '/../modules/Services/ApplicationService.php';
 require_once __DIR__ . '/../models/ApplicationManager.php';
 require_once __DIR__ . '/../models/BusinessOwnershipType.php';
 
-require_once __DIR__ . '/../config/functions.php';
+require_once __DIR__ . '/../config/helpers/helper_functions.php';
 
 $appManager = new ApplicationManager($mysqli);
 $service = new ApplicationService($mysqli, $appManager);

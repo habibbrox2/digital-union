@@ -13,7 +13,7 @@ if (!is_dir(TEMP_DIR)) mkdir(TEMP_DIR, 0755, true);
 $_SERVER['REQUEST_METHOD'] = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 $_SERVER['HTTP_HOST'] = $_SERVER['HTTP_HOST'] ?? 'lgdhaka.test';
 
-require_once __DIR__ . '/../config/functions.php';
+require_once __DIR__ . '/../config/helpers/helper_functions.php';
 require_once __DIR__ . '/../helpers/sweetalertHelper.php';
 require_once __DIR__ . '/../helpers/security.php';
 require_once __DIR__ . '/../helpers/email_helper.php';

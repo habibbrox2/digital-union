@@ -3,7 +3,7 @@
     // models/TwigManager.php - simplified & fixed
 
     require_once __DIR__ . '/../vendor/autoload.php';
-    require_once __DIR__ . '/../config/functions.php';
+    require_once __DIR__ . '/../config/helpers/helper_functions.php';
     require_once __DIR__ . '/AuthManager.php';
     require_once __DIR__ . '/RolesManager.php';
     require_once __DIR__ . '/../modules/Services/LocalizationService.php';
