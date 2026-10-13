@@ -1,8 +1,8 @@
 <?php
 // config/twig.php
 
-require_once __DIR__ . '/../models/TwigManager.php';
-require_once __DIR__ . '/../models/SafeTwig.php';
+require_once __DIR__ . '/../models/template-engine/TwigManager.php';
+require_once __DIR__ . '/../models/template-engine/SafeTwig.php';
 //require_once __DIR__ . '/functions.php'; 
 
 $settings = getSettings();

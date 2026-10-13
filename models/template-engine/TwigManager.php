@@ -2,13 +2,13 @@
 
     // models/TwigManager.php - simplified & fixed
 
-    require_once __DIR__ . '/../vendor/autoload.php';
-    require_once __DIR__ . '/../config/helpers/helper_functions.php';
-    require_once __DIR__ . '/AuthManager.php';
-    require_once __DIR__ . '/RolesManager.php';
-    require_once __DIR__ . '/../modules/Services/LocalizationService.php';
-    require_once __DIR__ . '/../modules/Services/SettingService.php';
-    require_once __DIR__ . '/../modules/Services/SanitizationService.php';
+    require_once __DIR__ . '/../../vendor/autoload.php';
+    require_once __DIR__ . '/../../config/helpers/helper_functions.php';
+    require_once __DIR__ . '/../AuthManager.php';
+    require_once __DIR__ . '/../RolesManager.php';
+    require_once __DIR__ . '/../../modules/Services/LocalizationService.php';
+    require_once __DIR__ . '/../../modules/Services/SettingService.php';
+    require_once __DIR__ . '/../../modules/Services/SanitizationService.php';
 
     class TwigManager {
         private $twig;
@@ -20,7 +20,7 @@
             $this->localization = new LocalizationService();
             $this->settings = new SettingService($mysqli);
             $this->sanitizer = new SanitizationService();
-            $templatePath = __DIR__ . '/../templates';
+            $templatePath = __DIR__ . '/../../templates';
             if (!is_dir($templatePath)) {
                 throw new \RuntimeException("Templates directory not found at $templatePath");
             }
@@ -90,7 +90,7 @@
                 $userRole = $role['role_name'] ?? null;
 
                 // Permissions - use PermissionsManager for role-based permissions only
-                require_once __DIR__ . '/PermissionsManager.php';
+                require_once __DIR__ . '/../PermissionsManager.php';
                 $permissionsManager = new PermissionsManager($mysqli);
 
                 $isSuperAdmin = isset($userData['role_id']) && $userData['role_id'] <= 1;
@@ -159,7 +159,7 @@
 
             // SweetAlert helper
             $sweetAlert = null;
-            $sweetHelper = __DIR__ . '/../helpers/sweetalertHelper.php';
+            $sweetHelper = __DIR__ . '/../../helpers/sweetalertHelper.php';
             if (file_exists($sweetHelper)) {
                 require_once $sweetHelper;
                 if (function_exists('getSweetAlert')) $sweetAlert = getSweetAlert();
