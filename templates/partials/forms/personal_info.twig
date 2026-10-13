@@ -23,13 +23,23 @@
         <label for="nid" class="form-label mb-0">ন্যাশনাল আইডি</label>
     </div>
     <div class="{{ govt_input }}">
-        <input type="text" name="nid" id="nid" class="form-control" placeholder="1616623458679011" value="{{ data.nid|default('') }}">
+        <input type="text" name="nid" id="nid" class="form-control" placeholder="1616623458679011"
+               inputmode="numeric" autocomplete="off" maxlength="17"
+               pattern="[0-9]{10}|[0-9]{13}|[0-9]{17}"
+               title="১০, ১৩ বা ১৭ ডিজিটের হবে"
+               value="{{ data.nid|default('') }}">
+        <div class="invalid-feedback">১০, ১৩ বা ১৭ ডিজিটের হবে।</div>
     </div>
     <div class="{{ govt_label }}">
         <label for="birth_id" class="form-label mb-0">জন্ম নিবন্ধন নং</label>
     </div>
     <div class="{{ govt_input }}">
-        <input type="text" name="birth_id" id="birth_id" class="form-control" placeholder="1919623458679011" value="{{ data.birth_id|default('') }}">
+        <input type="text" name="birth_id" id="birth_id" class="form-control" placeholder="1919623458679011"
+               inputmode="numeric" autocomplete="off" maxlength="17"
+               pattern="[0-9]{17}"
+               title="১৭ ডিজিটের হবে"
+               value="{{ data.birth_id|default('') }}">
+        <div class="invalid-feedback">১৭ ডিজিটের হবে।</div>
     </div>
 </div>
 
@@ -251,6 +261,133 @@
 
         window.ensureSpouseSection = ensureSpouseSection;
         window.toggleSpouseFields = toggleSpouseFields;
+    });
+})();
+</script>
+
+<script>
+/**
+ * NID / জন্ম নিবন্ধন ও _bn ফিল্ডের ইনপুট নিয়ম
+ * ─────────────────────────────────────────────
+ *  • name="nid"      → বাংলা সংখ্যা ইংরেজিতে, space/punctuation অপসারিত,
+ *                      দৈর্ঘ্য ১০/১৩/১৭ না হলে ফিল্ড লাল (খালি মান = খালি, লাল হয় না)
+ *  • name="birth_id" → একই পরিষ্কারকরণ, দৈর্ঘ্য ১৭ না হলে লাল (খালি = খালি)
+ *  • *_bn ফিল্ড      → ':' টাইপ করলে 'ঃ' হয়ে যাবে
+ *
+ * সব listener document-এ delegated, তাই ডাইনামিকলি যোগ হওয়া row
+ * (extra field / warish entry) এবং তিনটি ফরম (default, reapply, update)
+ * একসাথে কভার হয়।
+ */
+(function () {
+    'use strict';
+
+    var ID_RULES = { nid: [10, 13, 17], birth_id: [17] };
+    var SKIPPED_TYPES = ['hidden', 'checkbox', 'radio', 'file', 'submit', 'button', 'image'];
+
+    // ০-৯ (Bengali), ۰-۹ (Persian), ٠-٩ (Arabic) → 0-9
+    function toEnglishDigits(str) {
+        return str
+            .replace(/[\u09E6-\u09EF]/g, function (d) { return String(d.charCodeAt(0) - 0x09E6); })
+            .replace(/[\u06F0-\u06F9]/g, function (d) { return String(d.charCodeAt(0) - 0x06F0); })
+            .replace(/[\u0660-\u0669]/g, function (d) { return String(d.charCodeAt(0) - 0x0660); });
+    }
+
+    function isIdField(el) {
+        return !!(el && el.tagName === 'INPUT' && el.name && ID_RULES[el.name]);
+    }
+
+    function isBnField(el) {
+        if (!el || (el.tagName !== 'INPUT' && el.tagName !== 'TEXTAREA')) return false;
+        if (el.tagName === 'INPUT' && SKIPPED_TYPES.indexOf(el.type) !== -1) return false;
+        var key = el.name || el.id || '';
+        return /(^|_)bn$/.test(key);
+    }
+
+    // space, punctuation, বাংলা/আরবি সংখ্যা থাকলে → শুধু ইংরেজি digit
+    function sanitizeId(el) {
+        var before = el.value;
+        if (before === '') return;
+        var after = toEnglishDigits(before).replace(/[^0-9]/g, '');
+        if (after === before) return;
+
+        var pos = el.selectionStart;
+        var head = toEnglishDigits(pos == null ? before : before.slice(0, pos));
+        var dropped = head.length - head.replace(/[^0-9]/g, '').length;
+        el.value = after;
+        if (pos != null) {
+            var next = Math.max(0, Math.min(after.length, pos - dropped));
+            try { el.setSelectionRange(next, next); } catch (err) { /* ignore */ }
+        }
+    }
+
+    // খালি মান গ্রহণযোগ্য — কখনো লাল হবে না।
+    // লাল শুধু তখনই যখন কিছু আছে কিন্তু দৈর্ঘ্য নিয়মের বাইরে।
+    function applyIdState(el) {
+        var value = el.value;
+        if (value === '') {
+            el.classList.remove('is-invalid');
+            return true;
+        }
+        var ok = ID_RULES[el.name].indexOf(value.length) !== -1;
+        el.classList.toggle('is-invalid', !ok);
+        return ok;
+    }
+
+    function fixBnColon(el) {
+        if (el.value.indexOf(':') === -1) return;
+        var pos = el.selectionStart;
+        el.value = el.value.replace(/:/g, '\u0983'); // ':' → 'ঃ'
+        if (pos != null) {
+            try { el.setSelectionRange(pos, pos); } catch (err) { /* ignore */ }
+        }
+    }
+
+    // টাইপ / পেস্ট / ড্রপ
+    document.addEventListener('input', function (e) {
+        var el = e.target;
+        if (!el || el.disabled) return;
+        if (isIdField(el)) {
+            sanitizeId(el);
+            applyIdState(el);
+            return;
+        }
+        if (isBnField(el)) fixBnColon(el);
+    });
+
+    // ফিল্ড ছাড়লে — খালি হলে সাধারণ (খালি), ভুল দৈর্ঘ্য হলে লাল
+    document.addEventListener('focusout', function (e) {
+        if (isIdField(e.target)) applyIdState(e.target);
+    });
+
+    // সাবমিটে যাচাই — ভুল দৈর্ঘ্য থাকলে সাবমিট থামবে (novalidate ফরমেও),
+    // খালি মান দিয়ে যেতে দেওয়া হবে
+    document.addEventListener('submit', function (e) {
+        var form = e.target;
+        if (!form || !form.querySelectorAll) return;
+        var fields = form.querySelectorAll('input[name="nid"], input[name="birth_id"]');
+        if (!fields.length) return;
+
+        var firstBad = null;
+        fields.forEach(function (el) {
+            if (!applyIdState(el) && !firstBad) firstBad = el;
+        });
+        if (firstBad) {
+            e.preventDefault();
+            firstBad.focus();
+        }
+    });
+
+    // নেটিভ validation (required/pattern) ব্লক করলেও ফিল্ড লাল দেখাবে
+    document.addEventListener('invalid', function (e) {
+        if (isIdField(e.target)) e.target.classList.add('is-invalid');
+    }, true);
+
+    // পুরনো / pre-filled মান লোড হলেই পরিষ্কার করে নেওয়া (লাল দেখানো হয় না)
+    document.addEventListener('DOMContentLoaded', function () {
+        ['nid', 'birth_id'].forEach(function (name) {
+            var el = document.getElementsByName(name)[0];
+            if (el) sanitizeId(el);
+        });
     });
 })();
 </script>

@@ -186,7 +186,7 @@
         </tr>
         <tr>
             <td>Region (if applicable)</td>
-            <td colspan="4">: {{ business_meta.business_district_en }}.</td>
+            <td colspan="4">: {{ business_meta.business_district_en|title }}.</td>
         </tr>
         <tr>
             <td>ID Card/Birth Registration/Passport</td>
@@ -337,11 +337,11 @@
 	                    </td>
 	                </tr>
 	                <tr>
-	                    <td><b>Total</b></td>
+	                    <td>Total</td>
 	                    <td>
 	                    	:
 	                        {% if business_meta.total_fee != 0 %}
-	                            <b> {{ business_meta.total_fee }}</b>
+	                             {{ business_meta.total_fee }}
 	                        {% endif %}
 	                    </td>
 	                </tr>

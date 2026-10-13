@@ -140,6 +140,370 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
+    // ---- আবেদনকারীর নাম: সাজেশন ও সম্পর্ক অনুযায়ী পিতা/স্বামীর নাম প্রিফিল ----
+    // • সাজেশন শুধু #applicant_name-এ (অন্য কোনো ফিল্ডে নয়) —
+    //   সোর্স: ওয়ারিশ row-গুলোর নাম (পাশে সম্পর্ক) + মৃত ব্যক্তি/নিজের নাম
+    // • বাছা নামের সম্পর্ক পুত্র / কন্যা / স্ত্রী হলে আবেদনকারীর পিতা/স্বামী = মৃত ব্যক্তি;
+    //   তাই applicant_name_father_bn (ও থাকলে _en) প্রিফিল হয় — অন্য সম্পর্কে কিছুই বসে না
+    // • ব্যবহারকারীর নিজে লেখা মান কখনো মোছা হয় না; নোটে সূত্র দেখা যায়, 'মুছুন' দিয়ে বাতিল
+    (function () {
+        var APPLICANT_ID = 'applicant_name';
+        var WARISH_NAME = 'warish_name_bn[]';
+        var PARENT_OF = ['পুত্র', 'কন্যা', 'স্ত্রী'];   // এদের পিতা/স্বামী = মৃত ব্যক্তি
+        var TARGET_BN = 'applicant_name_father_bn';
+        var TARGET_EN = 'applicant_name_father_en';
+
+        var prefill = { bn: null, en: null, relation: '' };
+        var noteEl = null;
+        var filling = false;
+
+        function trimName(v) { return (v || '').replace(/^\s+|\s+$/g, ''); }
+        function byId(id) { return document.getElementById(id); }
+        function valueOf(id) { var el = byId(id); return el ? trimName(el.value) : ''; }
+
+        function certificateType() {
+            var input = document.querySelector('input[name="certificate_type"]');
+            if (input && input.value) return input.value;
+            var span = byId('certificate_type_data');
+            return span ? (span.getAttribute('data-certificate-type') || '') : '';
+        }
+
+        // ওয়ারিশ ফরমে name_bn/name_en = মৃত ব্যক্তির নাম (লেবেলও বদলে যায়)
+        function isDeceasedNameForm() {
+            if (certificateType() === 'warish') return true;
+            var label = document.querySelector('label[for="name_bn"]');
+            return !!(label && label.textContent.indexOf('মৃত') !== -1);
+        }
+
+        function relationOfRow(input) {
+            var row = input.closest ? input.closest('.warish_entry') : null;
+            if (!row) return '';
+            var sel = row.querySelector('select[name="relation[]"]');
+            return sel ? trimName(String(sel.value || '').split('|')[0]) : '';
+        }
+
+        // -------- সাজেশনের তালিকা --------
+        function collectCandidates() {
+            var list = [];
+            var seen = {};
+            var rows = document.querySelectorAll('input[name="' + WARISH_NAME + '"]');
+            for (var i = 0; i < rows.length; i++) {
+                var name = trimName(rows[i].value);
+                if (!name || seen[name]) continue;
+                var relation = relationOfRow(rows[i]);
+                seen[name] = true;
+                list.push({ value: name, relation: relation, hint: relation || 'ওয়ারিশ' });
+            }
+            var ownName = valueOf('name_bn');
+            if (ownName && !seen[ownName]) {
+                list.push({ value: ownName, relation: '', hint: isDeceasedNameForm() ? 'মৃত ব্যক্তি' : 'নিজ' });
+            }
+            return list;
+        }
+
+        // -------- পিতা/স্বামীর নাম প্রিফিল --------
+        function hostOf(el) { return el.parentNode; }
+
+        function removeNote() {
+            if (noteEl && noteEl.parentNode) noteEl.parentNode.removeChild(noteEl);
+            noteEl = null;
+            var bn = byId(TARGET_BN), en = byId(TARGET_EN);
+            if (bn) bn.classList.remove('is-autofilled');
+            if (en) en.classList.remove('is-autofilled');
+        }
+
+        function setFieldValue(el, value) {
+            filling = true;
+            el.value = value;
+            el.dispatchEvent(new Event('input', { bubbles: true }));
+            filling = false;
+        }
+
+        function clearPrefill() {
+            var bn = byId(TARGET_BN), en = byId(TARGET_EN);
+            if (bn && prefill.bn !== null && trimName(bn.value) === prefill.bn) setFieldValue(bn, '');
+            if (en && prefill.en !== null && trimName(en.value) === prefill.en) setFieldValue(en, '');
+            prefill = { bn: null, en: null, relation: '' };
+            removeNote();
+        }
+
+        function showNote(target, relation) {
+            removeNote();
+            if (!target) return;
+            var note = document.createElement('div');
+            note.className = 'autofill-note';
+            note.setAttribute('role', 'status');
+
+            var text = document.createElement('span');
+            text.className = 'autofill-text';
+            text.textContent = 'পিতা/স্বামী — মৃত ব্যক্তির নাম থেকে বসানো (আবেদনকারীর সম্পর্ক: ' + relation + ')';
+            note.appendChild(text);
+
+            var clear = document.createElement('button');
+            clear.type = 'button';
+            clear.className = 'autofill-clear';
+            clear.textContent = 'মুছুন';
+            clear.addEventListener('click', clearPrefill);
+            note.appendChild(clear);
+
+            hostOf(target).appendChild(note);
+            noteEl = note;
+            target.classList.add('is-autofilled');
+        }
+
+        function applyPrefill(entry) {
+            var bn = byId(TARGET_BN), en = byId(TARGET_EN);
+            // ফিল্ডগুলো ডাইনামিকি (extra-fields API) পরে বসতে পারে → এখানেও ওয়্যার করি
+            if (bn) wireTarget(bn);
+            if (en) wireTarget(en);
+            if (!bn && !en) return;                       // এই ফরমে ফিল্ড নেই
+            if (!entry || PARENT_OF.indexOf(entry.relation) === -1) {
+                if (prefill.bn !== null || prefill.en !== null) clearPrefill();
+                return;
+            }
+            var deceasedBn = valueOf('name_bn');
+            if (!deceasedBn) return;                      // মৃত ব্যক্তির নাম নেই → কিছুই বসি না
+            var deceasedEn = valueOf('name_en');
+
+            var takeBn = bn && (trimName(bn.value) === '' || (prefill.bn !== null && trimName(bn.value) === prefill.bn));
+            var takeEn = en && deceasedEn !== '' && (trimName(en.value) === '' || (prefill.en !== null && trimName(en.value) === prefill.en));
+
+            prefill = { bn: takeBn ? deceasedBn : null, en: takeEn ? deceasedEn : null, relation: entry.relation };
+            if (takeBn) setFieldValue(bn, deceasedBn);
+            if (takeEn) setFieldValue(en, deceasedEn);
+            if (takeBn || takeEn) showNote(takeBn ? bn : en, entry.relation);
+        }
+
+        // মৃত ব্যক্তির নাম বদলালে আমাদের বসানো মানও আপডেট
+        function syncFromDeceased() {
+            if (prefill.bn === null && prefill.en === null) return;
+            var bn = byId(TARGET_BN), en = byId(TARGET_EN);
+            var deceasedBn = valueOf('name_bn'), deceasedEn = valueOf('name_en');
+            if (prefill.bn !== null && bn && deceasedBn) { prefill.bn = deceasedBn; setFieldValue(bn, deceasedBn); }
+            if (prefill.en !== null && en && deceasedEn) { prefill.en = deceasedEn; setFieldValue(en, deceasedEn); }
+        }
+
+        function wireTarget(el) {
+            if (!el || el.__prefillWired) return;
+            el.__prefillWired = true;
+            el.addEventListener('input', function () {
+                if (filling) return;
+                if (prefill.bn === null && prefill.en === null) return;
+                prefill = { bn: null, en: null, relation: '' };
+                removeNote();
+            });
+        }
+
+        // -------- #applicant_name-এর ড্রপডাউন --------
+        function attach(input) {
+            if (input.__nameSuggest) return input.__nameSuggest;
+
+            var wrapper = input.parentNode;
+            if (!wrapper || !wrapper.classList.contains('name-suggest-wrapper')) {
+                wrapper = document.createElement('div');
+                wrapper.className = 'name-suggest-wrapper';
+                input.parentNode.insertBefore(wrapper, input);
+                wrapper.appendChild(input);
+            }
+
+            var panel = document.createElement('ul');
+            panel.className = 'name-suggest-dropdown';
+            panel.setAttribute('role', 'listbox');
+            panel.setAttribute('aria-label', 'নাম সাজেশন');
+            wrapper.appendChild(panel);
+
+            var entries = [];
+            var activeIndex = -1;
+            var muted = false;
+
+            input.setAttribute('autocomplete', 'off');
+            input.setAttribute('aria-autocomplete', 'list');
+            input.setAttribute('aria-expanded', 'false');
+
+            function closePanel() {
+                panel.classList.remove('show');
+                panel.innerHTML = '';
+                input.setAttribute('aria-expanded', 'false');
+                activeIndex = -1;
+            }
+
+            function filtered(query) {
+                var q = trimName(query).toLowerCase();
+                if (!q) return entries;
+                var out = [];
+                for (var i = 0; i < entries.length; i++) {
+                    var v = entries[i].value.toLowerCase();
+                    var h = (entries[i].hint || '').toLowerCase();
+                    if (v.indexOf(q) !== -1 || h.indexOf(q) !== -1) out.push(entries[i]);
+                }
+                return out;
+            }
+
+            function render(list) {
+                panel.innerHTML = '';
+                if (!list.length) {
+                    closePanel();
+                    return;
+                }
+                var current = trimName(input.value);
+                for (var i = 0; i < list.length; i++) {
+                    var li = document.createElement('li');
+                    li.className = 'name-suggest-item';
+                    li.setAttribute('role', 'option');
+                    li.setAttribute('data-value', list[i].value);
+                    li.setAttribute('aria-selected', list[i].value === current ? 'true' : 'false');
+
+                    var value = document.createElement('span');
+                    value.className = 'name-suggest-value';
+                    value.textContent = list[i].value;
+                    li.appendChild(value);
+
+                    var hint = document.createElement('span');
+                    hint.className = 'name-suggest-hint';
+                    hint.textContent = list[i].hint || '';
+                    li.appendChild(hint);
+
+                    if (list[i].value === current) li.classList.add('is-current');
+                    panel.appendChild(li);
+                }
+                panel.classList.add('show');
+                input.setAttribute('aria-expanded', 'true');
+                activeIndex = -1;
+            }
+
+            function closeOtherPanels() {
+                var others = document.querySelectorAll('.name-suggest-dropdown.show');
+                for (var i = 0; i < others.length; i++) {
+                    if (others[i] === panel) continue;
+                    others[i].classList.remove('show');
+                    others[i].innerHTML = '';
+                    var owner = others[i].parentNode ? others[i].parentNode.querySelector('input') : null;
+                    if (owner) owner.setAttribute('aria-expanded', 'false');
+                }
+            }
+
+            function openPanel() {
+                closeOtherPanels();
+                entries = collectCandidates();
+                render(entries);
+            }
+
+            function highlight() {
+                var options = panel.querySelectorAll('.name-suggest-item');
+                for (var i = 0; i < options.length; i++) {
+                    if (i === activeIndex) options[i].classList.add('is-active');
+                    else options[i].classList.remove('is-active');
+                }
+                if (options[activeIndex] && options[activeIndex].scrollIntoView) {
+                    options[activeIndex].scrollIntoView({ block: 'nearest' });
+                }
+            }
+
+            function entryFor(name) {
+                for (var i = 0; i < entries.length; i++) {
+                    if (entries[i].value === name) return entries[i];
+                }
+                return null;
+            }
+
+            function choose(name) {
+                // নিজের নাম নয় — অ্যাপ্লিকেশন ফরমে radio থাকলে 'অন্যান্য' সিলেক্ট করি;
+                // ওই radio-র change হ্যান্ডলার ইনপুট খালি করে, তাই মান পরে বসাই
+                var otherRadio = byId('other_name');
+                if (otherRadio && !otherRadio.checked && valueOf('name_bn') !== name) {
+                    otherRadio.checked = true;
+                    otherRadio.dispatchEvent(new Event('change', { bubbles: true }));
+                }
+                var entry = entryFor(name);
+                muted = true;
+                input.value = name;
+                input.readOnly = false;
+                input.style.backgroundColor = '';
+                input.dispatchEvent(new Event('input', { bubbles: true }));
+                muted = false;
+                applyPrefill(entry);
+                closePanel();
+            }
+
+            input.addEventListener('click', function () {
+                if (!panel.classList.contains('show')) openPanel();
+            });
+            input.addEventListener('input', function () {
+                if (muted) return;
+                // প্যানেল খোলা না থাকলে (যেমন অন্য কোড ভ্যালু বসালে) টাইপেও খুলব না
+                if (!panel.classList.contains('show')) return;
+                entries = collectCandidates();
+                render(filtered(input.value));
+            });
+            input.addEventListener('keydown', function (e) {
+                if (!panel.classList.contains('show')) {
+                    if (e.key === 'ArrowDown') {
+                        e.preventDefault();
+                        openPanel();
+                    }
+                    return;
+                }
+                var options = panel.querySelectorAll('.name-suggest-item');
+                if (!options.length) return;
+                if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    if (e.key === 'ArrowDown') activeIndex = (activeIndex + 1) % options.length;
+                    else activeIndex = (activeIndex <= 0) ? options.length - 1 : activeIndex - 1;
+                    highlight();
+                } else if (e.key === 'Enter') {
+                    if (activeIndex >= 0) {
+                        e.preventDefault();
+                        choose(options[activeIndex].getAttribute('data-value'));
+                    } else {
+                        closePanel();
+                    }
+                } else if (e.key === 'Escape' || e.key === 'Tab') {
+                    closePanel();
+                }
+            });
+            panel.addEventListener('mousedown', function (e) {
+                var item = e.target.closest ? e.target.closest('.name-suggest-item') : null;
+                if (!item) return;
+                e.preventDefault();
+                choose(item.getAttribute('data-value'));
+            });
+            document.addEventListener('mousedown', function (e) {
+                if (!wrapper.contains(e.target)) closePanel();
+            });
+            input.addEventListener('blur', function () {
+                setTimeout(function () {
+                    if (!wrapper.contains(document.activeElement)) closePanel();
+                }, 100);
+            });
+
+            input.__nameSuggest = { open: openPanel, close: closePanel };
+            return input.__nameSuggest;
+        }
+
+        // শুরু — সাজেশন শুধু #applicant_name-এ, প্রিফিল টার্গেটও ওয়্যার করি
+        function start() {
+            wireTarget(byId(TARGET_BN));
+            wireTarget(byId(TARGET_EN));
+            ['name_bn', 'name_en'].forEach(function (id) {
+                var el = byId(id);
+                if (el) el.addEventListener('input', syncFromDeceased);
+            });
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', start);
+        } else {
+            start();
+        }
+
+        // ডাইনামিকি যোগ হওয়া ফিল্ড/সেকশন কাভার করতে focusin-এ delegation
+        document.addEventListener('focusin', function (e) {
+            var el = e.target;
+            if (!el || el.tagName !== 'INPUT' || el.type !== 'text' || el.id !== APPLICANT_ID) return;
+            attach(el).open();
+        });
+    })();
+
     var photoEl = document.getElementById('photo');
     if (photoEl) {
         photoEl.addEventListener('change', function (event) {

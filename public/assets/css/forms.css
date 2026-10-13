@@ -537,6 +537,21 @@
     outline: none;
 }
 
+/* ========== ID ভ্যালিডেশন (NID / জন্ম নিবন্ধন) ==========
+   ভুল দৈর্ঘ্য বা খালি হলে JS is-invalid যোগ করে। উপরের ফর্ম স্টাইলগুলো
+   (!important সহ) লাল রঙ দবায় দিচ্ছিল — তাই এখানে আলাদা জিতেছে,
+   focus থাকলেও লাল দেখাবে। */
+#applicationForm input.form-control.is-invalid,
+#applicationForm select.form-control.is-invalid,
+#applicationForm textarea.form-control.is-invalid,
+#applicationForm input.form-control.is-invalid:focus,
+#applicationForm select.form-control.is-invalid:focus,
+#applicationForm textarea.form-control.is-invalid:focus {
+    border-color: #dc3545 !important;
+    box-shadow: 0 0 0 0.16rem rgba(220, 53, 69, 0.25) !important;
+    outline: none;
+}
+
 #applicationForm input::placeholder,
 #applicationForm textarea::placeholder {
     color: #a3adb8;
@@ -804,6 +819,111 @@ legend {
     .upload-preview-area {
         height: 200px;
     }
+}
+
+/* ========== APPLICANT NAME SUGGESTIONS (আবেদনকারীর নাম ড্রপডাউন) ========== */
+/* #applicant_name ফিল্ডে ক্লিক/ফোকাস করলে নিজের নাম ও ওয়ারিশদের নাম থেকে
+   সাজেশন দেখায়; মান JS (assets/js/forms.js) থেকে বসে। */
+.name-suggest-wrapper {
+    position: relative;
+}
+
+.name-suggest-dropdown {
+    position: absolute;
+    top: calc(100% + 2px);
+    left: 0;
+    right: 0;
+    z-index: 1055;
+    display: none;
+    max-height: 220px;
+    margin: 0;
+    padding: 4px 0;
+    overflow-y: auto;
+    list-style: none;
+    background: #fff;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+}
+
+.name-suggest-dropdown.show {
+    display: block;
+}
+
+.name-suggest-dropdown .name-suggest-item {
+    padding: 7px 12px;
+    font-size: 13px;
+    color: #333;
+    cursor: pointer;
+    border-bottom: 1px solid #f1f3f5;
+}
+
+.name-suggest-dropdown .name-suggest-item:last-child {
+    border-bottom: 0;
+}
+
+.name-suggest-dropdown .name-suggest-item:hover,
+.name-suggest-dropdown .name-suggest-item.is-active {
+    background: #eef6ff;
+}
+
+.name-suggest-dropdown .name-suggest-item.is-current {
+    font-weight: 600;
+    color: #0d6efd;
+}
+
+/* নাম সাজেশন: মান + সোর্স হিন্ট (আবেদনকারী/পিতা/মাতা/সম্পর্ক) পাশাপাশি */
+.name-suggest-dropdown {
+    min-width: 180px;
+}
+
+.name-suggest-dropdown .name-suggest-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.name-suggest-dropdown .name-suggest-value {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.name-suggest-dropdown .name-suggest-hint {
+    flex: 0 0 auto;
+    font-size: 11px;
+    font-weight: 400;
+    color: #8a94a0;
+    white-space: nowrap;
+}
+
+/* ========== আবেদনকারীর পিতা/স্বামীর নাম প্রিফিল (ওয়ারিশ সম্পর্ক অনুযায়ী) ========== */
+#applicationForm input.form-control.is-autofilled {
+    border-color: #3aa9a9 !important;
+    background-color: #eef9f9 !important;
+}
+
+.autofill-note {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    margin-top: 3px;
+    font-size: 11px;
+    line-height: 1.5;
+    color: #0f6b6b;
+}
+
+.autofill-note .autofill-clear {
+    border: 0;
+    background: none;
+    padding: 0;
+    font-size: 11px;
+    color: #b02a37;
+    text-decoration: underline;
+    cursor: pointer;
 }
 
 /* Mobile: everything stacked */
