@@ -385,10 +385,17 @@
 	
 
 
-    <!-- Validity Table -->
+    <!-- First Table: Validity of Trade License -->
     <table style="">
         <tr>
-            <td style="font-size: 9pt;">Validity of this Trade License:------------{{ business_meta.expiry_date | date('d-m-Y') }}------------Up to</td>
+            <td style="font-size: 9pt;">
+                Validity of this Trade License:------------{{ business_meta.expiry_date | date('d-m-Y') }}------------Up to.
+            </td>
+        </tr>
+        <tr>
+            <td style="font-size: 9pt;">
+                The license fee for the said establishment having been received, for the fiscal year ({{ business_meta.fiscal_year }}).
+            </td>
         </tr>
     </table>
 
