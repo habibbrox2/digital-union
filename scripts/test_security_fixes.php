@@ -100,7 +100,7 @@ test("Valid field name accepted",
 // ==============================
 echo "\n--- 4. CSRF Token Generation ---\n";
 
-require_once __DIR__ . '/../config/csrf.php';
+require_once __DIR__ . '/../config/security/csrf.php';
 
 $token = generateCsrfToken();
 test("CSRF token is generated", !empty($token));

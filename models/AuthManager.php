@@ -482,7 +482,7 @@ class AuthManager {
                     'message' => 'আপনার এই সুবিধা নেই'
                 ]);
             } else {
-                require_once __DIR__ . '/../config/error.php';
+                require_once __DIR__ . '/../config/security/error.php';
                 renderError(403, 'আপনার এই সুবিধা নেই');
             }
             exit;

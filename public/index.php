@@ -128,8 +128,26 @@ spl_autoload_register(function ($className) {
 // ----------------------------
 // 2. Load Config Files
 // ----------------------------
-foreach (glob(__DIR__ . '/../config/*.php') as $file) {
-    require_once $file;
+//  Recursive loader (subdirectories included) so config files keep their
+//  eager load order even after folder restructuring. The `routes.php` and
+//  `error.php` files are skipped here and required in the deferred step
+//  below — same effective ordering as the old flat `config/*.php` glob.
+$configConfigDir = new RecursiveDirectoryIterator(__DIR__ . '/../config', FilesystemIterator::SKIP_DOTS);
+$configConfigIter = new RecursiveIteratorIterator($configConfigDir);
+$configConfigFiles = [];
+foreach ($configConfigIter as $configConfigFile) {
+    if ($configConfigFile->isFile() && $configConfigFile->getExtension() === 'php') {
+        $configConfigFiles[] = $configConfigFile->getPathname();
+    }
+}
+sort($configConfigFiles);
+foreach ($configConfigFiles as $configConfigFile) {
+    // Deferred files: routes.php needs the $router object created below,
+    // error.php is registered explicitly after controllers are loaded.
+    if (in_array(basename($configConfigFile), ['routes.php', 'error.php'], true)) {
+        continue;
+    }
+    require_once $configConfigFile;
 }
 
 // ----------------------------
@@ -151,7 +169,7 @@ foreach (glob(__DIR__ . '/../controllers/*.php') as $controllerFile) {
 
 // Now that $router is initialized and controllers are loaded, include
 // route files that register routes via $router (they were deferred above).
-$deferred = [__DIR__ . '/../config/routes.php', __DIR__ . '/../config/error.php'];
+$deferred = [__DIR__ . '/../config/routes/routes.php', __DIR__ . '/../config/security/error.php'];
 foreach ($deferred as $f) {
     if (file_exists($f)) require_once $f;
 }
