@@ -9,8 +9,10 @@
 declare(strict_types=1);
 
 // Ensure BASE_PATH is defined (project root)
+// 🔒 (adjusted one level deeper after this file moved to config/email/
+//      so BASE_PATH still resolves to the project root, never config/)
 if (!defined('BASE_PATH')) {
-    define('BASE_PATH', dirname(__DIR__));
+    define('BASE_PATH', dirname(__DIR__, 2));
 }
 
 // Try to load .env variables if available (prefer vlucas/phpdotenv)

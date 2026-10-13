@@ -26,7 +26,7 @@ class EmailService {
      */
     public function __construct(\mysqli $mysqli = null) {
         require_once __DIR__ . '/../vendor/autoload.php';
-        require_once __DIR__ . '/../config/email.php';
+        require_once __DIR__ . '/../config/email/email.php';
 
         $this->mysqli = $mysqli;
         $this->mail = new PHPMailer(EMAIL_DEBUG);
