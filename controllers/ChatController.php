@@ -1678,7 +1678,7 @@ $router->get('/api/chat/push/config', function () use ($chatService) {
     }
 
     if (!function_exists('getFirebaseConfig')) {
-        require_once __DIR__ . '/../config/firebase.php';
+        require_once __DIR__ . '/../config/push/firebase.php';
     }
 
     $config = getFirebaseConfig();
@@ -1703,7 +1703,7 @@ $router->get('/api/chat/push/config', function () use ($chatService) {
  */
 $router->get('/firebase-messaging-sw.js', function () use ($chatModel) {
     if (!function_exists('getFirebaseConfig')) {
-        require_once __DIR__ . '/../config/firebase.php';
+        require_once __DIR__ . '/../config/push/firebase.php';
     }
 
     $config = getFirebaseConfig();
@@ -1845,7 +1845,7 @@ $router->post('/api/chat/admin/push/test', function () use ($chatService, $chatM
     }
 
     if (!function_exists('sendFcmMulticast')) {
-        require_once __DIR__ . '/../config/fcm.php';
+        require_once __DIR__ . '/../config/push/fcm.php';
     }
 
     $result = sendFcmMulticast(

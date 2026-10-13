@@ -40,7 +40,10 @@ if (!function_exists('getFirebaseConfig')) {
 
         // Resolve relative path from project root
         if ($saPath !== '' && !preg_match('#^[A-Z]:\\\\|/#i', $saPath)) {
-            $saPath = dirname(__DIR__) . '/' . ltrim($saPath, '/\\');
+            // 🔒 Resolve relative service-account path from PROJECT ROOT
+            // (kept root-relative even after the file moved one level deeper,
+            // so existing FIREBASE_SERVICE_ACCOUNT_PATH env values stay valid)
+            $saPath = dirname(__DIR__, 2) . '/' . ltrim($saPath, '/\\');
         }
 
         $serviceAccount = null;

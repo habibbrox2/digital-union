@@ -42,7 +42,7 @@ class PushService
     public function getFirebaseClientConfig(): array
     {
         if (!function_exists('getFirebaseConfig')) {
-            require_once __DIR__ . '/../../config/firebase.php';
+            require_once __DIR__ . '/../../config/push/firebase.php';
         }
         $config = getFirebaseConfig();
         return $config['web_config'] ?? [];
@@ -55,7 +55,7 @@ class PushService
     public function getVapidPublicKey(): string
     {
         if (!function_exists('getFirebaseConfig')) {
-            require_once __DIR__ . '/../../config/firebase.php';
+            require_once __DIR__ . '/../../config/push/firebase.php';
         }
         $config = getFirebaseConfig();
         return $config['vapid_key'] ?? '';
@@ -94,7 +94,7 @@ class PushService
 
         // Require FCM config
         if (!function_exists('sendFcmMulticast')) {
-            require_once __DIR__ . '/../../config/fcm.php';
+            require_once __DIR__ . '/../../config/push/fcm.php';
         }
 
         if (!function_exists('sendFcmMulticast')) {
@@ -145,7 +145,7 @@ class PushService
         }
 
         if (!function_exists('sendFcmMulticast')) {
-            require_once __DIR__ . '/../../config/fcm.php';
+            require_once __DIR__ . '/../../config/push/fcm.php';
         }
 
         if (!function_exists('sendFcmMulticast')) {
@@ -191,7 +191,7 @@ class PushService
     public function sendToUnion(int $unionId, string $title, string $body = '', array $data = []): void
     {
         if (!$this->isEnabled()) return;
-        if (!function_exists('sendFcmMulticast')) require_once __DIR__ . '/../../config/fcm.php';
+        if (!function_exists('sendFcmMulticast')) require_once __DIR__ . '/../../config/push/fcm.php';
         if (!function_exists('sendFcmMulticast')) return;
         $tokens = $this->chatModel->getFcmTokensForUnion($unionId);
         if (!$tokens) return;
@@ -206,7 +206,7 @@ class PushService
     public function sendDataMessage(string $fcmToken, array $data): bool
     {
         if (!function_exists('sendFcmNotification')) {
-            require_once __DIR__ . '/../../config/fcm.php';
+            require_once __DIR__ . '/../../config/push/fcm.php';
         }
 
         if (!function_exists('sendFcmNotification')) {

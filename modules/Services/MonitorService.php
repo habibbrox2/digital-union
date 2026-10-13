@@ -218,7 +218,7 @@ class MonitorService
     private function checkFCM(): array
     {
         if (!function_exists('getFirebaseConfig')) {
-            require_once __DIR__ . '/../../config/firebase.php';
+            require_once __DIR__ . '/../../config/push/firebase.php';
         }
 
         $config = getFirebaseConfig();
