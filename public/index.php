@@ -258,7 +258,27 @@ spl_autoload_register(function ($className) {
 
 // ----------------------------
 
-foreach (glob(__DIR__ . '/../config/*.php') as $file) {
+$configFiles = [];
+
+$iterator = new RecursiveIteratorIterator(
+
+    new RecursiveDirectoryIterator(__DIR__ . '/../config', RecursiveDirectoryIterator::SKIP_DOTS)
+
+);
+
+foreach ($iterator as $file) {
+
+    if ($file->isFile() && $file->getExtension() === 'php') {
+
+        $configFiles[] = $file->getPathname();
+
+    }
+
+}
+
+sort($configFiles);
+
+foreach ($configFiles as $file) {
 
     require_once $file;
 
@@ -416,74 +436,74 @@ foreach ($blockedPatterns as $pattern) {
 
 
 
-// ----------------------------
-// 5b. Rate Limiting Middleware (60 requests/minute per IP)
-// ----------------------------
-function getClientIp() {
-    $headers = [
-        'HTTP_CF_CONNECTING_IP',
-        'HTTP_X_FORWARDED_FOR',
-        'HTTP_X_REAL_IP',
-        'HTTP_CLIENT_IP',
-    ];
-    foreach ($headers as $header) {
-        if (!empty($_SERVER[$header])) {
-            $ip = $_SERVER[$header];
-            if (strpos($ip, ',') !== false) {
-                $ip = trim(explode(',', $ip)[0]);
-            }
-            if (filter_var($ip, FILTER_VALIDATE_IP)) {
-                return $ip;
-            }
-        }
-    }
-    return $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
-}
-
-$clientIp = getClientIp();
-$rateLimitDir = __DIR__ . '/../storage/rate_limits';
-if (!is_dir($rateLimitDir)) {
-    @mkdir($rateLimitDir, 0755, true);
-}
-$rateLimitFile = $rateLimitDir . '/' . md5($clientIp) . '.json';
-$now = time();
-$window = 60; // seconds
-$maxRequests = 60;
-$requests = [];
-if (file_exists($rateLimitFile)) {
-    $data = @file_get_contents($rateLimitFile);
-    if ($data) {
-        $decoded = json_decode($data, true);
-        if (is_array($decoded)) {
-            $requests = $decoded;
-        }
-    }
-}
-// Remove old requests outside window
-$requests = array_values(array_filter($requests, function($ts) use ($now, $window) {
-    return ($now - $ts) < $window;
-}));
-
-if (count($requests) >= $maxRequests) {
-    $oldest = $requests[0] ?? $now;
-    $retryAfter = max(1, $window - ($now - $oldest));
-    header('Retry-After: ' . $retryAfter);
-    header('X-RateLimit-Limit: ' . $maxRequests);
-    header('X-RateLimit-Remaining: 0');
-    header('X-RateLimit-Reset: ' . ($oldest + $window));
-    http_response_code(429);
-    header('Content-Type: text/html; charset=utf-8');
-    echo '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>429 Too Many Requests</title><style>body{font-family:Arial,sans-serif;text-align:center;padding:50px;background:#f5f5f5;} .box{background:white;padding:30px;border-radius:8px;box-shadow:0 2px 10px rgba(0,0,0,0.1);max-width:500px;margin:0 auto;} h1{color:#d32f2f;}</style></head><body><div class="box"><h1>429 অনেক বেশি রিকোয়েস্ট</h1><p>আপনি এক মিনিটে অনুমোদিত সীমা অতিক্রম করেছেন। অনুগ্রহ করে ' . $retryAfter . ' সেকেন্ড পরে আবার চেষ্টা করুন।</p></div></body></html>';
-    exit;
-}
-
-// Add current request
-$requests[] = $now;
-@file_put_contents($rateLimitFile, json_encode($requests), LOCK_EX);
-
-header('X-RateLimit-Limit: ' . $maxRequests);
-header('X-RateLimit-Remaining: ' . max(0, $maxRequests - count($requests)));
-
+// ----------------------------
+// 5b. Rate Limiting Middleware (60 requests/minute per IP)
+// ----------------------------
+function getClientIp() {
+    $headers = [
+        'HTTP_CF_CONNECTING_IP',
+        'HTTP_X_FORWARDED_FOR',
+        'HTTP_X_REAL_IP',
+        'HTTP_CLIENT_IP',
+    ];
+    foreach ($headers as $header) {
+        if (!empty($_SERVER[$header])) {
+            $ip = $_SERVER[$header];
+            if (strpos($ip, ',') !== false) {
+                $ip = trim(explode(',', $ip)[0]);
+            }
+            if (filter_var($ip, FILTER_VALIDATE_IP)) {
+                return $ip;
+            }
+        }
+    }
+    return $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
+}
+
+$clientIp = getClientIp();
+$rateLimitDir = __DIR__ . '/../storage/rate_limits';
+if (!is_dir($rateLimitDir)) {
+    @mkdir($rateLimitDir, 0755, true);
+}
+$rateLimitFile = $rateLimitDir . '/' . md5($clientIp) . '.json';
+$now = time();
+$window = 60; // seconds
+$maxRequests = 60;
+$requests = [];
+if (file_exists($rateLimitFile)) {
+    $data = @file_get_contents($rateLimitFile);
+    if ($data) {
+        $decoded = json_decode($data, true);
+        if (is_array($decoded)) {
+            $requests = $decoded;
+        }
+    }
+}
+// Remove old requests outside window
+$requests = array_values(array_filter($requests, function($ts) use ($now, $window) {
+    return ($now - $ts) < $window;
+}));
+
+if (count($requests) >= $maxRequests) {
+    $oldest = $requests[0] ?? $now;
+    $retryAfter = max(1, $window - ($now - $oldest));
+    header('Retry-After: ' . $retryAfter);
+    header('X-RateLimit-Limit: ' . $maxRequests);
+    header('X-RateLimit-Remaining: 0');
+    header('X-RateLimit-Reset: ' . ($oldest + $window));
+    http_response_code(429);
+    header('Content-Type: text/html; charset=utf-8');
+    echo '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>429 Too Many Requests</title><style>body{font-family:Arial,sans-serif;text-align:center;padding:50px;background:#f5f5f5;} .box{background:white;padding:30px;border-radius:8px;box-shadow:0 2px 10px rgba(0,0,0,0.1);max-width:500px;margin:0 auto;} h1{color:#d32f2f;}</style></head><body><div class="box"><h1>429 অনেক বেশি রিকোয়েস্ট</h1><p>আপনি এক মিনিটে অনুমোদিত সীমা অতিক্রম করেছেন। অনুগ্রহ করে ' . $retryAfter . ' সেকেন্ড পরে আবার চেষ্টা করুন।</p></div></body></html>';
+    exit;
+}
+
+// Add current request
+$requests[] = $now;
+@file_put_contents($rateLimitFile, json_encode($requests), LOCK_EX);
+
+header('X-RateLimit-Limit: ' . $maxRequests);
+header('X-RateLimit-Remaining: ' . max(0, $maxRequests - count($requests)));
+
 // 6. Dispatch Request (Only New Router)
 
 // ----------------------------
