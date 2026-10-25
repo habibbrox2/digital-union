@@ -55,9 +55,24 @@ if (!function_exists('generateBreadcrumbs')) {
 if (!function_exists('getSettings')) {
     function getSettings() {
         global $mysqli;
+        if (!isset($mysqli) || !($mysqli instanceof mysqli) || $mysqli->connect_error) {
+            return [];
+        }
         static $service = null;
-        if ($service === null) $service = new SettingService($mysqli);
-        return $service->getSettings();
+        if ($service === null) {
+            try {
+                $service = new SettingService($mysqli);
+            } catch (Throwable $e) {
+                error_log('getSettings error: ' . $e->getMessage());
+                return [];
+            }
+        }
+        try {
+            return $service->getSettings();
+        } catch (Throwable $e) {
+            error_log('getSettings error: ' . $e->getMessage());
+            return [];
+        }
     }
 }
 
@@ -72,9 +87,24 @@ if (!function_exists('handleApplicantFileUpload')) {
 if (!function_exists('getFee')) {
     function getFee($feeName) {
         global $mysqli;
+        if (!isset($mysqli) || !($mysqli instanceof mysqli)) {
+            return 0;
+        }
         static $service = null;
-        if ($service === null) $service = new FeeService($mysqli);
-        return $service->getFee($feeName);
+        if ($service === null) {
+            try {
+                $service = new FeeService($mysqli);
+            } catch (Throwable $e) {
+                error_log('getFee error: ' . $e->getMessage());
+                return 0;
+            }
+        }
+        try {
+            return $service->getFee($feeName);
+        } catch (Throwable $e) {
+            error_log('getFee error: ' . $e->getMessage());
+            return 0;
+        }
     }
 }if (!function_exists('showMessage')) {
     function showMessage($message, $type = 'success') {
