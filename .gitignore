@@ -1,225 +1,212 @@
-# ============================================
-# Environment & Configuration
-# ============================================
-.env
-.env.*
-!.env.example
+# ============================================
+# Environment & Configuration
+# ============================================
+.env
+.env.local
+.env.*.local
+.env.example.local
+
+# ============================================
+# Dependencies
+# ============================================
+vendor/
+node_modules/
+composer.lock
+package-lock.json
+yarn.lock
+
+# ============================================
+# Logs & Error Files
+# ============================================
+storage/logs/
+*.log
+*.err
+error_log
+error.log
+
+# ============================================
+# Cache & Temporary Files
+# ============================================
+storage/cache/
+storage/cache/**
+storage/tmp/
+tmp/
+/tmp/
+cache/
+.cache/
+*.tmp
+*.temp
+
+# ============================================
+# IDE & Editor Files
+# ============================================
+.vscode/
+.idea/
+.idea/**
+*.sublime-project
+*.sublime-workspace
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+.editorconfig
+*.iml
+.project
+.classpath
+.settings/
+*.iws
+*.ipr
+
+# ============================================
+# Session & Temporary Data
+# ============================================
+session/
+sessions/
+/session/
+/sessions/
+
+# ============================================
+# User Uploads (Keep .gitkeep)
+# ============================================
+public/uploads/*
+public/tmp/*
+!public/uploads/.gitkeep
+!public/tmp/.gitkeep
+!public/uploads/chat/
+public/uploads/chat/*
+!public/uploads/chat/.htaccess
+
+# ============================================
+# Backups & Database Dumps
+# ============================================
+*.bak
+*.backup
+*.old
+*.sql.bak
+*.database.backup
+*.sql
+db_backups/
+backups/
+
+# ============================================
+# Audit & Backup Dumps (local copies, not source)
+# ============================================
+backup__/
+lgdhaka_extracted/
+
+# Timestamped config backups
+config/*.bak.*
+*.bak.*
+
+# Audit / code reports
+CODEBASE_AUDIT.md
+
+# ============================================
+# Documentation & Audit Files
+# ============================================
+AUDIT_AND_REPAIR_REPORT.md
+TRADE_LICENSE_EXPIRY_FEATURE.md
+*_REPORT.md
+*_FEATURE.md
+
+# ============================================
+# Migration & Database Scripts
+# ============================================
+migrate.php
+database_migration_safe.sql
+database_fixes.sql
+tdhuedhn_lgdhaka.sql
+*_migration*.sql
+*_fixes.sql
+
+# ============================================
+# Archive Files
+# ============================================
+classes.zip
+*.zip
+*.rar
+*.7z
+*.tar
+*.tar.gz
+
+# ============================================
+# Compiled & Minified Assets
+# ============================================
+public/css/min/
+public/js/min/
+public/assets/min/
+dist/
+build/
+
+# ============================================
+# Testing & Coverage
+# ============================================
+.phpunit.result.cache
+phpunit.xml
+.coverage/
+coverage/
+.nyc_output/
+
+# ============================================
+# OS Specific
+# ============================================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+desktop.ini
+$RECYCLE.BIN/
+.classpath
+.cproject
+
+# ============================================
+# npm/yarn
+# ============================================
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# ============================================
+# IntelliJ IDEA
+# ============================================
+*.iml
+*.iws
+*.ipr
+.idea/
+.idea/**
+
+# ============================================
+# System Files
+# ============================================
+Thumbs.db
+.vagrant/
+Vagrantfile
+Lockfile
+.lock
+
+# Temporary files
+temp/
+tmp/
+*.tmp
+
+# ============================================
+# Chat: local scratch files & push keys (never commit VAPID private keys)
+# ============================================
+nul
+*.keys.txt
+sub_keys.txt
+vapid_keys.txt
+.tmp.driveupload/
+
+# Database backups
+*.sql
+!database_schema_email.sql
 
 # ============================================
-# Dependencies
+# Rate Limiting Data
 # ============================================
-vendor/
-node_modules/
-package-lock.json
-yarn.lock
-
-# ============================================
-# Logs & Error Files
-# ============================================
-storage/logs/
-*.log
-*.err
-error_log
-error.log
-
-# ============================================
-# Cache & Temporary Files
-# ============================================
-storage/cache/
-storage/cache/**
-storage/tmp/
-tmp/
-/tmp/
-cache/
-.cache/
-*.tmp
-*.temp
-
-# ============================================
-# IDE & Editor Files
-# ============================================
-.vscode/
-.idea/
-.idea/**
-*.sublime-project
-*.sublime-workspace
-*.swp
-*.swo
-*~
-.DS_Store
-Thumbs.db
-.editorconfig
-*.iml
-.project
-.classpath
-.settings/
-*.iws
-*.ipr
-
-# ============================================
-# Session & Temporary Data
-# ============================================
-session/
-sessions/
-/session/
-/sessions/
-
-# ============================================
-# User Uploads (Keep .gitkeep)
-# ============================================
-public/uploads/*
-public/tmp/*
-!public/uploads/.gitkeep
-!public/tmp/.gitkeep
-!public/uploads/chat/
-public/uploads/chat/*
-!public/uploads/chat/.htaccess
-
-# ============================================
-# Backups & Database Dumps
-# ============================================
-*.bak
-*.backup
-*.old
-*.sql.bak
-*.database.backup
-*.sql
-db_backups/
-backups/
-
-# ============================================
-# Audit & Backup Dumps (local copies, not source)
-# ============================================
-backup__/
-lgdhaka_extracted/
-
-# Timestamped config backups
-config/*.bak.*
-*.bak.*
-
-# Audit / code reports
-CODEBASE_AUDIT.md
-
-# ============================================
-# Documentation & Audit Files
-# ============================================
-AUDIT_AND_REPAIR_REPORT.md
-TRADE_LICENSE_EXPIRY_FEATURE.md
-*_REPORT.md
-*_FEATURE.md
-
-# ============================================
-# Migration & Database Scripts
-# ============================================
-migrate.php
-database_migration_safe.sql
-database_fixes.sql
-tdhuedhn_lgdhaka.sql
-*_migration*.sql
-*_fixes.sql
-
-# ============================================
-# Archive Files
-# ============================================
-classes.zip
-*.zip
-*.rar
-*.7z
-*.tar
-*.tar.gz
-
-# ============================================
-# Compiled & Minified Assets
-# ============================================
-public/css/min/
-public/js/min/
-public/assets/min/
-dist/
-build/
-
-# ============================================
-# Testing & Coverage
-# ============================================
-.phpunit.result.cache
-.phpunit.cache/
-phpunit.xml
-.coverage/
-coverage/
-.nyc_output/
-
-# ============================================
-# OS Specific
-# ============================================
-.DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
-desktop.ini
-$RECYCLE.BIN/
-.classpath
-.cproject
-
-# ============================================
-# npm/yarn
-# ============================================
-node_modules/
-npm-debug.log
-yarn-error.log
-
-# ============================================
-# IntelliJ IDEA
-# ============================================
-*.iml
-*.iws
-*.ipr
-.idea/
-.idea/**
-
-# ============================================
-# System Files
-# ============================================
-Thumbs.db
-.vagrant/
-Vagrantfile
-Lockfile
-.lock
-
-# ============================================
-# Kilo Config (contains secrets)
-# ============================================
-.kilo/
-
-# Database backups
-*.sql
-!database_schema_email.sql
-
-# ============================================
-# Local Cache & Tool Directories
-# ============================================
-.agents/
-.freebuff/
-.phpunit.cache/
-.playwright-cli/
-
-# ============================================
-# Secrets & Credentials (NEVER commit)
-# ============================================
-config/*firebase*.json
-config/*-adminsdk-*.json
-config/*-serviceaccount*.json
-config/*.pem
-config/*.key
-
-# ============================================
-# Local Database Directory
-# ============================================
-database/
-
-# ============================================
-# Temporary Test/Debug Files (never commit)
-# ============================================
-public/_test_admin_session.php
-scripts/postoffice_dropdown_harness.html
-.tmp_addr_fields.js
+storage/rate_limits/*
+!storage/rate_limits/.htaccess

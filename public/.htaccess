@@ -1,116 +1,249 @@
 # ============================================================
+
 # Clean & Optimized .htaccess for Apache 2.4+ / cPanel
+
 # ============================================================
+
+
 
 <IfModule mod_rewrite.c>
+
     RewriteEngine On
+
     RewriteBase /
 
+
+
     # --- Remove double or multiple slashes from URL ---
+
     RewriteCond %{REQUEST_URI} ^//+(.*)$
+
     RewriteRule .* /%1 [R=301,L,NE]
 
+
+
     # --- Redirect requests with double slashes in raw HTTP request ---
+
     RewriteCond %{THE_REQUEST} //+
+
     RewriteRule .* %{REQUEST_URI} [R=301,L]
 
+
+
     # --- Send all other requests to index.php if not file or directory ---
+
     RewriteCond %{REQUEST_FILENAME} !-f
+
     RewriteCond %{REQUEST_FILENAME} !-d
+
     RewriteRule ^(.*)$ index.php [L,QSA]
+
 </IfModule>
 
+
+
 # ============================================================
+
 # PHP Handler (Use your server's default or latest version)
+
 # ============================================================# PHP handler — use server default (do NOT override for local XAMPP)
+
 # cPanel: uncomment the AddHandler below and set your PHP version
+
 # <IfModule mime_module>
+
 #     # AddHandler application/x-httpd-ea-php84 .php .php8 .phtml
+
 # </IfModule>
 
+
+
 # ============================================================
+
 # Security & Access Control
+
 # ============================================================
+
+
 
 # Disable directory listing
+
 # Options -Indexes
 
+
+
 # Deny direct access to .htaccess and sensitive files
+
 <FilesMatch "^(?:\.htaccess|composer\.(json|lock))$">
+
     Require all denied
+
 </FilesMatch>
 
+
+
 # Deny access to PHP, template, and config files inside specific directories
+
 <If "%{REQUEST_URI} =~ m#/(vendor|config|cache|classes)/#">
+
     <FilesMatch "\.(php|inc|tpl|twig|yaml)$">
+
         Require all denied
+
     </FilesMatch>
+
 </If>
 
 
 
+
+
+
+
 # ============================================================
+
 # PWA Support
+
 # ============================================================
+
+
 
 # Manifest cache control
+
 <FilesMatch "manifest\.json$">
+
     Header set Cache-Control "public, max-age=86400"
+
 </FilesMatch>
+
+
 
 # Service worker cache control
+
 <FilesMatch "sw\.js$">
+
     Header set Cache-Control "public, max-age=0, must-revalidate"
+
 </FilesMatch>
+
+
 
 # Digital asset links
+
 <FilesMatch "assetlinks\.json$">
+
     Header set Content-Type "application/json"
+
 </FilesMatch>
 
+
+
 # ============================================================
+
 # Security Headers (Basic, tweak as needed)
+
 # ============================================================
+
+
 
 #<IfModule mod_headers.c>
+
     #Header always append X-Frame-Options SAMEORIGIN
+
     #Header set X-XSS-Protection "1; mode=block"
+
     #Header set X-Content-Type-Options nosniff
+
     #Header set Content-Security-Policy "default-src 'self';"
+
     #Header set Cache-Control "no-store, no-cache, must-revalidate"
+
 #</IfModule>
 
+
+
 # ============================================================
+
 # Error Handling
+
 # ============================================================
+
+
 
 ErrorDocument 403 /error?code=403
 
+
+
 ErrorDocument 500 /error?code=500
 
+
+
 # ============================================================
+
 # MIME Types
+
 # ============================================================
+
+
 
 AddType application/pdf .pdf
+
 AddType application/pdf pdf
 
+
+
 # ============================================================
+
 # UTF-8 Charset for All Text Output
+
 # ============================================================
+
+
 
 # Default charset for all text/* responses served by Apache
+
 AddDefaultCharset UTF-8
 
+
+
 # Explicit charset for JavaScript and CSS files
+
 <IfModule mod_mime.c>
+
     AddCharset UTF-8 .js .css .json .html .xml .svg
+
 </IfModule>
 
+
+
 <Files 403.shtml>
+
 order allow,deny
+
 allow from all
+
 </Files>
+# PHPUnit RCE
+RewriteRule ^vendor/phpunit/ - [F,L]
+RewriteRule eval-stdin\.php$ - [F,L]
+
+# Deploy scripts
+RewriteRule deploy\.php$ - [F,L]
+
+# Block all xmlrpc.php attempts (WordPress/XML-RPC abuse)
+RewriteRule xmlrpc\.php$ - [F,L]
+
+# Block common scanner/probe paths
+RewriteRule ^(wp-admin|wp-login|wp-content|wp-includes)/ - [F,L]
+RewriteRule ^(phpinfo|info)\.php$ - [F,L]
+RewriteRule ^(database|backup|db|dump).*\.sql(\.gz|\.zip)?$ - [F,L]
+RewriteRule ^(_db|adminer|phpmyadmin|pma)/ - [F,L]
+RewriteRule ^\.env$ - [F,L]
+RewriteRule ^composer\.(json|lock)$ - [F,L]
+RewriteRule ^\.git/ - [F,L]
+RewriteRule ^llms\.txt$ - [F,L]
+RewriteRule ^\.well-known/ - [F,L]
+
 
 # php -- BEGIN cPanel-generated handler, do not edit
 # Set the “ea-php84” package as the default “PHP” programming language.
@@ -118,3 +251,17 @@ allow from all
   AddHandler application/x-httpd-ea-php84 .php .php8 .phtml
 </IfModule>
 # php -- END cPanel-generated handler, do not edit
+
+# BEGIN cPanel-generated php ini directives, do not edit
+# Manual editing of this file may result in unexpected behavior.
+# To make changes to this file, use the cPanel MultiPHP INI Editor (Home >> Software >> MultiPHP INI Editor)
+# For more information, read our documentation (https://go.cpanel.net/EA4ModifyINI)
+<IfModule php8_module>
+   php_value error_log "/home/tdhuedhn/logs/php.error.log"
+   php_flag log_errors On
+</IfModule>
+<IfModule lsapi_module>
+   php_value error_log "/home/tdhuedhn/logs/php.error.log"
+   php_flag log_errors On
+</IfModule>
+# END cPanel-generated php ini directives, do not edit
