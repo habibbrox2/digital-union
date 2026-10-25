@@ -18,7 +18,16 @@
 
         public function __construct($mysqli, $enableCache = false) {
             $this->localization = new LocalizationService();
-            $this->settings = new SettingService($mysqli);
+            if (isset($mysqli) && $mysqli instanceof mysqli) {
+                try {
+                    $this->settings = new SettingService($mysqli);
+                } catch (Throwable $e) {
+                    error_log('TwigManager SettingService error: ' . $e->getMessage());
+                    $this->settings = null;
+                }
+            } else {
+                $this->settings = null;
+            }
             $this->sanitizer = new SanitizationService();
             $templatePath = __DIR__ . '/../../templates';
             if (!is_dir($templatePath)) {
