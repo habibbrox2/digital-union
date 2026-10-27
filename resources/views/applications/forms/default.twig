@@ -287,7 +287,7 @@
                 }
             });
             // Preload existing documents
-            const docs = {{ data.documents|default([])|json_encode|raw }};
+            const docs = {{ data.documents|default([])|json_script }};
             if (Array.isArray(docs) && docs.length) {
                 docs.forEach(url => createDocumentRow(url));
             } else {
@@ -308,7 +308,7 @@
 
         // ---------------- extraData init ----------------
         try {
-            window.extraData = {{ extra_data|default({})|json_encode|raw }};
+            window.extraData = {{ extra_data|default({})|json_script }};
         } catch(e) {
             window.extraData = {};
         }

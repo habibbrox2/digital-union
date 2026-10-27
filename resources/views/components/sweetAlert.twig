@@ -2,7 +2,7 @@
 {% if sweetAlert %}
     <script>
     (function(){
-        const alert = {{ sweetAlert | json_encode | raw }};
+        const alert = {{ sweetAlert|json_script }};
 
         function tryShow() {
             if (typeof Swal === 'undefined' || typeof window.SweetAlertUtil === 'undefined') {

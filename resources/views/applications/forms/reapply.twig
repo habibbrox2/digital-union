@@ -142,7 +142,7 @@
 
     // ---------------- extraData init ----------------
     try {
-        window.extraData = {{ extra_data|default({})|json_encode|raw }};
+        window.extraData = {{ extra_data|default({})|json_script }};
     } catch(e) {
         window.extraData = {};
     }
@@ -282,7 +282,7 @@
                 }
             });
             // Preload existing documents from reuse data
-            var docs = {{ _data.documents|default([])|json_encode|raw }};
+            var docs = {{ _data.documents|default([])|json_script }};
             if (Array.isArray(docs) && docs.length) {
                 docs.forEach(function(url) { createDocumentRow(url); });
             } else {

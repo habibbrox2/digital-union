@@ -191,7 +191,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     /** ---------------------- পূর্বের ডকুমেন্ট প্রিলোড ---------------------- **/
-    const docs = {{ data.documents|default([])|json_encode|raw }};
+    const docs = {{ data.documents|default([])|json_script }};
     if (Array.isArray(docs) && docs.length) {
         docs.forEach(url => createDocumentRow(url));
     } else {

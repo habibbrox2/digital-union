@@ -187,6 +187,12 @@
                 return mb_convert_case($s, MB_CASE_TITLE, 'UTF-8');
             }));
             $this->twig->addFilter(new \Twig\TwigFilter('bn', [$this->localization, 'convertToBangla']));
+            // XSS-safe JSON for inline <script> blocks: HEX-escapes <, >, &, ', "
+            // so user-controlled data can never break out of the script element.
+            $this->twig->addFilter(new \Twig\TwigFilter('json_script', function ($value) {
+                $flags = JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT;
+                return json_encode($value, $flags | JSON_INVALID_UTF8_SUBSTITUTE);
+            }));
         /**
          * trans filter
          * Usage: {{ 'Hello World'|trans }}
