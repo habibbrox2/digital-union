@@ -34,7 +34,7 @@ function maskTwigOutput(body) {
   return body.replace(/\{\{[\s\S]*?\}\}/g, '0');
 }
 
-const files = walk(path.resolve(__dirname, '..', 'templates'));
+const files = walk(path.resolve(__dirname, '..', 'resources', 'views'));
 let failures = 0;
 let checked = 0;
 let skipped = 0;

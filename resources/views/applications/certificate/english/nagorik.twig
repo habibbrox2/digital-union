@@ -121,7 +121,7 @@
                         {% if data.marital_status == 'Married' %}
                         <tr class="citizen-info" style="font-size: 12pt;">
                             <td>Spouse Name</td>
-                            <td>: {{ data.spouse_name_en | default('N/A') }}</td>
+                            <td>: {{ data.spouse_name_en | default('') }}</td>
                         </tr>
                         {% endif %}
                                      

@@ -105,7 +105,7 @@
                         {% if data.marital_status == 'Married' %}
                         <tr class="citizen-info" style="font-size: 12pt;">
                             <td>স্বামী/স্ত্রীর নাম</td>
-                            <td>: {{ data.spouse_name_bn | default('N/A') }}</td>
+                            <td>: {{ data.spouse_name_bn | default('') }}</td>
                         </tr>
                         {% endif %}
                                      

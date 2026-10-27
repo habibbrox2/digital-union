@@ -223,3 +223,6 @@ database/
 public/_test_admin_session.php
 scripts/postoffice_dropdown_harness.html
 .tmp_addr_fields.js
+
+# Old production backup (never commit)
+__old_backup_/

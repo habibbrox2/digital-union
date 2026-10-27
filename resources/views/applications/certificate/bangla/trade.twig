@@ -51,7 +51,7 @@
 
         
         .title {
-            font-size: 16pt;
+            font-size: 18pt;
             font-weight: bold;
             color: #3c01c5;
             text-align: center;
@@ -220,20 +220,20 @@
         <tr>
             <td style="width: 25%;">টিআইএন (TIN)</td>
             <td style="width: 25%;">: {{ business_meta.tax_id | bn }}</td>
-            <td style="width: 25%;">বিআইএন (BIN)</td>
-            <td style="width: 25%;">: {{ business_meta.vat_id | bn }}</td>
+            <td colspan="4">বিআইএন (BIN) : {{ business_meta.vat_id | bn }}</td>
+            <td colspan="4"></td>
         </tr>
         <tr>
             <td>মোবাইল</td>
             <td>: {{ data.applicant_phone | bn }}</td>
-            <td>ই-মেইল</td>
-            <td>: {{ data.extra.email }}</td>
+            <td>ই-মেইল : {{ data.extra.email }}</td>
+            <td></td>
         </tr>
         <tr>
             <td>অর্থবছর</td>
             <td>: {{ business_meta.fiscal_year | bn }}</td>
-            <td>ব্যবসা শুরুর তারিখ</td>
-            <td>: {{ business_meta.business_start_date | bn }}</td>
+            <td>ব্যবসা শুরুর তারিখ : {{ data.extra.business_start_date | bn }}</td>
+            <td></td>
         </tr>
     </table>
 
