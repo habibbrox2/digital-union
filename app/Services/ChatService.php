@@ -17,7 +17,9 @@ class ChatService
     // Version 6 adds chat_sessions.union_id for union-scoped admin inboxes.
     // Bumping this forces the idempotent column check on deployments that had
     // already recorded the previous schema version without that column.
-    private const SCHEMA_VERSION = '6';
+    // Bump whenever new entries are added to ChatModel::addMissingColumns(),
+    // otherwise stored-version matches skip the migration on existing databases.
+    private const SCHEMA_VERSION = '7';
 
     // In-process guard: migration must run at most once per PHP process,
     // and only once per deployment (tracked via a system_settings flag).
