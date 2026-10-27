@@ -1,0 +1,471 @@
+{% extends "layout.twig" %}
+
+{% block title %}তথ্য সংশোধন ফরম{% endblock %}
+
+{% block header_title %}তথ্য সংশোধন ফরম{% endblock %}
+
+{% block content %}
+{% include 'components/sweetAlert.twig' %}
+<link rel="stylesheet" href="/assets/css/forms.css?t={{ "now"|date("Hiss") }}">
+
+<div class="container mt-4 px-3">
+    <h2 class="text-center my-4 fw-bold">{{ certificate_type_bn }}</h2>
+    
+    {# নিয়মাবলী #}
+    {% include 'common/rules.twig' %}
+
+    <form id="applicationForm" method="POST" action="/application/update" enctype="multipart/form-data">
+        {# আবেদনের আইডি এখানে লোড হবে #}
+        <input type="hidden" id="application_id" name="application_id" value="{{ data.application_id }}">
+        
+        <input type="hidden" id="certificate_type" name="certificate_type" value="{{ certificate_type }}">
+        
+        <legend class="w-auto px-2">আবেদনকারীর তথ্য সংশোধন</legend>
+
+        {# ব্যক্তিগত তথ্য #}
+        <fieldset class="border rounded p-3 mb-4">
+            <legend class="w-auto px-2">ব্যক্তিগত তথ্য</legend>
+            {% include 'common/personal_info.twig' %}
+        </fieldset>
+         {% if certificate_type == 'warish' %}
+          <fieldset class="border rounded p-3 mb-4">
+            <legend class="w-auto px-2">ওয়ারিশগনের তালিকা</legend>
+            <div class="row">
+                <div class="col-12">
+                    <div id="warish_container">
+                        <div class="row g-2 warish_entry border rounded p-3 mb-2">
+                            <!-- ক্রমিক -->
+                            <div class="col-md-1">
+                                <input type="number" name="serial_no[]" class="form-control" placeholder="ক্রমিক" value="1">
+                            </div>
+
+                            <!-- নাম (বাংলায়) -->
+                            <div class="col-md-2">
+                                <input type="text" name="warish_name_bn[]" class="form-control" placeholder="নাম (বাংলায়)">
+                            </div>
+
+                            <!-- নাম (ইংরেজিতে) -->
+                            <div class="col-md-2">
+                                <input type="text" name="warish_name_en[]" class="form-control" placeholder="নাম (ইংরেজিতে)" pattern="^[a-zA-Z. ]+$">
+                            </div>
+
+                            <!-- সম্পর্ক (এক সিলেক্ট থেকে বাংলা+ইংরেজি) -->
+                            <div class="col-md-3">
+                                <select name="relation[]" class="form-control">
+                                    <option value="">সম্পর্ক নির্বাচন করুন</option>
+                                    <option value="পিতা|Father">পিতা (Father)</option>
+                                    <option value="মাতা|Mother">মাতা (Mother)</option>
+                                    <option value="স্ত্রী|Wife">স্ত্রী (Wife)</option>
+                                    <option value="স্বামী|Husband">স্বামী (Husband)</option>
+                                    <option value="পুত্র|Son">পুত্র (Son)</option>
+                                    <option value="কন্যা|Daughter">কন্যা (Daughter)</option>
+                                    <option value="ভাই|Brother">ভাই (Brother)</option>
+                                    <option value="বোন|Sister">বোন (Sister)</option>
+                                    <option value="দাদা|Grandfather (Paternal)">দাদা (Grandfather - Paternal)</option>
+                                    <option value="দাদি|Grandmother (Paternal)">দাদি (Grandmother - Paternal)</option>
+                                    <option value="নানা|Grandfather (Maternal)">নানা (Grandfather - Maternal)</option>
+                                    <option value="নানি|Grandmother (Maternal)">নানি (Grandmother - Maternal)</option>
+                                    <option value="নাতি|Grandson (Son’s son)">নাতি (Grandson - Son’s son)</option>
+                                    <option value="নাতনি|Granddaughter (Son’s daughter)">নাতনি (Granddaughter - Son’s daughter)</option>
+                                    <option value="দৌহিত্র|Grandson (Daughter’s son)">দৌহিত্র (Grandson - Daughter’s son)</option>
+                                    <option value="দৌহিত্রি|Granddaughter (Daughter’s daughter)">দৌহিত্রি (Granddaughter - Daughter’s daughter)</option>
+                                    <option value="চাচা|Uncle (Paternal)">চাচা (Uncle - Paternal)</option>
+                                    <option value="ফুপু|Aunt (Paternal)">ফুপু (Aunt - Paternal)</option>
+                                    <option value="মামা|Uncle (Maternal)">মামা (Uncle - Maternal)</option>
+                                    <option value="খালা|Aunt (Maternal)">খালা (Aunt - Maternal)</option>
+                                    <option value="ভাতিজা|Nephew (Brother’s son)">ভাতিজা (Nephew - Brother’s son)</option>
+                                    <option value="ভাতিজি|Niece (Brother’s daughter)">ভাতিজি (Niece - Brother’s daughter)</option>
+                                    <option value="ভাগ্নে|Nephew (Sister’s son)">ভাগ্নে (Nephew - Sister’s son)</option>
+                                    <option value="ভাগ্নি|Niece (Sister’s daughter)">ভাগ্নি (Niece - Sister’s daughter)</option>
+                                    <option value="সৎভাই|Stepbrother">সৎভাই (Stepbrother)</option>
+                                    <option value="সৎবোন|Stepsister">সৎবোন (Stepsister)</option>
+                                    <option value="পালকপুত্র|Foster Son">পালকপুত্র (Foster Son)</option>
+                                    <option value="পালককন্যা|Foster Daughter">পালককন্যা (Foster Daughter)</option>
+                                </select>
+                            </div>
+
+                            <!-- জন্ম তারিখ -->
+                            <div class="col-md-1">
+                                <input type="text" name="member_birth_date[]" class="form-control" placeholder="বয়স/দিন-মাস-বছর (যেমন: 21/01-01-2004)">
+                            </div>
+
+                            <!-- জাতীয় পরিচয়পত্র -->
+                            <div class="col-md-2">
+                                <input type="text" name="relation_nid[]" class="form-control" placeholder="জাতীয় পরিচয়পত্র" pattern="^[0-9]+$">
+                            </div>
+
+                            <!-- বৈবাহিক অবস্থা -->
+                            <div class="col-md-2">
+                                <select name="marrage_state[]" class="form-control">
+                                    <option value="">বৈবাহিক অবস্থা</option>
+                                    <option value="অবিবাহিত">অবিবাহিত</option>
+                                    <option value="বিবাহিত">বিবাহিত</option>
+                                </select>
+                            </div>
+
+                            <!-- জীবিত/মৃত -->
+                            <div class="col-md-2">
+                                <select name="is_dead[]" class="form-control">
+                                    <option value="">জীবিত/মৃত</option>
+                                    <option value="0">জীবিত</option>
+                                    <option value="1">মৃত</option>
+                                </select>
+                            </div>
+
+                            <!-- মুছুন বাটন -->
+                            <div class="col-md-2 text-end">
+                                <button type="button" class="btn btn-danger remove_warish" style="display: none;">মুছুন</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- নতুন ওয়ারিশ বাটন -->
+                    <button type="button" id="add_warish" class="btn btn-info mt-2">নতুন ওয়ারিশ</button>
+
+                    <!-- ভ্যালিডেশন মেসেজ -->
+                    <div class="mt-2" id="emptyError" style="display: none;">
+                        <span class="text-danger">দুঃখিত! ওয়ারিশের অবশ্যই বাংলায় নাম এবং সম্পর্ক দিতে হবে।</span>
+                    </div>
+                </div>
+            </div>
+        </fieldset>
+        {% endif %}
+         
+        {# বর্তমান ঠিকানা #}
+        <fieldset class="border rounded p-3 mb-4">
+            <legend class="w-auto px-2">বর্তমান ঠিকানা</legend>
+            <div id="present_address_fields">
+                {% include 'common/address_fields.twig' with { prefix: 'present' } %}
+            </div>
+        </fieldset>
+
+        {# স্থায়ী ঠিকানা #}
+        <fieldset class="border rounded p-3 mb-4">
+            <legend class="w-auto px-2">স্থায়ী ঠিকানা</legend>
+
+            <!-- Copy Present to Permanent Checkbox -->
+            <div class="form-check mb-2">
+                <input type="checkbox" id="copy_present_to_permanent" class="form-check-input">
+                <label for="copy_present_to_permanent" class="form-check-label">
+                    বর্তমান ঠিকানা এবং স্থায়ী ঠিকানা একই
+                </label>
+            </div>
+
+            <div id="permanent_address_fields">
+                {% include 'common/address_fields.twig' with { prefix: 'permanent' } %}
+            </div>
+        </fieldset>
+
+
+        {# সারসংক্ষেপ #}
+        <fieldset class="border rounded p-3 mb-4">
+            <legend class="w-auto px-2">সারসংক্ষেপ</legend>
+            {% include 'common/summary_section.twig' %}
+        </fieldset>
+
+        <div class="d-flex justify-content-center mt-4">
+            <button type="submit" class="btn btn-warning submit-button">আপডেট করুন</button>
+        </div>
+    </form>
+</div>
+
+{# সফল মডাল #}
+{% include 'common/success_modal.twig' %}
+
+<script>
+$(document).ready(function () {
+    const applicationId = $('#application_id').val();
+    const certificate_type = $('#certificate_type').val();
+    if (applicationId && certificate_type) {
+        loadApplicationData(applicationId, certificate_type);
+    }
+
+    function populateDropdown(selector, data, selectedValue = null) {
+        if (!$(selector).length) return;
+        const dropdown = $(selector);
+        dropdown.empty().append('<option value="">-- নির্বাচন করুন --</option>');
+        const selectedValueNorm = selectedValue ? String(selectedValue).trim().toLowerCase() : null;
+
+        $.each(data, function (_, item) {
+            const itemIdNorm = String(item.id).trim().toLowerCase();
+            const itemNameEnNorm = String(item.name_en).trim().toLowerCase();
+            const isSelected = selectedValueNorm &&
+                (selectedValueNorm === itemIdNorm || selectedValueNorm === itemNameEnNorm) ? 'selected' : '';
+
+            dropdown.append(
+                `<option value="${item.name_en}" 
+                    data-geo-code="${item.geo_code}" 
+                    data-name-en="${item.name_en}" 
+                    data-name-bn="${item.name_bn}" 
+                    data-geo-id="${item.id}" ${isSelected}>${item.name_en} (${item.name_bn})</option>`
+            );
+        });
+    }
+
+    function fetchGeoData(geoOrder, parentGeoId, dropdownSelector, nextDropdownSelector = null, selectedValue = null, callback = null) {
+        if (!$(dropdownSelector).length) return;
+
+        $.ajax({
+            url: '/settings/geo/getdata',
+            method: 'POST',
+            data: { geo_order: geoOrder, parent_geo_id: parentGeoId },
+            dataType: 'json',
+            success: function (data) {
+                populateDropdown(dropdownSelector, data, selectedValue);
+                if (nextDropdownSelector && $(nextDropdownSelector).length) {
+                    $(nextDropdownSelector).empty().append('<option value="">-- নির্বাচন করুন --</option>');
+                }
+                if (callback) callback();
+            },
+            error: function (err) {
+                console.error(`Geo data fetch failed: ${dropdownSelector}`, err);
+            }
+        });
+    }
+
+    function populateAddressFields(prefix, addressData) {
+        if (!addressData || !$(`#${prefix}_district_id`).length) return;
+
+        const fields = ['village_en', 'village_bn', 'rbs_en', 'rbs_bn', 'holding_no', 'ward_no', 'postoffice_en', 'postoffice_bn'];
+        fields.forEach(field => {
+            $(`#${prefix}_${field}`).val(addressData[field] || '');
+        });
+
+        if (addressData.district_bn) $(`#${prefix}_district`).val(addressData.district_bn);
+        if (addressData.upazila_bn) $(`#${prefix}_upazila`).val(addressData.upazila_bn);
+        if (addressData.union_bn) $(`#${prefix}_union`).val(addressData.union_bn);
+
+        // জেলা > উপজেলা > ইউনিয়ন সিলেক্ট করা
+            // জেলা > উপজেলা > ইউনিয়ন সিলেক্ট করা
+            fetchGeoData(1, 0, `#${prefix}_district_id`, null, addressData.district_geo_id || addressData.district_en, function () {
+                const selectedDistrictId = $(`#${prefix}_district_id option:selected`).data('geo-id');
+                fetchGeoData(2, selectedDistrictId, `#${prefix}_upazila_id`, null, addressData.upazila_geo_id || addressData.upazila_en, function () {
+                    const selectedUpazilaId = $(`#${prefix}_upazila_id option:selected`).data('geo-id');
+                    fetchGeoData(3, selectedUpazilaId, `#${prefix}_union_id`, null, addressData.union_geo_id || addressData.union_en, function () {
+                        // ✅ এখন বাংলা ফিল্ড পূরণ করবো
+                        if ($(`#${prefix}_district`).length) {
+                            const selectedDistrict = $(`#${prefix}_district_id option:selected`).data('name-bn') || '';
+                            $(`#${prefix}_district`).val(selectedDistrict);
+                        }
+                        if ($(`#${prefix}_upazila`).length) {
+                            const selectedUpazila = $(`#${prefix}_upazila_id option:selected`).data('name-bn') || '';
+                            $(`#${prefix}_upazila`).val(selectedUpazila);
+                        }
+                        if ($(`#${prefix}_union`).length) {
+                            const selectedUnion = $(`#${prefix}_union_id option:selected`).data('name-bn') || '';
+                            $(`#${prefix}_union`).val(selectedUnion);
+                        }
+                    });
+                });
+            });
+
+    }
+
+    function loadApplicationData(applicationId, certificate_type) {
+        $.ajax({
+            url: `/applications/${certificate_type}/api/${applicationId}`,
+            method: 'GET',
+            dataType: 'json',
+            success: function (data) {
+
+                            // Extra data dynamic field
+                            if (typeof data.extra_data !== 'undefined' && data.extra_data !== null) {
+                                let extraField = $('#extra_data_field');
+                                if (!extraField.length) {
+                                    // summary_section.twig-এর নিচে ইনপুট ফিল্ড যোগ
+                                    let html = `<div class="mb-3" id="extra_data_field_wrap">
+                                        <label for="extra_data_field" class="form-label">অতিরিক্ত তথ্য</label>
+                                        <input type="text" id="extra_data_field" name="extra_data" class="form-control" value="">
+                                    </div>`;
+                                    // summary_section.twig-এর পরেই যোগ
+                                    $("#applicationForm fieldset:contains('সারসংক্ষেপ')").after(html);
+                                }
+                                $('#extra_data_field').val(data.extra_data);
+                            } else {
+                                $('#extra_data_field_wrap').remove();
+                            }
+                            // Photo preview (applicant_photo)
+                            if (data.applicant_photo && $('#photo_preview').length) {
+                                $('#photo_preview').attr('src', data.applicant_photo).show();
+                            }
+
+                            // Documents preview
+                            if (data.documents && Array.isArray(data.documents)) {
+                                // Remove previous previews except the first row
+                                $('#documents_container .document-row:gt(0)').remove();
+                                // For each document, show preview
+                                data.documents.forEach(function(doc, idx) {
+                                    let row;
+                                    if (idx === 0) {
+                                        row = $('#documents_container .document-row').first();
+                                    } else {
+                                        row = $('#documents_container .document-row').first().clone();
+                                        row.find('input[type="file"]').val('');
+                                        row.find('.preview-area').empty();
+                                        $('#documents_container').append(row);
+                                    }
+                                    if (doc && row.find('.preview-area').length) {
+                                        let ext = doc.split('.').pop().toLowerCase();
+                                        if(['jpg','jpeg','png','gif','bmp','webp'].includes(ext)) {
+                                            row.find('.preview-area').html(`<img src="${doc}" alt="ডকুমেন্ট" style="max-width:100px;max-height:100px;">`);
+                                        } else {
+                                            row.find('.preview-area').html(`<a href="${doc}" target="_blank">ডকুমেন্ট দেখুন</a>`);
+                                        }
+                                    }
+                                });
+                            }
+                            // Applicant name radio & input logic
+                            if (typeof data.applicant_name !== 'undefined' && typeof data.name_bn !== 'undefined') {
+                                if (data.applicant_name === data.name_bn) {
+                                    $('#own_name').prop('checked', true);
+                                    $('#applicant_name').val(data.applicant_name).prop('readonly', true).show();
+                                } else {
+                                    $('#other_name').prop('checked', true);
+                                    $('#applicant_name').val(data.applicant_name).prop('readonly', false).show();
+                                }
+                            }
+                            // Applicant phone
+                            if ($('#applicant_phone').length) $('#applicant_phone').val(data.applicant_phone || '');
+                        // Applicant name radio change handler
+                        $('input[name="applicant_name_option"]').change(function() {
+                            if ($(this).val() === 'own') {
+                                $('#applicant_name').prop('readonly', true).show();
+                            } else {
+                                $('#applicant_name').prop('readonly', false).show();
+                            }
+                        });
+                            console.log("Application data loaded:", data);
+
+                            // Personal info
+                            if ($('#name_en').length) $('#name_en').val(data.name_en || '');
+                            if ($('#name_bn').length) $('#name_bn').val(data.name_bn || '');
+                            if ($('#nid').length) $('#nid').val(data.nid || '');
+                            if ($('#birth_id').length) $('#birth_id').val(data.birth_id || '');
+                            if ($('#passport_no').length) $('#passport_no').val(data.passport_no || '');
+                            if ($('#birth_date').length && data.birth_date) {
+                                    let date = new Date(data.birth_date);
+                                    if (!isNaN(date.getTime())) {
+                                        let day = String(date.getDate()).padStart(2, '0');
+                                        let month = String(date.getMonth() + 1).padStart(2, '0');
+                                        let year = date.getFullYear();
+                                        $('#birth_date').val(`${day}-${month}-${year}`);
+                                    } else {
+                                        $('#birth_date').val(data.birth_date); // fallback if parsing fails
+                                    }
+                                }
+
+                            if ($('#father_name_en').length) $('#father_name_en').val(data.father_name_en || '');
+                            if ($('#father_name_bn').length) $('#father_name_bn').val(data.father_name_bn || '');
+                            if ($('#mother_name_en').length) $('#mother_name_en').val(data.mother_name_en || '');
+                            if ($('#mother_name_bn').length) $('#mother_name_bn').val(data.mother_name_bn || '');
+                            if ($('#occupation').length) $('#occupation').val(data.occupation || '');
+                            if ($('#educational_qualification').length) $('#educational_qualification').val(data.educational_qualification || '');
+                            if ($('#resident').length) $('#resident').val(data.resident || '');
+                            if ($('#religion').length) $('#religion').val(data.religion || '');
+                            // Gender select (case-insensitive)
+                            if ($('#gender').length && data.gender) {
+                                $('#gender').val(function(){
+                                    let val = String(data.gender).toLowerCase();
+                                    if(val==='male'||val==='পুরুষ') return 'male';
+                                    if(val==='female'||val==='মহিলা') return 'female';
+                                    if(val==='other'||val==='অন্যান্য') return 'other';
+                                    return '';
+                                });
+                            }
+                            // Marital status select (case-insensitive)
+                            if ($('#marital_status').length && data.marital_status) {
+                                $('#marital_status').val(function(){
+                                    let val = String(data.marital_status).toLowerCase();
+                                    if(val==='single'||val==='অবিবাহিত') return 'single';
+                                    if(val==='married'||val==='বিবাহিত') return 'married';
+                                    if(val==='divorced'||val==='তালাকপ্রাপ্ত') return 'divorced';
+                                    if(val==='widowed'||val==='বিধবা/বিপত্নীক') return 'widowed';
+                                    if(val==='other'||val==='অন্যান্য') return 'other';
+                                    return '';
+                                }).trigger('change');
+                            }
+                            // Spouse info show/hide
+                            if (data.marital_status && (String(data.marital_status).toLowerCase() === 'married' || String(data.marital_status).toLowerCase() === 'বিবাহিত')) {
+                                $('#spouse_name').show();
+                                if ($('#spouse_name_en').length) $('#spouse_name_en').val(data.spouse_name_en || '');
+                                if ($('#spouse_name_bn').length) $('#spouse_name_bn').val(data.spouse_name_bn || '');
+                            } else {
+                                $('#spouse_name').hide();
+                            }
+                            // Photo preview
+                            if (data.photo_url && $('#photo_preview').length) {
+                                $('#photo_preview').attr('src', data.photo_url).show();
+                            }
+                const presentAddress = {
+                    village_en: data.present_village_en,
+                    village_bn: data.present_village_bn,
+                    rbs_en: data.present_rbs_en,
+                    rbs_bn: data.present_rbs_bn,
+                    holding_no: data.present_holding_no,
+                    ward_no: data.present_ward_no,
+                    postoffice_en: data.present_postoffice_en,
+                    postoffice_bn: data.present_postoffice_bn,
+                    district_geo_id: data.present_district_geo_id,
+                    upazila_geo_id: data.present_upazila_geo_id,
+                    union_geo_id: data.present_union_geo_id,
+                    district_en: data.present_district_en,
+                    upazila_en: data.present_upazila_en,
+                    union_en: data.present_union_en
+                };
+
+                const permanentAddress = {
+                    village_en: data.permanent_village_en,
+                    village_bn: data.permanent_village_bn,
+                    rbs_en: data.permanent_rbs_en,
+                    rbs_bn: data.permanent_rbs_bn,
+                    holding_no: data.permanent_holding_no,
+                    ward_no: data.permanent_ward_no,
+                    postoffice_en: data.permanent_postoffice_en,
+                    postoffice_bn: data.permanent_postoffice_bn,
+                    district_geo_id: data.permanent_district_geo_id,
+                    upazila_geo_id: data.permanent_upazila_geo_id,
+                    union_geo_id: data.permanent_union_geo_id,
+                    district_en: data.permanent_district_en,
+                    upazila_en: data.permanent_upazila_en,
+                    union_en: data.permanent_union_en
+                };
+
+                const businessAddress = data.business_village_bn ? {
+                    village_en: data.business_village_en,
+                    village_bn: data.business_village_bn,
+                    rbs_en: data.business_rbs_en,
+                    rbs_bn: data.business_rbs_bn,
+                    holding_no: data.business_holding_no,
+                    ward_no: data.business_ward_no,
+                    postoffice_en: data.business_postoffice_en,
+                    postoffice_bn: data.business_postoffice_bn,
+                    district_geo_id: data.business_district_geo_id,
+                    upazila_geo_id: data.business_upazila_geo_id,
+                    union_geo_id: data.business_union_geo_id,
+                    district_en: data.business_district_en,
+                    upazila_en: data.business_upazila_en,
+                    union_en: data.business_union_en
+                } : null;
+
+                // Populate addresses
+                populateAddressFields('present', presentAddress);
+                populateAddressFields('permanent', permanentAddress);
+
+                // ✅ Business address check করে লোড করানো
+                if (businessAddress) {
+                    populateAddressFields('business', businessAddress);
+                }
+            },
+            error: function (err) {
+                console.error("Could not load application data:", err);
+            }
+        });
+    }
+
+});
+
+
+</script>
+
+
+{% endblock %}

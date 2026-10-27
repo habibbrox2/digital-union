@@ -21,8 +21,19 @@ if (php_sapi_name() !== 'cli') {
 // Bootstrap the application
 $basePath = dirname(__DIR__);
 require_once $basePath . '/config/config.php';
-require_once $basePath . '/config/autoload.php';
+require_once $basePath . '/bootstrap/autoload.php'; // composer + app autoloader + helpers + config
 require_once $basePath . '/vendor/autoload.php';
+
+// CLI does not run public/index.php, so give ErrorHandler its log paths here
+if (class_exists('ErrorHandler')) {
+    ErrorHandler::init($basePath . '/storage/logs/error.log', false, null, [
+        'route' => $basePath . '/storage/logs/route-error.log',
+        'twig'  => $basePath . '/storage/logs/twig-error.log',
+        'fatal' => $basePath . '/storage/logs/fatal-error.log',
+        '404'   => $basePath . '/storage/logs/route-404.log',
+        'http'  => $basePath . '/storage/logs/http-error.log',
+    ]);
+}
 
 $timestamp = date('Y-m-d H:i:s');
 $logFile = $basePath . '/storage/logs/email_worker.log';

@@ -171,18 +171,23 @@ php migrate.php
 
 ### File Structure
 ```
+├── app/
+│   ├── Core/             # Router and core classes
+│   ├── Http/Controllers/ # Route definitions & request handlers
+│   ├── Models/           # Data models and ORM logic
+│   ├── Services/         # Feature services (application, dashboard, …)
+│   └── Helpers/          # Utility functions
+├── bootstrap/
+│   ├── autoload.php      # Composer + app autoloader, config loading
+│   └── app.php           # Router, route registration, dispatch
 ├── config/           # Configuration files
-├── controllers/      # Request handlers
 ├── database/         # Migrations and seeds
-├── helpers/          # Utility functions
-├── models/           # Data models and ORM logic
-├── modules/          # Feature modules & services
-│   └── Services/     # Application and dashboard services
 ├── public/           # Web root (index.php)
 │   └── assets/       # CSS, JS, images
+├── resources/views/  # Twig templates
+├── routes/web.php    # Route definitions
 ├── scripts/          # CLI and maintenance scripts
 ├── storage/          # Cache, logs, uploads
-├── templates/        # Twig templates
 └── vendor/           # Composer packages
 ```
 

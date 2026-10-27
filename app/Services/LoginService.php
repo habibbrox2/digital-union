@@ -1,0 +1,208 @@
+<?php
+/**
+ * modules/Services/LoginService.php
+ * 
+ * Service layer for login, registration, and password reset operations.
+ * Extracts duplicated AJAX handling and validation logic from LoginController.
+ */
+
+class LoginService
+{
+    private AuthManager $auth;
+
+    public function __construct(mysqli $mysqli)
+    {
+        // Load email helper so AuthManager can send welcome/password-reset/failed-login emails
+        require_once __DIR__ . '/../Helpers/email_helper.php';
+
+        $this->auth = new AuthManager($mysqli);
+    }
+
+    /**
+     * Check if the current request is an AJAX request
+     */
+    public function isAjaxRequest(): bool
+    {
+        return !empty($_POST['return_json']) ||
+               (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) &&
+                strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest');
+    }
+
+    /**
+     * Send a JSON response and exit
+     */
+    public function jsonResponse(bool $success, string $message, ?string $redirect = null, int $successCode = 200, int $errorCode = 400): void
+    {
+        header('Content-Type: application/json; charset=utf-8');
+        http_response_code($success ? $successCode : $errorCode);
+        echo json_encode([
+            'success'  => $success,
+            'message'  => $message,
+            'redirect' => $redirect,
+        ], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+
+    /**
+     * Handle login with standardized validation
+     */
+    public function handleLogin(array $input): array
+    {
+        $username = sanitize_input($input['username'] ?? '');
+        $password = $input['password'] ?? '';
+        $redirect = $this->sanitizeRedirect($input['redirect'] ?? '/dashboard');
+
+        if (empty($username) || empty($password)) {
+            return [
+                'success' => false,
+                'message' => 'ইউজারনেম/ইমেইল এবং পাসওয়ার্ড প্রয়োজন',
+                'redirect' => null,
+            ];
+        }
+
+        $result = $this->auth->login($username, $password);
+
+        return [
+            'success' => $result['success'],
+            'message' => $result['message'],
+            'redirect' => $result['success'] ? $redirect : null,
+        ];
+    }
+
+    /**
+     * Ensure the redirect URL is a local path to prevent open redirect attacks.
+     * Rejects external URLs, protocol-relative URLs, and non-http schemes
+     * (e.g. javascript:, data:, ftp:).
+     */
+    private function sanitizeRedirect(string $redirect): string
+    {
+        if (empty($redirect)) {
+            return '/dashboard';
+        }
+
+        if (parse_url($redirect, PHP_URL_SCHEME) !== null) {
+            $parsed = parse_url($redirect);
+            $scheme = strtolower($parsed['scheme'] ?? '');
+
+            if (!in_array($scheme, ['http', 'https'], true)) {
+                return '/dashboard';
+            }
+
+            $host = $parsed['host'] ?? '';
+            $currentHost = $_SERVER['HTTP_HOST'] ?? '';
+
+            if ($host !== '' && $host !== $currentHost) {
+                return '/dashboard';
+            }
+
+            return ($parsed['path'] ?? '/') . (!empty($parsed['query']) ? '?' . $parsed['query'] : '');
+        }
+
+        if (strpos($redirect, '/') !== 0) {
+            return '/dashboard';
+        }
+
+        if (strpos($redirect, '//') === 0) {
+            return '/dashboard';
+        }
+
+        return $redirect;
+    }
+
+    /**
+     * Handle password reset request with validation
+     */
+    public function handlePasswordResetRequest(array $input): array
+    {
+        $email = sanitize_input($input['email'] ?? '');
+
+        if (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            return [
+                'success' => false,
+                'message' => 'একটি বৈধ ইমেইল প্রদান করুন।',
+            ];
+        }
+
+        return $this->auth->sendPasswordReset($email);
+    }
+
+    /**
+     * Handle new password submission with validation
+     */
+    public function handleNewPassword(array $input): array
+    {
+        $token = sanitize_input($input['token'] ?? $input['reset_token'] ?? '');
+        $newPassword = $input['password'] ?? '';
+        $confirmPassword = $input['confirm_password'] ?? '';
+
+        if (empty($token)) {
+            return ['success' => false, 'message' => 'টোকেন অনুপস্থিত।'];
+        }
+        if (empty($newPassword)) {
+            return ['success' => false, 'message' => 'পাসওয়ার্ড প্রদান করুন।'];
+        }
+        if (strlen($newPassword) < 6) {
+            return ['success' => false, 'message' => 'পাসওয়ার্ড কমপক্ষে ৬ অক্ষরের হতে হবে।'];
+        }
+        if ($newPassword !== $confirmPassword) {
+            return ['success' => false, 'message' => 'পাসওয়ার্ড মিলছে না।'];
+        }
+
+        return $this->auth->resetPassword($token, $newPassword);
+    }
+
+    /**
+     * Handle registration with validation
+     */
+    public function handleRegistration(array $input): array
+    {
+        $username = sanitize_input($input['username'] ?? '');
+        $email = sanitize_input($input['email'] ?? '');
+        $password = $input['password'] ?? '';
+        $confirmPassword = $input['confirm_password'] ?? '';
+        $union_id = !empty($input['union_id']) ? (int)$input['union_id'] : null;
+
+        if (empty($username) || empty($email) || empty($password)) {
+            return ['success' => false, 'message' => 'সকল ফিল্ড পূরণ করুন।'];
+        }
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            return ['success' => false, 'message' => 'বৈধ ইমেইল প্রদান করুন।'];
+        }
+
+        // 🔒 Username format validation
+        if (strlen($username) < 3 || !preg_match('/^[a-zA-Z0-9_]+$/', $username)) {
+            return ['success' => false, 'message' => 'ইউজারনেম কমপক্ষে ৩ অক্ষর হতে হবে এবং শুধু অক্ষর, সংখ্যা ও আন্ডারস্কোর থাকতে পারে।'];
+        }
+
+        // 🔒 Password complexity validation (matches AuthManager::register rules)
+        if (function_exists('validatePassword')) {
+            $passwordResult = validatePassword($password);
+            if (!$passwordResult['valid']) {
+                // Translate common English errors to Bengali
+                $errors = [
+                    'Password must be at least 8 characters' => 'পাসওয়ার্ড কমপক্ষে ৮ অক্ষরের হতে হবে।',
+                    'Password must contain uppercase letter' => 'পাসওয়ার্ডে অন্তত একটি বড় হাতের অক্ষর থাকতে হবে।',
+                    'Password must contain lowercase letter' => 'পাসওয়ার্ডে অন্তত একটি ছোট হাতের অক্ষর থাকতে হবে।',
+                    'Password must contain number' => 'পাসওয়ার্ডে অন্তত একটি সংখ্যা থাকতে হবে।',
+                    'Password is required' => 'পাসওয়ার্ড প্রয়োজন।',
+                ];
+                $message = $errors[$passwordResult['error']] ?? $passwordResult['error'];
+                return ['success' => false, 'message' => $message];
+            }
+        }
+
+        if ($password !== $confirmPassword) {
+            return ['success' => false, 'message' => 'পাসওয়ার্ড মিলছে না।'];
+        }
+
+        return $this->auth->register($username, $email, $password, $union_id);
+    }
+
+    /**
+     * Get the AuthManager instance
+     */
+    public function getAuth(): AuthManager
+    {
+        return $this->auth;
+    }
+}

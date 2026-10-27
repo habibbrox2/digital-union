@@ -1,0 +1,211 @@
+/* Backup of obd.css */
+body {
+    font-family: 'Kalpurush', Arial, sans-serif !important;
+}
+
+
+.en-font {
+    font-family: sans-serif;
+    font-size: 14px
+}
+
+.bn-font {
+    font-family: kalpurushregular;
+    font-size: 16px
+}
+
+.text-purpel {
+    color: #921e83
+}
+
+.required {
+    color: red
+}
+
+.font-12 {
+    font-size: 0.80rem !important
+}
+
+.font-13 {
+    font-size: 0.85rem !important
+}
+
+.font-14 {
+    font-size: 0.90rem !important
+}
+
+.font-16 {
+    font-size: 1rem !important
+}
+
+.site-header .site-header-content {
+    display: inline-block;
+    width: auto;
+}
+
+.site-header .site-logo img {
+    height: auto
+}
+
+.text-gray {
+    color: #777
+}
+
+.text-orange {
+    color: #ff6000
+}
+
+.text-white {
+    color: #FFF
+}
+
+footer {
+    border-top: 1px solid #FFF;
+    padding: 30px 10px
+}
+
+section#page-body {
+    margin-top: 60px
+}
+
+
+
+/*section#upservice .container{ padding-top: 200px}*/
+
+.upservice {
+    padding: 0px 10px 20px 10px;
+    margin: auto
+}
+
+.upservice .upazila option,
+.upservice .union option,
+.upservice .service-name option {
+    display: none
+}
+
+.upservice .upazila option:first-child,
+.upservice .union option:first-child,
+.upservice .service-name option:first-child {
+    display: block
+}
+
+.find-service {
+    font-weight: normal;
+    font-size: 18px;
+    width: 200px;
+}
+
+.section-title {
+    font-size: 26px;
+    color: #722873;
+    text-align: center
+}
+
+.section-title-bar {
+    width: 70px;
+    margin: auto;
+    margin-top: 7px;
+    height: 3px;
+    background: #46a835
+}
+
+.service-box {
+    display: inline-block;
+    text-align: center;
+    margin-bottom: 20px;
+    padding: 10px;
+    height: 140px;
+    width: 220px;
+    max-width: 100%;
+    background: #FFF;
+    border-radius: 7px;
+    border: 1px solid #ccc;
+    cursor: pointer
+}
+
+.service-box img {
+    width: 45px;
+    margin-bottom: 15px
+}
+
+.service-box .section-title {
+    color: #000;
+    font-size: 18px
+}
+
+.service-box .section-title-bar {
+    height: 2px
+}
+
+
+
+/* css by lima */
+
+.pagination {
+    float: right!important;
+}
+
+.dataTables_info {
+    padding-top: 20px
+}
+
+.dataTables_filter {
+    float: right;
+    _margin-top: 20px
+}
+
+.dataTables_filter label {
+    margin: 0 0 20px 0;
+    display: inline-flex;
+    line-height: 30px;
+}
+
+.dataTables_filter input {
+    width: 200px;
+    margin-left: 10px
+}
+
+.dataTables_length select {
+    _margin: 20px 0;
+    width: 86px
+}
+
+.dataTables_length label {
+    _margin-top: 20px
+}
+
+.dataTables_length input {
+    width: 200px
+}
+
+.box-typical .panel-heading {
+    padding: 17px 20px 0 20px!important
+}
+
+.panel-title {
+    border-bottom: 1px solid #eee;
+    padding-bottom: 10px!important;
+}
+
+
+/* css by lima */
+
+@media (max-width:767px) {
+    .service-box {
+        width: 100%;
+    }
+}
+
+@media (max-width:576px) {
+    .service-box {
+        width: 100%;
+    }
+    #smartwizard .nav-item a {
+        padding: 10px
+    }
+}
+
+.service-box img {
+	width: 69px;
+	margin-bottom: 15px;
+}

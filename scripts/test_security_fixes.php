@@ -26,7 +26,7 @@ function test(string $name, bool $result) {
 echo "--- 1. Password Complexity (validatePassword) ---\n";
 
 // Load the function
-require_once __DIR__ . '/../helpers/security.php';
+require_once __DIR__ . '/../app/Helpers/security.php';
 
 test("Too short (5 chars) rejected",
     validatePassword('Abc1')['valid'] === false);
@@ -65,7 +65,7 @@ test("Bengali translation map covers this error",
 // ==============================
 echo "\n--- 2. showMessage() XSS Prevention ---\n";
 
-require_once __DIR__ . '/../config/helpers/helper_functions.php';
+require_once __DIR__ . '/../config/functions.php';
 
 // Capture output
 ob_start();
@@ -100,7 +100,7 @@ test("Valid field name accepted",
 // ==============================
 echo "\n--- 4. CSRF Token Generation ---\n";
 
-require_once __DIR__ . '/../config/security/csrf.php';
+require_once __DIR__ . '/../config/csrf.php';
 
 $token = generateCsrfToken();
 test("CSRF token is generated", !empty($token));
@@ -116,7 +116,7 @@ test("CSRF verification fails with wrong token", verifyCsrfToken('wrong') === fa
 // ==============================
 echo "\n--- 5. Encryption (CryptManager) ---\n";
 
-require_once __DIR__ . '/../models/CryptManager.php';
+require_once __DIR__ . '/../app/Models/CryptManager.php';
 
 $key = 'test-secret-key-for-audit';
 $crypt = new CryptManager($key);

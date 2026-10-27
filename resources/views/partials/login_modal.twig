@@ -1,0 +1,98 @@
+<!-- Login Modal -->
+<div class="modal fade" id="loginModal" tabindex="-1" aria-labelledby="loginModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content shadow-lg rounded-4">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title" id="loginModalLabel"><i class="bi bi-lock-fill"></i> Login</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form id="loginForm" method="POST" class="small">
+          <input type="hidden" name="redirect" value="/dashboard">
+          <input type="hidden" name="return_json" value="true">
+
+          <div class="mb-2 position-relative">
+            <label for="login-username" class="form-label"><i class="bi bi-person-fill"></i> Username or Email</label>
+            <input type="text" class="form-control form-control-sm ps-4" id="login-username" name="username" required placeholder="Enter username or email">
+            <i class="bi bi-person-fill position-absolute" style="top: 38px; left: 12px; font-size: 0.85rem; color: #6c757d;"></i>
+          </div>
+
+          <div class="mb-2 position-relative">
+            <label for="login-password" class="form-label"><i class="bi bi-key-fill"></i> Password</label>
+            <input type="password" class="form-control form-control-sm ps-4" id="login-password" name="password" required placeholder="Enter password">
+            <i class="bi bi-key-fill position-absolute" style="top: 38px; left: 12px; font-size: 0.85rem; color: #6c757d;"></i>
+          </div>
+
+          <div class="form-check mb-2">
+            <input class="form-check-input" type="checkbox" id="rememberMe" name="remember">
+            <label class="form-check-label" for="rememberMe"><i class="bi bi-check-circle-fill"></i> Remember me</label>
+          </div>
+
+          <div id="loginMessage" class="text-danger small mb-2"></div>
+
+          <div class="d-flex justify-content-end gap-2">
+            <button type="submit" class="btn btn-primary btn-sm" id="loginSubmitBtn">
+              <i class="bi bi-box-arrow-in-right"></i> Login
+            </button>
+            <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">
+              <i class="bi bi-x-circle"></i> Cancel
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Include Bootstrap Icons CSS in your page head if not included -->
+<!-- <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet"> -->
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const loginForm = document.getElementById("loginForm");
+    const submitBtn = document.getElementById("loginSubmitBtn");
+    const loginMessage = document.getElementById("loginMessage");
+
+    if (loginForm) {
+      loginForm.addEventListener("submit", function (e) {
+        e.preventDefault();
+
+        loginMessage.textContent = '';
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="bi bi-arrow-repeat spin"></i> Logging in...';
+
+        const formData = new FormData(loginForm);
+
+        fetch("/login", {
+          method: "POST",
+          body: formData
+        })
+          .then(res => res.json())
+          .then(data => {
+            if (data.success) {
+              window.location.href = data.redirect;
+            } else {
+              loginMessage.textContent = data.message || "Login failed.";
+              submitBtn.disabled = false;
+              submitBtn.innerHTML = '<i class="bi bi-box-arrow-in-right"></i> Login';
+            }
+          })
+          .catch(() => {
+            loginMessage.textContent = "Login failed. Try again.";
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="bi bi-box-arrow-in-right"></i> Login';
+          });
+      });
+    }
+  });
+</script>
+
+<style>
+  /* Optional spinning animation for loading icon */
+  .spin {
+    animation: spin 1s linear infinite;
+  }
+  @keyframes spin {
+    100% { transform: rotate(360deg); }
+  }
+</style>

@@ -1,6 +1,6 @@
 <?php
-require __DIR__ . '/../config/db/db.php';
-require_once __DIR__ . '/../modules/Services/HomeService.php';
+require __DIR__ . '/../config/db.php';
+require_once __DIR__ . '/../app/Services/HomeService.php';
 global $mysqli;
 
 $homeService = new HomeService($mysqli);

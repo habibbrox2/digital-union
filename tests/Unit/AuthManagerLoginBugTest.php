@@ -208,7 +208,7 @@ class AuthManagerLoginBugTest extends TestCase
      */
     public function testNoFunctionExistsGuardsForPrivateMethods(): void
     {
-        $source = file_get_contents(BASE_PATH . '/models/AuthManager.php');
+        $source = file_get_contents(BASE_PATH . '/app/Models/AuthManager.php');
 
         // The login method should not use function_exists to guard private methods
         $loginMethodStart = strpos($source, 'public function login');
@@ -233,7 +233,7 @@ class AuthManagerLoginBugTest extends TestCase
      */
     public function testNoUnusedPermissionsManagerInLogin(): void
     {
-        $source = file_get_contents(BASE_PATH . '/models/AuthManager.php');
+        $source = file_get_contents(BASE_PATH . '/app/Models/AuthManager.php');
 
         $loginMethodStart = strpos($source, 'public function login');
         $loginMethodEnd   = strpos($source, "\n    }\n", $loginMethodStart);

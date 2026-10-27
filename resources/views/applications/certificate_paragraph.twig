@@ -1,0 +1,65 @@
+<table style="width:98%; border-collapse:collapse; margin:0 auto; padding-top:15px; margin-top: 10px;">
+    <tr>
+        <td style="text-indent: 50px; padding-bottom: 15px; line-height: 2.0;">
+            {% if certificate_type == 'nagorik' %}
+                &nbsp; &nbsp;&nbsp; &nbsp; উক্ত ব্যক্তি অত্র ইউনিয়নের স্থায়ী বাসিন্দা এবং তিনি একজন বাংলাদেশী নাগরিক। তাহার ব্যবহার ও আচার-আচরণ ভাল।
+            {% elseif certificate_type == 'trade' %}
+                &nbsp; &nbsp;&nbsp; &nbsp; উক্ত ব্যক্তি অত্র ইউনিয়নে একটি ব্যবসা পরিচালনা করেন এবং নিয়মিত ট্রেড লাইসেন্স নবায়ন করেন।
+            {% elseif certificate_type == 'warish' %}
+                &nbsp; &nbsp;&nbsp; &nbsp; উক্ত ব্যক্তি মৃত ব্যক্তির ওয়ারিশ এবং সংশ্লিষ্ট সম্পত্তির উত্তরাধিকারী।
+            {% elseif certificate_type == 'character' %}
+                &nbsp; &nbsp;&nbsp; &nbsp; তিনি অত্র ইউনিয়নের একজন স্থায়ী বাসিন্দ।  তিনি জন্মগতভাবে বাংলাদেশের নাগরিক এবং আমার পরিচিত। আমার জানামতে তাহার স্বভাব ও নৈতিক চরিত্র ভাল এবং প্রশংসনীয়।
+                <br><br>
+                &nbsp; &nbsp;&nbsp; &nbsp; আমি তাহার সর্বাঙ্গীণ মঙ্গল ও উন্নতি কামনা করি।
+                <br><br>
+                &nbsp; &nbsp;&nbsp; &nbsp; উল্লেখ্য যে আবেদন পত্রে আবেদন কারী বা যাচাইকারী কর্তৃক কোন তথ্য ভূল প্রদান করা হলে উভয়ে ব্যক্তিগত ভাবে দায়ী থাকবে এবং সনদটি বাতিল বলে গন্য হবে।
+            {% elseif certificate_type == 'new-voter-' %}
+                &nbsp; &nbsp;&nbsp; &nbsp; অত্র ইউনিয়নের একজন স্থায়ী বাসিন্দা। তিনি জন্মগত ভাবে বাংলাদেশের নাগরিক এবং আমার পরিচিত। ভোটার তালিকা প্রণয়ন ও হালনাগাদের সময় তিনি বাড়িতে না থাকায় তার নাম তালিকা ভুক্ত হয়নি। তাহাকে নতুন ভোটার হওয়ার জন্য সুপারিশ করা হল। আমি তাহার সর্বাঙ্গীণ মঙ্গল ও উন্নতি কামনা করি।
+            {% elseif certificate_type == 'voter' %}
+                &nbsp; &nbsp;&nbsp; &nbsp; তিনি অত্র ইউনিয়ন থেকে অন্যত্র ভোটার স্থানান্তর করতে ইচ্ছুক। সেহেতু তাকে ভোটার আইডি স্থানান্তরের জন্য এই প্রত্যয়ন প্রদান করা হলো।
+            {% elseif certificate_type == 'vumihin' %}
+                &nbsp; &nbsp;&nbsp; &nbsp; উক্ত ব্যক্তি একজন ভূমিহীন নাগরিক। সরকারের কাছে তার জন্য পুনর্বাসনের অনুরোধ জানানো যাচ্ছে।
+            {% elseif certificate_type == 'death' %}
+                &nbsp; &nbsp;&nbsp; &nbsp; উক্ত ব্যক্তি {{ data.deceased_name }} মৃত্যুবরণ করেছেন। মৃত্যুর তারিখ: {{ data.death_date | date('d-m-Y') | bn_number }}। এই প্রত্যয়ন যথাযথ ব্যবহারের জন্য প্রদান করা হলো।
+            {% elseif certificate_type == 'yearlyincome' %}
+                &nbsp; &nbsp;&nbsp; &nbsp; উক্ত ব্যক্তির বার্ষিক আয় আনুমানিক {{ data.income_amount | bn_number }} টাকা।
+            {% elseif certificate_type == 'family' %}
+                &nbsp; &nbsp;&nbsp; &nbsp; উক্ত ব্যক্তি অত্র ইউনিয়নের স্থায়ী বাসিন্দা এবং তাহার পরিবারে নিম্নোক্ত সদস্যবৃন্দ রয়েছেন।
+            {% elseif certificate_type == 'obibahito' %}
+                &nbsp; &nbsp;&nbsp; &nbsp; তিনি অত্র ইউনিয়নের একজন স্থায়ী বাসিন্দা। আমার জানা মতে, তিনি এখন পর্যন্ত বিবাহ বন্ধনে আবদ্ধ হয়নি এবং তাহার স্বভাব ও নৈতিক চরিত্র ভাল ও প্রশংসনীয়।
+                <br><br>
+                &nbsp; &nbsp;&nbsp; &nbsp; আমি তাহার সর্বাঙ্গীণ মঙ্গল ও উন্নতি কামনা করি।
+                <br><br>
+                &nbsp; &nbsp;&nbsp; &nbsp; উল্লেখ্য যে আবেদন পত্রে আবেদন কারী বা যাচাইকারী কর্তৃক কোন তথ্য ভূল প্রদান করা হলে উভয়ে ব্যক্তিগত ভাবে দায়ী থাকবে এবং সনদটি বাতিল বলে গন্য হবে।
+            {% elseif certificate_type == 'bibahito' %}
+                &nbsp; &nbsp;&nbsp; &nbsp; অত্র প্রত্যয়ন করা যাচ্ছে যে, উক্ত ব্যক্তি বিবাহিত এবং তাহার বিবাহ {{ data.marriage_date | date('d-m-Y') | bn_number }} তারিখে সম্পন্ন হয়।
+            {% elseif certificate_type == 'ekoinam' %}
+                &nbsp; &nbsp;&nbsp; &nbsp; উক্ত ব্যক্তির নাম একাধিক দালিলে একই নামে ব্যবহৃত হয়েছে।
+            {% elseif certificate_type == 'punobibaho' %}
+                &nbsp; &nbsp;&nbsp; &nbsp; উক্ত ব্যক্তি পুনঃবিবাহ করেননি বলিয়া অত্র প্রত্যয়ন প্রদান করা হলো।
+            {% elseif certificate_type == 'protibondi' %}
+                &nbsp; &nbsp;&nbsp; &nbsp; উক্ত ব্যক্তি প্রকৃত বাক ও শ্রবণ প্রতিবন্ধী। তার সুষ্ঠু পুনর্বাসনের জন্য সংশ্লিষ্ট কর্তৃপক্ষের সুদৃষ্টি কাম্য।
+            {% elseif certificate_type == 'onapotti' %}
+                &nbsp; &nbsp;&nbsp; &nbsp; অত্র প্রত্যয়ন করা যাচ্ছে যে, উক্ত ব্যক্তি কোন প্রকার আপত্তিকর কার্যকলাপে জড়িত নন। তাকে অনাপত্তিপত্র প্রদান করা হলো।
+            {% elseif certificate_type == 'prottyon' %}
+                &nbsp; &nbsp;&nbsp; &nbsp; তিনি অত্র ইউনিয়নের একজন স্থায়ী বাসিন্দা এবং আমার ব্যক্তিগত ভাবে আমার পরিচিত। আমার জানামতে তিনি আইন শৃঙ্খলা পরিপন্থী কোন কাজের সাথে জড়িত নহে। তাহাঁর স্বভাব চরিত্র ভালো আমি তাঁর সর্বাঙ্গীন মঙ্গল কামনা করি।
+            {% elseif certificate_type == 'onumoti' %}
+                &nbsp; &nbsp;&nbsp; &nbsp; {{ data.permission_reason_bn }} যোগদান করার জন্য স্বেচ্ছায় অনুমতি প্রদান করলাম।
+                <br><br>
+                &nbsp; &nbsp;&nbsp; &nbsp; আমি তাহার সর্বাঙ্গীণ মঙ্গল ও উন্নতি কামনা করি।
+                <br><br>
+                &nbsp; &nbsp;&nbsp; &nbsp; উল্লেখ্য যে আবেদন পত্রে আবেদন কারী বা যাচাইকারী কর্তৃক কোন তথ্য ভূল প্রদান করা হলে উভয়ে ব্যক্তিগত ভাবে দায়ী থাকবে এবং সনদটি বাতিল বলে গন্য হবে।
+            {% elseif certificate_type == 'rastakhonon' %}
+                &nbsp; &nbsp;&nbsp; &nbsp; অত্র ইউনিয়নের রাস্তায় খননের অনুমতি প্রদান করা হলো নির্দিষ্ট সময়সীমার মধ্যে কাজ সম্পন্ন করার শর্তে।
+            {% elseif certificate_type == 'sonaton' %}
+                &nbsp; &nbsp;&nbsp; &nbsp; অত্র প্রত্যয়ন করা যাচ্ছে যে, উক্ত ব্যক্তি সনাতন (হিন্দু) ধর্মালম্বী এবং নিয়মিত ধর্মীয় কার্যক্রমে অংশগ্রহণ করেন।
+            {% elseif certificate_type == 'nodibanga' %}
+                &nbsp; &nbsp;&nbsp; &nbsp; উক্ত ব্যক্তি নদীভাঙনে ভিটেমাটি হারিয়েছেন এবং বর্তমানে অত্র এলাকায় অবস্থান করছেন।
+            {% elseif certificate_type == 'Onnanno' %}
+                &nbsp; &nbsp;&nbsp; &nbsp; উপরোক্ত ব্যক্তির বিষয়ে প্রয়োজনীয় তথ্য প্রদানপূর্বক এই প্রত্যয়নপত্র প্রদান করা হলো।
+            {% else %}
+                &nbsp; &nbsp;&nbsp; &nbsp; উপরের তথ্য অনুযায়ী সনদ প্রদান করা হলো।
+            {% endif %}
+        </td>
+    </tr>
+</table>

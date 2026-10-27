@@ -82,10 +82,15 @@ Ensure your hosting root has:
 ├── index.php           # Your front controller
 ├── .htaccess           # URL rewriting
 ├── config/             # Will be deployed
-├── controllers/
-├── models/
-├── modules/
-├── templates/
+├── app/
+│   ├── Core/
+│   ├── Http/Controllers/
+│   ├── Models/
+│   ├── Services/
+│   └── Helpers/
+├── bootstrap/
+├── resources/views/
+├── routes/
 ├── public/
 │   ├── assets/
 │   ├── uploads/

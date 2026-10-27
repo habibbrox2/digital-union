@@ -42,11 +42,11 @@ $mysqli->set_charset('utf8mb4');
 
 echo "Connected to database: {$dbName}\n";
 
-require_once __DIR__ . '/../config/helpers/helper_functions.php';
-require_once __DIR__ . '/../models/ErrorHandler.php';
+require_once __DIR__ . '/../config/functions.php';
+require_once __DIR__ . '/../app/Models/ErrorHandler.php';
 ErrorHandler::init(__DIR__ . '/../storage/logs/error.log', true);
-require_once __DIR__ . '/../config/security/error.php';
-require_once __DIR__ . '/../models/BusinessOwnershipType.php';
+require_once __DIR__ . '/../config/error.php';
+require_once __DIR__ . '/../app/Models/BusinessOwnershipType.php';
 
 echo "============================================\n";
 echo "  Testing /settings/business-types for Secretary\n";

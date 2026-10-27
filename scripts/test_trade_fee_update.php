@@ -94,11 +94,11 @@ $_POST = [
 ];
 
 // Simulate the updateTradeFees method
-require_once __DIR__ . '/../modules/Services/ApplicationService.php';
-require_once __DIR__ . '/../models/ApplicationManager.php';
-require_once __DIR__ . '/../models/BusinessOwnershipType.php';
+require_once __DIR__ . '/../app/Services/ApplicationService.php';
+require_once __DIR__ . '/../app/Models/ApplicationManager.php';
+require_once __DIR__ . '/../app/Models/BusinessOwnershipType.php';
 
-require_once __DIR__ . '/../config/helpers/helper_functions.php';
+require_once __DIR__ . '/../config/functions.php';
 
 $appManager = new ApplicationManager($mysqli);
 $service = new ApplicationService($mysqli, $appManager);

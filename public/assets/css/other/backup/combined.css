@@ -1,0 +1,81 @@
+@import url('main.css');
+@import url('obd.css');
+@import url('style.css');
+
+/* Inline styles moved from templates/public.twig */
+.panel-body {
+    padding: 15px;
+    width: 90%;
+    margin: 0 auto;
+}
+
+.shadow {
+    border-radius: 4px;
+    padding: 10px;
+    margin-left: 10px;
+    text-align: center;
+    box-shadow: 0 0 3px gray;
+}
+
+/* User Profile Styling - moved from template */
+.user-profile {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    font-family: 'Kalpurush', sans-serif;
+}
+
+.user-avatar {
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid #007bff;
+}
+
+.user-info {
+    text-align: left;
+}
+
+.user-name {
+    display: block;
+    font-weight: 600;
+    font-size: 14px;
+    color: #1a1a1a;
+}
+
+.user-links {
+    font-size: 13px;
+    margin-top: 2px;
+}
+
+.user-links a {
+    color: #007bff;
+    text-decoration: none;
+}
+
+.user-links a:hover {
+    text-decoration: underline;
+}
+
+/* Responsive adjustments for user-profile */
+@media (max-width: 768px) {
+    .user-profile {
+        flex-direction: column;
+        gap: 3px;
+    }
+
+    .user-avatar {
+        width: 35px;
+        height: 35px;
+    }
+
+    .user-name {
+        font-size: 12px;
+    }
+
+    .user-links {
+        font-size: 11px;
+    }
+}

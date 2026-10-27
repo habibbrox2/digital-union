@@ -1,5 +1,5 @@
 <?php
-require __DIR__ . '/../config/db/db.php';
+require __DIR__ . '/../config/db.php';
 global $mysqli;
 
 $result = $mysqli->query("SHOW TABLES");
