@@ -189,10 +189,13 @@
             $this->twig->addFilter(new \Twig\TwigFilter('bn', [$this->localization, 'convertToBangla']));
             // XSS-safe JSON for inline <script> blocks: HEX-escapes <, >, &, ', "
             // so user-controlled data can never break out of the script element.
+            // Marked html-safe because the HEX flags remove every HTML-special
+            // character; without it autoescape would mangle JSON's quotes into
+            // HTML entities and break the surrounding script block.
             $this->twig->addFilter(new \Twig\TwigFilter('json_script', function ($value) {
                 $flags = JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT;
                 return json_encode($value, $flags | JSON_INVALID_UTF8_SUBSTITUTE);
-            }));
+            }, ['is_safe' => ['html']]));
         /**
          * trans filter
          * Usage: {{ 'Hello World'|trans }}
