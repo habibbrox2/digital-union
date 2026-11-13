@@ -34,31 +34,63 @@ class UnionService
         ");
 
 
+        if (!$stmt) {
+            throw new RuntimeException("Prepare failed: " . $this->mysqli->error);
+        }
+
+        $unionCode      = sanitize_input($data['union_code']);
+        $divisionId     = (int) ($data['division_id'] ?? 0);
+        $districtId     = (int) ($data['district_id'] ?? 0);
+        $upazilaId      = (int) ($data['upazila_id'] ?? 0);
+        $unionNameEn    = sanitize_input($data['union_name_en']);
+        $unionNameBn    = sanitize_input($data['union_name_bn']);
+        $upazilaNameEn  = sanitize_input($data['upazila_name_en']);
+        $upazilaNameBn  = sanitize_input($data['upazila_name_bn']);
+        $districtNameEn = sanitize_input($data['district_name_en']);
+        $districtNameBn = sanitize_input($data['district_name_bn']);
+        $divisionNameEn = sanitize_input($data['division_name_en']);
+        $divisionNameBn = sanitize_input($data['division_name_bn']);
+        $wardCount      = (int) ($data['ward_count'] ?? 9);
+        $email          = sanitize_input($data['email'] ?? '');
+        $phone          = sanitize_input($data['phone'] ?? '');
+        $website        = sanitize_input($data['website'] ?? '');
+        $postcode       = sanitize_input($data['postcode'] ?? '');
+        $logoUrl        = sanitize_input($data['logo_url'] ?? '');
+        $stampLogoUrl   = sanitize_input($data['stamp_logo_url'] ?? '');
+        $latitude       = isset($data['latitude']) && $data['latitude'] !== ''
+            ? (float) $data['latitude']
+            : null;
+        $longitude      = isset($data['longitude']) && $data['longitude'] !== ''
+            ? (float) $data['longitude']
+            : null;
+        $isActive       = isset($data['is_active']) ? 1 : 0;
+        $remarks        = sanitize_input($data['remarks'] ?? '');
+
         $stmt->bind_param(
-            "siiisssssssssisssssddis",
-            sanitize_input($data['union_code']),
-            (int)($data['division_id'] ?? 0),
-            (int)($data['district_id'] ?? 0),
-            (int)($data['upazila_id'] ?? 0),
-            sanitize_input($data['union_name_en']),
-            sanitize_input($data['union_name_bn']),
-            sanitize_input($data['upazila_name_en']),
-            sanitize_input($data['upazila_name_bn']),
-            sanitize_input($data['district_name_en']),
-            sanitize_input($data['district_name_bn']),
-            sanitize_input($data['division_name_en']),
-            sanitize_input($data['division_name_bn']),
-            (int)($data['ward_count'] ?? 9),
-            sanitize_input($data['email'] ?? ''),
-            sanitize_input($data['phone'] ?? ''),
-            sanitize_input($data['website'] ?? ''),
-            sanitize_input($data['postcode'] ?? ''),
-            sanitize_input($data['logo_url'] ?? ''),
-            sanitize_input($data['stamp_logo_url'] ?? ''),
-            isset($data['latitude']) && $data['latitude'] !== '' ? (float)$data['latitude'] : null,
-            isset($data['longitude']) && $data['longitude'] !== '' ? (float)$data['longitude'] : null,
-            isset($data['is_active']) ? 1 : 0,
-            sanitize_input($data['remarks'] ?? '')
+            "siiissssssssissssssddis",
+            $unionCode,
+            $divisionId,
+            $districtId,
+            $upazilaId,
+            $unionNameEn,
+            $unionNameBn,
+            $upazilaNameEn,
+            $upazilaNameBn,
+            $districtNameEn,
+            $districtNameBn,
+            $divisionNameEn,
+            $divisionNameBn,
+            $wardCount,
+            $email,
+            $phone,
+            $website,
+            $postcode,
+            $logoUrl,
+            $stampLogoUrl,
+            $latitude,
+            $longitude,
+            $isActive,
+            $remarks
         );
 
         $success = $stmt->execute();
@@ -89,32 +121,65 @@ class UnionService
             WHERE union_id=?
         ");
 
+        if (!$stmt) {
+            throw new RuntimeException("Prepare failed: " . $this->mysqli->error);
+        }
+
+        $unionCode      = sanitize_input($data['union_code'] ?? '');
+        $divisionId     = (int) ($data['division_id'] ?? 0);
+        $districtId     = (int) ($data['district_id'] ?? 0);
+        $upazilaId      = (int) ($data['upazila_id'] ?? 0);
+        $unionNameEn    = sanitize_input($data['union_name_en'] ?? '');
+        $unionNameBn    = sanitize_input($data['union_name_bn'] ?? '');
+        $upazilaNameEn  = sanitize_input($data['upazila_name_en'] ?? '');
+        $upazilaNameBn  = sanitize_input($data['upazila_name_bn'] ?? '');
+        $districtNameEn = sanitize_input($data['district_name_en'] ?? '');
+        $districtNameBn = sanitize_input($data['district_name_bn'] ?? '');
+        $divisionNameEn = sanitize_input($data['division_name_en'] ?? '');
+        $divisionNameBn = sanitize_input($data['division_name_bn'] ?? '');
+        $wardCount      = (int) ($data['ward_count'] ?? 9);
+        $email          = sanitize_input($data['email'] ?? '');
+        $phone          = sanitize_input($data['phone'] ?? '');
+        $website        = sanitize_input($data['website'] ?? '');
+        $postcode       = sanitize_input($data['postcode'] ?? '');
+        $logoUrl        = sanitize_input($data['logo_url'] ?? '');
+        $stampLogoUrl   = sanitize_input($data['stamp_logo_url'] ?? '');
+        $latitude       = isset($data['latitude']) && $data['latitude'] !== ''
+            ? (float) $data['latitude']
+            : null;
+        $longitude      = isset($data['longitude']) && $data['longitude'] !== ''
+            ? (float) $data['longitude']
+            : null;
+        $isActive       = isset($data['is_active']) ? 1 : 0;
+        $remarks        = sanitize_input($data['remarks'] ?? '');
+        $unionId        = (int) $id;
+
         $stmt->bind_param(
-            "siiisssssssssisssssddisi",
-            sanitize_input($data['union_code'] ?? ''),
-            (int)($data['division_id'] ?? 0),
-            (int)($data['district_id'] ?? 0),
-            (int)($data['upazila_id'] ?? 0),
-            sanitize_input($data['union_name_en'] ?? ''),
-            sanitize_input($data['union_name_bn'] ?? ''),
-            sanitize_input($data['upazila_name_en'] ?? ''),
-            sanitize_input($data['upazila_name_bn'] ?? ''),
-            sanitize_input($data['district_name_en'] ?? ''),
-            sanitize_input($data['district_name_bn'] ?? ''),
-            sanitize_input($data['division_name_en'] ?? ''),
-            sanitize_input($data['division_name_bn'] ?? ''),
-            (int)($data['ward_count'] ?? 9),
-            sanitize_input($data['email'] ?? ''),
-            sanitize_input($data['phone'] ?? ''),
-            sanitize_input($data['website'] ?? ''),
-            sanitize_input($data['postcode'] ?? ''),
-            sanitize_input($data['logo_url'] ?? ''),
-            sanitize_input($data['stamp_logo_url'] ?? ''),
-            isset($data['latitude']) && $data['latitude'] !== '' ? (float)$data['latitude'] : null,
-            isset($data['longitude']) && $data['longitude'] !== '' ? (float)$data['longitude'] : null,
-            isset($data['is_active']) ? 1 : 0,
-            sanitize_input($data['remarks'] ?? ''),
-            (int)$id
+            "siiissssssssissssssddisi",
+            $unionCode,
+            $divisionId,
+            $districtId,
+            $upazilaId,
+            $unionNameEn,
+            $unionNameBn,
+            $upazilaNameEn,
+            $upazilaNameBn,
+            $districtNameEn,
+            $districtNameBn,
+            $divisionNameEn,
+            $divisionNameBn,
+            $wardCount,
+            $email,
+            $phone,
+            $website,
+            $postcode,
+            $logoUrl,
+            $stampLogoUrl,
+            $latitude,
+            $longitude,
+            $isActive,
+            $remarks,
+            $unionId
         );
 
         $success = $stmt->execute();
