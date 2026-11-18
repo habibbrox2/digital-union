@@ -129,7 +129,11 @@
         <table class="header">
             <tr>
                 <td width="20%">
-                    <img src="{{ url }}/assets/logo/logo.png" alt="Logo" class="logo">
+                    {% if union.logo_url is defined and union.logo_url %}
+                            <img src="{{ url ~ union.logo_url }}" alt="Logo" class="logo">
+                        {% else %}
+                            <img src="{{ url }}/assets/logo/logo.png" alt="Logo" class="logo">
+                        {% endif %}
                 </td>
                 <td width="60%">
                     <div class="bd-govt">গণপ্রজাতন্ত্রী বাংলাদেশ সরকার</div>

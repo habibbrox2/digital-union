@@ -19,7 +19,11 @@
             <table class="header-table" border="0" width="98%" align="center" style="border-collapse: collapse;">
                 <tr>
                     <td>
-                        <img src="{{ url }}/assets/logo/logo.png" alt="Logo" class="logo" height="60pt" width="60pt">
+                        {% if union.logo_url is defined and union.logo_url %}
+                            <img src="{{ url ~ union.logo_url }}" alt="Logo" class="logo">
+                        {% else %}
+                            <img src="{{ url }}/assets/logo/logo.png" alt="Logo" class="logo" height="60pt" width="60pt">
+                        {% endif %}
                     </td>
                     <td>
                     <div class="gov-info">

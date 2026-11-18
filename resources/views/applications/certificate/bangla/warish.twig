@@ -130,7 +130,11 @@ table.warish-table td {
             <table class="header-table" border="0" width="98%" align="center" style="border-collapse: collapse;">
                 <tr>
                     <td>
-                        <img src="{{ url }}/assets/logo/logo.png" alt="Logo" class="logo">
+                        {% if union.logo_url is defined and union.logo_url %}
+                            <img src="{{ url ~ union.logo_url }}" alt="Logo" class="logo">
+                        {% else %}
+                            <img src="{{ url }}/assets/logo/logo.png" alt="Logo" class="logo">
+                        {% endif %}
                     </td>
                     <td>
                     <div class="gov-info">
